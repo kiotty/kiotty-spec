@@ -1,0 +1,24 @@
+#pragma once
+
+#include <string>
+#include <string_view>
+#include <vector>
+
+namespace kiotty::core::markdown {
+
+// 지정한 수준의 ATX 제목(## 등)으로 문서를 자른 조각.
+struct Section {
+    std::string heading;  // 제목 텍스트
+    std::string body;     // 제목 다음 줄부터 다음 같은 수준 제목 전까지의 원문
+};
+
+// md4c 로 문서를 파싱해 level 수준 제목마다 하나의 Section 을 만든다.
+std::vector<Section> splitSections(std::string_view document, unsigned level);
+
+// keywords 중 하나를 포함하는 제목 아래(다음 같은/상위 수준 제목 전까지)에 있는 목록 항목 수.
+size_t countListItemsUnderHeading(std::string_view document, const std::vector<std::string> &keywords);
+
+// 문서 안의 모든 제목 텍스트.
+std::vector<std::string> headings(std::string_view document);
+
+} // namespace kiotty::core::markdown

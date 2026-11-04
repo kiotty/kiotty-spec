@@ -1,0 +1,70 @@
+cmake_minimum_required(VERSION 3.24)
+
+project(kiotty_spec VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+include(FetchContent)
+
+# ---------------------------------------------------------------------------
+# 외부 의존성: SQLite(amalgamation), nlohmann/json(헤더 전용), md4c(Markdown 파서)
+# 세 프로젝트 모두 자체 CMake 를 쓰지 않고 소스만 받아 아래에서 직접 타깃을 만든다.
+# ---------------------------------------------------------------------------
+FetchContent_Declare(sqlite3
+    URL https://www.sqlite.org/2025/sqlite-amalgamation-3500400.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+FetchContent_Declare(nlohmann_json
+    URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    SOURCE_SUBDIR _not_a_cmake_project)
+FetchContent_Declare(md4c
+    URL https://github.com/mity/md4c/archive/refs/tags/release-0.5.2.tar.gz
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    SOURCE_SUBDIR _not_a_cmake_project)
+FetchContent_MakeAvailable(sqlite3 nlohmann_json md4c)
+
+add_library(kiotty_sqlite3 STATIC ${sqlite3_SOURCE_DIR}/sqlite3.c)
+target_include_directories(kiotty_sqlite3 PUBLIC ${sqlite3_SOURCE_DIR})
+target_compile_definitions(kiotty_sqlite3 PRIVATE SQLITE_THREADSAFE=1 SQLITE_OMIT_LOAD_EXTENSION SQLITE_DQS=0)
+
+add_library(kiotty_md4c STATIC ${md4c_SOURCE_DIR}/src/md4c.c)
+target_include_directories(kiotty_md4c PUBLIC ${md4c_SOURCE_DIR}/src)
+
+add_library(kiotty_json INTERFACE)
+target_include_directories(kiotty_json INTERFACE ${nlohmann_json_SOURCE_DIR}/include)
+
+# ---------------------------------------------------------------------------
+# 공통 컴파일 옵션
+# ---------------------------------------------------------------------------
+function(kiotty_warnings target)
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /W4 /utf-8 /permissive- /Zc:__cplusplus)
+    else()
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+endfunction()
+
+# ---------------------------------------------------------------------------
+# 라이브러리: include/kiotty_spec.h 의 C 인터페이스 구현
+# ---------------------------------------------------------------------------
+file(GLOB_RECURSE KIOTTY_IMPL_SOURCES CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/implementation/*.cpp)
+
+add_library(kiotty_spec STATIC
+    src/kiotty_spec.cpp
+    ${KIOTTY_IMPL_SOURCES})
+target_include_directories(kiotty_spec
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(kiotty_spec PRIVATE kiotty_sqlite3 kiotty_md4c kiotty_json)
+kiotty_warnings(kiotty_spec)
+
+# ---------------------------------------------------------------------------
+# CLI: AI 가 질의하는 실행 파일 (이름: ks)
+# ---------------------------------------------------------------------------
+file(GLOB KIOTTY_CLI_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/app/cli/*.cpp)
+add_executable(ks ${KIOTTY_CLI_SOURCES})
+target_link_libraries(ks PRIVATE kiotty_spec kiotty_json)
+kiotty_warnings(ks)
