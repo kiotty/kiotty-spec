@@ -1,0 +1,7 @@
+{"confirmed":0,"created_at":1793803840,"note":"definition.md·src/ 분석: 요구사항 27개(기능 20·품질 5·환경 2), 개발 규칙 11개","purpose":"none","seq":1,"step":1}
+{"confirmed":0,"created_at":1793804423,"note":"피드백 반영: 기능 요구사항을 Use-case 9 개 + 하위 21 개로 재구성, 사용자 관점 문체로 다시 씀","purpose":"none","seq":2,"step":2}
+{"confirmed":1,"created_at":1793805625,"note":"한 사람 관리 전제로 REQ-036·REQ-017 수정, 여러 사람 병합은 261104_02_backlog.md 로 보류","purpose":"none","seq":3,"step":2}
+{"confirmed":0,"created_at":1793845893,"note":"공개 헤더 kiotty_spec.h 등록(FILE-001), 기능 그룹별 C 함수·타입 항목 19개(UI-001~019)로 함수 107개 배정, 하위 기능 요구사항 21개 모두 satisfies","purpose":"none","seq":4,"step":3}
+{"confirmed":0,"created_at":1793849306,"note":"피드백 반영: UI-001~019 를 개념 묶음으로, 하위에 함수마다 항목 107개(UI-020~126), 요구사항 링크는 함수별, E2E 는 묶음 포함 126개 예정","purpose":"none","seq":5,"step":3}
+{"confirmed":1,"created_at":1793858720,"note":"Step 3 라운드 3: 하위 함수 제목 5개 잘림 수정 (UI-036/085/104/116/123)","purpose":"none","seq":6,"step":3}
+{"confirmed":0,"created_at":1793859174,"note":"Step 4 라운드 1: 설계 44개 (디렉토리 6, 메모리 정책 1, 모듈 27, 동작 흐름 10), satisfies 214·depends_on 117","purpose":"none","seq":7,"step":4}
