@@ -1,4 +1,5 @@
 #include "arguments.h"
+#include "path_utf8.h"
 
 #include <charconv>
 #include <filesystem>
@@ -12,7 +13,6 @@ namespace kiotty::cli {
 
 namespace {
 
-// 값을 받지 않는 옵션.
 const std::set<std::string> kFlags{"hooks", "recursive", "merge", "help"};
 
 std::string readStream(std::istream &stream) {
@@ -21,7 +21,7 @@ std::string readStream(std::istream &stream) {
     return buffer.str();
 }
 
-} // namespace
+}
 
 int toInt(const std::string &text, const char *what) {
     int value = 0;
@@ -87,8 +87,7 @@ bool Arguments::flag(const std::string &name) const { return flags_.count(name) 
 
 std::optional<std::string> Arguments::text(const std::string &name) const {
     if (const auto path = option(name + "-file")) {
-        const std::u8string u8(reinterpret_cast<const char8_t *>(path->data()), path->size());
-        std::ifstream stream(std::filesystem::path(u8), std::ios::binary);
+        std::ifstream stream(pathFromUtf8(*path), std::ios::binary);
         if (!stream) throw UsageError("파일을 읽을 수 없음: " + *path);
         return readStream(stream);
     }
@@ -105,4 +104,4 @@ void Arguments::requireNoUnknown(const std::set<std::string> &known) const {
     }
 }
 
-} // namespace kiotty::cli
+}

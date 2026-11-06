@@ -1,8 +1,7 @@
-// ks — AI 와 사용자가 Kiotty-Spec 로컬 DB 에 질의하는 CLI. include/kiotty_spec.h 만 사용한다.
-
 #include "arguments.h"
 #include "commands.h"
 #include "output.h"
+#include "path_utf8.h"
 
 #include "kiotty_spec.h"
 
@@ -23,8 +22,7 @@ namespace {
 using namespace kiotty::cli;
 
 std::string toUtf8(const std::filesystem::path &path) {
-    const std::u8string u8 = path.generic_u8string();
-    return std::string(reinterpret_cast<const char *>(u8.data()), u8.size());
+    return pathToUtf8(path);
 }
 
 std::string environment(const char *name) {
@@ -41,7 +39,6 @@ std::string environment(const char *name) {
 #endif
 }
 
-// --root, KIOTTY_SPEC_ROOT, 위로 올라가며 .kiotty 를 찾기, 현재 위치 순.
 std::string findRoot(const Arguments &args) {
     if (const auto root = args.option("root")) return *root;
     if (const auto env = environment("KIOTTY_SPEC_ROOT"); !env.empty()) return env;
@@ -107,7 +104,7 @@ int run(std::vector<std::string> tokens) {
     return 0;
 }
 
-} // namespace
+}
 
 #ifdef _WIN32
 int wmain(int argc, wchar_t **argv) {

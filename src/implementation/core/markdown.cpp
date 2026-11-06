@@ -7,11 +7,10 @@
 #include <algorithm>
 #include <functional>
 
-namespace kiotty::core::markdown {
+namespace kiotty::spec::implementation {
 
 namespace {
 
-// md4c 콜백을 C++ 람다로 받기 위한 얇은 어댑터.
 struct Walker {
     std::function<void(MD_BLOCKTYPE, void *)> enterBlock;
     std::function<void(MD_BLOCKTYPE, void *)> leaveBlock;
@@ -55,13 +54,13 @@ unsigned headingLevel(MD_BLOCKTYPE type, void *detail) {
     return static_cast<MD_BLOCK_H_DETAIL *>(detail)->level;
 }
 
-} // namespace
+}
 
 std::vector<Section> splitSections(std::string_view document, unsigned level) {
     struct Mark {
         std::string heading;
-        size_t lineStart = 0;   // 제목 줄의 시작 오프셋
-        size_t bodyStart = 0;   // 제목 다음 줄의 시작 오프셋
+        size_t lineStart = 0;
+        size_t bodyStart = 0;
     };
     std::vector<Mark> marks;
     bool inHeading = false;
@@ -92,7 +91,7 @@ std::vector<Section> splitSections(std::string_view document, unsigned level) {
         }
         const auto offset = static_cast<size_t>(text - document.data());
         if (offset > document.size()) {
-            return; // 원문 밖을 가리키는 텍스트(엔티티 치환 등)는 위치 계산에 쓰지 않는다.
+            return;
         }
         if (!sawText) {
             const size_t newline = document.rfind('\n', offset);
@@ -116,8 +115,8 @@ std::vector<Section> splitSections(std::string_view document, unsigned level) {
 
 size_t countListItemsUnderHeading(std::string_view document, const std::vector<std::string> &keywords) {
     size_t count = 0;
-    unsigned activeLevel = 0;      // 일치하는 제목의 수준. 0 이면 비활성
-    unsigned currentHeading = 0;   // 지금 읽고 있는 제목의 수준
+    unsigned activeLevel = 0;
+    unsigned currentHeading = 0;
     std::string headingText;
 
     Walker walker;
@@ -181,4 +180,4 @@ std::vector<std::string> headings(std::string_view document) {
     return result;
 }
 
-} // namespace kiotty::core::markdown
+}

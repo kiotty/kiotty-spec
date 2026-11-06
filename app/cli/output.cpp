@@ -8,10 +8,10 @@ namespace {
 
 json orNull(const char *text) { return text != nullptr ? json(text) : json(nullptr); }
 
-} // namespace
+}
 
 void check(KiottySpecStatus status) {
-    if (status != KiottySpecStatus_Ok) {
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
         throw CallError(status, KiottySpec_lastError());
     }
 }
@@ -101,7 +101,7 @@ json drain(KiottySpecCursor *cursor, CursorKind kind) {
     json array = json::array();
     size_t count = 0;
     const KiottySpecStatus status = KiottySpec_Cursor_count(cursor, &count);
-    if (status != KiottySpecStatus_Ok) {
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
         KiottySpec_Cursor_end(cursor);
         check(status);
     }
@@ -133,11 +133,66 @@ std::string take(char *text) {
     return result;
 }
 
-void printJson(const json &value) { std::cout << value.dump(2) << "\n"; }
+std::string escapeCell(const std::string &text) {
+    std::string out;
+    out.reserve(text.size());
+    for (const char c : text) {
+        switch (c) {
+        case '\\': out += "\\\\"; break;
+        case '\t': out += "\\t"; break;
+        case '\n': out += "\\n"; break;
+        case '\r': out += "\\r"; break;
+        default: out += c; break;
+        }
+    }
+    return out;
+}
+
+template <class Json>
+std::string cell(const Json &value) {
+    if (value.is_null()) return "";
+    if (value.is_string()) return escapeCell(value.template get<std::string>());
+    if (value.is_structured()) return escapeCell(value.dump());
+    return value.dump();
+}
+
+void appendRow(std::string &out, const std::vector<std::string> &fields) {
+    for (size_t i = 0; i < fields.size(); ++i) {
+        if (i > 0) out += '\t';
+        out += fields[i];
+    }
+    out += '\n';
+}
+
+template <class Json>
+std::string table(const Json &value) {
+    if (!value.is_array()) return table(Json::array({value}));
+    std::string out;
+    if (value.empty()) return out;
+    if (!value.front().is_object()) {
+        for (const auto &item : value) out += cell(item) + "\n";
+        return out;
+    }
+    std::vector<std::string> keys;
+    for (const auto &item : value.front().items()) keys.push_back(item.key());
+    appendRow(out, keys);
+    for (const auto &row : value) {
+        std::vector<std::string> fields;
+        for (const auto &key : keys) fields.push_back(row.contains(key) ? cell(row.at(key)) : std::string());
+        appendRow(out, fields);
+    }
+    return out;
+}
+
+std::string toTsv(const json &value) { return table(value); }
+
+void printTsv(const json &value) { std::cout << table(value); }
+
+void printOrderedTsv(const nlohmann::ordered_json &value) { std::cout << table(value); }
 
 void printText(const std::string &text) {
     std::cout << text;
     if (!text.empty() && text.back() != '\n') std::cout << "\n";
 }
 
-} // namespace kiotty::cli
+}

@@ -5,9 +5,8 @@
 #include <stdexcept>
 #include <string>
 
-namespace kiotty::core {
+namespace kiotty::spec::implementation {
 
-// 구현 내부의 모든 실패는 이 예외로 표현하고, C 경계에서 KiottySpecStatus 로 바꾼다.
 class Error : public std::runtime_error {
 public:
     Error(KiottySpecStatus status, const std::string &message)
@@ -29,4 +28,4 @@ inline void require(bool condition, KiottySpecStatus status, const std::string &
     }
 }
 
-} // namespace kiotty::core
+}

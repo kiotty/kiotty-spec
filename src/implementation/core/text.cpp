@@ -4,11 +4,18 @@
 
 #include <chrono>
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <sstream>
 
-namespace kiotty::core {
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
+
+namespace kiotty::spec::implementation {
 
 size_t utf8Length(std::string_view text) {
     size_t count = 0;
@@ -83,15 +90,30 @@ std::string numberedId(std::string_view prefix, int64_t number, int width) {
     return std::string(prefix) + "-" + buffer;
 }
 
+#ifdef _WIN32
 std::filesystem::path pathFromUtf8(std::string_view text) {
-    const std::u8string u8(reinterpret_cast<const char8_t *>(text.data()), text.size());
-    return std::filesystem::path(u8);
+    const int length = MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0);
+    std::wstring wide(static_cast<size_t>(length), L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), wide.data(), length);
+    return std::filesystem::path(wide);
 }
 
 std::string pathToUtf8(const std::filesystem::path &path) {
-    const std::u8string u8 = path.generic_u8string();
-    return std::string(reinterpret_cast<const char *>(u8.data()), u8.size());
+    const std::wstring wide = path.generic_wstring();
+    const int length = WideCharToMultiByte(CP_UTF8, 0, wide.data(), static_cast<int>(wide.size()), nullptr, 0, nullptr, nullptr);
+    std::string utf8(static_cast<size_t>(length), '\0');
+    WideCharToMultiByte(CP_UTF8, 0, wide.data(), static_cast<int>(wide.size()), utf8.data(), length, nullptr, nullptr);
+    return utf8;
 }
+#else
+std::filesystem::path pathFromUtf8(std::string_view text) {
+    return std::filesystem::path(std::string(text));
+}
+
+std::string pathToUtf8(const std::filesystem::path &path) {
+    return path.generic_string();
+}
+#endif
 
 std::optional<std::string> readFile(const std::filesystem::path &path) {
     std::ifstream stream(path, std::ios::binary);
@@ -110,7 +132,7 @@ void writeFile(const std::filesystem::path &path, std::string_view content) {
     }
     std::ofstream stream(path, std::ios::binary | std::ios::trunc);
     if (!stream) {
-        fail(KiottySpecStatus_Io, "파일을 쓸 수 없음: " + pathToUtf8(path));
+        fail(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, "파일을 쓸 수 없음: " + pathToUtf8(path));
     }
     stream.write(content.data(), static_cast<std::streamsize>(content.size()));
 }
@@ -131,4 +153,4 @@ int64_t nowEpochSeconds() {
     return duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
 }
 
-} // namespace kiotty::core
+}
