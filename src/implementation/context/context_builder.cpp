@@ -240,7 +240,8 @@ std::string ContextBuilder::forItem(std::string_view itemId, int32_t depth, size
     std::string lines;
     for (const auto kind : {KIOTTY_SPEC_DECISION_KIND_REQUIREMENT, KIOTTY_SPEC_DECISION_KIND_RULE, KIOTTY_SPEC_DECISION_KIND_INTERFACE,
                             KIOTTY_SPEC_DECISION_KIND_DESIGN, KIOTTY_SPEC_DECISION_KIND_UNIT_TEST, KIOTTY_SPEC_DECISION_KIND_PLAN}) {
-        for (const auto line : splitLines(s_.decisions.get(kind))) {
+        const std::string body = s_.decisions.get(kind);
+        for (const auto line : splitLines(body)) {
             if (line.find(item.id) != std::string_view::npos) lines += std::string(line) + "\n";
         }
     }
