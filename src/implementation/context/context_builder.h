@@ -25,6 +25,7 @@ struct Stores {
     DecisionStore &decisions;
     ResultStore &results;
     Checker &checker;
+    const Failure &failure;
 };
 
 class ContextBuilder {

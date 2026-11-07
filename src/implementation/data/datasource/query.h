@@ -34,7 +34,10 @@ public:
     bool isReadOnly() const;
 
 private:
+    KiottySpecStatus keep(KiottySpecStatus status);
+
     sqlite3_stmt* _statement {nullptr};
+    KiottySpecStatus _bind_status {KIOTTY_SPEC_STATUS_SUCCESS};
 };
 
 }

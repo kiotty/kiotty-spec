@@ -58,7 +58,7 @@ KiottySpecItemCategory splitCategory(std::string &heading) {
 
 std::string Exchange::exportMarkdown(KiottySpecItemKind kind) {
     std::string out = "# " + std::string(label(kind)) + "\n\n";
-    const auto items = items_.ofKind(kind);
+    const auto items = expect(items_.ofKind(kind), failure_);
     if (items.empty()) return out + "없음\n";
     for (const auto &item : items) {
         out += context_.renderItem(item, true);
@@ -79,7 +79,7 @@ std::string Exchange::traceReport() {
     };
     for (const auto &[row, col] : pairs) {
         out += "## " + std::string(label(row)) + " × " + std::string(label(col)) + "\n```csv\n" +
-               links_.matrix(row, col) + "```\n\n";
+               expect(links_.matrix(row, col), failure_) + "```\n\n";
     }
     return out + checker_.all();
 }
@@ -88,8 +88,9 @@ void Exchange::exportJsonl(const std::filesystem::path &dir) {
     std::error_code ec;
     std::filesystem::create_directories(dir, ec);
     require(!ec, KIOTTY_SPEC_STATUS_INPUT_OUTPUT, "디렉토리를 만들 수 없음: " + pathToUtf8(dir));
-    for (const auto table : allTables()) {
-        auto stmt = db_.prepare("SELECT * FROM " + std::string(table) + " ORDER BY " + std::string(primaryKeyOrder(table)));
+    for (const OrderedTable &ordered : orderedTables()) {
+        const std::string_view table = ordered.name;
+        auto stmt = db_.prepare("SELECT * FROM " + std::string(table) + " ORDER BY " + std::string(ordered.key_order));
         std::string content;
         while (stmt.step()) {
             content += rowToJson(stmt).dump() + "\n";
@@ -101,7 +102,8 @@ void Exchange::exportJsonl(const std::filesystem::path &dir) {
 ImportReport Exchange::importJsonl(const std::filesystem::path &dir, bool merge) {
     ImportReport report;
     LegacySavepoint savepoint(db_);
-    for (const auto table : allTables()) {
+    for (const OrderedTable &ordered : orderedTables()) {
+        const std::string_view table = ordered.name;
         const auto content = readFile(dir / (std::string(table) + ".jsonl"));
         if (!content) continue;
         const std::string name(table);
@@ -180,7 +182,7 @@ std::vector<std::string> Exchange::importMarkdown(KiottySpecItemKind kind, std::
             if (text.rfind("###", 0) == 0) text.erase(0, 1);
             body += text + "\n";
         }
-        created.push_back(items_.create(kind, category, std::nullopt, title, body));
+        created.push_back(expect(items_.create(kind, category, std::nullopt, title, body), failure_));
     }
     require(!created.empty(), KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "가져올 '## 제목' 절이 없음");
     savepoint.commit();

@@ -25,9 +25,9 @@ struct Verdict {
 class Checker {
 public:
     Checker(ItemStore &items, LinkStore &links, MilestoneService &milestones, ResultStore &results,
-            DecisionStore &decisions, ChangeRequestStore &changes)
+            DecisionStore &decisions, ChangeRequestStore &changes, const Failure &failure)
         : items_(items), links_(links), milestones_(milestones), results_(results), decisions_(decisions),
-          changes_(changes) {}
+          changes_(changes), failure_(failure) {}
 
     std::vector<ItemRecord> requirementsWithoutCriteria(int64_t cut = kCurrent);
     OneToOne oneToOne(KiottySpecItemKind testKind, int64_t cut = kCurrent);
@@ -47,6 +47,7 @@ private:
     ResultStore &results_;
     DecisionStore &decisions_;
     ChangeRequestStore &changes_;
+    const Failure &failure_;
 };
 
 std::string bulletList(const std::vector<ItemRecord> &items);

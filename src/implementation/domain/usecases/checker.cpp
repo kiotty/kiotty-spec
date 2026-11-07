@@ -1,5 +1,6 @@
 #include "implementation/domain/usecases/checker.h"
 
+#include "implementation/core/error.h"
 #include "implementation/core/markdown.h"
 
 #include <map>
@@ -25,7 +26,7 @@ std::vector<ItemRecord> Checker::requirementsWithoutCriteria(int64_t cut) {
     query.category = KIOTTY_SPEC_ITEM_CATEGORY_REQUIREMENT_FUNCTIONAL;
     query.cut = cut;
     std::vector<ItemRecord> result;
-    for (auto &item : items_.list(query)) {
+    for (auto &item : expect(items_.list(query), failure_)) {
         if (!hasAcceptanceCriteria(item.body)) {
             result.push_back(std::move(item));
         }
@@ -43,10 +44,10 @@ OneToOne Checker::oneToOne(KiottySpecItemKind testKind, int64_t cut) {
     }
     query.cut = cut;
     OneToOne result;
-    for (auto &target : items_.list(query)) {
+    for (auto &target : expect(items_.list(query), failure_)) {
         size_t count = 0;
-        for (const auto &source : links_.sources(target.id, KIOTTY_SPEC_LINK_TYPE_VERIFIES, cut)) {
-            const auto test = items_.find(source, cut);
+        for (const auto &source : expect(links_.sources(target.id, KIOTTY_SPEC_LINK_TYPE_VERIFIES, cut), failure_)) {
+            const auto test = expect(items_.find(source, cut), failure_);
             if (test && test->kind == testKind) ++count;
         }
         if (count == 0) result.missing.push_back(std::move(target));
@@ -57,8 +58,8 @@ OneToOne Checker::oneToOne(KiottySpecItemKind testKind, int64_t cut) {
 
 std::vector<ItemRecord> Checker::unlinked(KiottySpecItemKind kind, int64_t cut) {
     std::vector<ItemRecord> result;
-    for (auto &item : items_.ofKind(kind, cut)) {
-        if (links_.list(item.id, KIOTTY_SPEC_DIRECTION_BOTH, static_cast<KiottySpecLinkType>(0), cut).empty()) {
+    for (auto &item : expect(items_.ofKind(kind, cut), failure_)) {
+        if (expect(links_.list(item.id, KIOTTY_SPEC_DIRECTION_BOTH, static_cast<KiottySpecLinkType>(0), cut), failure_).empty()) {
             result.push_back(std::move(item));
         }
     }
@@ -68,10 +69,10 @@ std::vector<ItemRecord> Checker::unlinked(KiottySpecItemKind kind, int64_t cut) 
 std::vector<ItemRecord> Checker::orphanTests(int64_t cut) {
     std::vector<ItemRecord> result;
     for (const auto kind : {KIOTTY_SPEC_ITEM_KIND_UNIT_TEST, KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST, KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST}) {
-        for (auto &test : items_.ofKind(kind, cut)) {
+        for (auto &test : expect(items_.ofKind(kind, cut), failure_)) {
             bool hasTarget = false;
-            for (const auto &target : links_.targets(test.id, KIOTTY_SPEC_LINK_TYPE_VERIFIES, cut)) {
-                if (items_.find(target, cut)) hasTarget = true;
+            for (const auto &target : expect(links_.targets(test.id, KIOTTY_SPEC_LINK_TYPE_VERIFIES, cut), failure_)) {
+                if (expect(items_.find(target, cut), failure_)) hasTarget = true;
             }
             if (!hasTarget) result.push_back(std::move(test));
         }
@@ -121,15 +122,15 @@ Verdict Checker::releaseCheck() {
         failIf(!check.missing.empty() || !check.duplicated.empty(), std::string(label(kind)) + " 1:1 위반 (R-3)",
                bulletList(check.missing) + bulletList(check.duplicated));
         std::vector<ItemRecord> notPassed;
-        for (auto &test : items_.ofKind(kind)) {
-            const auto latest = results_.last(test.id);
+        for (auto &test : expect(items_.ofKind(kind), failure_)) {
+            const auto latest = expect(results_.last(test.id), failure_);
             if (!latest || latest->result != KIOTTY_SPEC_TEST_RESULT_PASS) notPassed.push_back(std::move(test));
         }
         failIf(!notPassed.empty(), std::string(label(kind)) + " 중 PASS 가 아닌 것", bulletList(notPassed));
     }
-    const auto violations = results_.failed(KIOTTY_SPEC_ITEM_KIND_RULE);
+    const auto violations = expect(results_.failed(KIOTTY_SPEC_ITEM_KIND_RULE), failure_);
     failIf(!violations.empty(), "코드 검사 위반이 남은 개발 규칙", bulletList(violations));
-    const size_t open = changes_.openCount();
+    const size_t open = expect(changes_.openCount(), failure_);
     failIf(open > 0, "열린 변경 요청", std::to_string(open) + "건\n");
     if (verdict.ok) {
         verdict.report = "RELEASE 조건을 만족함 (R-10)\n";
@@ -155,12 +156,12 @@ std::string Checker::all() {
     for (const auto kind : {KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, KIOTTY_SPEC_ITEM_KIND_INTERFACE, KIOTTY_SPEC_ITEM_KIND_DESIGN}) {
         section("링크가 없는 " + std::string(label(kind)), unlinked(kind));
     }
-    section("마지막 결과가 FAIL 인 테스트·규칙", results_.failed(static_cast<KiottySpecItemKind>(0)));
+    section("마지막 결과가 FAIL 인 테스트·규칙", expect(results_.failed(static_cast<KiottySpecItemKind>(0)), failure_));
     out += "## 결정 기록\n";
     bool clean = true;
     for (const auto kind : {KIOTTY_SPEC_DECISION_KIND_REQUIREMENT, KIOTTY_SPEC_DECISION_KIND_RULE, KIOTTY_SPEC_DECISION_KIND_INTERFACE,
                             KIOTTY_SPEC_DECISION_KIND_DESIGN, KIOTTY_SPEC_DECISION_KIND_UNIT_TEST, KIOTTY_SPEC_DECISION_KIND_PLAN}) {
-        const auto problems = decisions_.check(kind);
+        const auto problems = expect(decisions_.check(kind), failure_);
         if (!problems.empty()) {
             clean = false;
             out += "### " + std::string(name(kind)) + "\n" + problems;

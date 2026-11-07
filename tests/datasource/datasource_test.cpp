@@ -63,6 +63,30 @@ bool testBindAndRead()
     return ok;
 }
 
+bool testEmptyTextIsNotNull()
+{
+    core::Connection connection;
+    bool ok = expectTrue(openMemory(connection), "open memory database");
+    auto query = connection.prepare(core::literalText("SELECT ?1 = '', ?1 IS NULL"));
+    query.value.bind(1, core::Span<const char>());
+    const auto stepped = query.value.step();
+    ok = expectTrue(stepped.value && query.value.row().integer(0) == 1, "empty span binds empty text") && ok;
+    ok = expectTrue(query.value.row().integer(1) == 0, "empty span is not null") && ok;
+    return ok;
+}
+
+bool testBindFailureIsKept()
+{
+    core::Connection connection;
+    bool ok = expectTrue(openMemory(connection), "open memory database");
+    auto query = connection.prepare(core::literalText("SELECT ?1"));
+    ok = expectTrue(query.value.bind(5, static_cast<int64_t>(1)) == KIOTTY_SPEC_STATUS_DATABASE, "out of range bind fails") && ok;
+    query.value.bind(1, static_cast<int64_t>(1));
+    ok = expectTrue(query.value.step().code == KIOTTY_SPEC_STATUS_DATABASE, "step reports earlier bind failure") && ok;
+    ok = expectTrue(query.value.run() == KIOTTY_SPEC_STATUS_DATABASE, "run reports earlier bind failure") && ok;
+    return ok;
+}
+
 bool testFailures()
 {
     core::Connection connection;
@@ -121,6 +145,8 @@ int main()
         {"failures", testFailures},
         {"savepoint rollback", testSavepointRollback},
         {"query move", testQueryMove},
+        {"empty text is not null", testEmptyTextIsNotNull},
+        {"bind failure is kept", testBindFailureIsKept},
     };
 
     int failed = 0;

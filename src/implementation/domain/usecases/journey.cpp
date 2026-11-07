@@ -1,5 +1,6 @@
 #include "implementation/domain/usecases/journey.h"
 
+#include "implementation/core/error.h"
 #include "implementation/domain/entity/names.h"
 
 #include <algorithm>
@@ -16,11 +17,11 @@ std::string stepName(int32_t step) {
 
 PositionRecord Journey::position() {
     PositionRecord position;
-    position.pendingWrites = s_.checkpoints.pendingWriteCount();
-    const auto latest = s_.checkpoints.latest();
+    position.pendingWrites = expect(s_.checkpoints.pendingWriteCount(), s_.failure);
+    const auto latest = expect(s_.checkpoints.latest(), s_.failure);
 
     std::vector<ChangeRequestRecord> open;
-    for (auto &change : s_.changes.list(static_cast<KiottySpecChangeState>(0))) {
+    for (auto &change : expect(s_.changes.list(static_cast<KiottySpecChangeState>(0)), s_.failure)) {
         if (change.state == KIOTTY_SPEC_CHANGE_STATE_OPEN || change.state == KIOTTY_SPEC_CHANGE_STATE_IN_PROGRESS) {
             open.push_back(std::move(change));
         }
@@ -36,7 +37,7 @@ PositionRecord Journey::position() {
         position.checkpointSeq = latest->seq;
         position.step = latest->step;
         position.confirmed = latest->confirmed;
-        for (const auto &record : s_.checkpoints.list(0)) {
+        for (const auto &record : expect(s_.checkpoints.list(0), s_.failure)) {
             if (record.purpose == KIOTTY_SPEC_CHECKPOINT_PURPOSE_RELEASE && record.confirmed) position.released = true;
         }
         const std::string cp = checkpointName(latest->seq);
@@ -73,8 +74,8 @@ PositionRecord Journey::position() {
 }
 
 std::vector<StepRunRecord> Journey::runs() {
-    const auto checkpoints = s_.checkpoints.list(0);
-    const auto changes = s_.changes.list(static_cast<KiottySpecChangeState>(0));
+    const auto checkpoints = expect(s_.checkpoints.list(0), s_.failure);
+    const auto changes = expect(s_.changes.list(static_cast<KiottySpecChangeState>(0)), s_.failure);
     std::vector<StepRunRecord> runs;
     for (const auto &cp : checkpoints) {
         const bool release = cp.purpose == KIOTTY_SPEC_CHECKPOINT_PURPOSE_RELEASE;
@@ -113,7 +114,7 @@ std::vector<StepRunRecord> Journey::runs() {
 std::string Journey::whereAmI(size_t maxBytes) {
     const auto position = this->position();
     std::string out = "# 현재 위치\n\n";
-    if (const auto name = meta_.get("project.name")) out += "- 프로젝트: " + *name + "\n";
+    if (const auto name = expect(meta_.get("project.name"), s_.failure)) out += "- 프로젝트: " + *name + "\n";
     if (position.checkpointSeq) {
         out += "- 체크포인트: " + checkpointName(*position.checkpointSeq) + " (" + stepName(position.step) + ", " +
                (position.confirmed ? "확정" : "미확정") + ")\n";
@@ -142,7 +143,7 @@ std::string Journey::whereAmI(size_t maxBytes) {
     }
 
     if (position.checkpointSeq) {
-        const auto checkpoints = s_.checkpoints.list(0);
+        const auto checkpoints = expect(s_.checkpoints.list(0), s_.failure);
         const int64_t latest = *position.checkpointSeq;
         int64_t previous = 0;
         for (const auto &cp : checkpoints) {
@@ -157,14 +158,14 @@ std::string Journey::whereAmI(size_t maxBytes) {
             return text.empty() ? std::string("없음\n") : text;
         };
         out += "## 마지막 라운드(" + checkpointName(latest) + ")에서 바뀐 항목\n" +
-               describe(s_.items.changedBetween(previous, latest)) + "\n";
+               describe(expect(s_.items.changedBetween(previous, latest), s_.failure)) + "\n";
         if (position.pendingWrites > 0) {
-            out += "## 아직 체크포인트에 묶이지 않은 변경\n" + describe(s_.items.changedBetween(latest, kCurrent)) + "\n";
+            out += "## 아직 체크포인트에 묶이지 않은 변경\n" + describe(expect(s_.items.changedBetween(latest, kCurrent), s_.failure)) + "\n";
         }
     }
 
     std::string open;
-    for (const auto &change : s_.changes.list(static_cast<KiottySpecChangeState>(0))) {
+    for (const auto &change : expect(s_.changes.list(static_cast<KiottySpecChangeState>(0)), s_.failure)) {
         if (change.state == KIOTTY_SPEC_CHANGE_STATE_OPEN || change.state == KIOTTY_SPEC_CHANGE_STATE_IN_PROGRESS) {
             open += "- " + change.id + " (" + std::string(name(change.state)) + ", 진입 Step " +
                     std::to_string(change.entryStep) + ") " + change.body + "\n";

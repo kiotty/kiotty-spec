@@ -18,8 +18,9 @@ struct ImportReport {
 
 class Exchange {
 public:
-    Exchange(Database &db, ItemStore &items, LinkStore &links, Checker &checker, ContextBuilder &context)
-        : db_(db), items_(items), links_(links), checker_(checker), context_(context) {}
+    Exchange(Database &db, ItemStore &items, LinkStore &links, Checker &checker, ContextBuilder &context,
+             const Failure &failure)
+        : db_(db), items_(items), links_(links), checker_(checker), context_(context), failure_(failure) {}
 
     std::string exportMarkdown(KiottySpecItemKind kind);
     std::string traceReport();
@@ -34,6 +35,7 @@ private:
     LinkStore &links_;
     Checker &checker_;
     ContextBuilder &context_;
+    const Failure &failure_;
 };
 
 }

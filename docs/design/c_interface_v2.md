@@ -130,13 +130,13 @@ KiottySpecSizeResult KiottySpec_readLastError(KiottySpecContext *context, char *
 각 단계는 `ks` 기준 출력 비교와 jsonl 내보내기 비교를 통과해야 다음으로 넘어간다.
 
 1. `data/datasource` 의 DB 래퍼를 `Result` 반환으로 바꾼다. 위 계층은 임시 변환 함수로 기존 흐름을 유지한다. **완료**: `Connection`, `Query`, `Row`, `Savepoint` 와 임시 변환층 `database.h`.
-2. `data/repository` 를 고정 크기 레코드와 `Result` 로 바꾼다.
-3. `domain/usecases` 를 바꾼다.
+2. `data/repository` 를 `Result` 로 바꾼다. **완료**: store 가 `Storage`(`Connection` + `Failure`)로 `Result` 를 돌려주고, 실패 메시지는 `Failure` 고정 버퍼에 남는다. `std::regex` 는 직접 짠 스캐너로 바꿨다. 위 계층은 임시 변환 함수 `expect` 로 기존 흐름을 유지한다.
+3. `domain/usecases` 를 바꾼다. 레코드를 고정 크기로 바꾸고, 임시 변환층 `database.*` 를 지운다. 레코드는 usecase·C 경계가 함께 쓰므로 2단계에서 3단계로 미뤘다.
 4. `context/` 에 컨텍스트, 커서 풀, 작업 버퍼를 만든다.
 5. 공개 헤더를 v2 로 교체하고 `src/kiotty_spec.cpp` 를 다시 쓴다.
 6. `ks` 를 v2 에 맞춘다. 예외와 임시 변환 함수를 지우고 `-fno-exceptions` 로 빌드한다.
 
 ## 5. 남은 위험
 
-- `std::regex` 와 `std::filesystem` 은 예외를 던진다. 2·3단계에서 대체한다.
+- `std::filesystem` 은 예외를 던진다. 3단계에서 대체한다.
 - 편차와 해소 계획은 `docs/deviations.md` 에 적는다.

@@ -13,7 +13,10 @@
 #include "implementation/data/repository/meta.h"
 #include "implementation/domain/usecases/milestone_service.h"
 #include "implementation/data/repository/result_store.h"
+#include "implementation/core/failure.h"
+#include "implementation/data/datasource/connection.h"
 #include "implementation/data/datasource/database.h"
+#include "implementation/data/datasource/storage.h"
 
 #include <filesystem>
 #include <string>
@@ -45,6 +48,9 @@ private:
     void installHooks();
 
     std::filesystem::path root_;
+    Connection connection_;
+    Failure failure_;
+    Storage storage_;
     Database db_;
 
 public:
@@ -62,7 +68,8 @@ public:
     Exchange exchange;
     Journey journey;
 
-    Database &database() { return db_; }
+    Storage &storage() { return storage_; }
+    const Failure &failure() const { return failure_; }
 };
 
 }

@@ -1,14 +1,15 @@
 #include "implementation/data/datasource/schema.h"
 
-#include "implementation/core/error.h"
+#include "implementation/core/fixed_string.h"
+#include "implementation/core/text_view.h"
 
-#include <string>
+#include <cstdint>
 
 namespace kiotty::spec::implementation {
 
 namespace {
 
-constexpr std::string_view kSchemaV1 = R"SQL(
+constexpr std::string_view SCHEMA_V1 = R"SQL(
 CREATE TABLE IF NOT EXISTS meta (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -92,56 +93,118 @@ CREATE TABLE IF NOT EXISTS result (
 CREATE INDEX IF NOT EXISTS result_target ON result (target_id);
 )SQL";
 
+constexpr size_t MAX_NUMBER_LENGTH = 20;
+
+constexpr VersionedTable VERSIONED_TABLES[] = {
+    {"item_version",
+     "UPDATE item_version SET cp_seq = ?1 WHERE cp_seq = ?2",
+     "SELECT COUNT(*) FROM item_version WHERE cp_seq = ?1",
+     "UPDATE item_version SET cp_seq = ?1 WHERE cp_seq < ?1 AND (item_id, cp_seq) IN (SELECT item_id, MAX(cp_seq) FROM item_version WHERE cp_seq <= ?1 GROUP BY item_id)",
+     "DELETE FROM item_version WHERE cp_seq < ?1",
+     "DELETE FROM item_version WHERE removed = 1 AND cp_seq <= ?1"},
+    {"link_version",
+     "UPDATE link_version SET cp_seq = ?1 WHERE cp_seq = ?2",
+     "SELECT COUNT(*) FROM link_version WHERE cp_seq = ?1",
+     "UPDATE link_version SET cp_seq = ?1 WHERE cp_seq < ?1 AND (from_id, to_id, type, cp_seq) IN (SELECT from_id, to_id, type, MAX(cp_seq) FROM link_version WHERE cp_seq <= ?1 GROUP BY from_id, to_id, type)",
+     "DELETE FROM link_version WHERE cp_seq < ?1",
+     "DELETE FROM link_version WHERE removed = 1 AND cp_seq <= ?1"},
+    {"file_version",
+     "UPDATE file_version SET cp_seq = ?1 WHERE cp_seq = ?2",
+     "SELECT COUNT(*) FROM file_version WHERE cp_seq = ?1",
+     "UPDATE file_version SET cp_seq = ?1 WHERE cp_seq < ?1 AND (file_id, cp_seq) IN (SELECT file_id, MAX(cp_seq) FROM file_version WHERE cp_seq <= ?1 GROUP BY file_id)",
+     "DELETE FROM file_version WHERE cp_seq < ?1",
+     "DELETE FROM file_version WHERE removed = 1 AND cp_seq <= ?1"},
+    {"decision_version",
+     "UPDATE decision_version SET cp_seq = ?1 WHERE cp_seq = ?2",
+     "SELECT COUNT(*) FROM decision_version WHERE cp_seq = ?1",
+     "UPDATE decision_version SET cp_seq = ?1 WHERE cp_seq < ?1 AND (kind, cp_seq) IN (SELECT kind, MAX(cp_seq) FROM decision_version WHERE cp_seq <= ?1 GROUP BY kind)",
+     "DELETE FROM decision_version WHERE cp_seq < ?1",
+     ""},
+    {"milestone_state",
+     "UPDATE milestone_state SET cp_seq = ?1 WHERE cp_seq = ?2",
+     "SELECT COUNT(*) FROM milestone_state WHERE cp_seq = ?1",
+     "UPDATE milestone_state SET cp_seq = ?1 WHERE cp_seq < ?1 AND (milestone_id, item_id, cp_seq) IN (SELECT milestone_id, item_id, MAX(cp_seq) FROM milestone_state WHERE cp_seq <= ?1 GROUP BY milestone_id, item_id)",
+     "DELETE FROM milestone_state WHERE cp_seq < ?1",
+     ""},
+};
+
+constexpr OrderedTable ORDERED_TABLES[] = {
+    {"meta", "key"},
+    {"id_counter", "prefix"},
+    {"checkpoint", "seq"},
+    {"item_version", "item_id, cp_seq"},
+    {"link_version", "from_id, to_id, type, cp_seq"},
+    {"file_version", "file_id, cp_seq"},
+    {"decision_version", "kind, cp_seq"},
+    {"milestone_state", "milestone_id, item_id, cp_seq"},
+    {"change_request", "id"},
+    {"result", "id"},
+};
+
+constexpr char USER_VERSION_SQL[] = "PRAGMA user_version";
+constexpr char SET_USER_VERSION_SQL[] = "PRAGMA user_version = 1";
+static_assert(SCHEMA_VERSION == 1, "SET_USER_VERSION_SQL must follow SCHEMA_VERSION");
+
+KiottySpecStatus rejectNewer(Storage& storage, int32_t current);
+
+void appendNumber(FixedString<MAX_NUMBER_LENGTH>& text, int32_t value)
+{
+    char digits[MAX_NUMBER_LENGTH] {};
+    size_t count = 0;
+    int64_t rest = value < 0 ? -static_cast<int64_t>(value) : value;
+    if (value < 0) { text.append(literalText("-")); }
+    do {
+        digits[count] = static_cast<char>('0' + rest % 10);
+        rest /= 10;
+        ++count;
+    } while (rest > 0);
+    for (size_t index = count; index > 0; --index) { text.append(Span<const char>(&digits[index - 1], 1)); }
 }
 
-const std::vector<VersionedTable> &versionedTables() {
-    static const std::vector<VersionedTable> tables{
-        {"item_version", "item_id", true},
-        {"link_version", "from_id, to_id, type", true},
-        {"file_version", "file_id", true},
-        {"decision_version", "kind", false},
-        {"milestone_state", "milestone_id, item_id", false},
-    };
-    return tables;
 }
 
-const std::vector<std::string_view> &allTables() {
-    static const std::vector<std::string_view> tables{
-        "meta", "id_counter", "checkpoint", "item_version", "link_version", "file_version",
-        "decision_version", "milestone_state", "change_request", "result",
-    };
-    return tables;
+Span<const VersionedTable> versionedTables()
+{
+    return Span<const VersionedTable>(VERSIONED_TABLES, sizeof(VERSIONED_TABLES) / sizeof(VERSIONED_TABLES[0]));
 }
 
-std::string_view primaryKeyOrder(std::string_view table) {
-    if (table == "meta") return "key";
-    if (table == "id_counter") return "prefix";
-    if (table == "checkpoint") return "seq";
-    if (table == "item_version") return "item_id, cp_seq";
-    if (table == "link_version") return "from_id, to_id, type, cp_seq";
-    if (table == "file_version") return "file_id, cp_seq";
-    if (table == "decision_version") return "kind, cp_seq";
-    if (table == "milestone_state") return "milestone_id, item_id, cp_seq";
-    if (table == "change_request") return "id";
-    if (table == "result") return "id";
-    fail(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "알 수 없는 테이블: " + std::string(table));
+Span<const OrderedTable> orderedTables()
+{
+    return Span<const OrderedTable>(ORDERED_TABLES, sizeof(ORDERED_TABLES) / sizeof(ORDERED_TABLES[0]));
 }
 
-int32_t version(Database &db) {
-    auto stmt = db.prepare("PRAGMA user_version");
-    return stmt.step() ? static_cast<int32_t>(stmt.integer(0)) : 0;
+Result<int32_t, KiottySpecStatus> version(Storage& storage)
+{
+    auto query = storage.prepare(literalText(USER_VERSION_SQL));
+    if (!query) { return Result<int32_t, KiottySpecStatus>::failure(query.code); }
+    const auto stepped = query.value.step();
+    if (!stepped) { return Result<int32_t, KiottySpecStatus>::failure(storage.check(stepped.code)); }
+    const int64_t current = query.value.row().integer(0);
+    return Result<int32_t, KiottySpecStatus>::success(static_cast<int32_t>(current));
 }
 
-void ensure(Database &db) {
-    const int32_t current = version(db);
-    if (current > kVersion) {
-        fail(KIOTTY_SPEC_STATUS_DATABASE, "DB 스키마 버전 " + std::to_string(current) +
-                                            " 이 라이브러리 버전 " + std::to_string(kVersion) + " 보다 높음");
-    }
-    db.exec(kSchemaV1);
-    if (current < kVersion) {
-        db.exec("PRAGMA user_version = " + std::to_string(kVersion));
-    }
+KiottySpecStatus ensure(Storage& storage)
+{
+    const auto current = version(storage);
+    if (!current) { return current.code; }
+    if (current.value > SCHEMA_VERSION) { return rejectNewer(storage, current.value); }
+    const KiottySpecStatus created = storage.execute(spanOf(SCHEMA_V1));
+    if (created != KIOTTY_SPEC_STATUS_SUCCESS) { return created; }
+    if (current.value == SCHEMA_VERSION) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    return storage.execute(literalText(SET_USER_VERSION_SQL));
+}
+
+namespace {
+
+KiottySpecStatus rejectNewer(Storage& storage, int32_t current)
+{
+    FixedString<MAX_NUMBER_LENGTH> found;
+    FixedString<MAX_NUMBER_LENGTH> supported;
+    appendNumber(found, current);
+    appendNumber(supported, SCHEMA_VERSION);
+    return storage.reject(KIOTTY_SPEC_STATUS_DATABASE, {literalText("DB 스키마 버전 "), found.view(), literalText(" 이 라이브러리 버전 "), supported.view(), literalText(" 보다 높음")});
+}
+
 }
 
 }

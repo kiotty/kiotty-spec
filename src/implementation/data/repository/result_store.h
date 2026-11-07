@@ -1,12 +1,10 @@
 #pragma once
 
+#include "implementation/data/datasource/storage.h"
 #include "implementation/data/repository/item_store.h"
-#include "implementation/data/datasource/database.h"
-#include "implementation/domain/entity/records.h"
+#include "implementation/data/repository/store_result.h"
 
-#include <optional>
 #include <string_view>
-#include <vector>
 
 namespace kiotty::spec::implementation {
 
@@ -17,19 +15,24 @@ struct ResultSummary {
     size_t notRun = 0;
 };
 
+using ResultSummaryResult = Result<ResultSummary, KiottySpecStatus>;
+
 class ResultStore {
 public:
-    ResultStore(Database &db, ItemStore &items) : db_(db), items_(items) {}
+    ResultStore(Storage &storage, ItemStore &items) : _storage(storage), _items(items) {}
 
-    void record(std::string_view targetId, KiottySpecTestResult result, std::string_view log);
-    std::optional<ResultRecord> last(std::string_view targetId);
-    std::vector<ResultRecord> history(std::string_view targetId);
-    std::vector<ItemRecord> failed(KiottySpecItemKind kindOr0);
-    ResultSummary summary(KiottySpecItemKind kind);
+    KiottySpecStatus record(std::string_view targetId, KiottySpecTestResult result, std::string_view log);
+    OptionalTestRunResult last(std::string_view targetId);
+    TestRunListResult history(std::string_view targetId);
+    ItemListResult failed(KiottySpecItemKind kindOr0);
+    ResultSummaryResult summary(KiottySpecItemKind kind);
 
 private:
-    Database &db_;
-    ItemStore &items_;
+    KiottySpecStatus insert(std::string_view targetId, KiottySpecTestResult result, std::string_view log);
+    ItemListResult failedOfKind(KiottySpecItemKind kind);
+
+    Storage &_storage;
+    ItemStore &_items;
 };
 
 }

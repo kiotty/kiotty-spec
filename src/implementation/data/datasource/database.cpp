@@ -104,7 +104,7 @@ std::optional<int64_t> Statement::optInteger(int column) const {
 
 bool Statement::readOnly() const { return query_.isReadOnly(); }
 
-Database::Database(const std::string &utf8Path) {
+Database::Database(Connection &connection, const std::string &utf8Path) : connection_(connection) {
     const KiottySpecStatus opened = connection_.open(spanOf(utf8Path));
     if (opened == KIOTTY_SPEC_STATUS_INPUT_OUTPUT || opened == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED) {
         failWith(connection_, KIOTTY_SPEC_STATUS_INPUT_OUTPUT, "cannot open database " + utf8Path);

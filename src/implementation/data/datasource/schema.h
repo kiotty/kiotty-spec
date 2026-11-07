@@ -1,26 +1,35 @@
 #pragma once
 
-#include "implementation/data/datasource/database.h"
+#include "kiotty_spec.h"
+#include "implementation/core/result.h"
+#include "implementation/core/span.h"
+#include "implementation/data/datasource/storage.h"
 
 #include <cstdint>
 #include <string_view>
-#include <vector>
 
 namespace kiotty::spec::implementation {
 
-inline constexpr int32_t kVersion = 1;
+inline constexpr int32_t SCHEMA_VERSION = 1;
 
 struct VersionedTable {
     std::string_view name;
-    std::string_view keyColumns;
-    bool hasRemoved;
+    std::string_view promote_sql;
+    std::string_view count_pending_sql;
+    std::string_view keep_latest_sql;
+    std::string_view delete_older_sql;
+    std::string_view delete_removed_sql;
 };
 
-const std::vector<VersionedTable> &versionedTables();
-const std::vector<std::string_view> &allTables();
-std::string_view primaryKeyOrder(std::string_view table);
+struct OrderedTable {
+    std::string_view name;
+    std::string_view key_order;
+};
 
-void ensure(Database &db);
-int32_t version(Database &db);
+Span<const VersionedTable> versionedTables();
+Span<const OrderedTable> orderedTables();
+
+KiottySpecStatus ensure(Storage& storage);
+Result<int32_t, KiottySpecStatus> version(Storage& storage);
 
 }

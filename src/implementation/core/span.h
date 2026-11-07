@@ -20,6 +20,8 @@ public:
 
     Element* data() const { return _data; }
     size_t length() const { return _length; }
+    Element* begin() const { return _data; }
+    Element* end() const { return _data + _length; }
 
     Element& operator[](size_t index) const { return _data[index]; }
 

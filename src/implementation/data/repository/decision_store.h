@@ -1,31 +1,31 @@
 #pragma once
 
+#include "implementation/data/datasource/storage.h"
 #include "implementation/data/repository/item_store.h"
 #include "implementation/data/repository/meta.h"
-#include "implementation/data/datasource/database.h"
+#include "implementation/data/repository/store_result.h"
 
-#include <string>
 #include <string_view>
 
 namespace kiotty::spec::implementation {
 
 class DecisionStore {
 public:
-    DecisionStore(Database &db, Meta &meta, ItemStore &items) : db_(db), meta_(meta), items_(items) {}
+    DecisionStore(Storage &storage, Meta &meta, ItemStore &items) : _storage(storage), _meta(meta), _items(items) {}
 
-    std::string get(KiottySpecDecisionKind kind, int64_t cut = kCurrent);
-    void rewrite(KiottySpecDecisionKind kind, std::string_view markdown);
-    std::string check(KiottySpecDecisionKind kind);
-
-    int64_t maxLine();
-    int64_t maxConcerns();
+    TextResult get(KiottySpecDecisionKind kind, int64_t cut = kCurrent);
+    KiottySpecStatus rewrite(KiottySpecDecisionKind kind, std::string_view markdown);
+    TextResult check(KiottySpecDecisionKind kind);
+    SequenceResult maxLine();
+    SequenceResult maxConcerns();
 
 private:
-    std::string validate(std::string_view markdown, bool checkItems);
+    TextResult validate(std::string_view markdown, bool checkItems);
+    KiottySpecStatus write(KiottySpecDecisionKind kind, std::string_view markdown);
 
-    Database &db_;
-    Meta &meta_;
-    ItemStore &items_;
+    Storage &_storage;
+    Meta &_meta;
+    ItemStore &_items;
 };
 
 }

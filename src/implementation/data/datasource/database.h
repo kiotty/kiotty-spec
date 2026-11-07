@@ -57,7 +57,7 @@ private:
 
 class Database {
 public:
-    explicit Database(const std::string &utf8Path);
+    Database(Connection &connection, const std::string &utf8Path);
 
     Database(const Database &) = delete;
     Database &operator=(const Database &) = delete;
@@ -69,7 +69,7 @@ public:
     Connection &connection() { return connection_; }
 
 private:
-    Connection connection_;
+    Connection &connection_;
 };
 
 class LegacySavepoint {

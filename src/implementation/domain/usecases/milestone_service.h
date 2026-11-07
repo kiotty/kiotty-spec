@@ -21,8 +21,8 @@ struct MilestoneProgress {
 
 class MilestoneService {
 public:
-    MilestoneService(Database &db, Meta &meta, ItemStore &items, LinkStore &links)
-        : db_(db), meta_(meta), items_(items), links_(links) {}
+    MilestoneService(Database &db, Meta &meta, ItemStore &items, LinkStore &links, const Failure &failure)
+        : db_(db), meta_(meta), items_(items), links_(links), failure_(failure) {}
 
     void setEntryState(std::string_view milestoneId, std::string_view itemId, KiottySpecImplementationState state);
     std::vector<MilestoneEntryRecord> entries(std::string_view milestoneId, int64_t cut = kCurrent);
@@ -35,6 +35,7 @@ private:
     Meta &meta_;
     ItemStore &items_;
     LinkStore &links_;
+    const Failure &failure_;
 };
 
 }
