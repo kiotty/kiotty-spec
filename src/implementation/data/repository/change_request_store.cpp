@@ -2,6 +2,7 @@
 
 #include "implementation/core/text.h"
 #include "implementation/core/text_view.h"
+#include "implementation/data/repository/record_rows.h"
 #include "implementation/domain/entity/names.h"
 
 #include <string>
@@ -26,20 +27,6 @@ constexpr char SET_STATE_SQL[] =
     "UPDATE change_request SET state = ?2, cp_closed = ?3, note = CASE WHEN ?4 = '' THEN note ELSE ?4 END WHERE id = ?1";
 constexpr char SET_ENTRY_STEP_SQL[] = "UPDATE change_request SET entry_step = ?2 WHERE id = ?1";
 constexpr char OPEN_COUNT_SQL[] = "SELECT COUNT(*) FROM change_request WHERE state IN ('open', 'in_progress')";
-
-ChangeRequestRecord readChange(const Row &row)
-{
-    ChangeRequestRecord record;
-    record.id = std::string(viewOf(row.text(0)));
-    parse(viewOf(row.text(1)), record.source);
-    record.body = std::string(viewOf(row.text(2)));
-    record.entryStep = static_cast<int32_t>(row.integer(3));
-    parse(viewOf(row.text(4)), record.state);
-    record.cpOpened = row.integer(5);
-    if (!row.isNull(6)) { record.cpClosed = row.integer(6); }
-    record.note = std::string(viewOf(row.text(7)));
-    return record;
-}
 
 bool isClosing(KiottySpecChangeState state)
 {
@@ -76,11 +63,12 @@ ChangeRequestResult ChangeRequestStore::get(std::string_view id)
     const auto stepped = query.value.step();
     if (!stepped) { return ChangeRequestResult::failure(_storage.check(stepped.code)); }
     if (!stepped.value) { return ChangeRequestResult::failure(_storage.reject(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("변경 요청 없음: "), spanOf(id)})); }
-    return ChangeRequestResult::success(readChange(query.value.row()));
+    return readChange(_storage, query.value.row());
 }
 
 KiottySpecStatus ChangeRequestStore::setState(std::string_view id, KiottySpecChangeState state, std::string_view note)
 {
+    if (note.size() > MAX_NOTE_LENGTH) { return _storage.reject(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, {literalText("note 가 너무 김 (최대 512 바이트)")}); }
     const auto existing = get(id);
     if (!existing) { return existing.code; }
     auto query = _storage.prepare(literalText(SET_STATE_SQL));
@@ -111,14 +99,7 @@ ChangeRequestListResult ChangeRequestStore::list(KiottySpecChangeState stateOr0)
     if (!query) { return ChangeRequestListResult::failure(query.code); }
     const std::string_view state = stateOr0 != 0 ? name(stateOr0) : std::string_view();
     query.value.bind(1, spanOf(state));
-    std::vector<ChangeRequestRecord> records;
-    auto stepped = query.value.step();
-    while (stepped.value) {
-        records.push_back(readChange(query.value.row()));
-        stepped = query.value.step();
-    }
-    if (!stepped) { return ChangeRequestListResult::failure(_storage.check(stepped.code)); }
-    return ChangeRequestListResult::success(std::move(records));
+    return collectChanges(_storage, query.value);
 }
 
 CountResult ChangeRequestStore::openCount()

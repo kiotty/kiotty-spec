@@ -13,6 +13,8 @@ namespace {
 
 const char *orNull(const std::string &text) { return text.empty() ? nullptr : text.c_str(); }
 
+const char *orNull(const IdText &text) { return text.empty() ? nullptr : text.c_str(); }
+
 template <class View, size_t N>
 View *pack(const View &view, const std::array<const char *View::*, N> &members) {
     size_t total = sizeof(View);

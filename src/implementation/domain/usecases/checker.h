@@ -2,10 +2,11 @@
 
 #include "implementation/data/repository/change_request_store.h"
 #include "implementation/data/repository/decision_store.h"
+#include "implementation/data/repository/item_finder.h"
 #include "implementation/data/repository/item_store.h"
 #include "implementation/data/repository/link_store.h"
-#include "implementation/domain/usecases/milestone_service.h"
 #include "implementation/data/repository/result_store.h"
+#include "implementation/domain/usecases/milestone_service.h"
 
 #include <string>
 #include <vector>
@@ -22,34 +23,41 @@ struct Verdict {
     std::string report;
 };
 
-class Checker {
-public:
-    Checker(ItemStore &items, LinkStore &links, MilestoneService &milestones, ResultStore &results,
-            DecisionStore &decisions, ChangeRequestStore &changes, const Failure &failure)
-        : items_(items), links_(links), milestones_(milestones), results_(results), decisions_(decisions),
-          changes_(changes), failure_(failure) {}
+using OneToOneResult = Result<OneToOne, KiottySpecStatus>;
+using VerdictResult = Result<Verdict, KiottySpecStatus>;
 
-    std::vector<ItemRecord> requirementsWithoutCriteria(int64_t cut = kCurrent);
-    OneToOne oneToOne(KiottySpecItemKind testKind, int64_t cut = kCurrent);
-    std::vector<ItemRecord> unlinked(KiottySpecItemKind kind, int64_t cut = kCurrent);
-    std::vector<ItemRecord> orphanTests(int64_t cut = kCurrent);
-
-    Verdict confirmCheck(int32_t step, int64_t cut = kCurrent);
-    Verdict releaseCheck();
-    std::string all();
-
-    static bool hasAcceptanceCriteria(const std::string &body);
-
-private:
-    ItemStore &items_;
-    LinkStore &links_;
-    MilestoneService &milestones_;
-    ResultStore &results_;
-    DecisionStore &decisions_;
-    ChangeRequestStore &changes_;
-    const Failure &failure_;
+struct CheckSources {
+    ItemStore &items;
+    ItemFinder &finder;
+    LinkStore &links;
+    MilestoneService &milestones;
+    ResultStore &results;
+    DecisionStore &decisions;
+    ChangeRequestStore &changes;
 };
 
+class Checker {
+public:
+    explicit Checker(CheckSources sources) : _s(sources) {}
+
+    ItemListResult requirementsWithoutCriteria(int64_t cut = kCurrent);
+    OneToOneResult oneToOne(KiottySpecItemKind testKind, int64_t cut = kCurrent);
+    ItemListResult unlinked(KiottySpecItemKind kind, int64_t cut = kCurrent);
+    ItemListResult orphanTests(int64_t cut = kCurrent);
+    VerdictResult confirmCheck(int32_t step, int64_t cut = kCurrent);
+    VerdictResult releaseCheck();
+    TextResult all();
+
+private:
+    CountResult verifierCount(const ItemRecord &target, KiottySpecItemKind testKind, int64_t cut);
+    FlagResult hasTarget(const ItemRecord &test, int64_t cut);
+    ItemListResult notPassed(KiottySpecItemKind kind);
+    TextResult decisionProblems();
+
+    CheckSources _s;
+};
+
+bool hasAcceptanceCriteria(const std::string &body);
 std::string bulletList(const std::vector<ItemRecord> &items);
 
 }

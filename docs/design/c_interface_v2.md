@@ -131,12 +131,12 @@ KiottySpecSizeResult KiottySpec_readLastError(KiottySpecContext *context, char *
 
 1. `data/datasource` 의 DB 래퍼를 `Result` 반환으로 바꾼다. 위 계층은 임시 변환 함수로 기존 흐름을 유지한다. **완료**: `Connection`, `Query`, `Row`, `Savepoint` 와 임시 변환층 `database.h`.
 2. `data/repository` 를 `Result` 로 바꾼다. **완료**: store 가 `Storage`(`Connection` + `Failure`)로 `Result` 를 돌려주고, 실패 메시지는 `Failure` 고정 버퍼에 남는다. `std::regex` 는 직접 짠 스캐너로 바꿨다. 위 계층은 임시 변환 함수 `expect` 로 기존 흐름을 유지한다.
-3. `domain/usecases` 를 바꾼다. 레코드를 고정 크기로 바꾸고, 임시 변환층 `database.*` 를 지운다. 레코드는 usecase·C 경계가 함께 쓰므로 2단계에서 3단계로 미뤘다.
+3. `domain/usecases` 를 바꾼다. **완료**: usecase 가 `Result` 를 돌려주고, 레코드의 ID·제목·경로·메모는 고정 크기다. 임시 변환층 `database.*` 를 지우고 `MilestoneStore` 를 만들었다. 탐색 메서드는 `ItemFinder`, `LinkGraph`, `VersionHistory` 로 나눠 store 마다 public 메서드를 7 개 이하로 줄였다. `std::filesystem` 은 `data/datasource/file_system` 으로 바꿨다. 긴 본문(항목·변경 요청 본문, 결과 로그)은 v1 C API 가 레코드 안에 돌려주므로 5단계까지 `std::string` 으로 둔다.
 4. `context/` 에 컨텍스트, 커서 풀, 작업 버퍼를 만든다.
 5. 공개 헤더를 v2 로 교체하고 `src/kiotty_spec.cpp` 를 다시 쓴다.
 6. `ks` 를 v2 에 맞춘다. 예외와 임시 변환 함수를 지우고 `-fno-exceptions` 로 빌드한다.
 
 ## 5. 남은 위험
 
-- `std::filesystem` 은 예외를 던진다. 3단계에서 대체한다.
+- jsonl 가져오기의 파싱 실패 메시지는 예외 없이 파싱하므로 nlohmann 의 상세 원인을 싣지 않는다.
 - 편차와 해소 계획은 `docs/deviations.md` 에 적는다.

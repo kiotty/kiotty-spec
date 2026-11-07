@@ -5,7 +5,10 @@
 #include "implementation/data/repository/checkpoint_store.h"
 #include "implementation/data/repository/decision_store.h"
 #include "implementation/data/repository/file_store.h"
+#include "implementation/data/repository/item_finder.h"
 #include "implementation/data/repository/item_store.h"
+#include "implementation/data/repository/link_graph.h"
+#include "implementation/data/repository/version_history.h"
 #include "implementation/data/repository/link_store.h"
 #include "implementation/domain/usecases/milestone_service.h"
 #include "implementation/data/repository/result_store.h"
@@ -18,8 +21,11 @@ namespace kiotty::spec::implementation {
 struct Stores {
     CheckpointStore &checkpoints;
     ItemStore &items;
+    ItemFinder &finder;
     FileStore &files;
     LinkStore &links;
+    LinkGraph &graph;
+    VersionHistory &history;
     MilestoneService &milestones;
     ChangeRequestStore &changes;
     DecisionStore &decisions;

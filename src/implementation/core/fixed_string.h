@@ -4,6 +4,8 @@
 #include "span.h"
 
 #include <cstddef>
+#include <string>
+#include <string_view>
 
 namespace kiotty::spec::implementation {
 
@@ -32,14 +34,58 @@ public:
         _data[0] = '\0';
     }
 
+    bool empty() const { return _length == 0; }
     size_t length() const { return _length; }
     static constexpr size_t capacity() { return Capacity; }
     const char* c_str() const { return _data; }
     Span<const char> view() const { return Span<const char>(_data, _length); }
+    operator std::string_view() const { return std::string_view(_data, _length); }
 
 private:
     char _data[Capacity + 1] {};
     size_t _length {0};
 };
+
+template <size_t Left, size_t Right>
+bool operator==(const FixedString<Left>& left, const FixedString<Right>& right)
+{
+    return std::string_view(left) == std::string_view(right);
+}
+
+template <size_t Capacity>
+bool operator==(const FixedString<Capacity>& left, std::string_view right) { return std::string_view(left) == right; }
+
+template <size_t Capacity>
+bool operator==(std::string_view left, const FixedString<Capacity>& right) { return left == std::string_view(right); }
+
+template <size_t Capacity>
+bool operator!=(const FixedString<Capacity>& left, std::string_view right) { return std::string_view(left) != right; }
+
+template <size_t Capacity>
+std::string operator+(std::string left, const FixedString<Capacity>& right)
+{
+    left.append(right.c_str(), right.length());
+    return left;
+}
+
+template <size_t Capacity>
+std::string operator+(const char* left, const FixedString<Capacity>& right)
+{
+    return std::string(left) + right;
+}
+
+template <size_t Capacity>
+std::string operator+(const FixedString<Capacity>& left, std::string_view right)
+{
+    std::string text(left.c_str(), left.length());
+    text.append(right.data(), right.size());
+    return text;
+}
+
+template <size_t Capacity>
+std::string operator+(const FixedString<Capacity>& left, const char* right)
+{
+    return left + std::string_view(right);
+}
 
 }

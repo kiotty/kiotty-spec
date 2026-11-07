@@ -1,20 +1,34 @@
 #pragma once
 
 #include "kiotty_spec.h"
+#include "implementation/core/fixed_string.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
 
 namespace kiotty::spec::implementation {
 
+constexpr size_t MAX_ID_LENGTH = 16;
+constexpr size_t MAX_TITLE_LENGTH = 256;
+constexpr size_t MAX_PATH_LENGTH = 512;
+constexpr size_t MAX_HASH_LENGTH = 16;
+constexpr size_t MAX_NOTE_LENGTH = 512;
+
+using IdText = FixedString<MAX_ID_LENGTH>;
+using TitleText = FixedString<MAX_TITLE_LENGTH>;
+using PathText = FixedString<MAX_PATH_LENGTH>;
+using HashText = FixedString<MAX_HASH_LENGTH>;
+using NoteText = FixedString<MAX_NOTE_LENGTH>;
+
 struct ItemRecord {
-    std::string id;
+    IdText id;
     KiottySpecItemKind kind{};
     KiottySpecItemCategory category = KIOTTY_SPEC_ITEM_CATEGORY_NONE;
-    std::string parentId;
+    IdText parentId;
     int32_t seq = 0;
-    std::string title;
+    TitleText title;
     std::string body;
     int64_t cpSeq = 0;
     int64_t wseq = 0;
@@ -22,17 +36,17 @@ struct ItemRecord {
 };
 
 struct LinkRecord {
-    std::string fromId;
-    std::string toId;
+    IdText fromId;
+    IdText toId;
     KiottySpecLinkType type{};
     int64_t cpSeq = 0;
 };
 
 struct FileRecord {
-    std::string id;
+    IdText id;
     KiottySpecFileRole role{};
-    std::string path;
-    std::string hash;
+    PathText path;
+    HashText hash;
     int64_t cpSeq = 0;
 };
 
@@ -41,23 +55,23 @@ struct CheckpointRecord {
     int32_t step = 0;
     bool confirmed = false;
     KiottySpecCheckpointPurpose purpose = KIOTTY_SPEC_CHECKPOINT_PURPOSE_NONE;
-    std::string note;
+    NoteText note;
     int64_t createdAt = 0;
 };
 
 struct ChangeRequestRecord {
-    std::string id;
+    IdText id;
     KiottySpecChangeSource source{};
     std::string body;
     int32_t entryStep = 0;
     KiottySpecChangeState state{};
     int64_t cpOpened = 0;
     std::optional<int64_t> cpClosed;
-    std::string note;
+    NoteText note;
 };
 
 struct ResultRecord {
-    std::string targetId;
+    IdText targetId;
     KiottySpecTestResult result{};
     std::string log;
     int64_t cpSeq = 0;
@@ -65,8 +79,8 @@ struct ResultRecord {
 };
 
 struct MilestoneEntryRecord {
-    std::string milestoneId;
-    std::string itemId;
+    IdText milestoneId;
+    IdText itemId;
     KiottySpecImplementationState state = KIOTTY_SPEC_IMPLEMENTATION_STATE_NOT_IMPLEMENTED;
     std::optional<int64_t> implementedCpSeq;
 };
@@ -77,8 +91,8 @@ struct StepRunRecord {
     int64_t lastSeq = 0;
     std::optional<int64_t> confirmedSeq;
     size_t count = 0;
-    std::string lastNote;
-    std::string reason;
+    NoteText lastNote;
+    NoteText reason;
 };
 
 struct PositionRecord {
@@ -88,7 +102,7 @@ struct PositionRecord {
     bool released = false;
     size_t pendingWrites = 0;
     int32_t nextStep = 1;
-    std::string nextAction;
+    NoteText nextAction;
 };
 
 }

@@ -1,98 +1,134 @@
 #include "implementation/domain/usecases/milestone_service.h"
 
-#include "implementation/core/error.h"
+#include "implementation/core/text_view.h"
 
 #include <set>
+#include <string>
 
 namespace kiotty::spec::implementation {
 
-void MilestoneService::setEntryState(std::string_view milestoneId, std::string_view itemId, KiottySpecImplementationState state) {
-    const auto milestone = expect(items_.get(milestoneId), failure_);
-    require(milestone.kind == KIOTTY_SPEC_ITEM_KIND_MILESTONE, KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "마일스톤이 아님: " + milestone.id);
-    require(expect(links_.exists(milestoneId, itemId, KIOTTY_SPEC_LINK_TYPE_COVERS), failure_), KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
-                  milestone.id + " 는 " + std::string(itemId) + " 를 포함하지 않음 (먼저 covers 링크 필요)");
-    require(state == KIOTTY_SPEC_IMPLEMENTATION_STATE_NOT_IMPLEMENTED || state == KIOTTY_SPEC_IMPLEMENTATION_STATE_NEEDS_CHANGE ||
-                      state == KIOTTY_SPEC_IMPLEMENTATION_STATE_IMPLEMENTED,
-                  KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "알 수 없는 구현 상태");
+namespace {
+
+bool isKnownState(KiottySpecImplementationState state)
+{
+    return state == KIOTTY_SPEC_IMPLEMENTATION_STATE_NOT_IMPLEMENTED || state == KIOTTY_SPEC_IMPLEMENTATION_STATE_NEEDS_CHANGE ||
+           state == KIOTTY_SPEC_IMPLEMENTATION_STATE_IMPLEMENTED;
+}
+
+KiottySpecImplementationState effectiveState(const MilestoneState &stored, const ItemRecord &item)
+{
+    const bool isStale = stored.state == KIOTTY_SPEC_IMPLEMENTATION_STATE_IMPLEMENTED && stored.implementedWseq &&
+                         item.wseq > *stored.implementedWseq;
+    if (isStale) { return KIOTTY_SPEC_IMPLEMENTATION_STATE_NEEDS_CHANGE; }
+    return stored.state;
+}
+
+}
+
+KiottySpecStatus MilestoneService::setEntryState(std::string_view milestoneId, std::string_view itemId, KiottySpecImplementationState state)
+{
+    const auto found = milestone(milestoneId, kCurrent);
+    if (!found) { return found.code; }
+    const auto covered = _links.exists(milestoneId, itemId, KIOTTY_SPEC_LINK_TYPE_COVERS);
+    if (!covered) { return covered.code; }
+    if (!covered.value) { return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {found.value.id.view(), literalText(" 는 "), spanOf(itemId), literalText(" 를 포함하지 않음 (먼저 covers 링크 필요)")}); }
+    if (!isKnownState(state)) { return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("알 수 없는 구현 상태")}); }
+    const auto item = _items.get(itemId);
+    if (!item) { return item.code; }
     const bool implemented = state == KIOTTY_SPEC_IMPLEMENTATION_STATE_IMPLEMENTED;
-    const auto item = expect(items_.get(itemId), failure_);
-    db_.prepare("INSERT INTO milestone_state (milestone_id, item_id, cp_seq, state, implemented_wseq, implemented_cp_seq)"
-                " VALUES (?1, ?2, ?3, ?4, ?5, ?6)"
-                " ON CONFLICT(milestone_id, item_id, cp_seq) DO UPDATE SET state = excluded.state,"
-                " implemented_wseq = excluded.implemented_wseq, implemented_cp_seq = excluded.implemented_cp_seq")
-        .bindAll(milestoneId, itemId, kPending, name(state),
-                 implemented ? std::optional<int64_t>(item.wseq) : std::nullopt,
-                 implemented ? std::optional<int64_t>(kPending) : std::nullopt)
-        .run();
+    return _store.write(milestoneId, itemId, state, implemented ? std::optional<int64_t>(item.value.wseq) : std::nullopt);
 }
 
-std::vector<MilestoneEntryRecord> MilestoneService::entries(std::string_view milestoneId, int64_t cut) {
-    const auto milestone = expect(items_.get(milestoneId, cut), failure_);
-    require(milestone.kind == KIOTTY_SPEC_ITEM_KIND_MILESTONE, KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "마일스톤이 아님: " + milestone.id);
+MilestoneEntryListResult MilestoneService::entries(std::string_view milestoneId, int64_t cut)
+{
+    const auto found = milestone(milestoneId, cut);
+    if (!found) { return MilestoneEntryListResult::failure(found.code); }
+    const auto itemIds = _links.targets(milestoneId, KIOTTY_SPEC_LINK_TYPE_COVERS, cut);
+    if (!itemIds) { return MilestoneEntryListResult::failure(itemIds.code); }
     std::vector<MilestoneEntryRecord> result;
-    for (const auto &itemId : expect(links_.targets(milestoneId, KIOTTY_SPEC_LINK_TYPE_COVERS, cut), failure_)) {
-        const auto item = expect(items_.find(itemId, cut), failure_);
-        if (!item) {
-            continue;
-        }
-        MilestoneEntryRecord entry;
-        entry.milestoneId = milestone.id;
-        entry.itemId = itemId;
-        auto stmt = db_.prepare("SELECT state, implemented_wseq, implemented_cp_seq FROM milestone_state"
-                                " WHERE milestone_id = ?1 AND item_id = ?2 AND cp_seq <= ?3 ORDER BY cp_seq DESC LIMIT 1");
-        stmt.bindAll(milestoneId, itemId, cut);
-        if (stmt.step()) {
-            parse(stmt.text(0), entry.state);
-            entry.implementedCpSeq = stmt.optInteger(2);
-            const auto implementedWseq = stmt.optInteger(1);
-            if (entry.state == KIOTTY_SPEC_IMPLEMENTATION_STATE_IMPLEMENTED && implementedWseq && item->wseq > *implementedWseq) {
-                entry.state = KIOTTY_SPEC_IMPLEMENTATION_STATE_NEEDS_CHANGE;
-            }
-        }
-        result.push_back(std::move(entry));
+    for (const std::string &itemId : itemIds.value) {
+        const auto entry = entryOf(found.value, itemId, cut);
+        if (!entry) { return MilestoneEntryListResult::failure(entry.code); }
+        if (entry.value) { result.push_back(*entry.value); }
     }
-    return result;
+    return MilestoneEntryListResult::success(std::move(result));
 }
 
-std::vector<ItemRecord> MilestoneService::uncovered(int64_t cut) {
+ItemListResult MilestoneService::uncovered(int64_t cut)
+{
+    const auto milestones = _finder.ofKind(KIOTTY_SPEC_ITEM_KIND_MILESTONE, cut);
+    if (!milestones) { return milestones; }
     std::set<std::string> covered;
-    for (const auto &milestone : expect(items_.ofKind(KIOTTY_SPEC_ITEM_KIND_MILESTONE, cut), failure_)) {
-        for (auto &id : expect(links_.targets(milestone.id, KIOTTY_SPEC_LINK_TYPE_COVERS, cut), failure_)) {
-            covered.insert(std::move(id));
-        }
+    for (const ItemRecord &milestone : milestones.value) {
+        auto ids = _links.targets(milestone.id, KIOTTY_SPEC_LINK_TYPE_COVERS, cut);
+        if (!ids) { return ItemListResult::failure(ids.code); }
+        for (std::string &id : ids.value) { covered.insert(std::move(id)); }
     }
     std::vector<ItemRecord> result;
     for (const auto kind : {KIOTTY_SPEC_ITEM_KIND_DESIGN, KIOTTY_SPEC_ITEM_KIND_UNIT_TEST}) {
-        for (auto &item : expect(items_.ofKind(kind, cut), failure_)) {
-            if (covered.count(item.id) == 0) {
-                result.push_back(std::move(item));
-            }
+        auto items = _finder.ofKind(kind, cut);
+        if (!items) { return items; }
+        for (ItemRecord &item : items.value) {
+            if (covered.count(std::string(item.id)) == 0) { result.push_back(std::move(item)); }
         }
     }
-    return result;
+    return ItemListResult::success(std::move(result));
 }
 
-std::optional<std::string> MilestoneService::next() {
-    for (const auto &milestone : expect(items_.ofKind(KIOTTY_SPEC_ITEM_KIND_MILESTONE), failure_)) {
-        for (const auto &entry : entries(milestone.id)) {
-            if (entry.state != KIOTTY_SPEC_IMPLEMENTATION_STATE_IMPLEMENTED) {
-                return milestone.id;
-            }
+OptionalTextResult MilestoneService::next()
+{
+    const auto milestones = _finder.ofKind(KIOTTY_SPEC_ITEM_KIND_MILESTONE);
+    if (!milestones) { return OptionalTextResult::failure(milestones.code); }
+    for (const ItemRecord &milestone : milestones.value) {
+        const auto list = entries(milestone.id);
+        if (!list) { return OptionalTextResult::failure(list.code); }
+        for (const MilestoneEntryRecord &entry : list.value) {
+            if (entry.state != KIOTTY_SPEC_IMPLEMENTATION_STATE_IMPLEMENTED) { return OptionalTextResult::success(std::string(milestone.id)); }
         }
     }
-    return std::nullopt;
+    return OptionalTextResult::success(std::nullopt);
 }
 
-MilestoneProgress MilestoneService::progress() {
+MilestoneProgressResult MilestoneService::progress()
+{
+    const auto milestones = _finder.ofKind(KIOTTY_SPEC_ITEM_KIND_MILESTONE);
+    if (!milestones) { return MilestoneProgressResult::failure(milestones.code); }
     MilestoneProgress progress;
-    for (const auto &milestone : expect(items_.ofKind(KIOTTY_SPEC_ITEM_KIND_MILESTONE), failure_)) {
-        for (const auto &entry : entries(milestone.id)) {
+    for (const ItemRecord &milestone : milestones.value) {
+        const auto list = entries(milestone.id);
+        if (!list) { return MilestoneProgressResult::failure(list.code); }
+        for (const MilestoneEntryRecord &entry : list.value) {
             ++progress.total;
-            if (entry.state == KIOTTY_SPEC_IMPLEMENTATION_STATE_IMPLEMENTED) ++progress.implemented;
-            if (entry.state == KIOTTY_SPEC_IMPLEMENTATION_STATE_NEEDS_CHANGE) ++progress.needsChange;
+            if (entry.state == KIOTTY_SPEC_IMPLEMENTATION_STATE_IMPLEMENTED) { ++progress.implemented; }
+            if (entry.state == KIOTTY_SPEC_IMPLEMENTATION_STATE_NEEDS_CHANGE) { ++progress.needsChange; }
         }
     }
-    return progress;
+    return MilestoneProgressResult::success(progress);
+}
+
+ItemResult MilestoneService::milestone(std::string_view milestoneId, int64_t cut)
+{
+    auto found = _items.get(milestoneId, cut);
+    if (!found) { return found; }
+    if (found.value.kind == KIOTTY_SPEC_ITEM_KIND_MILESTONE) { return found; }
+    return ItemResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("마일스톤이 아님: "), found.value.id.view()}));
+}
+
+OptionalMilestoneEntryResult MilestoneService::entryOf(const ItemRecord &milestone, std::string_view itemId, int64_t cut)
+{
+    const auto item = _items.find(itemId, cut);
+    if (!item) { return OptionalMilestoneEntryResult::failure(item.code); }
+    if (!item.value) { return OptionalMilestoneEntryResult::success(std::nullopt); }
+    MilestoneEntryRecord entry;
+    entry.milestoneId = milestone.id;
+    entry.itemId = item.value->id;
+    const auto stored = _store.latest(milestone.id, itemId, cut);
+    if (!stored) { return OptionalMilestoneEntryResult::failure(stored.code); }
+    if (stored.value) {
+        entry.state = effectiveState(*stored.value, *item.value);
+        entry.implementedCpSeq = stored.value->implementedCpSeq;
+    }
+    return OptionalMilestoneEntryResult::success(entry);
 }
 
 }

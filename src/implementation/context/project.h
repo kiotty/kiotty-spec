@@ -1,24 +1,28 @@
 #pragma once
 
-#include "implementation/data/repository/change_request_store.h"
-#include "implementation/domain/usecases/checker.h"
-#include "implementation/data/repository/checkpoint_store.h"
 #include "implementation/context/context_builder.h"
-#include "implementation/data/repository/decision_store.h"
-#include "implementation/domain/usecases/exchange.h"
-#include "implementation/data/repository/file_store.h"
-#include "implementation/data/repository/item_store.h"
-#include "implementation/domain/usecases/journey.h"
-#include "implementation/data/repository/link_store.h"
-#include "implementation/data/repository/meta.h"
-#include "implementation/domain/usecases/milestone_service.h"
-#include "implementation/data/repository/result_store.h"
 #include "implementation/core/failure.h"
 #include "implementation/data/datasource/connection.h"
-#include "implementation/data/datasource/database.h"
+#include "implementation/data/datasource/file_system.h"
+#include "implementation/data/datasource/project_files.h"
 #include "implementation/data/datasource/storage.h"
+#include "implementation/data/repository/change_request_store.h"
+#include "implementation/data/repository/checkpoint_store.h"
+#include "implementation/data/repository/decision_store.h"
+#include "implementation/data/repository/file_store.h"
+#include "implementation/data/repository/item_finder.h"
+#include "implementation/data/repository/item_store.h"
+#include "implementation/data/repository/link_graph.h"
+#include "implementation/data/repository/link_store.h"
+#include "implementation/data/repository/meta.h"
+#include "implementation/data/repository/milestone_store.h"
+#include "implementation/data/repository/result_store.h"
+#include "implementation/data/repository/version_history.h"
+#include "implementation/domain/usecases/checker.h"
+#include "implementation/domain/usecases/exchange.h"
+#include "implementation/domain/usecases/journey.h"
+#include "implementation/domain/usecases/milestone_service.h"
 
-#include <filesystem>
 #include <string>
 #include <string_view>
 
@@ -26,11 +30,10 @@ namespace kiotty::spec::implementation {
 
 class Project {
 public:
-    explicit Project(const std::filesystem::path &root);
+    explicit Project(std::string_view root);
 
-    const std::filesystem::path &root() const { return root_; }
-    std::filesystem::path specDir() const { return root_ / ".kiotty"; }
-    std::filesystem::path jsonlDir() const { return specDir() / "spec"; }
+    Span<const char> root() const { return root_.view(); }
+    SystemPath jsonlDir() const;
 
     void init(std::string_view projectName, bool installGitHooks);
 
@@ -44,21 +47,26 @@ public:
     void rollbackTransaction();
 
 private:
-    static std::filesystem::path prepareRoot(const std::filesystem::path &root);
+    static SystemPath prepareRoot(std::string_view root);
+    void open();
     void installHooks();
 
-    std::filesystem::path root_;
+    SystemPath root_;
     Connection connection_;
     Failure failure_;
     Storage storage_;
-    Database db_;
+    ProjectFiles projectFiles_;
 
 public:
     Meta meta;
     CheckpointStore checkpoints;
+    VersionHistory history;
     ItemStore items;
+    ItemFinder finder;
     FileStore files;
     LinkStore links;
+    LinkGraph graph;
+    MilestoneStore milestoneStore;
     MilestoneService milestones;
     ChangeRequestStore changes;
     DecisionStore decisions;

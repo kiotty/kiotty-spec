@@ -1,13 +1,13 @@
 #pragma once
 
+#include "implementation/core/failure.h"
+#include "implementation/data/repository/item_finder.h"
 #include "implementation/data/repository/item_store.h"
 #include "implementation/data/repository/link_store.h"
-#include "implementation/data/repository/meta.h"
-#include "implementation/data/datasource/database.h"
+#include "implementation/data/repository/milestone_store.h"
 #include "implementation/domain/entity/records.h"
 
 #include <optional>
-#include <string>
 #include <string_view>
 #include <vector>
 
@@ -19,23 +19,30 @@ struct MilestoneProgress {
     size_t needsChange = 0;
 };
 
+using MilestoneEntryListResult = Result<std::vector<MilestoneEntryRecord>, KiottySpecStatus>;
+using OptionalMilestoneEntryResult = Result<std::optional<MilestoneEntryRecord>, KiottySpecStatus>;
+using MilestoneProgressResult = Result<MilestoneProgress, KiottySpecStatus>;
+
 class MilestoneService {
 public:
-    MilestoneService(Database &db, Meta &meta, ItemStore &items, LinkStore &links, const Failure &failure)
-        : db_(db), meta_(meta), items_(items), links_(links), failure_(failure) {}
+    MilestoneService(MilestoneStore &store, ItemStore &items, ItemFinder &finder, LinkStore &links, Failure &failure)
+        : _store(store), _items(items), _finder(finder), _links(links), _failure(failure) {}
 
-    void setEntryState(std::string_view milestoneId, std::string_view itemId, KiottySpecImplementationState state);
-    std::vector<MilestoneEntryRecord> entries(std::string_view milestoneId, int64_t cut = kCurrent);
-    std::vector<ItemRecord> uncovered(int64_t cut = kCurrent);
-    std::optional<std::string> next();
-    MilestoneProgress progress();
+    KiottySpecStatus setEntryState(std::string_view milestoneId, std::string_view itemId, KiottySpecImplementationState state);
+    MilestoneEntryListResult entries(std::string_view milestoneId, int64_t cut = kCurrent);
+    ItemListResult uncovered(int64_t cut = kCurrent);
+    OptionalTextResult next();
+    MilestoneProgressResult progress();
 
 private:
-    Database &db_;
-    Meta &meta_;
-    ItemStore &items_;
-    LinkStore &links_;
-    const Failure &failure_;
+    ItemResult milestone(std::string_view milestoneId, int64_t cut);
+    OptionalMilestoneEntryResult entryOf(const ItemRecord &milestone, std::string_view itemId, int64_t cut);
+
+    MilestoneStore &_store;
+    ItemStore &_items;
+    ItemFinder &_finder;
+    LinkStore &_links;
+    Failure &_failure;
 };
 
 }

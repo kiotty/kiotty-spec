@@ -1,10 +1,11 @@
 #pragma once
 
+#include "implementation/core/failure.h"
+#include "implementation/data/datasource/storage.h"
+#include "implementation/data/repository/item_store.h"
+#include "implementation/data/repository/link_graph.h"
 #include "implementation/domain/usecases/checker.h"
-#include "implementation/context/context_builder.h"
-#include "implementation/data/datasource/database.h"
 
-#include <filesystem>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -16,26 +17,29 @@ struct ImportReport {
     std::vector<std::string> conflicts;
 };
 
+using ImportReportResult = Result<ImportReport, KiottySpecStatus>;
+
 class Exchange {
 public:
-    Exchange(Database &db, ItemStore &items, LinkStore &links, Checker &checker, ContextBuilder &context,
-             const Failure &failure)
-        : db_(db), items_(items), links_(links), checker_(checker), context_(context), failure_(failure) {}
+    Exchange(Storage &storage, ItemStore &items, LinkGraph &graph, Checker &checker, Failure &failure)
+        : _storage(storage), _items(items), _graph(graph), _checker(checker), _failure(failure) {}
 
-    std::string exportMarkdown(KiottySpecItemKind kind);
-    std::string traceReport();
-    void exportJsonl(const std::filesystem::path &dir);
-    ImportReport importJsonl(const std::filesystem::path &dir, bool merge);
-    std::vector<std::string> importMarkdown(KiottySpecItemKind kind, std::string_view markdown);
-    std::string queryReadonly(std::string_view sql);
+    TextResult traceReport();
+    KiottySpecStatus exportJsonl(Span<const char> directory);
+    ImportReportResult importJsonl(Span<const char> directory, bool merge);
+    TextListResult importMarkdown(KiottySpecItemKind kind, std::string_view markdown);
+    TextResult queryReadonly(std::string_view sql);
 
 private:
-    Database &db_;
-    ItemStore &items_;
-    LinkStore &links_;
-    Checker &checker_;
-    ContextBuilder &context_;
-    const Failure &failure_;
+    KiottySpecStatus exportTable(Span<const char> directory, std::string_view table, std::string_view keyOrder);
+    KiottySpecStatus importTable(std::string_view table, std::string_view content, bool merge, ImportReport &report);
+    KiottySpecStatus importRow(const std::string &table, std::string_view line, size_t lineNo, bool merge, ImportReport &report);
+
+    Storage &_storage;
+    ItemStore &_items;
+    LinkGraph &_graph;
+    Checker &_checker;
+    Failure &_failure;
 };
 
 }

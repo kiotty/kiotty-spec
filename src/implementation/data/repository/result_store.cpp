@@ -2,6 +2,7 @@
 
 #include "implementation/core/text.h"
 #include "implementation/core/text_view.h"
+#include "implementation/data/repository/record_rows.h"
 
 namespace kiotty::spec::implementation {
 
@@ -18,17 +19,6 @@ constexpr KiottySpecItemKind CHECKED_KINDS[] = {
     KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST,
     KIOTTY_SPEC_ITEM_KIND_RULE,
 };
-
-ResultRecord readResult(const Row &row)
-{
-    ResultRecord record;
-    record.targetId = std::string(viewOf(row.text(0)));
-    parse(viewOf(row.text(1)), record.result);
-    record.log = std::string(viewOf(row.text(2)));
-    record.cpSeq = row.integer(3);
-    record.runAt = row.integer(4);
-    return record;
-}
 
 bool canHaveResult(KiottySpecItemKind kind) { return isTestKind(kind) || kind == KIOTTY_SPEC_ITEM_KIND_RULE; }
 
@@ -52,7 +42,7 @@ KiottySpecStatus ResultStore::record(std::string_view targetId, KiottySpecTestRe
 {
     const auto target = _items.get(targetId);
     if (!target) { return target.code; }
-    if (!canHaveResult(target.value.kind)) { return _storage.reject(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("결과는 테스트 또는 (코드 검사) 개발 규칙에만 기록할 수 있음: "), spanOf(target.value.id)}); }
+    if (!canHaveResult(target.value.kind)) { return _storage.reject(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("결과는 테스트 또는 (코드 검사) 개발 규칙에만 기록할 수 있음: "), target.value.id.view()}); }
     const bool isVerdict = result == KIOTTY_SPEC_TEST_RESULT_PASS || result == KIOTTY_SPEC_TEST_RESULT_FAIL;
     if (!isVerdict) { return _storage.reject(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("결과는 pass 또는 fail")}); }
     return insert(targetId, result, log);
@@ -66,7 +56,9 @@ OptionalTestRunResult ResultStore::last(std::string_view targetId)
     const auto stepped = query.value.step();
     if (!stepped) { return OptionalTestRunResult::failure(_storage.check(stepped.code)); }
     if (!stepped.value) { return OptionalTestRunResult::success(std::nullopt); }
-    return OptionalTestRunResult::success(readResult(query.value.row()));
+    auto record = readTestRun(_storage, query.value.row());
+    if (!record) { return OptionalTestRunResult::failure(record.code); }
+    return OptionalTestRunResult::success(std::move(record.value));
 }
 
 TestRunListResult ResultStore::history(std::string_view targetId)
@@ -74,14 +66,7 @@ TestRunListResult ResultStore::history(std::string_view targetId)
     auto query = _storage.prepare(literalText(HISTORY_SQL));
     if (!query) { return TestRunListResult::failure(query.code); }
     query.value.bind(1, spanOf(targetId));
-    std::vector<ResultRecord> records;
-    auto stepped = query.value.step();
-    while (stepped.value) {
-        records.push_back(readResult(query.value.row()));
-        stepped = query.value.step();
-    }
-    if (!stepped) { return TestRunListResult::failure(_storage.check(stepped.code)); }
-    return TestRunListResult::success(std::move(records));
+    return collectTestRuns(_storage, query.value);
 }
 
 ItemListResult ResultStore::failed(KiottySpecItemKind kindOr0)
@@ -98,7 +83,7 @@ ItemListResult ResultStore::failed(KiottySpecItemKind kindOr0)
 
 ResultSummaryResult ResultStore::summary(KiottySpecItemKind kind)
 {
-    const auto items = _items.ofKind(kind);
+    const auto items = _finder.ofKind(kind);
     if (!items) { return ResultSummaryResult::failure(items.code); }
     ResultSummary summary;
     for (const ItemRecord &item : items.value) {
@@ -123,7 +108,7 @@ KiottySpecStatus ResultStore::insert(std::string_view targetId, KiottySpecTestRe
 
 ItemListResult ResultStore::failedOfKind(KiottySpecItemKind kind)
 {
-    auto items = _items.ofKind(kind);
+    auto items = _finder.ofKind(kind);
     if (!items) { return items; }
     std::vector<ItemRecord> result;
     for (ItemRecord &item : items.value) {

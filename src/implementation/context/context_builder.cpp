@@ -112,7 +112,7 @@ std::string ContextBuilder::forStep(int32_t step, size_t maxBytes) {
     b.text("# Step " + std::to_string(step) + " " + stepTitle(step) + "\n\n목표: " + stepGoal(step) + "\n\n");
 
     if (const auto confirmed = expect(s_.checkpoints.lastConfirmed(0), s_.failure)) {
-        const auto changed = expect(s_.items.changedBetween(confirmed->seq, kCurrent), s_.failure);
+        const auto changed = expect(s_.finder.changedBetween(confirmed->seq, kCurrent), s_.failure);
         if (!changed.empty()) {
             std::string list;
             for (const auto &change : changed) {
@@ -120,7 +120,7 @@ std::string ContextBuilder::forStep(int32_t step, size_t maxBytes) {
                         " " + change.record.title + "\n";
             }
             b.text("## " + checkpointName(confirmed->seq) + " 이후 바뀐 항목\n" + list + "\n");
-            section("바뀐 항목과 링크된 영향 항목 (다시 볼 것)", expect(s_.links.impactSince(confirmed->seq), s_.failure));
+            section("바뀐 항목과 링크된 영향 항목 (다시 볼 것)", expect(s_.graph.impactSince(confirmed->seq), s_.failure));
         }
     }
     const auto openChanges = expect(s_.changes.list(KIOTTY_SPEC_CHANGE_STATE_OPEN), s_.failure);
@@ -132,11 +132,11 @@ std::string ContextBuilder::forStep(int32_t step, size_t maxBytes) {
         b.text("## 열린 변경 요청\n" + list + "\n");
     }
 
-    const auto requirements = expect(s_.items.ofKind(KIOTTY_SPEC_ITEM_KIND_REQUIREMENT), s_.failure);
-    const auto rulesList = expect(s_.items.ofKind(KIOTTY_SPEC_ITEM_KIND_RULE), s_.failure);
-    const auto interfaces = expect(s_.items.ofKind(KIOTTY_SPEC_ITEM_KIND_INTERFACE), s_.failure);
-    const auto designs = expect(s_.items.ofKind(KIOTTY_SPEC_ITEM_KIND_DESIGN), s_.failure);
-    const auto unitTests = expect(s_.items.ofKind(KIOTTY_SPEC_ITEM_KIND_UNIT_TEST), s_.failure);
+    const auto requirements = expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_REQUIREMENT), s_.failure);
+    const auto rulesList = expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_RULE), s_.failure);
+    const auto interfaces = expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_INTERFACE), s_.failure);
+    const auto designs = expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_DESIGN), s_.failure);
+    const auto unitTests = expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_UNIT_TEST), s_.failure);
     switch (step) {
     case 1:
         section("요구사항", requirements);
@@ -177,12 +177,12 @@ std::string ContextBuilder::forStep(int32_t step, size_t maxBytes) {
         section("설계 항목", designs);
         section("유닛 테스트", unitTests);
         section("개발 규칙", rulesList);
-        section("마일스톤", expect(s_.items.ofKind(KIOTTY_SPEC_ITEM_KIND_MILESTONE), s_.failure));
-        section("아직 어떤 마일스톤에도 포함되지 않은 항목", s_.milestones.uncovered());
+        section("마일스톤", expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_MILESTONE), s_.failure));
+        section("아직 어떤 마일스톤에도 포함되지 않은 항목", expect(s_.milestones.uncovered(), s_.failure));
         decision(KIOTTY_SPEC_DECISION_KIND_PLAN);
         break;
     case 7: {
-        const auto next = s_.milestones.next();
+        const auto next = expect(s_.milestones.next(), s_.failure);
         b.text(next ? forMilestone(*next, maxBytes / 2) : std::string("## 다음 마일스톤\n남은 마일스톤 없음\n\n"));
         b.text("## 소스 파일\n" + fileList(expect(s_.files.list(KIOTTY_SPEC_FILE_ROLE_SOURCE), s_.failure)));
         break;
@@ -192,8 +192,8 @@ std::string ContextBuilder::forStep(int32_t step, size_t maxBytes) {
         functional.kind = KIOTTY_SPEC_ITEM_KIND_REQUIREMENT;
         functional.category = KIOTTY_SPEC_ITEM_CATEGORY_REQUIREMENT_FUNCTIONAL;
         section("기능 요구사항", expect(s_.items.list(functional), s_.failure));
-        section("시스템 테스트", expect(s_.items.ofKind(KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST), s_.failure));
-        b.text("## 1:1 검사\n" + s_.checker.confirmCheck(8).report + "\n");
+        section("시스템 테스트", expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST), s_.failure));
+        b.text("## 1:1 검사\n" + expect(s_.checker.confirmCheck(8), s_.failure).report + "\n");
         b.text("## 소스 파일\n" + fileList(expect(s_.files.list(KIOTTY_SPEC_FILE_ROLE_SOURCE), s_.failure)));
         break;
     }
@@ -203,8 +203,8 @@ std::string ContextBuilder::forStep(int32_t step, size_t maxBytes) {
         break;
     case 10:
         section("외부 인터페이스 항목", interfaces);
-        section("E2E 테스트", expect(s_.items.ofKind(KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST), s_.failure));
-        b.text("## 1:1 검사\n" + s_.checker.confirmCheck(10).report + "\n");
+        section("E2E 테스트", expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST), s_.failure));
+        b.text("## 1:1 검사\n" + expect(s_.checker.confirmCheck(10), s_.failure).report + "\n");
         b.text("## 인터페이스 파일\n" + fileList(expect(s_.files.list(KIOTTY_SPEC_FILE_ROLE_GUI_DRAFT), s_.failure)) +
                fileList(expect(s_.files.list(KIOTTY_SPEC_FILE_ROLE_C_HEADER), s_.failure)));
         b.text("## 소스 파일\n" + fileList(expect(s_.files.list(KIOTTY_SPEC_FILE_ROLE_SOURCE), s_.failure)));
@@ -223,7 +223,7 @@ std::string ContextBuilder::forItem(std::string_view itemId, int32_t depth, size
     const auto collect = [&](KiottySpecDirection dir) {
         std::vector<ItemRecord> records;
         std::string files;
-        for (const auto &id : expect(s_.links.traverse(item.id, dir, depth <= 0 ? 2 : depth), s_.failure)) {
+        for (const auto &id : expect(s_.graph.traverse(item.id, dir, depth <= 0 ? 2 : depth), s_.failure)) {
             if (auto found = expect(s_.items.find(id), s_.failure)) records.push_back(std::move(*found));
             else if (auto file = expect(s_.files.find(id), s_.failure)) files += "- " + file->id + " " + file->path + "\n";
         }
@@ -259,7 +259,7 @@ std::string ContextBuilder::forMilestone(std::string_view milestoneId, size_t ma
     std::vector<ItemRecord> todo;
     std::string states;
     std::set<std::string> requirementIds;
-    for (const auto &entry : s_.milestones.entries(milestone.id)) {
+    for (const auto &entry : expect(s_.milestones.entries(milestone.id), s_.failure)) {
         states += "- " + entry.itemId + " : " + std::string(name(entry.state)) + "\n";
         if (entry.state == KIOTTY_SPEC_IMPLEMENTATION_STATE_IMPLEMENTED) continue;
         if (auto item = expect(s_.items.find(entry.itemId), s_.failure)) {
@@ -293,7 +293,7 @@ std::string ContextBuilder::forChangeRequest(std::string_view crId, size_t maxBy
     for (const auto kind : {KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, KIOTTY_SPEC_ITEM_KIND_RULE, KIOTTY_SPEC_ITEM_KIND_INTERFACE,
                             KIOTTY_SPEC_ITEM_KIND_DESIGN, KIOTTY_SPEC_ITEM_KIND_UNIT_TEST, KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST,
                             KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST, KIOTTY_SPEC_ITEM_KIND_MILESTONE}) {
-        for (auto &item : expect(s_.items.ofKind(kind), s_.failure)) {
+        for (auto &item : expect(s_.finder.ofKind(kind), s_.failure)) {
             if (change.body.find(item.id) != std::string::npos) mentioned.push_back(std::move(item));
         }
     }
@@ -302,9 +302,9 @@ std::string ContextBuilder::forChangeRequest(std::string_view crId, size_t maxBy
     b.items(mentioned, render);
     std::vector<ItemRecord> affected;
     std::set<std::string> seen;
-    for (const auto &item : mentioned) seen.insert(item.id);
+    for (const auto &item : mentioned) seen.insert(std::string(item.id));
     for (const auto &item : mentioned) {
-        for (const auto &id : expect(s_.links.traverse(item.id, KIOTTY_SPEC_DIRECTION_DOWNSTREAM, 0), s_.failure)) {
+        for (const auto &id : expect(s_.graph.traverse(item.id, KIOTTY_SPEC_DIRECTION_DOWNSTREAM, 0), s_.failure)) {
             if (!seen.insert(id).second) continue;
             if (auto found = expect(s_.items.find(id), s_.failure)) affected.push_back(std::move(*found));
         }
@@ -316,7 +316,7 @@ std::string ContextBuilder::forChangeRequest(std::string_view crId, size_t maxBy
 
 std::string ContextBuilder::rules() {
     std::string out = "## 개발 규칙\n";
-    const auto list = expect(s_.items.ofKind(KIOTTY_SPEC_ITEM_KIND_RULE), s_.failure);
+    const auto list = expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_RULE), s_.failure);
     if (list.empty()) return out + "없음\n\n";
     for (const auto &rule : list) out += renderItem(rule, true);
     return out;
@@ -329,7 +329,7 @@ std::string ContextBuilder::pending() {
         out += "- 미확정 체크포인트 " + checkpointName(latest->seq) + " (Step " + std::to_string(latest->step) +
                ") — 사용자 확정 대기\n";
     }
-    const size_t writes = expect(s_.checkpoints.pendingWriteCount(), s_.failure);
+    const size_t writes = expect(s_.history.pendingCount(), s_.failure);
     if (writes > 0) out += "- 아직 체크포인트에 묶이지 않은 쓰기 " + std::to_string(writes) + "건 — 라운드를 마치면 `ks checkpoint create`\n";
     for (const auto &change : expect(s_.changes.list(static_cast<KiottySpecChangeState>(0)), s_.failure)) {
         if (change.state == KIOTTY_SPEC_CHANGE_STATE_OPEN || change.state == KIOTTY_SPEC_CHANGE_STATE_IN_PROGRESS) {
@@ -340,8 +340,8 @@ std::string ContextBuilder::pending() {
     for (const auto &item : expect(s_.results.failed(static_cast<KiottySpecItemKind>(0)), s_.failure)) {
         out += "- FAIL " + item.id + " " + item.title + "\n";
     }
-    for (const auto &milestone : expect(s_.items.ofKind(KIOTTY_SPEC_ITEM_KIND_MILESTONE), s_.failure)) {
-        for (const auto &entry : s_.milestones.entries(milestone.id)) {
+    for (const auto &milestone : expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_MILESTONE), s_.failure)) {
+        for (const auto &entry : expect(s_.milestones.entries(milestone.id), s_.failure)) {
             if (entry.state == KIOTTY_SPEC_IMPLEMENTATION_STATE_NEEDS_CHANGE) {
                 out += "- 변경 필요 " + entry.itemId + " (" + milestone.id + ")\n";
             }
@@ -363,9 +363,9 @@ std::string ContextBuilder::status() {
     for (const auto kind : {KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, KIOTTY_SPEC_ITEM_KIND_RULE, KIOTTY_SPEC_ITEM_KIND_INTERFACE,
                             KIOTTY_SPEC_ITEM_KIND_DESIGN, KIOTTY_SPEC_ITEM_KIND_UNIT_TEST, KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST,
                             KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST, KIOTTY_SPEC_ITEM_KIND_MILESTONE}) {
-        out += "| " + std::string(label(kind)) + " | " + std::to_string(expect(s_.items.ofKind(kind), s_.failure).size()) + " |\n";
+        out += "| " + std::string(label(kind)) + " | " + std::to_string(expect(s_.finder.ofKind(kind), s_.failure).size()) + " |\n";
     }
-    const auto progress = s_.milestones.progress();
+    const auto progress = expect(s_.milestones.progress(), s_.failure);
     out += "\n- 마일스톤 포함 항목: " + std::to_string(progress.total) + " (구현 완료 " + std::to_string(progress.implemented) +
            ", 변경 필요 " + std::to_string(progress.needsChange) + ")\n";
     out += "\n| 테스트 | 전체 | PASS | FAIL | 미실행 |\n| --- | --- | --- | --- | --- |\n";

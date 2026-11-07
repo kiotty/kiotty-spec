@@ -6,6 +6,8 @@
 #include "implementation/core/error.h"
 #include "implementation/domain/entity/names.h"
 #include "implementation/core/text.h"
+#include "implementation/core/text_view.h"
+#include "implementation/domain/entity/body_template.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -16,7 +18,7 @@
 #include <variant>
 
 struct KiottySpec {
-    explicit KiottySpec(const std::filesystem::path &root) : project(root) {}
+    explicit KiottySpec(std::string_view root) : project(root) {}
     kiotty::spec::implementation::Project project;
 };
 
@@ -55,6 +57,29 @@ Project &project(KiottySpec *db) {
 std::string str(const char *text, const char *what) {
     require(text != nullptr, KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, std::string(what) + " 이 NULL");
     return text;
+}
+
+SystemPath jsonlTarget(Project &p, const char *dir) {
+    if (dir == nullptr || *dir == '\0') return p.jsonlDir();
+    const auto joined = joinPath(boundedText(dir, MAX_SYSTEM_PATH_LENGTH), Span<const char>());
+    require(static_cast<bool>(joined), KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "경로가 너무 김");
+    return joined.value;
+}
+
+void markRemoved(ItemRecord &record) {
+    TitleText marked;
+    const std::string title = "[삭제됨] " + record.title;
+    if (marked.assign(spanOf(title)) == KIOTTY_SPEC_STATUS_SUCCESS) record.title = marked;
+}
+
+std::string exportMarkdown(Project &p, KiottySpecItemKind kind) {
+    std::string out = "# " + std::string(label(kind)) + "\n\n";
+    const auto items = expect(p.finder.ofKind(kind), p.failure());
+    if (items.empty()) return out + "없음\n";
+    for (const auto &item : items) {
+        out += p.context.renderItem(item, true);
+    }
+    return out;
 }
 
 std::optional<std::string> optStr(const char *text) {
@@ -130,7 +155,7 @@ KiottySpecStatus KiottySpec_open(const char *projectRoot, KiottySpec **outDb) {
     return guard([&] {
         out(outDb);
         *outDb = nullptr;
-        *outDb = new KiottySpec(pathFromUtf8(str(projectRoot, "projectRoot")));
+        *outDb = new KiottySpec(str(projectRoot, "projectRoot"));
     });
 }
 
@@ -315,8 +340,8 @@ KiottySpecStatus KiottySpec_Checkpoint_changedItemsBegin(KiottySpec *db, const c
         const int64_t from = cpSeq(db, cpFrom);
         const int64_t to = cpToOrNull != nullptr ? cpSeq(db, cpToOrNull) : kCurrent;
         std::vector<ItemRecord> records;
-        for (auto &change : expect(project(db).items.changedBetween(from, to), project(db).failure())) {
-            if (change.record.removed) change.record.title = "[삭제됨] " + change.record.title;
+        for (auto &change : expect(project(db).finder.changedBetween(from, to), project(db).failure())) {
+            if (change.record.removed) markRemoved(change.record);
             records.push_back(std::move(change.record));
         }
         cursorOf(outCursor, std::move(records));
@@ -330,15 +355,15 @@ KiottySpecStatus KiottySpec_Checkpoint_diff(KiottySpec *db, const char *cpA, con
         const int64_t a = cpSeq(db, cpA);
         const int64_t b = cpSeq(db, cpB);
         std::string md = "# " + checkpointName(a) + " → " + checkpointName(b) + "\n\n## 항목\n";
-        const auto changes = expect(p.items.changedBetween(std::min(a, b), std::max(a, b)), p.failure());
+        const auto changes = expect(p.finder.changedBetween(std::min(a, b), std::max(a, b)), p.failure());
         if (changes.empty()) md += "변경 없음\n";
         for (const auto &change : changes) {
             const char *what = change.record.removed ? "삭제" : change.added ? "추가" : "수정";
             md += "- " + std::string(what) + " " + change.record.id + " " + change.record.title + "\n";
         }
         md += "\n## 링크\n";
-        const auto before = expect(p.links.all(std::min(a, b)), p.failure());
-        const auto after = expect(p.links.all(std::max(a, b)), p.failure());
+        const auto before = expect(p.graph.all(std::min(a, b)), p.failure());
+        const auto after = expect(p.graph.all(std::max(a, b)), p.failure());
         const auto key = [](const LinkRecord &l) { return l.fromId + " " + std::string(name(l.type)) + " " + l.toId; };
         std::set<std::string> beforeKeys, afterKeys;
         for (const auto &l : before) beforeKeys.insert(key(l));
@@ -358,7 +383,7 @@ KiottySpecStatus KiottySpec_Checkpoint_diff(KiottySpec *db, const char *cpA, con
 
 KiottySpecStatus KiottySpec_Checkpoint_confirmCheck(KiottySpec *db, int32_t step, bool *outOk, char **outReport) {
     return guard([&] {
-        const auto verdict = project(db).checker.confirmCheck(step);
+        const auto verdict = expect(project(db).checker.confirmCheck(step), project(db).failure());
         *out(outOk) = verdict.ok;
         *out(outReport) = duplicateString(verdict.report);
     });
@@ -366,18 +391,18 @@ KiottySpecStatus KiottySpec_Checkpoint_confirmCheck(KiottySpec *db, int32_t step
 
 KiottySpecStatus KiottySpec_Checkpoint_releaseCheck(KiottySpec *db, bool *outOk, char **outReport) {
     return guard([&] {
-        const auto verdict = project(db).checker.releaseCheck();
+        const auto verdict = expect(project(db).checker.releaseCheck(), project(db).failure());
         *out(outOk) = verdict.ok;
         *out(outReport) = duplicateString(verdict.report);
     });
 }
 
 KiottySpecStatus KiottySpec_Checkpoint_position(KiottySpec *db, KiottySpecPosition **outPosition) {
-    return guard([&] { *out(outPosition) = packPosition(project(db).journey.position()); });
+    return guard([&] { *out(outPosition) = packPosition(expect(project(db).journey.position(), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Checkpoint_journeyBegin(KiottySpec *db, KiottySpecCursor **outCursor) {
-    return guard([&] { cursorOf(out(outCursor), project(db).journey.runs()); });
+    return guard([&] { cursorOf(out(outCursor), expect(project(db).journey.runs(), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Checkpoint_release(KiottySpec *db, KiottySpecActor actor, const char *note, char **outId) {
@@ -455,36 +480,36 @@ KiottySpecStatus KiottySpec_Item_listBegin(KiottySpec *db, const KiottySpecItemF
 }
 
 KiottySpecStatus KiottySpec_Item_childrenBegin(KiottySpec *db, const char *itemId, bool recursive, KiottySpecCursor **outCursor) {
-    return guard([&] { cursorOf(out(outCursor), expect(project(db).items.children(str(itemId, "itemId"), recursive), project(db).failure())); });
+    return guard([&] { cursorOf(out(outCursor), expect(project(db).finder.children(str(itemId, "itemId"), recursive), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Item_searchBegin(KiottySpec *db, const char *query, size_t limit, KiottySpecCursor **outCursor) {
-    return guard([&] { cursorOf(out(outCursor), expect(project(db).items.search(str(query, "query"), limit), project(db).failure())); });
+    return guard([&] { cursorOf(out(outCursor), expect(project(db).finder.search(str(query, "query"), limit), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Item_template(KiottySpecItemKind kind, KiottySpecItemCategory category, char **outMarkdown) {
-    return guard([&] { *out(outMarkdown) = duplicateString(ItemStore::bodyTemplate(kind, category)); });
+    return guard([&] { *out(outMarkdown) = duplicateString(bodyTemplate(kind, category)); });
 }
 
 KiottySpecStatus KiottySpec_Milestone_setEntryState(KiottySpec *db, KiottySpecActor actor, const char *milestoneId, const char *itemId, KiottySpecImplementationState state) {
     return guard([&] {
         actorOk(actor);
-        project(db).milestones.setEntryState(str(milestoneId, "milestoneId"), str(itemId, "itemId"), state);
+        expect(project(db).milestones.setEntryState(str(milestoneId, "milestoneId"), str(itemId, "itemId"), state), project(db).failure());
     });
 }
 
 KiottySpecStatus KiottySpec_Milestone_entriesBegin(KiottySpec *db, const char *milestoneId, KiottySpecCursor **outCursor) {
-    return guard([&] { cursorOf(out(outCursor), project(db).milestones.entries(str(milestoneId, "milestoneId"))); });
+    return guard([&] { cursorOf(out(outCursor), expect(project(db).milestones.entries(str(milestoneId, "milestoneId")), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Milestone_uncoveredBegin(KiottySpec *db, KiottySpecCursor **outCursor) {
-    return guard([&] { cursorOf(out(outCursor), project(db).milestones.uncovered()); });
+    return guard([&] { cursorOf(out(outCursor), expect(project(db).milestones.uncovered(), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Milestone_next(KiottySpec *db, char **outMilestoneId) {
     return guard([&] {
         out(outMilestoneId);
-        const auto next = project(db).milestones.next();
+        const auto next = expect(project(db).milestones.next(), project(db).failure());
         require(next.has_value(), KIOTTY_SPEC_STATUS_NOT_FOUND, "남은 마일스톤 없음");
         *outMilestoneId = duplicateString(*next);
     });
@@ -492,7 +517,7 @@ KiottySpecStatus KiottySpec_Milestone_next(KiottySpec *db, char **outMilestoneId
 
 KiottySpecStatus KiottySpec_Milestone_progress(KiottySpec *db, size_t *outTotal, size_t *outImplemented, size_t *outNeedsChange) {
     return guard([&] {
-        const auto progress = project(db).milestones.progress();
+        const auto progress = expect(project(db).milestones.progress(), project(db).failure());
         *out(outTotal) = progress.total;
         *out(outImplemented) = progress.implemented;
         *out(outNeedsChange) = progress.needsChange;
@@ -540,7 +565,7 @@ KiottySpecStatus KiottySpec_File_scanGuiDraft(KiottySpec *db, const char *fileId
     return guard([&] {
         out(outUnknownIds);
         out(outMissingViews);
-        auto result = expect(project(db).links.scanGuiDraft(str(fileId, "fileId")), project(db).failure());
+        auto result = expect(project(db).graph.scanGuiDraft(str(fileId, "fileId")), project(db).failure());
         cursorOf(outUnknownIds, std::move(result.unknownIds));
         cursorOf(outMissingViews, std::move(result.missingViews));
     });
@@ -568,21 +593,21 @@ KiottySpecStatus KiottySpec_Link_listBegin(KiottySpec *db, const char *id, Kiott
 }
 
 KiottySpecStatus KiottySpec_Link_upstreamBegin(KiottySpec *db, const char *id, int32_t depth, KiottySpecCursor **outCursor) {
-    return guard([&] { cursorOf(out(outCursor), expect(project(db).links.traverse(str(id, "id"), KIOTTY_SPEC_DIRECTION_UPSTREAM, depth), project(db).failure())); });
+    return guard([&] { cursorOf(out(outCursor), expect(project(db).graph.traverse(str(id, "id"), KIOTTY_SPEC_DIRECTION_UPSTREAM, depth), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Link_downstreamBegin(KiottySpec *db, const char *id, int32_t depth, KiottySpecCursor **outCursor) {
-    return guard([&] { cursorOf(out(outCursor), expect(project(db).links.traverse(str(id, "id"), KIOTTY_SPEC_DIRECTION_DOWNSTREAM, depth), project(db).failure())); });
+    return guard([&] { cursorOf(out(outCursor), expect(project(db).graph.traverse(str(id, "id"), KIOTTY_SPEC_DIRECTION_DOWNSTREAM, depth), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Link_impactBegin(KiottySpec *db, const char *sinceCpId, KiottySpecCursor **outCursor) {
-    return guard([&] { cursorOf(out(outCursor), expect(project(db).links.impactSince(cpSeq(db, sinceCpId)), project(db).failure())); });
+    return guard([&] { cursorOf(out(outCursor), expect(project(db).graph.impactSince(cpSeq(db, sinceCpId)), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Link_scopeOf(KiottySpec *db, const char *designOrFileId, KiottySpecScope *outScope, KiottySpecCursor **outAffectedModules) {
     return guard([&] {
         auto &p = project(db);
-        auto result = expect(p.links.scopeOf(str(designOrFileId, "id")), p.failure());
+        auto result = expect(p.graph.scopeOf(str(designOrFileId, "id")), p.failure());
         *out(outScope) = result.scope;
         if (outAffectedModules != nullptr) {
             std::vector<ItemRecord> modules;
@@ -595,7 +620,7 @@ KiottySpecStatus KiottySpec_Link_scopeOf(KiottySpec *db, const char *designOrFil
 }
 
 KiottySpecStatus KiottySpec_Link_matrix(KiottySpec *db, KiottySpecItemKind rowKind, KiottySpecItemKind colKind, char **outCsv) {
-    return guard([&] { *out(outCsv) = duplicateString(expect(project(db).links.matrix(rowKind, colKind), project(db).failure())); });
+    return guard([&] { *out(outCsv) = duplicateString(expect(project(db).graph.matrix(rowKind, colKind), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_ChangeRequest_create(KiottySpec *db, KiottySpecActor actor, KiottySpecChangeSource source, const char *body, int32_t entryStep, char **outId) {
@@ -686,16 +711,16 @@ KiottySpecStatus KiottySpec_Result_summary(KiottySpec *db, KiottySpecItemKind ki
 }
 
 KiottySpecStatus KiottySpec_Result_suspectsBegin(KiottySpec *db, const char *failedTargetId, KiottySpecCursor **outCursor) {
-    return guard([&] { cursorOf(out(outCursor), expect(project(db).links.suspects(str(failedTargetId, "failedTargetId")), project(db).failure())); });
+    return guard([&] { cursorOf(out(outCursor), expect(project(db).graph.suspects(str(failedTargetId, "failedTargetId")), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Check_requirementsWithoutCriteriaBegin(KiottySpec *db, KiottySpecCursor **outCursor) {
-    return guard([&] { cursorOf(out(outCursor), project(db).checker.requirementsWithoutCriteria()); });
+    return guard([&] { cursorOf(out(outCursor), expect(project(db).checker.requirementsWithoutCriteria(), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Check_systemTestOneToOne(KiottySpec *db, KiottySpecCursor **outMissing, KiottySpecCursor **outDuplicated) {
     return guard([&] {
-        auto result = project(db).checker.oneToOne(KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST);
+        auto result = expect(project(db).checker.oneToOne(KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST), project(db).failure());
         cursorOf(out(outMissing), std::move(result.missing));
         cursorOf(out(outDuplicated), std::move(result.duplicated));
     });
@@ -703,22 +728,22 @@ KiottySpecStatus KiottySpec_Check_systemTestOneToOne(KiottySpec *db, KiottySpecC
 
 KiottySpecStatus KiottySpec_Check_e2eTestOneToOne(KiottySpec *db, KiottySpecCursor **outMissing, KiottySpecCursor **outDuplicated) {
     return guard([&] {
-        auto result = project(db).checker.oneToOne(KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST);
+        auto result = expect(project(db).checker.oneToOne(KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST), project(db).failure());
         cursorOf(out(outMissing), std::move(result.missing));
         cursorOf(out(outDuplicated), std::move(result.duplicated));
     });
 }
 
 KiottySpecStatus KiottySpec_Check_unlinkedBegin(KiottySpec *db, KiottySpecItemKind kind, KiottySpecCursor **outCursor) {
-    return guard([&] { cursorOf(out(outCursor), project(db).checker.unlinked(kind)); });
+    return guard([&] { cursorOf(out(outCursor), expect(project(db).checker.unlinked(kind), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Check_orphanTestsBegin(KiottySpec *db, KiottySpecCursor **outCursor) {
-    return guard([&] { cursorOf(out(outCursor), project(db).checker.orphanTests()); });
+    return guard([&] { cursorOf(out(outCursor), expect(project(db).checker.orphanTests(), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Check_all(KiottySpec *db, char **outReport) {
-    return guard([&] { *out(outReport) = duplicateString(project(db).checker.all()); });
+    return guard([&] { *out(outReport) = duplicateString(expect(project(db).checker.all(), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Context_forStep(KiottySpec *db, int32_t step, size_t maxBytes, char **outMarkdown) {
@@ -746,7 +771,7 @@ KiottySpecStatus KiottySpec_Context_pending(KiottySpec *db, char **outMarkdown) 
 }
 
 KiottySpecStatus KiottySpec_Context_whereAmI(KiottySpec *db, size_t maxBytes, char **outMarkdown) {
-    return guard([&] { *out(outMarkdown) = duplicateString(project(db).journey.whereAmI(maxBytes)); });
+    return guard([&] { *out(outMarkdown) = duplicateString(expect(project(db).journey.whereAmI(maxBytes), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Context_status(KiottySpec *db, char **outMarkdown) {
@@ -754,17 +779,18 @@ KiottySpecStatus KiottySpec_Context_status(KiottySpec *db, char **outMarkdown) {
 }
 
 KiottySpecStatus KiottySpec_Export_markdown(KiottySpec *db, KiottySpecItemKind kind, char **outMarkdown) {
-    return guard([&] { *out(outMarkdown) = duplicateString(project(db).exchange.exportMarkdown(kind)); });
+    return guard([&] { *out(outMarkdown) = duplicateString(exportMarkdown(project(db), kind)); });
 }
 
 KiottySpecStatus KiottySpec_Export_traceReport(KiottySpec *db, char **outMarkdown) {
-    return guard([&] { *out(outMarkdown) = duplicateString(project(db).exchange.traceReport()); });
+    return guard([&] { *out(outMarkdown) = duplicateString(expect(project(db).exchange.traceReport(), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Export_jsonl(KiottySpec *db, const char *dir) {
     return guard([&] {
         auto &p = project(db);
-        p.exchange.exportJsonl(dir != nullptr && *dir != '\0' ? pathFromUtf8(dir) : p.jsonlDir());
+        const SystemPath target = jsonlTarget(p, dir);
+        expect(p.exchange.exportJsonl(target.view()), p.failure());
     });
 }
 
@@ -772,7 +798,8 @@ KiottySpecStatus KiottySpec_Import_jsonl(KiottySpec *db, const char *dir, bool m
     KiottySpecStatus conflictStatus = KIOTTY_SPEC_STATUS_SUCCESS;
     const KiottySpecStatus status = guard([&] {
         auto &p = project(db);
-        const auto report = p.exchange.importJsonl(dir != nullptr && *dir != '\0' ? pathFromUtf8(dir) : p.jsonlDir(), merge);
+        const SystemPath target = jsonlTarget(p, dir);
+        const auto report = expect(p.exchange.importJsonl(target.view(), merge), p.failure());
         std::string text = std::to_string(report.rows) + " rows\n";
         for (const auto &conflict : report.conflicts) text += "conflict " + conflict + "\n";
         if (outConflictReport != nullptr) *outConflictReport = duplicateString(text);
@@ -784,13 +811,13 @@ KiottySpecStatus KiottySpec_Import_jsonl(KiottySpec *db, const char *dir, bool m
 KiottySpecStatus KiottySpec_Import_markdown(KiottySpec *db, KiottySpecActor actor, KiottySpecItemKind kind, const char *markdown, KiottySpecCursor **outCreatedIds) {
     return guard([&] {
         actorOk(actor);
-        auto ids = project(db).exchange.importMarkdown(kind, str(markdown, "markdown"));
+        auto ids = expect(project(db).exchange.importMarkdown(kind, str(markdown, "markdown")), project(db).failure());
         if (outCreatedIds != nullptr) cursorOf(outCreatedIds, std::move(ids));
     });
 }
 
 KiottySpecStatus KiottySpec_Query_readonly(KiottySpec *db, const char *sql, char **outJson) {
-    return guard([&] { *out(outJson) = duplicateString(project(db).exchange.queryReadonly(str(sql, "sql"))); });
+    return guard([&] { *out(outJson) = duplicateString(expect(project(db).exchange.queryReadonly(str(sql, "sql")), project(db).failure())); });
 }
 
 KiottySpecStatus KiottySpec_Schema_version(KiottySpec *db, int32_t *outVersion) {
