@@ -112,7 +112,7 @@ int64_t Project::release(KiottySpecActor actor, std::string_view note) {
     requireUser(actor, "RELEASE");
     const auto verdict = checker.releaseCheck();
     require(verdict.ok, KIOTTY_SPEC_STATUS_PRECONDITION, "RELEASE 조건 미충족 (R-10):\n" + verdict.report);
-    Savepoint savepoint(db_);
+    LegacySavepoint savepoint(db_);
     const int64_t seq = checkpoints.create(10, note, KIOTTY_SPEC_CHECKPOINT_PURPOSE_RELEASE);
     checkpoints.markConfirmed(seq);
     savepoint.commit();
@@ -133,7 +133,7 @@ size_t Project::prune(KiottySpecActor actor, std::string_view baseCpId) {
 }
 
 void Project::removeItem(std::string_view itemId) {
-    Savepoint savepoint(db_);
+    LegacySavepoint savepoint(db_);
     items.get(itemId);
     links.removeAllFor(itemId);
     items.remove(itemId);

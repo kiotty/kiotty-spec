@@ -1,0 +1,35 @@
+#pragma once
+
+#include "kiotty_spec.h"
+#include "implementation/core/result.h"
+#include "implementation/core/span.h"
+#include "implementation/data/datasource/query.h"
+
+#include <cstdint>
+
+struct sqlite3;
+
+namespace kiotty::spec::implementation {
+
+class Connection
+{
+public:
+    Connection() = default;
+    ~Connection();
+
+    Connection(const Connection&) = delete;
+    Connection& operator=(const Connection&) = delete;
+
+    KiottySpecStatus open(Span<const char> path);
+    KiottySpecStatus execute(Span<const char> sql);
+    Result<Query, KiottySpecStatus> prepare(Span<const char> sql);
+    int64_t insertedRowId() const;
+    int64_t changedRowCount() const;
+    Span<const char> message() const;
+
+private:
+    sqlite3* _database {nullptr};
+    int _open_code {0};
+};
+
+}

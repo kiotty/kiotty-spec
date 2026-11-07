@@ -129,7 +129,7 @@ KiottySpecSizeResult KiottySpec_readLastError(KiottySpecContext *context, char *
 
 각 단계는 `ks` 기준 출력 비교와 jsonl 내보내기 비교를 통과해야 다음으로 넘어간다.
 
-1. `data/datasource` 의 DB 래퍼를 `Result` 반환으로 바꾼다. 위 계층은 임시 변환 함수로 기존 흐름을 유지한다.
+1. `data/datasource` 의 DB 래퍼를 `Result` 반환으로 바꾼다. 위 계층은 임시 변환 함수로 기존 흐름을 유지한다. **완료**: `Connection`, `Query`, `Row`, `Savepoint` 와 임시 변환층 `database.h`.
 2. `data/repository` 를 고정 크기 레코드와 `Result` 로 바꾼다.
 3. `domain/usecases` 를 바꾼다.
 4. `context/` 에 컨텍스트, 커서 풀, 작업 버퍼를 만든다.
@@ -138,5 +138,5 @@ KiottySpecSizeResult KiottySpec_readLastError(KiottySpecContext *context, char *
 
 ## 5. 남은 위험
 
-- `std::regex` 와 `std::filesystem` 은 예외를 던진다. 1단계 전에 대체 구현이 필요하다.
-- SQLite 와 nlohmann/json 은 내부에서 힙을 쓴다. 개발수칙 1.1 편차로 `docs/deviations.md` 에 기록해야 한다.
+- `std::regex` 와 `std::filesystem` 은 예외를 던진다. 2·3단계에서 대체한다.
+- 편차와 해소 계획은 `docs/deviations.md` 에 적는다.

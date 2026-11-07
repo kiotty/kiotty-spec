@@ -56,7 +56,7 @@ std::string ItemStore::create(KiottySpecItemKind kind, KiottySpecItemCategory ca
     require(idPrefix(kind) != "ITEM", KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "알 수 없는 kind");
     validateCategory(kind, category);
     require(!trim(title).empty(), KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "title 이 비어 있음");
-    Savepoint savepoint(db_);
+    LegacySavepoint savepoint(db_);
     ItemRecord record;
     record.id = meta_.nextId(idPrefix(kind), 3);
     validateParent(record.id, parentId);

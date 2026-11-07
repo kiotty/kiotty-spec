@@ -28,7 +28,7 @@ CheckpointRecord readCheckpoint(const Statement &stmt) {
 
 int64_t CheckpointStore::create(int32_t step, std::string_view note, KiottySpecCheckpointPurpose purpose) {
     require(step >= 1 && step <= 10, KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "step 은 1 ~ 10 이어야 함");
-    Savepoint savepoint(db_);
+    LegacySavepoint savepoint(db_);
     db_.prepare("INSERT INTO checkpoint (step, confirmed, purpose, note, created_at) VALUES (?1, 0, ?2, ?3, ?4)")
         .bindAll(step, name(purpose), note, nowEpochSeconds())
         .run();
@@ -115,7 +115,7 @@ size_t CheckpointStore::pendingWriteCount() {
 }
 
 size_t CheckpointStore::prune(int64_t baseSeq) {
-    Savepoint savepoint(db_);
+    LegacySavepoint savepoint(db_);
     size_t removed = 0;
     for (const auto &table : versionedTables()) {
         const std::string name(table.name);

@@ -20,9 +20,9 @@ nlohmann::ordered_json orderedRow(const Statement &stmt) {
     for (int i = 0; i < stmt.columnCount(); ++i) {
         const std::string column = stmt.columnName(i);
         switch (stmt.columnType(i)) {
-        case ColumnType::Integer: row[column] = stmt.integer(i); break;
-        case ColumnType::Float: row[column] = stmt.real(i); break;
-        case ColumnType::Null: row[column] = nullptr; break;
+        case ColumnType::INTEGER: row[column] = stmt.integer(i); break;
+        case ColumnType::FLOAT: row[column] = stmt.real(i); break;
+        case ColumnType::NULL_VALUE: row[column] = nullptr; break;
         default: row[column] = stmt.text(i); break;
         }
     }
@@ -100,7 +100,7 @@ void Exchange::exportJsonl(const std::filesystem::path &dir) {
 
 ImportReport Exchange::importJsonl(const std::filesystem::path &dir, bool merge) {
     ImportReport report;
-    Savepoint savepoint(db_);
+    LegacySavepoint savepoint(db_);
     for (const auto table : allTables()) {
         const auto content = readFile(dir / (std::string(table) + ".jsonl"));
         if (!content) continue;
@@ -164,7 +164,7 @@ ImportReport Exchange::importJsonl(const std::filesystem::path &dir, bool merge)
 
 std::vector<std::string> Exchange::importMarkdown(KiottySpecItemKind kind, std::string_view markdown) {
     std::vector<std::string> created;
-    Savepoint savepoint(db_);
+    LegacySavepoint savepoint(db_);
     for (auto &section : splitSections(markdown, 2)) {
         std::string title = section.heading;
         KiottySpecItemCategory category = splitCategory(title);

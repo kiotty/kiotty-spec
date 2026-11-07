@@ -1,26 +1,20 @@
 #pragma once
 
+#include "implementation/data/datasource/column_type.h"
+#include "implementation/data/datasource/connection.h"
+#include "implementation/data/datasource/query.h"
+#include "implementation/data/datasource/savepoint.h"
+
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
 
-struct sqlite3;
-struct sqlite3_stmt;
-
 namespace kiotty::spec::implementation {
-
-enum class ColumnType { Integer, Float, Text, Blob, Null };
 
 class Statement {
 public:
-    Statement(sqlite3 *db, std::string_view sql);
-    ~Statement();
-
-    Statement(const Statement &) = delete;
-    Statement &operator=(const Statement &) = delete;
-    Statement(Statement &&other) noexcept;
-    Statement &operator=(Statement &&) = delete;
+    Statement(Connection &connection, Query query);
 
     template <class... Args>
     Statement &bindAll(const Args &...args) {
@@ -42,7 +36,6 @@ public:
 
     bool step();
     void run();
-    void reset();
 
     int columnCount() const;
     std::string columnName(int column) const;
@@ -56,14 +49,15 @@ public:
     bool readOnly() const;
 
 private:
-    sqlite3 *db_;
-    sqlite3_stmt *stmt_;
+    void check(KiottySpecStatus status, std::string_view what) const;
+
+    Connection &connection_;
+    Query query_;
 };
 
 class Database {
 public:
     explicit Database(const std::string &utf8Path);
-    ~Database();
 
     Database(const Database &) = delete;
     Database &operator=(const Database &) = delete;
@@ -72,24 +66,21 @@ public:
     Statement prepare(std::string_view sql);
     int64_t lastInsertRowId() const;
     int64_t changes() const;
+    Connection &connection() { return connection_; }
 
 private:
-    sqlite3 *db_ = nullptr;
+    Connection connection_;
 };
 
-class Savepoint {
+class LegacySavepoint {
 public:
-    explicit Savepoint(Database &db);
-    ~Savepoint();
-
-    Savepoint(const Savepoint &) = delete;
-    Savepoint &operator=(const Savepoint &) = delete;
+    explicit LegacySavepoint(Database &db);
 
     void commit();
 
 private:
     Database &db_;
-    bool done_ = false;
+    Savepoint savepoint_;
 };
 
 }

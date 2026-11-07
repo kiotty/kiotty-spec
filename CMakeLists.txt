@@ -79,3 +79,13 @@ set_target_properties(kiotty_core_test PROPERTIES
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF)
 kiotty_warnings(kiotty_core_test)
+
+add_executable(kiotty_datasource_test
+    tests/datasource/datasource_test.cpp
+    src/implementation/data/datasource/connection.cpp
+    src/implementation/data/datasource/query.cpp
+    src/implementation/data/datasource/row.cpp
+    src/implementation/data/datasource/savepoint.cpp)
+target_include_directories(kiotty_datasource_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(kiotty_datasource_test PRIVATE kiotty_sqlite3)
+kiotty_warnings(kiotty_datasource_test)
