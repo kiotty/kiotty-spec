@@ -2,11 +2,11 @@
 
 #include "kiotty_spec.h"
 
-#include "implementation/context/context.h"
-#include "implementation/core/text_view.h"
+#include "implementation/context/kiotty_context.h"
+#include "implementation/core/kiotty_text_view.h"
 
 #include <cstring>
-#include <new>
+#include <memory>
 #include <string>
 
 namespace impl = kiotty::spec::implementation;
@@ -125,14 +125,14 @@ KiottySpecContextResult KiottySpec_createContext(const KiottySpecConfiguration* 
     if (configuration->max_cursors != 0) { settings.maxCursors = configuration->max_cursors; }
     if (configuration->max_cursor_rows != 0) { settings.maxCursorRows = configuration->max_cursor_rows; }
     if (configuration->work_buffer_bytes != 0) { settings.workBufferBytes = configuration->work_buffer_bytes; }
-    KiottySpecContext* context = new (std::nothrow) KiottySpecContext(settings);
-    if (context == nullptr) { return KiottySpecContextResult{KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, nullptr}; }
+    // 할당 실패는 process 종료다 (개발수칙 1.1). 소유권은 releaseContext 가 되찾는다.
+    KiottySpecContext* context = std::make_unique<KiottySpecContext>(settings).release();
     const KiottySpecStatus opened = context->context.open(spanOf(configuration->project_root));
     // 실패해도 컨텍스트를 돌려주어 readLastError 로 이유를 읽게 한다. 호출자가 releaseContext 로 닫는다.
     return KiottySpecContextResult{opened, context};
 }
 
-void KiottySpec_releaseContext(KiottySpecContext* context) { delete context; }
+void KiottySpec_releaseContext(KiottySpecContext* context) { const std::unique_ptr<KiottySpecContext> owner(context); }
 
 KiottySpecSizeResult KiottySpec_readLastError(KiottySpecContext* context, char* buffer, size_t capacity)
 {

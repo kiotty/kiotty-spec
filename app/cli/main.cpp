@@ -1,5 +1,5 @@
-#include "path_utf8.h"
-#include "session.h"
+#include "kiotty_path_utf8.h"
+#include "kiotty_session.h"
 
 #include "kiotty_spec.h"
 

@@ -83,7 +83,7 @@ kiotty_no_exceptions(ks)
 # ---------------------------------------------------------------------------
 # core 단위 테스트: 개발수칙 0.1 에 따라 C++17 로 빌드한다.
 # ---------------------------------------------------------------------------
-add_executable(kiotty_core_test tests/core/core_test.cpp src/implementation/core/text_diff.cpp)
+add_executable(kiotty_core_test tests/core/core_test.cpp src/implementation/core/kiotty_text_diff.cpp)
 target_include_directories(kiotty_core_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src/implementation/core)
 set_target_properties(kiotty_core_test PROPERTIES
     CXX_STANDARD 17
@@ -94,10 +94,10 @@ kiotty_no_exceptions(kiotty_core_test)
 
 add_executable(kiotty_datasource_test
     tests/datasource/datasource_test.cpp
-    src/implementation/data/datasource/connection.cpp
-    src/implementation/data/datasource/query.cpp
-    src/implementation/data/datasource/row.cpp
-    src/implementation/data/datasource/savepoint.cpp)
+    src/implementation/data/datasource/kiotty_connection.cpp
+    src/implementation/data/datasource/kiotty_query.cpp
+    src/implementation/data/datasource/kiotty_row.cpp
+    src/implementation/data/datasource/kiotty_savepoint.cpp)
 target_include_directories(kiotty_datasource_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(kiotty_datasource_test PRIVATE kiotty_sqlite3)
 kiotty_warnings(kiotty_datasource_test)
@@ -105,16 +105,16 @@ kiotty_no_exceptions(kiotty_datasource_test)
 
 add_executable(kiotty_context_test
     tests/context/context_test.cpp
-    src/implementation/context/cursor_pool.cpp)
+    src/implementation/context/kiotty_cursor_pool.cpp)
 target_include_directories(kiotty_context_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 kiotty_warnings(kiotty_context_test)
 kiotty_no_exceptions(kiotty_context_test)
 
 add_executable(kiotty_model_test
     tests/model/model_test.cpp
-    src/implementation/domain/entity/item_id.cpp
-    src/implementation/domain/entity/kind.cpp
-    src/implementation/domain/usecases/model_catalog.cpp)
+    src/implementation/domain/entity/kiotty_item_id.cpp
+    src/implementation/domain/entity/kiotty_kind.cpp
+    src/implementation/domain/usecases/kiotty_model_catalog.cpp)
 target_include_directories(kiotty_model_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 kiotty_warnings(kiotty_model_test)
 kiotty_no_exceptions(kiotty_model_test)
