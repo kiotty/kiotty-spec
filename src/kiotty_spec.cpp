@@ -81,7 +81,7 @@ bool isKind(uint32_t kind) { return entity::isValidKind(kind); }
 
 impl::Result<entity::ItemHandle, KiottySpecStatus> resolve(impl::Context& context, KiottySpecText id)
 {
-    const auto found = context.workspace().items.find(spanOf(id));
+    const auto found = context.workspace().items.reader().find(spanOf(id));
     if (!found) {
         return impl::Result<entity::ItemHandle, KiottySpecStatus>::failure(
             context.failure().raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {impl::literalText("없는 항목: "), spanOf(id)}));
@@ -206,7 +206,7 @@ KiottySpecItemResult KiottySpec_readItemByHandle(KiottySpecContext* context, Kio
         result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
         return result;
     }
-    const auto record = context->context.workspace().items.get(fromHandle(item));
+    const auto record = context->context.workspace().items.reader().get(fromHandle(item));
     result.code = record.code;
     if (record) {
         result.handle = item;
@@ -267,7 +267,7 @@ KiottySpecSizeResult KiottySpec_readItemBody(KiottySpecContext* context, KiottyS
     if (context == nullptr) { return KiottySpecSizeResult{KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, 0}; }
     const auto handle = resolve(context->context, id);
     if (!handle) { return KiottySpecSizeResult{handle.code, 0}; }
-    const auto read = context->context.workspace().items.readBody(handle.value, buffer, capacity);
+    const auto read = context->context.workspace().items.reader().readBody(handle.value, buffer, capacity);
     return KiottySpecSizeResult{read.code, read.value};
 }
 
@@ -285,7 +285,7 @@ KiottySpecTagResult KiottySpec_readItemTag(KiottySpecContext* context, KiottySpe
         return result;
     }
     impl::Workspace& workspace = context->context.workspace();
-    const auto record = workspace.items.get(fromHandle(item));
+    const auto record = workspace.items.reader().get(fromHandle(item));
     if (!record) {
         result.code = record.code;
         return result;
@@ -295,14 +295,14 @@ KiottySpecTagResult KiottySpec_readItemTag(KiottySpecContext* context, KiottySpe
         return result;
     }
     result.code = KIOTTY_SPEC_STATUS_SUCCESS;
-    result.value = KiottySpecTag{item, static_cast<KiottySpecItemKind>(record.value->kind), tag, workspace.items.tagValue(fromHandle(item), tag)};
+    result.value = KiottySpecTag{item, static_cast<KiottySpecItemKind>(record.value->kind), tag, workspace.items.tags().value(fromHandle(item), tag)};
     return result;
 }
 
 KiottySpecCursorResult KiottySpec_openTagCursor(KiottySpecContext* context, KiottySpecItemHandle item)
 {
     if (context == nullptr) { return KiottySpecCursorResult{KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, 0, 0}; }
-    if (!context->context.workspace().items.get(fromHandle(item))) { return KiottySpecCursorResult{KIOTTY_SPEC_STATUS_INVALID_HANDLE, 0, 0}; }
+    if (!context->context.workspace().items.reader().get(fromHandle(item))) { return KiottySpecCursorResult{KIOTTY_SPEC_STATUS_INVALID_HANDLE, 0, 0}; }
     return cursorResult(context->context, context->context.finder().tags(fromHandle(item)));
 }
 
@@ -393,7 +393,7 @@ KiottySpecStatusResult KiottySpec_fetchItemPage(KiottySpecContext* context, Kiot
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     impl::ItemStore& items = context->context.workspace().items;
     return fetchPage(context->context, cursor, impl::CursorKind::ITEM, page, [&](const impl::CursorRow& row, size_t index) {
-        const auto record = items.get(fromHandle(row.first));
+        const auto record = items.reader().get(fromHandle(row.first));
         if (!record) { return false; }
         page->elements[index] = toItem(*record.value);
         return true;
@@ -405,7 +405,7 @@ KiottySpecStatusResult KiottySpec_fetchIdPage(KiottySpecContext* context, Kiotty
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     impl::ItemStore& items = context->context.workspace().items;
     return fetchPage(context->context, cursor, impl::CursorKind::ID, page, [&](const impl::CursorRow& row, size_t index) {
-        const auto record = items.get(fromHandle(row.first));
+        const auto record = items.reader().get(fromHandle(row.first));
         if (!record) { return false; }
         copyText(page->elements[index], record.value->id);
         return true;
@@ -625,7 +625,7 @@ KiottySpecStatusResult KiottySpec_fetchItemDiffPage(KiottySpecContext* context, 
         element = KiottySpecItemDiff{};
         element.before = diff.before;
         element.after = diff.after;
-        const auto handle = items.find(diff.id.view());
+        const auto handle = items.reader().find(diff.id.view());
         element.item = handle ? toHandle(handle.value) : KIOTTY_SPEC_INVALID_ITEM_HANDLE;
         element.kind = static_cast<KiottySpecItemKind>(diff.kind);
         element.change = static_cast<KiottySpecChange>(diff.change);
@@ -676,7 +676,7 @@ KiottySpecItemResult KiottySpec_readItemAt(KiottySpecContext* context, KiottySpe
     const auto version = differ.itemAt(spanOf(id), point.value);
     result.code = version.code;
     if (!version) { return result; }
-    const auto handle = context->context.workspace().items.find(spanOf(id));
+    const auto handle = context->context.workspace().items.reader().find(spanOf(id));
     result.handle = handle ? toHandle(handle.value) : KIOTTY_SPEC_INVALID_ITEM_HANDLE;
     result.value = toItem(version.value.record);
     return result;
@@ -706,7 +706,7 @@ KiottySpecTagResult KiottySpec_readItemTagAt(KiottySpecContext* context, KiottyS
     }
     const auto value = differ.tagAt(spanOf(id), tag, point.value);
     result.code = value.code;
-    const auto handle = context->context.workspace().items.find(spanOf(id));
+    const auto handle = context->context.workspace().items.reader().find(spanOf(id));
     result.value = KiottySpecTag{handle ? toHandle(handle.value) : KIOTTY_SPEC_INVALID_ITEM_HANDLE, static_cast<KiottySpecItemKind>(version.value.record.kind),
                                  tag, value ? value.value : 0};
     return result;
@@ -742,7 +742,7 @@ KiottySpecCursorResult KiottySpec_openTextDiffCursor(KiottySpecContext* context,
     if (field != KIOTTY_SPEC_TEXT_FIELD_TITLE && field != KIOTTY_SPEC_TEXT_FIELD_SUMMARY) {
         return KiottySpecCursorResult{context->context.failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {impl::literalText("글자 diff 는 제목이나 요약 하나에만 쓴다")}), 0, 0};
     }
-    if (!context->context.workspace().items.get(fromHandle(item))) { return KiottySpecCursorResult{KIOTTY_SPEC_STATUS_INVALID_HANDLE, 0, 0}; }
+    if (!context->context.workspace().items.reader().get(fromHandle(item))) { return KiottySpecCursorResult{KIOTTY_SPEC_STATUS_INVALID_HANDLE, 0, 0}; }
     const auto range = differ.range(from, to);
     if (!range) { return KiottySpecCursorResult{range.code, 0, 0}; }
     return cursorResult(context->context, differ.openText(fromHandle(item), static_cast<uint32_t>(field), range.value));

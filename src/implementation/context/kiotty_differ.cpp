@@ -307,7 +307,7 @@ Result<ItemVersion, KiottySpecStatus> Differ::itemAt(Span<const char> id, uint32
     version.record.summary.assign(row.text(4));
     if (!row.isNull(2)) {
         version.parent_id.assign(row.text(2));
-        const auto parent = _w.items.find(row.text(2));
+        const auto parent = _w.items.reader().find(row.text(2));
         if (parent) { version.record.parent = parent.value; }
     }
     return VersionResult::success(version);
@@ -385,7 +385,7 @@ CursorIdResult Differ::openText(entity::ItemHandle item, uint32_t field, DiffRan
     if (field != KIOTTY_SPEC_TEXT_FIELD_TITLE && field != KIOTTY_SPEC_TEXT_FIELD_SUMMARY) {
         return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("글자 diff 는 제목이나 요약 하나에만 쓴다")}));
     }
-    const auto record = _w.items.get(item);
+    const auto record = _w.items.reader().get(item);
     if (!record) { return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_HANDLE, {literalText("항목 핸들이 무효임")})); }
     const IdText id = record.value->id;
     const auto before = itemAt(id.view(), range.from);

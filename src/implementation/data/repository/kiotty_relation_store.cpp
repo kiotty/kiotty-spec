@@ -43,8 +43,8 @@ KiottySpecStatus RelationStore::load()
         if (!stepped) { return _storage.check(stepped.code); }
         if (!stepped.value) { break; }
         const Row row = query.value.row();
-        const auto from = _items.find(row.text(0));
-        const auto to = _items.find(row.text(3));
+        const auto from = _items.reader().find(row.text(0));
+        const auto to = _items.reader().find(row.text(3));
         if (!from || !to) { continue; }
         if (_length == _records.size()) { return _storage.reject(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("관계 수가 max_relations 를 넘음")}); }
         const uint32_t model = entity::parseKind(viewOf(row.text(1)));
@@ -73,8 +73,8 @@ bool RelationStore::contains(const RelationRecord& relation) const
 
 KiottySpecStatus RelationStore::writeVersion(const RelationRecord& relation, bool removed, uint32_t sequence)
 {
-    const auto from = _items.get(relation.from);
-    const auto to = _items.get(relation.to);
+    const auto from = _items.reader().get(relation.from);
+    const auto to = _items.reader().get(relation.to);
     if (!from || !to) { return KIOTTY_SPEC_STATUS_INVALID_HANDLE; }
     auto query = _storage.prepare(literalText(WRITE_SQL));
     if (!query) { return query.code; }

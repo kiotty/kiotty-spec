@@ -46,14 +46,14 @@ CursorIdResult Finder::items(uint32_t kind, Span<const TagQuery> queries)
 {
     const auto cursor = _cursors.open(CursorKind::ITEM);
     if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
-    for (size_t position = 0; position < _w.items.count(); ++position) {
-        const ItemHandle handle = _w.items.handleInIdOrder(position);
-        const auto item = _w.items.get(handle);
+    for (size_t position = 0; position < _w.items.reader().count(); ++position) {
+        const ItemHandle handle = _w.items.reader().handleInIdOrder(position);
+        const auto item = _w.items.reader().get(handle);
         if (!item) { continue; }
         if (kind != 0 && static_cast<uint32_t>(item.value->kind) != kind) { continue; }
         bool selected = true;
         for (const TagQuery& query : queries) {
-            if (query.kind != item.value->kind || (_w.items.tagValue(handle, query.tag) & query.mask) == 0) {
+            if (query.kind != item.value->kind || (_w.items.tags().value(handle, query.tag) & query.mask) == 0) {
                 selected = false;
                 break;
             }
@@ -71,9 +71,9 @@ CursorIdResult Finder::children(ItemHandle parent)
 {
     const auto cursor = _cursors.open(CursorKind::ITEM);
     if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
-    for (size_t position = 0; position < _w.items.count(); ++position) {
-        const ItemHandle handle = _w.items.handleInIdOrder(position);
-        const auto item = _w.items.get(handle);
+    for (size_t position = 0; position < _w.items.reader().count(); ++position) {
+        const ItemHandle handle = _w.items.reader().handleInIdOrder(position);
+        const auto item = _w.items.reader().get(handle);
         if (!item || !item.value->parent.isValid() || item.value->parent.index != parent.index) { continue; }
         CursorRow row;
         row.first = packHandle(handle);
@@ -104,8 +104,8 @@ CursorIdResult Finder::impact(ItemHandle item, uint32_t depth)
         }
     }
     // 시작 항목을 빼고 ID 순서로 담는다.
-    for (size_t position = 0; position < _w.items.count(); ++position) {
-        const ItemHandle handle = _w.items.handleInIdOrder(position);
+    for (size_t position = 0; position < _w.items.reader().count(); ++position) {
+        const ItemHandle handle = _w.items.reader().handleInIdOrder(position);
         if (handle.index == item.index || _visited[handle.index] == 0) { continue; }
         CursorRow row;
         row.first = packHandle(handle);
@@ -138,8 +138,8 @@ CursorIdResult Finder::relationsByModel(ItemKind kind, uint32_t relation_index)
     const auto cursor = _cursors.open(CursorKind::RELATION);
     if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
     // from 의 ID 순서로 담는다 (8.4).
-    for (size_t position = 0; position < _w.items.count(); ++position) {
-        const ItemHandle from = _w.items.handleInIdOrder(position);
+    for (size_t position = 0; position < _w.items.reader().count(); ++position) {
+        const ItemHandle from = _w.items.reader().handleInIdOrder(position);
         for (const RelationRecord& relation : _w.relations.all()) {
             if (relation.from.index != from.index || relation.model != kind || relation.relation != relation_index) { continue; }
             CursorRow row;
@@ -157,7 +157,7 @@ CursorIdResult Finder::tags(ItemHandle item)
 {
     const auto cursor = _cursors.open(CursorKind::TAG);
     if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
-    for (const TagRecord& tag : _w.items.tagsOf(item)) {
+    for (const TagRecord& tag : _w.items.tags().of(item)) {
         CursorRow row;
         row.first = packHandle(tag.item);
         row.second = static_cast<uint64_t>(tag.model) | (static_cast<uint64_t>(tag.tag) << SHIFT);

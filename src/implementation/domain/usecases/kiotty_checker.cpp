@@ -135,16 +135,16 @@ bool Checker::isOpenChangeRequest(ItemHandle handle)
     uint32_t ignored = MISSING;
     const uint64_t in_progress = tagBit(ItemKind::CHANGE_REQUEST, "상태", "반영 중", ignored);
     if (state == MISSING) { return true; }
-    const uint64_t value = _w.items.tagValue(handle, state);
+    const uint64_t value = _w.items.tags().value(handle, state);
     return value == 0 || (value & (open | in_progress)) != 0;
 }
 
 size_t Checker::openChangeRequestCount()
 {
     size_t count = 0;
-    for (size_t index = 0; index < _w.items.capacity(); ++index) {
-        const ItemHandle handle = _w.items.handleAt(index);
-        const auto item = _w.items.get(handle);
+    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+        const ItemHandle handle = _w.items.reader().handleAt(index);
+        const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != ItemKind::CHANGE_REQUEST) { continue; }
         if (isOpenChangeRequest(handle)) { ++count; }
     }
@@ -156,11 +156,11 @@ uint32_t Checker::earliestEntryStep()
     const auto entry = _w.catalog.findTag(ItemKind::CHANGE_REQUEST, literalText("진입 단계"));
     if (!entry) { return 0; }
     uint32_t earliest = 0;
-    for (size_t index = 0; index < _w.items.capacity(); ++index) {
-        const ItemHandle handle = _w.items.handleAt(index);
-        const auto item = _w.items.get(handle);
+    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+        const ItemHandle handle = _w.items.reader().handleAt(index);
+        const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != ItemKind::CHANGE_REQUEST || !isOpenChangeRequest(handle)) { continue; }
-        const uint64_t value = _w.items.tagValue(handle, entry.value);
+        const uint64_t value = _w.items.tags().value(handle, entry.value);
         for (uint32_t bit = 0; bit < entity::STEP_COUNT; ++bit) {
             if ((value & (uint64_t{1} << bit)) == 0) { continue; }
             if (earliest == 0 || bit + 1 < earliest) { earliest = bit + 1; }
@@ -199,11 +199,11 @@ void Checker::checkEntrySteps(Report& report)
 {
     report.section("진입 단계가 정해지지 않은 열린 변경 요청");
     const auto entry = _w.catalog.findTag(ItemKind::CHANGE_REQUEST, literalText("진입 단계"));
-    for (size_t index = 0; index < _w.items.capacity(); ++index) {
-        const ItemHandle handle = _w.items.handleAt(index);
-        const auto item = _w.items.get(handle);
+    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+        const ItemHandle handle = _w.items.reader().handleAt(index);
+        const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != ItemKind::CHANGE_REQUEST || !isOpenChangeRequest(handle)) { continue; }
-        if (entry && _w.items.tagValue(handle, entry.value) != 0) { continue; }
+        if (entry && _w.items.tags().value(handle, entry.value) != 0) { continue; }
         report.add(item.value->id.view());
     }
 }
@@ -215,12 +215,12 @@ void Checker::checkAcceptanceCriteria(Report& report)
     const uint64_t functional = tagBit(ItemKind::REQUIREMENT, "요구사항 종류", "기능 요구사항", kind_tag);
     if (kind_tag == MISSING) { return; }
     std::vector<char>& buffer = _body;
-    for (size_t index = 0; index < _w.items.capacity(); ++index) {
-        const ItemHandle handle = _w.items.handleAt(index);
-        const auto item = _w.items.get(handle);
+    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+        const ItemHandle handle = _w.items.reader().handleAt(index);
+        const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != ItemKind::REQUIREMENT) { continue; }
-        if ((_w.items.tagValue(handle, kind_tag) & functional) == 0) { continue; }
-        const auto length = _w.items.readBody(handle, buffer.data(), buffer.size());
+        if ((_w.items.tags().value(handle, kind_tag) & functional) == 0) { continue; }
+        const auto length = _w.items.reader().readBody(handle, buffer.data(), buffer.size());
         if (!length || countAcceptanceCriteria(Span<const char>(buffer.data(), length.value)) == 0) { report.add(item.value->id.view()); }
     }
 }
@@ -230,9 +230,9 @@ void Checker::checkMilestoneCoverage(Report& report)
     report.section("어떤 마일스톤에도 포함되지 않은 설계 사항 · 유닛 테스트 (R-5)");
     const uint32_t designs = relationIndex(ItemKind::MILESTONE, "포함 설계 사항");
     const uint32_t tests = relationIndex(ItemKind::MILESTONE, "포함 유닛 테스트");
-    for (size_t index = 0; index < _w.items.capacity(); ++index) {
-        const ItemHandle handle = _w.items.handleAt(index);
-        const auto item = _w.items.get(handle);
+    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+        const ItemHandle handle = _w.items.reader().handleAt(index);
+        const auto item = _w.items.reader().get(handle);
         if (!item) { continue; }
         uint32_t relation = MISSING;
         if (item.value->kind == ItemKind::DESIGN) { relation = designs; }
@@ -250,17 +250,17 @@ void Checker::checkOneToOne(Report& report, ItemKind target_kind, ItemKind test_
     report.section(test_kind == ItemKind::SYSTEM_TEST_PLAN ? "시스템 테스트와 1:1 이 아닌 기능 요구사항 (R-3)"
                    : test_kind == ItemKind::END_TO_END_TEST_PLAN ? "E2E 테스트와 1:1 이 아닌 외부 인터페이스 (R-3)"
                                                                  : "코드 검사 결과와 1:1 이 아닌 개발 수칙");
-    for (size_t index = 0; index < _w.items.capacity(); ++index) {
-        const ItemHandle handle = _w.items.handleAt(index);
-        const auto item = _w.items.get(handle);
+    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+        const ItemHandle handle = _w.items.reader().handleAt(index);
+        const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != target_kind) { continue; }
-        if (functional_only && (kind_tag == MISSING || (_w.items.tagValue(handle, kind_tag) & functional) == 0)) { continue; }
+        if (functional_only && (kind_tag == MISSING || (_w.items.tags().value(handle, kind_tag) & functional) == 0)) { continue; }
         if (countRelations(test_kind, relation, handle, true) != 1) { report.add(item.value->id.view()); }
     }
     report.section("대상이 하나가 아닌 테스트 · 검사 항목");
-    for (size_t index = 0; index < _w.items.capacity(); ++index) {
-        const ItemHandle handle = _w.items.handleAt(index);
-        const auto item = _w.items.get(handle);
+    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+        const ItemHandle handle = _w.items.reader().handleAt(index);
+        const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != test_kind) { continue; }
         if (countRelations(test_kind, relation, handle, false) != 1) { report.add(item.value->id.view()); }
     }
@@ -270,21 +270,21 @@ void Checker::checkResults(Report& report)
 {
     report.section("PASS 가 아닌 결과 (R-10)");
     const ItemKind kinds[] = {ItemKind::SYSTEM_TEST_RESULT, ItemKind::END_TO_END_TEST_RESULT, ItemKind::CODE_INSPECTION_RESULT};
-    for (size_t index = 0; index < _w.items.capacity(); ++index) {
-        const ItemHandle handle = _w.items.handleAt(index);
-        const auto item = _w.items.get(handle);
+    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+        const ItemHandle handle = _w.items.reader().handleAt(index);
+        const auto item = _w.items.reader().get(handle);
         if (!item) { continue; }
         for (const ItemKind kind : kinds) {
             if (item.value->kind != kind) { continue; }
             uint32_t result = MISSING;
             const uint64_t pass = tagBit(kind, "결과", "PASS", result);
-            if (result == MISSING || _w.items.tagValue(handle, result) != pass) { report.add(item.value->id.view()); }
+            if (result == MISSING || _w.items.tags().value(handle, result) != pass) { report.add(item.value->id.view()); }
         }
     }
     report.section("열린 변경 요청 (R-10)");
-    for (size_t index = 0; index < _w.items.capacity(); ++index) {
-        const ItemHandle handle = _w.items.handleAt(index);
-        const auto item = _w.items.get(handle);
+    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+        const ItemHandle handle = _w.items.reader().handleAt(index);
+        const auto item = _w.items.reader().get(handle);
         if (item && item.value->kind == ItemKind::CHANGE_REQUEST && isOpenChangeRequest(handle)) { report.add(item.value->id.view()); }
     }
 }
