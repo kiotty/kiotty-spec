@@ -673,7 +673,7 @@ KiottySpecItemResult KiottySpec_readItemAt(KiottySpecContext* context, KiottySpe
         result.code = point.code;
         return result;
     }
-    const auto version = differ.itemAt(spanOf(id), point.value);
+    const auto version = differ.past().itemAt(spanOf(id), point.value);
     result.code = version.code;
     if (!version) { return result; }
     const auto handle = context->context.workspace().items.reader().find(spanOf(id));
@@ -695,7 +695,7 @@ KiottySpecTagResult KiottySpec_readItemTagAt(KiottySpecContext* context, KiottyS
         result.code = point.code;
         return result;
     }
-    const auto version = differ.itemAt(spanOf(id), point.value);
+    const auto version = differ.past().itemAt(spanOf(id), point.value);
     if (!version) {
         result.code = version.code;
         return result;
@@ -704,7 +704,7 @@ KiottySpecTagResult KiottySpec_readItemTagAt(KiottySpecContext* context, KiottyS
         result.code = context->context.failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {impl::literalText("모델에 없는 태그 index")});
         return result;
     }
-    const auto value = differ.tagAt(spanOf(id), tag, point.value);
+    const auto value = differ.past().tagAt(spanOf(id), tag, point.value);
     result.code = value.code;
     const auto handle = context->context.workspace().items.reader().find(spanOf(id));
     result.value = KiottySpecTag{handle ? toHandle(handle.value) : KIOTTY_SPEC_INVALID_ITEM_HANDLE, static_cast<KiottySpecItemKind>(version.value.record.kind),
@@ -718,7 +718,7 @@ KiottySpecSizeResult KiottySpec_readItemBodyAt(KiottySpecContext* context, Kiott
     impl::Differ& differ = context->context.differ();
     const auto point = differ.point(checkpoint);
     if (!point) { return KiottySpecSizeResult{point.code, 0}; }
-    const auto read = differ.bodyAt(spanOf(id), point.value, buffer, capacity);
+    const auto read = differ.past().bodyAt(spanOf(id), point.value, buffer, capacity);
     return KiottySpecSizeResult{read.code, read.value};
 }
 
@@ -730,7 +730,7 @@ KiottySpecSizeResult KiottySpec_readDecisionAt(KiottySpecContext* context, Kiott
     impl::Differ& differ = context->context.differ();
     const auto point = differ.point(checkpoint);
     if (!point) { return KiottySpecSizeResult{point.code, 0}; }
-    const auto read = differ.decisionAt(static_cast<entity::ItemKind>(kind), point.value, buffer, capacity);
+    const auto read = differ.past().decisionAt(static_cast<entity::ItemKind>(kind), point.value, buffer, capacity);
     return KiottySpecSizeResult{read.code, read.value};
 }
 
@@ -745,7 +745,7 @@ KiottySpecCursorResult KiottySpec_openTextDiffCursor(KiottySpecContext* context,
     if (!context->context.workspace().items.reader().get(fromHandle(item))) { return KiottySpecCursorResult{KIOTTY_SPEC_STATUS_INVALID_HANDLE, 0, 0}; }
     const auto range = differ.range(from, to);
     if (!range) { return KiottySpecCursorResult{range.code, 0, 0}; }
-    return cursorResult(context->context, differ.openText(fromHandle(item), static_cast<uint32_t>(field), range.value));
+    return cursorResult(context->context, differ.text().open(fromHandle(item), static_cast<uint32_t>(field), range.value));
 }
 
 KiottySpecTextDiffResult KiottySpec_nextTextDiff(KiottySpecContext* context, KiottySpecCursor cursor)
@@ -755,7 +755,7 @@ KiottySpecTextDiffResult KiottySpec_nextTextDiff(KiottySpecContext* context, Kio
         result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
         return result;
     }
-    const auto piece = context->context.differ().nextText(cursor);
+    const auto piece = context->context.differ().text().next(cursor);
     result.code = piece.code;
     if (piece) { result.value = KiottySpecTextDiff{piece.value.text, piece.value.length, static_cast<KiottySpecTextChange>(piece.value.change), 0}; }
     return result;

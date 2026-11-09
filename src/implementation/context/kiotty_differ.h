@@ -2,6 +2,9 @@
 
 #include "kiotty_spec.h"
 #include "implementation/context/kiotty_cursor_pool.h"
+#include "implementation/context/kiotty_diff_range.h"
+#include "implementation/context/kiotty_past_reader.h"
+#include "implementation/context/kiotty_text_differ.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
 #include "implementation/core/kiotty_text_buffer.h"
@@ -13,11 +16,6 @@
 
 namespace kiotty::spec::implementation {
 
-struct DiffRange {
-    uint32_t from {0};
-    uint32_t to {0};
-};
-
 struct KindCounts {
     uint32_t added {0};
     uint32_t modified {0};
@@ -25,18 +23,6 @@ struct KindCounts {
     uint32_t relations_added {0};
     uint32_t relations_removed {0};
     uint32_t decision_changed {0};
-};
-
-// 그 시점의 항목 버전 (설계서 v1 5.4 readItemAt)
-struct ItemVersion {
-    entity::ItemRecord record {};
-    entity::IdText parent_id;
-};
-
-struct TextPiece {
-    const char* text {nullptr};
-    size_t length {0};
-    uint32_t change {0};
 };
 
 // 체크포인트 사이 비교 (설계서 v1 5.4). 버전 행만 읽고 본문 내용은 돌려주지 않는다.
@@ -53,13 +39,9 @@ public:
     CursorIdResult items(DiffRange range, uint32_t kind_mask, uint32_t field_mask);
     CursorIdResult relations(DiffRange range, uint32_t kind_mask);
 
-    Result<ItemVersion, KiottySpecStatus> itemAt(Span<const char> id, uint32_t checkpoint);
-    Result<uint64_t, KiottySpecStatus> tagAt(Span<const char> id, uint32_t tag, uint32_t checkpoint);
-    Result<size_t, KiottySpecStatus> bodyAt(Span<const char> id, uint32_t checkpoint, char* buffer, size_t capacity);
-    Result<size_t, KiottySpecStatus> decisionAt(entity::ItemKind kind, uint32_t checkpoint, char* buffer, size_t capacity);
-
-    CursorIdResult openText(entity::ItemHandle item, uint32_t field, DiffRange range);
-    Result<TextPiece, KiottySpecStatus> nextText(CursorId cursor);
+    // 그 시점 읽기 · 글자 diff 는 세부 클래스에 맡긴다 (개발수칙 4.19). 부른 자리에서 쓰고 버린다.
+    PastReader past() { return PastReader(_w); }
+    TextDiffer text() { return TextDiffer(_w, _cursors, _work); }
 
 private:
     template <typename Visit>

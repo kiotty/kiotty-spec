@@ -1,6 +1,5 @@
 #include "implementation/context/kiotty_differ.h"
 
-#include "implementation/core/kiotty_text_diff.h"
 #include "implementation/core/kiotty_text_view.h"
 
 #include <cstring>
@@ -13,9 +12,6 @@ using entity::IdText;
 using entity::ItemKind;
 
 constexpr uint32_t SHIFT = 32;
-constexpr size_t TEXT_SLOT_BYTES = 256;
-constexpr size_t SEGMENT_OFFSET = TEXT_SLOT_BYTES * 2;
-constexpr size_t MAX_SEGMENTS = MAX_DIFF_TEXT_BYTES * 2 + 1;
 
 #define KIND_ORDER(column)                                                                                                                      \
     "CASE " column " WHEN 'change_request' THEN 1 WHEN 'requirement' THEN 2 WHEN 'rule' THEN 3 WHEN 'external_interface' THEN 4 "            \
@@ -52,16 +48,6 @@ constexpr char DECISION_DIFF_SQL[] =
     "SELECT k.kind, (SELECT MAX(checkpoint) FROM decision_version d WHERE d.kind = k.kind AND d.checkpoint <= ?1), "
     "(SELECT MAX(checkpoint) FROM decision_version d WHERE d.kind = k.kind AND d.checkpoint <= ?2) FROM (SELECT DISTINCT kind FROM decision_version) k";
 
-constexpr char ITEM_AT_SQL[] =
-    "SELECT checkpoint, kind, parent_id, title, summary, tags, removed FROM item_version WHERE item_id = ?1 AND checkpoint <= ?2 "
-    "ORDER BY checkpoint DESC LIMIT 1";
-
-constexpr char BODY_AT_SQL[] =
-    "SELECT body, removed FROM item_version WHERE item_id = ?1 AND checkpoint <= ?2 ORDER BY checkpoint DESC LIMIT 1";
-
-constexpr char DECISION_AT_SQL[] =
-    "SELECT description FROM decision_version WHERE kind = ?1 AND checkpoint <= ?2 ORDER BY checkpoint DESC LIMIT 1";
-
 bool inMask(uint32_t mask, uint32_t kind) { return mask == 0 || (kind >= 1 && kind <= 32 && (mask & (1u << (kind - 1))) != 0); }
 
 void packId(const IdText& id, uint64_t& first, uint64_t& second)
@@ -80,18 +66,6 @@ IdText unpackId(uint64_t first, uint64_t second)
     IdText id;
     id.assign(boundedText(bytes, 16));
     return id;
-}
-
-KiottySpecStatus copyOut(Span<const char> text, char* buffer, size_t capacity, size_t& written)
-{
-    written = text.length();
-    if (buffer == nullptr || capacity <= text.length()) {
-        written = text.length() + 1;
-        return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED;
-    }
-    std::memcpy(buffer, text.data(), text.length());
-    buffer[text.length()] = '\0';
-    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 }
@@ -283,156 +257,6 @@ CursorIdResult Differ::relations(DiffRange range, uint32_t kind_mask)
         return CursorIdResult::failure(status);
     }
     return cursor;
-}
-
-Result<ItemVersion, KiottySpecStatus> Differ::itemAt(Span<const char> id, uint32_t checkpoint)
-{
-    using VersionResult = Result<ItemVersion, KiottySpecStatus>;
-    auto query = _w.storage.prepare(literalText(ITEM_AT_SQL));
-    if (!query) { return VersionResult::failure(query.code); }
-    query.value.bind(1, id);
-    query.value.bind(2, static_cast<int64_t>(checkpoint));
-    const auto stepped = query.value.step();
-    if (!stepped) { return VersionResult::failure(_w.storage.check(stepped.code)); }
-    if (!stepped.value || query.value.row().integer(6) != 0) {
-        return VersionResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("그 시점에 없는 항목: "), id}));
-    }
-    const Row row = query.value.row();
-    ItemVersion version;
-    version.record.checkpoint = entity::CheckpointHandle{static_cast<uint32_t>(row.integer(0)), 0};
-    version.record.kind = static_cast<ItemKind>(entity::parseKind(viewOf(row.text(1))));
-    version.record.parent = entity::INVALID_ITEM_HANDLE;
-    version.record.id.assign(id);
-    version.record.title.assign(row.text(3));
-    version.record.summary.assign(row.text(4));
-    if (!row.isNull(2)) {
-        version.parent_id.assign(row.text(2));
-        const auto parent = _w.items.reader().find(row.text(2));
-        if (parent) { version.record.parent = parent.value; }
-    }
-    return VersionResult::success(version);
-}
-
-Result<uint64_t, KiottySpecStatus> Differ::tagAt(Span<const char> id, uint32_t tag, uint32_t checkpoint)
-{
-    using TagResult = Result<uint64_t, KiottySpecStatus>;
-    auto query = _w.storage.prepare(literalText(ITEM_AT_SQL));
-    if (!query) { return TagResult::failure(query.code); }
-    query.value.bind(1, id);
-    query.value.bind(2, static_cast<int64_t>(checkpoint));
-    const auto stepped = query.value.step();
-    if (!stepped) { return TagResult::failure(_w.storage.check(stepped.code)); }
-    if (!stepped.value || query.value.row().integer(6) != 0) {
-        return TagResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("그 시점에 없는 항목: "), id}));
-    }
-    // "[[1,4],[2,1]]" 에서 tag 의 값을 찾는다.
-    const std::string_view text = viewOf(query.value.row().text(5));
-    uint64_t numbers[2] {};
-    size_t count = 0;
-    uint64_t current = 0;
-    bool digits = false;
-    for (const char letter : text) {
-        if (letter >= '0' && letter <= '9') {
-            current = current * 10 + static_cast<uint64_t>(letter - '0');
-            digits = true;
-            continue;
-        }
-        if (digits && count < 2) { numbers[count++] = current; }
-        current = 0;
-        digits = false;
-        if (letter == ']' && count == 2) {
-            if (numbers[0] == tag) { return TagResult::success(numbers[1]); }
-            count = 0;
-        }
-    }
-    return TagResult::success(0);
-}
-
-Result<size_t, KiottySpecStatus> Differ::bodyAt(Span<const char> id, uint32_t checkpoint, char* buffer, size_t capacity)
-{
-    using SizeResult = Result<size_t, KiottySpecStatus>;
-    auto query = _w.storage.prepare(literalText(BODY_AT_SQL));
-    if (!query) { return SizeResult::failure(query.code); }
-    query.value.bind(1, id);
-    query.value.bind(2, static_cast<int64_t>(checkpoint));
-    const auto stepped = query.value.step();
-    if (!stepped) { return SizeResult::failure(_w.storage.check(stepped.code)); }
-    if (!stepped.value || query.value.row().integer(1) != 0) {
-        return SizeResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("그 시점에 없는 항목: "), id}));
-    }
-    size_t written = 0;
-    const KiottySpecStatus copied = copyOut(query.value.row().text(0), buffer, capacity, written);
-    return SizeResult{copied, written};
-}
-
-Result<size_t, KiottySpecStatus> Differ::decisionAt(ItemKind kind, uint32_t checkpoint, char* buffer, size_t capacity)
-{
-    using SizeResult = Result<size_t, KiottySpecStatus>;
-    auto query = _w.storage.prepare(literalText(DECISION_AT_SQL));
-    if (!query) { return SizeResult::failure(query.code); }
-    query.value.bind(1, spanOf(entity::kindName(kind)));
-    query.value.bind(2, static_cast<int64_t>(checkpoint));
-    const auto stepped = query.value.step();
-    if (!stepped) { return SizeResult::failure(_w.storage.check(stepped.code)); }
-    const Span<const char> text = stepped.value ? query.value.row().text(0) : Span<const char>();
-    size_t written = 0;
-    const KiottySpecStatus copied = copyOut(text, buffer, capacity, written);
-    return SizeResult{copied, written};
-}
-
-CursorIdResult Differ::openText(entity::ItemHandle item, uint32_t field, DiffRange range)
-{
-    if (field != KIOTTY_SPEC_TEXT_FIELD_TITLE && field != KIOTTY_SPEC_TEXT_FIELD_SUMMARY) {
-        return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("글자 diff 는 제목이나 요약 하나에만 쓴다")}));
-    }
-    const auto record = _w.items.reader().get(item);
-    if (!record) { return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_HANDLE, {literalText("항목 핸들이 무효임")})); }
-    const IdText id = record.value->id;
-    const auto before = itemAt(id.view(), range.from);
-    const auto after = itemAt(id.view(), range.to);
-    if (!before && !after) { return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("두 시점 모두 없는 항목: "), id.view()})); }
-    const bool title = field == KIOTTY_SPEC_TEXT_FIELD_TITLE;
-    const Span<const char> before_text = !before ? Span<const char>() : title ? before.value.record.title.view() : before.value.record.summary.view();
-    const Span<const char> after_text = !after ? Span<const char>() : title ? after.value.record.title.view() : after.value.record.summary.view();
-
-    const auto cursor = _cursors.open(CursorKind::TEXT_DIFF);
-    if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
-    const auto space = _cursors.space(cursor.value, CursorKind::TEXT_DIFF);
-    char* bytes = reinterpret_cast<char*>(space.value.rows.data());
-    const size_t room = space.value.rows.length() * sizeof(CursorRow);
-    const size_t segment_room = room > SEGMENT_OFFSET ? (room - SEGMENT_OFFSET) / sizeof(TextSegment) : 0;
-    if (segment_room == 0) {
-        _cursors.close(cursor.value);
-        return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, {literalText("max_cursor_rows 가 글자 diff 에 모자람")}));
-    }
-    std::memcpy(bytes, before_text.data(), before_text.length());
-    std::memcpy(bytes + TEXT_SLOT_BYTES, after_text.data(), after_text.length());
-    Span<char> scratch = _work.scratch();
-    const auto count = diffText(Span<const char>(bytes, before_text.length()), Span<const char>(bytes + TEXT_SLOT_BYTES, after_text.length()),
-                                Span<uint8_t>(reinterpret_cast<uint8_t*>(scratch.data()), scratch.length()),
-                                Span<TextSegment>(reinterpret_cast<TextSegment*>(bytes + SEGMENT_OFFSET), segment_room < MAX_SEGMENTS ? segment_room : MAX_SEGMENTS));
-    if (!count) {
-        _cursors.close(cursor.value);
-        return CursorIdResult::failure(_w.failure.raise(count.code, {literalText("글자 diff 를 담을 공간이 모자람")}));
-    }
-    space.value.slot->length = count.value;
-    space.value.slot->position = 0;
-    return cursor;
-}
-
-Result<TextPiece, KiottySpecStatus> Differ::nextText(CursorId cursor)
-{
-    using PieceResult = Result<TextPiece, KiottySpecStatus>;
-    const auto space = _cursors.space(cursor, CursorKind::TEXT_DIFF);
-    if (!space) { return PieceResult::failure(space.code); }
-    CursorSlot& slot = *space.value.slot;
-    if (slot.position >= slot.length) { return PieceResult::success(TextPiece{}); }
-    const char* bytes = reinterpret_cast<const char*>(space.value.rows.data());
-    TextSegment segment {};
-    std::memcpy(&segment, bytes + SEGMENT_OFFSET + slot.position * sizeof(TextSegment), sizeof(TextSegment));
-    ++slot.position;
-    const char* base = bytes + (segment.source == TextSource::AFTER ? TEXT_SLOT_BYTES : 0);
-    return PieceResult::success(TextPiece{base + segment.offset, segment.length, static_cast<uint32_t>(segment.change)});
 }
 
 }
