@@ -27,6 +27,7 @@ public:
     KiottySpecStatus writeDecision(entity::ItemKind kind, Span<const char> text);
 
 private:
+    Result<entity::IdText, KiottySpecStatus> insertItem(entity::ItemKind kind, Span<const char> title, Span<const char> summary, uint32_t sequence);
     KiottySpecStatus checkText(Span<const char> text, size_t limit, const char* field);
     // 구현 완료인 설계 사항 · 유닛 테스트가 바뀌면 같은 쓰기 안에서 "변경 필요" 로 바꾼다 (3.5).
     KiottySpecStatus markNeedsChange(entity::ItemHandle item, uint32_t sequence);

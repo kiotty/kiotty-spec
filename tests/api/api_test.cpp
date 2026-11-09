@@ -215,6 +215,34 @@ bool testDiff(KiottySpecContext*)
     return passed;
 }
 
+
+// 쓰기가 중간에 실패하면 그 쓰기 안에서 바뀐 것(ID 카운터)이 모두 되돌려진다.
+bool testFailedWriteRollsBack()
+{
+    std::error_code error;
+    const auto root = std::filesystem::temp_directory_path(error) / "kiotty_api_rollback";
+    std::filesystem::remove_all(root, error);
+    std::filesystem::create_directories(root, error);
+    const std::string path = root.generic_string();
+    KiottySpecConfiguration configuration {};
+    configuration.project_root = textOf(path.c_str());
+    configuration.max_items = 2;
+    const KiottySpecContextResult created = KiottySpec_createContext(&configuration);
+    KiottySpecContext* const context = created.value;
+    bool passed = expectTrue(ok(created.code), "create small context");
+    passed = expectTrue(ok(KiottySpec_startCheckpoint(context, KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING, textOf("작은 풀")).code), "start") && passed;
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("a"), textOf(""));
+    const KiottySpecIdResult second = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("b"), textOf(""));
+    const KiottySpecIdResult full = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("c"), textOf(""));
+    passed = expectTrue(full.code == KIOTTY_SPEC_STATUS_POOL_IS_FULL, "third item does not fit") && passed;
+    passed = expectTrue(ok(KiottySpec_removeItem(context, textOf(second.value)).code), "remove second") && passed;
+    const KiottySpecIdResult again = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("d"), textOf(""));
+    passed = expectTrue(ok(again.code) && std::strcmp(again.value, "REQ-003") == 0, "failed write gave its id back") && passed;
+    KiottySpec_releaseContext(context);
+    std::filesystem::remove_all(root, error);
+    return passed;
+}
+
 }
 
 int main()
@@ -249,6 +277,9 @@ int main()
     }
     KiottySpec_releaseContext(created.value);
     std::filesystem::remove_all(root, error);
+    const bool rolled_back = testFailedWriteRollsBack();
+    std::printf("%s failed write rolls back\n", rolled_back ? "PASS" : "FAIL");
+    if (!rolled_back) { ++failed; }
     std::printf("%d failed\n", failed);
     return failed;
 }

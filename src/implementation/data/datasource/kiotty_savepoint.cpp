@@ -12,10 +12,7 @@ constexpr char ROLLBACK_SQL[] = "ROLLBACK TO kiotty_sp; RELEASE kiotty_sp;";
 
 }
 
-Savepoint::~Savepoint()
-{
-    if (_is_open) { _connection.executeScript(literalText(ROLLBACK_SQL)); }
-}
+Savepoint::~Savepoint() { rollback(); }
 
 KiottySpecStatus Savepoint::begin()
 {
@@ -29,6 +26,14 @@ KiottySpecStatus Savepoint::commit()
     const KiottySpecStatus status = _connection.executeScript(literalText(COMMIT_SQL));
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { _is_open = false; }
     return status;
+}
+
+
+KiottySpecStatus Savepoint::rollback()
+{
+    if (!_is_open) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    _is_open = false;
+    return _connection.executeScript(literalText(ROLLBACK_SQL));
 }
 
 }

@@ -16,6 +16,8 @@ public:
 
     KiottySpecStatus begin();
     KiottySpecStatus commit();
+    // 열려 있으면 되돌리고 닫는다.
+    KiottySpecStatus rollback();
 
 private:
     DBConnection& _connection;

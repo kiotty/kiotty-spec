@@ -1,6 +1,7 @@
 #include "implementation/domain/usecases/kiotty_relation_editor.h"
 
 #include "implementation/core/kiotty_text_view.h"
+#include "implementation/domain/usecases/kiotty_write_scope.h"
 
 namespace kiotty::spec::implementation {
 
@@ -33,7 +34,10 @@ KiottySpecStatus RelationEditor::add(Span<const char> from_id, uint32_t relation
     const auto record = relationOf(from_id, relation, to_id);
     if (!record) { return record.code; }
     if (_w.relations.contains(record.value)) { return _w.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("이미 있는 관계")}); }
-    return _lifecycle.write([&](uint32_t sequence) { return _w.relations.add(record.value, sequence); });
+    WriteScope scope(_w, _lifecycle);
+    const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
+    if (!sequence) { return scope.finish(sequence.code); }
+    return scope.finish(_w.relations.add(record.value, sequence.value));
 }
 
 KiottySpecStatus RelationEditor::remove(Span<const char> from_id, uint32_t relation, Span<const char> to_id)
@@ -41,7 +45,10 @@ KiottySpecStatus RelationEditor::remove(Span<const char> from_id, uint32_t relat
     const auto record = relationOf(from_id, relation, to_id);
     if (!record) { return record.code; }
     if (!_w.relations.contains(record.value)) { return _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("없는 관계")}); }
-    return _lifecycle.write([&](uint32_t sequence) { return _w.relations.remove(record.value, sequence); });
+    WriteScope scope(_w, _lifecycle);
+    const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
+    if (!sequence) { return scope.finish(sequence.code); }
+    return scope.finish(_w.relations.remove(record.value, sequence.value));
 }
 
 }
