@@ -1,6 +1,6 @@
-#include "implementation/domain/entity/item_id.h"
-#include "implementation/domain/entity/item_records.h"
-#include "implementation/domain/usecases/model_catalog.h"
+#include "implementation/domain/entity/kiotty_item_id.h"
+#include "implementation/domain/entity/kiotty_item_records.h"
+#include "implementation/domain/usecases/kiotty_model_catalog.h"
 
 #include <cstdio>
 #include <cstring>

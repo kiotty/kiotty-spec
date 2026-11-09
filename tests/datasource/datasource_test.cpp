@@ -1,6 +1,6 @@
-#include "implementation/core/text_view.h"
-#include "implementation/data/datasource/connection.h"
-#include "implementation/data/datasource/savepoint.h"
+#include "implementation/core/kiotty_text_view.h"
+#include "implementation/data/datasource/kiotty_connection.h"
+#include "implementation/data/datasource/kiotty_savepoint.h"
 
 #include <cstdio>
 #include <utility>
