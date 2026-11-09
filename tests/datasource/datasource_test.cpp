@@ -1,9 +1,13 @@
 #include "implementation/core/kiotty_text_view.h"
 #include "implementation/data/datasource/kiotty_db_connection.h"
+#include "implementation/data/datasource/kiotty_file_reader.h"
+#include "implementation/data/datasource/kiotty_file_system.h"
+#include "implementation/data/datasource/kiotty_file_writer.h"
 #include "implementation/data/datasource/kiotty_savepoint.h"
 #include "implementation/data/datasource/kiotty_statement.h"
 
 #include <cstdio>
+#include <string_view>
 #include <utility>
 
 namespace core = kiotty::spec::implementation;
@@ -135,6 +139,46 @@ bool testStatementMove()
     return ok;
 }
 
+
+bool testFileReaderLines()
+{
+    const core::Span<const char> path = core::literalText("kiotty_file_reader_test.txt");
+    bool ok = true;
+    {
+        core::FileWriter writer;
+        ok = expectTrue(writer.open(path) == KIOTTY_SPEC_STATUS_SUCCESS, "open writer") && ok;
+        writer.write(core::literalText("first\r\n\nsecond  \n"));
+        writer.write(core::literalText("third-without-newline"));
+    }
+    {
+        char buffer[24] {};
+        core::FileReader reader(core::Span<char>(buffer, sizeof(buffer)));
+        ok = expectTrue(reader.open(path) == KIOTTY_SPEC_STATUS_SUCCESS, "open reader") && ok;
+        const char* const expected[] = {"first", "", "second", "third-without-newline"};
+        for (const char* line : expected) {
+            const auto next = reader.next();
+            const std::string_view got(reader.line().data(), reader.line().length());
+            ok = expectTrue(next && next.value && got == line, line) && ok;
+        }
+        const auto end = reader.next();
+        ok = expectTrue(end && !end.value, "end of file") && ok;
+
+        char small[8] {};
+        core::FileReader tight(core::Span<char>(small, sizeof(small)));
+        tight.open(path);
+        tight.next();
+        tight.next();
+        const auto too_long = tight.next();
+        ok = expectTrue(too_long.code == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "line longer than buffer") && ok;
+
+        core::FileReader missing(core::Span<char>(buffer, sizeof(buffer)));
+        ok = expectTrue(missing.open(core::literalText("no_such_kiotty_file.txt")) == KIOTTY_SPEC_STATUS_NOT_FOUND, "missing file") && ok;
+    }
+    // 열린 파일은 지울 수 없으므로 리더를 닫은 뒤에 지운다.
+    core::removeFile(path);
+    return ok;
+}
+
 }
 
 int main()
@@ -147,6 +191,7 @@ int main()
         {"statement move", testStatementMove},
         {"empty text is not null", testEmptyTextIsNotNull},
         {"bind failure is kept", testBindFailureIsKept},
+        {"file reader lines", testFileReaderLines},
     };
 
     int failed = 0;

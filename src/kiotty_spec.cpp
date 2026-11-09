@@ -775,19 +775,16 @@ KiottySpecStatusResult KiottySpec_exportJsonl(KiottySpecContext* context, Kiotty
 KiottySpecSizeResult KiottySpec_importJsonl(KiottySpecContext* context, KiottySpecText directory, char* report, size_t capacity)
 {
     if (context == nullptr) { return KiottySpecSizeResult{KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, 0}; }
-    std::string text;
+    // 보고는 호출자 버퍼에 바로 쓴다. 버퍼가 없으면 버린다.
+    char discard[1] {};
+    const impl::Span<char> area = report != nullptr && capacity > 0 ? impl::Span<char>(report, capacity) : impl::Span<char>(discard, 1);
     impl::Result<size_t, KiottySpecStatus> imported = impl::Result<size_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
     if (directory.length > 0) {
-        imported = context->context.exchange().importJsonl(spanOf(directory), text);
+        imported = context->context.exchange().importJsonl(spanOf(directory), area);
     } else {
         const auto fallback = context->context.jsonlDirectory();
         if (!fallback) { return KiottySpecSizeResult{fallback.code, 0}; }
-        imported = context->context.exchange().importJsonl(fallback.value.view(), text);
-    }
-    if (report != nullptr && capacity > 0) {
-        const size_t length = text.size() < capacity - 1 ? text.size() : capacity - 1;
-        std::memcpy(report, text.data(), length);
-        report[length] = '\0';
+        imported = context->context.exchange().importJsonl(fallback.value.view(), area);
     }
     return KiottySpecSizeResult{imported.code, imported ? imported.value : 0};
 }

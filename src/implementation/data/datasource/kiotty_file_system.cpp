@@ -366,22 +366,6 @@ KiottySpecStatus createDirectories(Span<const char> path)
     return KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 }
 
-std::optional<std::string> readWholeFile(Span<const char> path)
-{
-    const int descriptor = openFile(path, READ_FLAGS);
-    if (descriptor < 0) { return std::nullopt; }
-    std::string content;
-    char chunk[READ_CHUNK_LENGTH];
-    int count = readSome(descriptor, chunk, READ_CHUNK_LENGTH);
-    while (count > 0) {
-        content.append(chunk, static_cast<size_t>(count));
-        count = readSome(descriptor, chunk, READ_CHUNK_LENGTH);
-    }
-    closeFile(descriptor);
-    if (count < 0) { return std::nullopt; }
-    return content;
-}
-
 Result<size_t, KiottySpecStatus> readFile(Span<const char> path, Span<char> buffer)
 {
     using SizeResult = Result<size_t, KiottySpecStatus>;
@@ -417,6 +401,20 @@ KiottySpecStatus writeWholeFile(Span<const char> path, Span<const char> content)
     closeFile(descriptor);
     return written;
 }
+
+int openForReading(Span<const char> path) { return openFile(path, READ_FLAGS); }
+
+int openForWriting(Span<const char> path) { return openFile(path, WRITE_FLAGS); }
+
+int readDescriptor(int descriptor, Span<char> buffer)
+{
+    const size_t asked = buffer.length() < READ_CHUNK_LENGTH ? buffer.length() : READ_CHUNK_LENGTH;
+    return readSome(descriptor, buffer.data(), asked);
+}
+
+KiottySpecStatus writeDescriptor(int descriptor, Span<const char> content) { return writeAll(descriptor, content); }
+
+void closeDescriptor(int descriptor) { closeFile(descriptor); }
 
 KiottySpecStatus makeExecutable(Span<const char> path)
 {

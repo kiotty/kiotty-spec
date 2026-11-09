@@ -2,9 +2,12 @@
 #include "kiotty_fixed_map.h"
 #include "kiotty_fixed_string.h"
 #include "kiotty_fixed_vector.h"
+#include "kiotty_json_reader.h"
+#include "kiotty_json_writer.h"
 #include "kiotty_lazy_pool.h"
 #include "kiotty_result.h"
 #include "kiotty_span.h"
+#include "kiotty_span_text.h"
 #include "kiotty_text_buffer.h"
 #include "kiotty_text_diff.h"
 #include "kiotty_utf8.h"
@@ -267,6 +270,113 @@ bool testTextDiff()
     return ok;
 }
 
+bool sameText(core::Span<const char> left, const char* right)
+{
+    return left.length() == std::strlen(right) && std::memcmp(left.data(), right, left.length()) == 0;
+}
+
+bool testJsonWriterString()
+{
+    core::TextBuffer text(256);
+    bool ok = expectTrue(core::appendJsonString(text, textOf("a\"b\\c\n\t/\x01\x7f")) == KIOTTY_SPEC_STATUS_SUCCESS, "escape string");
+    ok = expectTrue(sameText(text.view(), "\"a\\\"b\\\\c\\n\\t/\\u0001\x7f\""), "escaped text") && ok;
+    text.clear();
+    core::appendJsonString(text, textOf("\xED\x95\x9C" "x\xFF" "y\xE0\x80"));
+    ok = expectTrue(sameText(text.view(), "\"\xED\x95\x9C" "x\xEF\xBF\xBD" "y\xEF\xBF\xBD\xEF\xBF\xBD\""), "invalid utf8 is replaced per byte") && ok;
+    return ok;
+}
+
+bool testJsonWriterNumbers()
+{
+    core::TextBuffer text(64);
+    core::appendJsonInteger(text, -42);
+    text.append(textOf(","));
+    core::appendJsonInteger(text, std::numeric_limits<int64_t>::min());
+    text.append(textOf(","));
+    core::appendJsonReal(text, 1.0);
+    text.append(textOf(","));
+    core::appendJsonReal(text, 0.5);
+    return expectTrue(sameText(text.view(), "-42,-9223372036854775808,1.0,0.5"), "numbers");
+}
+
+bool testJsonReaderFields()
+{
+    char scratch[64] {};
+    const core::Span<char> area(scratch, sizeof(scratch));
+    core::JsonReader reader(textOf(" {\"a\":1, \"b\":\"x\\u00e9\\ud83d\\ude00\\n\",\"c\":null,\"d\":[ [1, 4] ],\"e\":true,\"f\":-2.5,\"g\":18446744073709551615} "));
+    core::JsonField field;
+    bool ok = true;
+    auto next = reader.next(field, area);
+    ok = expectTrue(next.value && sameText(field.key, "a") && field.type == core::JsonType::INTEGER && field.integer == 1, "integer field") && ok;
+    next = reader.next(field, area);
+    ok = expectTrue(next.value && field.type == core::JsonType::TEXT && sameText(field.text, "x\xC3\xA9\xF0\x9F\x98\x80\n"), "escaped text field") && ok;
+    next = reader.next(field, area);
+    ok = expectTrue(next.value && field.type == core::JsonType::NULL_VALUE, "null field") && ok;
+    next = reader.next(field, area);
+    ok = expectTrue(next.value && field.type == core::JsonType::COMPOSITE && sameText(field.text, "[[1,4]]"), "array is compacted") && ok;
+    next = reader.next(field, area);
+    ok = expectTrue(next.value && field.type == core::JsonType::BOOLEAN && field.boolean, "boolean field") && ok;
+    next = reader.next(field, area);
+    ok = expectTrue(next.value && field.type == core::JsonType::REAL && field.real == -2.5, "real field") && ok;
+    next = reader.next(field, area);
+    ok = expectTrue(next.value && field.type == core::JsonType::UNSIGNED && field.natural == std::numeric_limits<uint64_t>::max(), "unsigned field") && ok;
+    next = reader.next(field, area);
+    ok = expectTrue(next && !next.value, "end of object") && ok;
+    return ok;
+}
+
+bool testJsonReaderFindSkipsOtherValues()
+{
+    // 찾는 키 앞의 긴 값은 작은 scratch 에 풀지 않고 건너뛴다.
+    char scratch[4] {};
+    core::JsonReader reader(textOf("{\"body\":\"long text \\\" here\",\"list\":[\"]\"],\"id\":\"A1\"}"));
+    core::JsonField field;
+    const auto found = reader.find(textOf("id"), field, core::Span<char>(scratch, sizeof(scratch)));
+    bool ok = expectTrue(found && found.value && sameText(field.text, "A1"), "find skips long values");
+    const auto missing = reader.find(textOf("nope"), field, core::Span<char>(scratch, sizeof(scratch)));
+    ok = expectTrue(missing && !missing.value, "missing key") && ok;
+    const auto small = reader.find(textOf("body"), field, core::Span<char>(scratch, sizeof(scratch)));
+    ok = expectTrue(small.code == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "wanted value larger than scratch") && ok;
+    return ok;
+}
+
+bool testJsonReaderRejects()
+{
+    char scratch[16] {};
+    const core::Span<char> area(scratch, sizeof(scratch));
+    const char* const broken[] = {"[1]", "{\"a\":1,}", "{\"a\" 1}", "{\"a\":01}", "{\"a\":\"x}", "{\"a\":1} x", "{\"a\":\"\\q\"}", "{\"a\":\"\\udc00\"}", "{\"a\":tru}"};
+    bool ok = true;
+    for (const char* line : broken) {
+        core::JsonReader reader(textOf(line));
+        core::JsonField field;
+        bool failed = false;
+        for (int guard = 0; guard < 4; ++guard) {
+            const auto next = reader.next(field, area);
+            if (!next) {
+                failed = true;
+                break;
+            }
+            if (!next.value) { break; }
+        }
+        ok = expectTrue(failed, line) && ok;
+    }
+    core::JsonReader empty(textOf("{ }"));
+    core::JsonField field;
+    const auto none = empty.next(field, area);
+    ok = expectTrue(none && !none.value, "empty object") && ok;
+    return ok;
+}
+
+bool testSpanText()
+{
+    char area[8] {};
+    core::SpanText text(core::Span<char>(area, sizeof(area)));
+    bool ok = expectTrue(text.append(textOf("abc")) == KIOTTY_SPEC_STATUS_SUCCESS && text.capacity() == 7, "span text append");
+    ok = expectTrue(text.append(textOf("12345")) == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED && sameText(text.view(), "abc"), "span text keeps on overflow") && ok;
+    ok = expectTrue(area[3] == '\0', "span text is terminated") && ok;
+    return ok;
+}
+
 }
 
 int main()
@@ -288,6 +398,12 @@ int main()
         {"utf8 valid", testUtf8Valid},
         {"utf8 invalid", testUtf8Invalid},
         {"text diff", testTextDiff},
+        {"json writer string", testJsonWriterString},
+        {"json writer numbers", testJsonWriterNumbers},
+        {"json reader fields", testJsonReaderFields},
+        {"json reader find skips", testJsonReaderFindSkipsOtherValues},
+        {"json reader rejects", testJsonReaderRejects},
+        {"span text", testSpanText},
     };
 
     int failed = 0;
