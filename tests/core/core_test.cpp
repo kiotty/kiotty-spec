@@ -6,6 +6,7 @@
 #include "kiotty_json_writer.h"
 #include "kiotty_lazy_pool.h"
 #include "kiotty_result.h"
+#include "kiotty_search.h"
 #include "kiotty_span.h"
 #include "kiotty_span_text.h"
 #include "kiotty_text_buffer.h"
@@ -377,6 +378,23 @@ bool testSpanText()
     return ok;
 }
 
+
+bool testSearch()
+{
+    const int values[] = {1, 2, 2, 2, 3, 2};
+    const core::Span<const int> all(values, 5);
+    const auto twos = core::contiguousRange(all, [](int value) { return value == 2; });
+    bool ok = expectTrue(twos && twos.value.first == 1 && twos.value.length == 3, "contiguous range");
+    const auto none = core::contiguousRange(all, [](int value) { return value == 9; });
+    ok = expectTrue(none && none.value.length == 0, "empty range") && ok;
+    const auto split = core::contiguousRange(core::Span<const int>(values, 6), [](int value) { return value == 2; });
+    ok = expectTrue(split.code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "split range is rejected") && ok;
+    const auto three = core::findIndex(all, [](int value) { return value == 3; });
+    ok = expectTrue(three && three.value == 4, "find index") && ok;
+    ok = expectTrue(core::findIndex(all, [](int value) { return value == 9; }).code == KIOTTY_SPEC_STATUS_NOT_FOUND, "missing index") && ok;
+    return ok;
+}
+
 }
 
 int main()
@@ -404,6 +422,7 @@ int main()
         {"json reader find skips", testJsonReaderFindSkipsOtherValues},
         {"json reader rejects", testJsonReaderRejects},
         {"span text", testSpanText},
+        {"search", testSearch},
     };
 
     int failed = 0;

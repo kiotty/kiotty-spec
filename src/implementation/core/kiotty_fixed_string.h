@@ -107,4 +107,14 @@ void copyText(char (&target)[Size], const FixedString<Capacity>& source)
     target[length] = '\0';
 }
 
+
+// null 종료 C 글자를 넣는다. 용량을 넘으면 CAPACITY_EXCEEDED
+template <size_t Capacity>
+KiottySpecStatus assignText(FixedString<Capacity>& target, const char* text)
+{
+    size_t length = 0;
+    while (text != nullptr && length <= Capacity && text[length] != '\0') { ++length; }
+    return target.assign(Span<const char>(text, length));
+}
+
 }

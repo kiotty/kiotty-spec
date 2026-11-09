@@ -38,6 +38,10 @@ public:
     KiottySpecStatus checkRelation(entity::ItemKind from, uint32_t relation, entity::ItemKind to) const;
 
 private:
+    KiottySpecStatus loadTags();
+    KiottySpecStatus loadRelations();
+    KiottySpecStatus loadModel(size_t index);
+
     entity::Model _models[entity::ITEM_KIND_COUNT] {};
     entity::TagDefinition _tags[TAG_COUNT] {};
     entity::RelationDefinition _relations[RELATION_COUNT] {};

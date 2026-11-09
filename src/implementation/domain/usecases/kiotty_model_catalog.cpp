@@ -1,5 +1,6 @@
 #include "kiotty_model_catalog.h"
 
+#include "implementation/core/kiotty_search.h"
 #include "implementation/core/kiotty_text_view.h"
 
 #include <iterator>
@@ -99,64 +100,64 @@ static_assert(std::size(MODEL_SOURCES) == entity::ITEM_KIND_COUNT, "one model pe
 static_assert(std::size(TAG_SOURCES) == ModelCatalog::TAG_COUNT, "tag table size");
 static_assert(std::size(RELATION_SOURCES) == ModelCatalog::RELATION_COUNT, "relation table size");
 
-template <size_t Capacity>
-KiottySpecStatus assignText(FixedString<Capacity>& target, const char* text)
-{
-    return target.assign(boundedText(text, Capacity + 1));
-}
-
-// 표에서 kind 의 정의가 이어진 구간을 찾는다. 이어지지 않으면 표가 잘못된 것이다.
-template <typename Definition, typename Source, size_t Count>
-KiottySpecStatus findRange(ItemKind kind, const Source (&sources)[Count], const Definition* definitions, Span<const Definition>& out)
-{
-    size_t first = Count;
-    size_t length = 0;
-    for (size_t index = 0; index < Count; ++index) {
-        if (sources[index].kind != kind) { continue; }
-        if (first == Count) { first = index; }
-        if (index != first + length) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
-        ++length;
-    }
-    out = length == 0 ? Span<const Definition>() : Span<const Definition>(definitions + first, length);
-    return KIOTTY_SPEC_STATUS_SUCCESS;
-}
-
 bool hasSingleBit(uint64_t value) { return value != 0 && (value & (value - 1)) == 0; }
 
 }
 
 KiottySpecStatus ModelCatalog::load()
 {
+    KiottySpecStatus status = loadTags();
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = loadRelations(); }
+    for (size_t index = 0; index < entity::ITEM_KIND_COUNT && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) { status = loadModel(index); }
+    return status;
+}
+
+KiottySpecStatus ModelCatalog::loadTags()
+{
     for (size_t index = 0; index < TAG_COUNT; ++index) {
         const TagSource& source = TAG_SOURCES[index];
         entity::TagDefinition& definition = _tags[index];
-        if (const KiottySpecStatus status = assignText(definition.name, source.name); status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
-        for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
+        KiottySpecStatus status = assignText(definition.name, source.name);
+        for (size_t bit = 0; bit < entity::TAG_BIT_COUNT && status == KIOTTY_SPEC_STATUS_SUCCESS; ++bit) {
             definition.bit_names[bit].clear();
-            if (source.bits[bit] == nullptr) { continue; }
-            if (const KiottySpecStatus status = assignText(definition.bit_names[bit], source.bits[bit]); status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+            if (source.bits[bit] != nullptr) { status = assignText(definition.bit_names[bit], source.bits[bit]); }
         }
+        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
         definition.cardinality = source.cardinality;
     }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+KiottySpecStatus ModelCatalog::loadRelations()
+{
     for (size_t index = 0; index < RELATION_COUNT; ++index) {
         const RelationSource& source = RELATION_SOURCES[index];
         entity::RelationDefinition& definition = _relations[index];
-        if (const KiottySpecStatus status = assignText(definition.name, source.name); status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+        const KiottySpecStatus status = assignText(definition.name, source.name);
+        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
         definition.target_kind = source.target_kind;
         definition.cardinality = source.cardinality;
     }
-    for (size_t index = 0; index < entity::ITEM_KIND_COUNT; ++index) {
-        const ModelSource& source = MODEL_SOURCES[index];
-        entity::Model& model = _models[index];
-        if (entity::kindIndex(source.kind) != index) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
-        model.kind = source.kind;
-        model.created_in = source.created_in;
-        if (const KiottySpecStatus status = assignText(model.name, source.name); status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
-        if (const KiottySpecStatus status = assignText(model.id_prefix, source.id_prefix); status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
-        if (const KiottySpecStatus status = findRange(source.kind, TAG_SOURCES, _tags, model.tags); status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
-        if (const KiottySpecStatus status = findRange(source.kind, RELATION_SOURCES, _relations, model.relations); status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
-    }
     return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+// 태그 · 관계 표에서 이 Kind 의 정의가 이어진 구간을 모델에 건다. 이어지지 않으면 표가 잘못된 것이다.
+KiottySpecStatus ModelCatalog::loadModel(size_t index)
+{
+    const ModelSource& source = MODEL_SOURCES[index];
+    entity::Model& model = _models[index];
+    if (entity::kindIndex(source.kind) != index) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
+    model.kind = source.kind;
+    model.created_in = source.created_in;
+    const auto ofKind = [&](const auto& entry) { return entry.kind == source.kind; };
+    const Result<IndexRange, KiottySpecStatus> tags = contiguousRange(Span<const TagSource>(TAG_SOURCES, TAG_COUNT), ofKind);
+    const Result<IndexRange, KiottySpecStatus> relations = contiguousRange(Span<const RelationSource>(RELATION_SOURCES, RELATION_COUNT), ofKind);
+    if (!tags || !relations) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
+    model.tags = Span<const entity::TagDefinition>(_tags + tags.value.first, tags.value.length);
+    model.relations = Span<const entity::RelationDefinition>(_relations + relations.value.first, relations.value.length);
+    KiottySpecStatus status = assignText(model.name, source.name);
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = assignText(model.id_prefix, source.id_prefix); }
+    return status;
 }
 
 KiottySpecStatus ModelCatalog::checkTagValue(ItemKind kind, uint32_t tag, uint64_t value) const

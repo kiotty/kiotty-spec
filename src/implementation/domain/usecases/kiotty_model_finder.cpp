@@ -1,5 +1,6 @@
 #include "implementation/domain/usecases/kiotty_model_finder.h"
 
+#include "implementation/core/kiotty_search.h"
 #include "implementation/core/kiotty_text_view.h"
 
 #include <string_view>
@@ -9,17 +10,6 @@ namespace kiotty::spec::implementation {
 namespace {
 
 using entity::ItemKind;
-
-template <typename Definition>
-Result<uint32_t, KiottySpecStatus> findByName(Span<const Definition> definitions, Span<const char> name)
-{
-    for (size_t index = 0; index < definitions.length(); ++index) {
-        if (std::string_view(definitions[index].name) == viewOf(name)) {
-            return Result<uint32_t, KiottySpecStatus>::success(static_cast<uint32_t>(index));
-        }
-    }
-    return Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
-}
 
 }
 
@@ -33,7 +23,7 @@ Result<ItemKind, KiottySpecStatus> ModelFinder::findKindByPrefix(Span<const char
 
 Result<uint32_t, KiottySpecStatus> ModelFinder::findTag(ItemKind kind, Span<const char> name) const
 {
-    return findByName(model(kind).tags, name);
+    return findIndex(model(kind).tags, [&](const entity::TagDefinition& definition) { return std::string_view(definition.name) == viewOf(name); });
 }
 
 Result<uint32_t, KiottySpecStatus> ModelFinder::findTagBit(ItemKind kind, uint32_t tag, Span<const char> name) const
@@ -51,7 +41,7 @@ Result<uint32_t, KiottySpecStatus> ModelFinder::findTagBit(ItemKind kind, uint32
 
 Result<uint32_t, KiottySpecStatus> ModelFinder::findRelation(ItemKind kind, Span<const char> name) const
 {
-    return findByName(model(kind).relations, name);
+    return findIndex(model(kind).relations, [&](const entity::RelationDefinition& definition) { return std::string_view(definition.name) == viewOf(name); });
 }
 
 }
