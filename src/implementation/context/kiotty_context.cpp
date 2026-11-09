@@ -1,10 +1,12 @@
 #include "implementation/context/kiotty_context.h"
 
+#include "implementation/core/kiotty_decimal.h"
+#include "implementation/core/kiotty_fixed_string.h"
 #include "implementation/core/kiotty_text.h"
 #include "implementation/core/kiotty_text_view.h"
 #include "implementation/data/datasource/kiotty_schema.h"
 
-#include <string>
+#include <string_view>
 
 namespace kiotty::spec::implementation {
 
@@ -27,6 +29,7 @@ constexpr char JSONL_DIRECTORY[] = ".kiotty/spec";
 constexpr char DATABASE_FILE[] = ".kiotty/spec.db";
 constexpr char LEGACY_SUFFIX[] = ".v1";
 constexpr char GITIGNORE_FILE[] = ".gitignore";
+constexpr size_t MAX_EPOCH_DIGITS = 20;
 constexpr char GIT_DIRECTORY[] = ".git";
 constexpr char HOOKS_DIRECTORY[] = ".git/hooks";
 
@@ -120,14 +123,24 @@ KiottySpecStatus Context::updateGitignore()
 {
     const auto gitignore = under(_root.view(), literalText(GITIGNORE_FILE));
     if (!gitignore) { return gitignore.code; }
-    std::string content = readWholeFile(gitignore.value.view()).value_or("");
-    const std::string_view entries[] = {".kiotty/spec.db", ".kiotty/spec.db-wal", ".kiotty/spec.db-shm", ".kiotty/spec.db.v1"};
-    for (const auto entry : entries) {
-        if (content.find(entry) != std::string::npos) { continue; }
-        if (!content.empty() && content.back() != '\n') { content += "\n"; }
-        content += std::string(entry) + "\n";
+    // 작업 버퍼에 읽어 빠진 줄을 붙인다. 없는 파일이면 빈 내용에서 시작한다.
+    const auto read = readFile(gitignore.value.view(), _work.scratch());
+    if (!read && read.code != KIOTTY_SPEC_STATUS_NOT_FOUND) {
+        return _failure.raise(read.code, {literalText("파일을 읽을 수 없거나 작업 버퍼보다 큼: "), gitignore.value.view()});
     }
-    if (writeWholeFile(gitignore.value.view(), spanOf(content)) != KIOTTY_SPEC_STATUS_SUCCESS) {
+    _work.adopt(read ? read.value : 0);
+    const Span<const char> entries[] = {literalText(".kiotty/spec.db"), literalText(".kiotty/spec.db-wal"), literalText(".kiotty/spec.db-shm"),
+                                        literalText(".kiotty/spec.db.v1")};
+    for (const Span<const char> entry : entries) {
+        const Span<const char> content = _work.view();
+        if (viewOf(content).find(viewOf(entry)) != std::string_view::npos) { continue; }
+        KiottySpecStatus status = KIOTTY_SPEC_STATUS_SUCCESS;
+        if (content.length() > 0 && content[content.length() - 1] != '\n') { status = _work.append(literalText("\n")); }
+        if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _work.append(entry); }
+        if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _work.append(literalText("\n")); }
+        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(status, {literalText(".gitignore 가 작업 버퍼보다 커짐")}); }
+    }
+    if (writeWholeFile(gitignore.value.view(), _work.view()) != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("파일을 쓸 수 없음: "), gitignore.value.view()});
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
@@ -162,8 +175,10 @@ KiottySpecStatus Context::init(Span<const char> name, bool install_hooks)
     const Span<const char> project = name.length() > 0 ? name : fileNameOf(_root.view());
     KiottySpecStatus status = _meta.set(literalText("project.name"), project);
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
-    const std::string now = std::to_string(nowEpochSeconds());
-    status = _meta.set(literalText("project.created_at"), spanOf(now));
+    const int64_t seconds = nowEpochSeconds();
+    FixedString<MAX_EPOCH_DIGITS> now;
+    appendDecimal(now, seconds > 0 ? static_cast<uint64_t>(seconds) : 0);
+    status = _meta.set(literalText("project.created_at"), now.view());
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
     status = updateGitignore();
     if (status != KIOTTY_SPEC_STATUS_SUCCESS || !install_hooks) { return status; }

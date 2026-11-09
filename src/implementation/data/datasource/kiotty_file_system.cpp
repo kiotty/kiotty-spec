@@ -382,6 +382,31 @@ std::optional<std::string> readWholeFile(Span<const char> path)
     return content;
 }
 
+Result<size_t, KiottySpecStatus> readFile(Span<const char> path, Span<char> buffer)
+{
+    using SizeResult = Result<size_t, KiottySpecStatus>;
+    const int descriptor = openFile(path, READ_FLAGS);
+    if (descriptor < 0) { return SizeResult::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
+    size_t length = 0;
+    int count = 0;
+    do {
+        const size_t room = buffer.length() - length;
+        // 한 바이트를 더 읽어 보고 남으면 buffer 보다 큰 파일이다.
+        char extra = 0;
+        char* const target = room > 0 ? buffer.data() + length : &extra;
+        const size_t asked = room > 0 ? (room < READ_CHUNK_LENGTH ? room : READ_CHUNK_LENGTH) : 1;
+        count = readSome(descriptor, target, asked);
+        if (count > 0 && room == 0) {
+            closeFile(descriptor);
+            return SizeResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED);
+        }
+        if (count > 0) { length += static_cast<size_t>(count); }
+    } while (count > 0);
+    closeFile(descriptor);
+    if (count < 0) { return SizeResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT); }
+    return SizeResult::success(length);
+}
+
 KiottySpecStatus writeWholeFile(Span<const char> path, Span<const char> content)
 {
     const size_t parent = parentLength(path);

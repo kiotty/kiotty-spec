@@ -26,6 +26,8 @@ Span<const char> fileNameOf(Span<const char> path);
 
 KiottySpecStatus createDirectories(Span<const char> path);
 std::optional<std::string> readWholeFile(Span<const char> path);
+// 파일 내용을 buffer 에 읽는다. 없으면 NOT_FOUND, buffer 보다 크면 CAPACITY_EXCEEDED
+Result<size_t, KiottySpecStatus> readFile(Span<const char> path, Span<char> buffer);
 KiottySpecStatus writeWholeFile(Span<const char> path, Span<const char> content);
 KiottySpecStatus makeExecutable(Span<const char> path);
 bool isFile(Span<const char> path);

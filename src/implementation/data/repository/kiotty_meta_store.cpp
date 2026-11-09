@@ -1,30 +1,13 @@
 #include "implementation/data/repository/kiotty_meta_store.h"
 
+#include "implementation/core/kiotty_decimal.h"
 #include "implementation/core/kiotty_text_view.h"
 
 namespace kiotty::spec::implementation {
 
 namespace {
 
-constexpr int MIN_ID_DIGITS = 3;
-constexpr size_t MAX_DIGITS = 10;
-
-KiottySpecStatus appendNumber(entity::IdText& text, uint32_t number)
-{
-    char digits[MAX_DIGITS] {};
-    size_t count = 0;
-    do {
-        digits[count] = static_cast<char>('0' + number % 10);
-        number /= 10;
-        ++count;
-    } while (number > 0);
-    while (count < MIN_ID_DIGITS) { digits[count++] = '0'; }
-    for (size_t index = count; index > 0; --index) {
-        const KiottySpecStatus status = text.append(Span<const char>(&digits[index - 1], 1));
-        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
-    }
-    return KIOTTY_SPEC_STATUS_SUCCESS;
-}
+constexpr size_t MIN_ID_DIGITS = 3;
 
 // "DSN-012" → ("DSN", 12). 숫자 꼬리가 없으면 number = 0
 void splitId(Span<const char> id, Span<const char>& prefix, uint32_t& number)
@@ -88,7 +71,7 @@ Result<entity::IdText, KiottySpecStatus> MetaStore::nextId(Span<const char> pref
     entity::IdText id;
     KiottySpecStatus status = id.assign(prefix);
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = id.append(literalText("-")); }
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = appendNumber(id, static_cast<uint32_t>(number)); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = appendDecimal(id, static_cast<uint32_t>(number), MIN_ID_DIGITS); }
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return IdResult::failure(status); }
     return IdResult::success(id);
 }

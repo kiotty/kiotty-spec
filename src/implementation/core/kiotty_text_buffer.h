@@ -37,6 +37,14 @@ public:
         clear();
         return Span<char>(_data.data(), capacity());
     }
+    // scratch() 로 채운 앞 length 바이트를 내용으로 삼는다.
+    KiottySpecStatus adopt(size_t length)
+    {
+        if (length > capacity()) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+        _length = length;
+        _data[_length] = '\0';
+        return KIOTTY_SPEC_STATUS_SUCCESS;
+    }
 
 private:
     std::vector<char> _data;

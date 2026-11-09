@@ -1,5 +1,6 @@
 #include "implementation/data/repository/kiotty_item_writer.h"
 
+#include "implementation/core/kiotty_decimal.h"
 #include "implementation/core/kiotty_fixed_string.h"
 #include "implementation/core/kiotty_text_view.h"
 
@@ -14,7 +15,6 @@ using entity::ItemRecord;
 using entity::TagRecord;
 
 constexpr size_t MAX_TAG_TEXT_LENGTH = 8191;
-constexpr size_t MAX_NUMBER_DIGITS = 20;
 using TagText = FixedString<MAX_TAG_TEXT_LENGTH>;
 
 constexpr char WRITE_SQL[] =
@@ -22,28 +22,12 @@ constexpr char WRITE_SQL[] =
     "VALUES (?1, ?2, ?3, ?4, ?5, ?6, COALESCE(?7, (SELECT body FROM item_version WHERE item_id = ?1 AND checkpoint <= ?2 "
     "ORDER BY checkpoint DESC LIMIT 1), ''), ?8, ?9)";
 
-KiottySpecStatus appendNumber(TagText& text, uint64_t number)
-{
-    char digits[MAX_NUMBER_DIGITS] {};
-    size_t count = 0;
-    do {
-        digits[count] = static_cast<char>('0' + number % 10);
-        number /= 10;
-        ++count;
-    } while (number > 0);
-    for (size_t index = count; index > 0; --index) {
-        const KiottySpecStatus status = text.append(Span<const char>(&digits[index - 1], 1));
-        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
-    }
-    return KIOTTY_SPEC_STATUS_SUCCESS;
-}
-
 KiottySpecStatus appendPair(TagText& text, uint32_t tag, uint64_t value)
 {
     KiottySpecStatus status = text.append(text.length() > 1 ? literalText(",[") : literalText("["));
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = appendNumber(text, tag); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = appendDecimal(text, tag); }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = text.append(literalText(",")); }
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = appendNumber(text, value); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = appendDecimal(text, value); }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = text.append(literalText("]")); }
     return status;
 }
