@@ -460,7 +460,7 @@ KiottySpecCheckpointResult KiottySpec_readCheckpoint(KiottySpecContext* context,
 KiottySpecCursorResult KiottySpec_openCheckpointCursor(KiottySpecContext* context, KiottySpecStep step)
 {
     if (context == nullptr || (step != 0 && !entity::isValidStep(step))) { return KiottySpecCursorResult{KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, 0, 0}; }
-    return cursorResult(context->context, context->context.finder().checkpoints(step));
+    return cursorResult(context->context, context->context.finder().history().checkpoints(step));
 }
 
 KiottySpecStatusResult KiottySpec_fetchCheckpointPage(KiottySpecContext* context, KiottySpecCursor cursor, KiottySpecCheckpointPage* page)
@@ -555,7 +555,7 @@ KiottySpecPositionResult KiottySpec_readPosition(KiottySpecContext* context)
         result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
         return result;
     }
-    const auto position = context->context.finder().position();
+    const auto position = context->context.finder().history().position();
     result.code = position.code;
     if (!position) { return result; }
     result.value.current = position.value.current;
@@ -570,7 +570,7 @@ KiottySpecPositionResult KiottySpec_readPosition(KiottySpecContext* context)
 KiottySpecCursorResult KiottySpec_openStepRunCursor(KiottySpecContext* context)
 {
     if (context == nullptr) { return KiottySpecCursorResult{KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, 0, 0}; }
-    return cursorResult(context->context, context->context.finder().stepRuns());
+    return cursorResult(context->context, context->context.finder().history().stepRuns());
 }
 
 KiottySpecStatusResult KiottySpec_fetchStepRunPage(KiottySpecContext* context, KiottySpecCursor cursor, KiottySpecStepRunPage* page)
