@@ -1,4 +1,5 @@
 #include "checked.h"
+#include "fixed_map.h"
 #include "fixed_string.h"
 #include "fixed_vector.h"
 #include "lazy_pool.h"
@@ -100,6 +101,45 @@ bool testFixedStringOverflowClears()
     bool ok = true;
     ok = expectTrue(failed, "assign too long fails") && ok;
     ok = expectTrue(text.length() == 0 && text.c_str()[0] == '\0', "failed assign clears") && ok;
+    return ok;
+}
+
+bool testFixedStringIsCompact()
+{
+    static_assert(sizeof(core::FixedString<15>) == 16, "no length field");
+    static_assert(sizeof(core::FixedString<127>) == 128, "no length field");
+    core::FixedString<3> left;
+    core::FixedString<3> right;
+    left.assign(textOf("ab"));
+    right.assign(textOf("ac"));
+    bool ok = true;
+    ok = expectTrue(left < right && !(right < left), "fixed string orders by text") && ok;
+    ok = expectTrue(right.append(textOf("d")) == KIOTTY_SPEC_STATUS_SUCCESS && right.length() == 3, "append fills to capacity") && ok;
+    return ok;
+}
+
+bool testFixedMap()
+{
+    using Key = core::FixedString<15>;
+    auto keyOf = [](const char* text) {
+        Key key;
+        key.assign(textOf(text));
+        return key;
+    };
+    core::FixedMap<Key, uint32_t> map(3);
+    bool ok = true;
+    ok = expectTrue(map.insert(keyOf("REQ-002"), 2) == KIOTTY_SPEC_STATUS_SUCCESS, "insert first") && ok;
+    ok = expectTrue(map.insert(keyOf("CR-001"), 0) == KIOTTY_SPEC_STATUS_SUCCESS, "insert before") && ok;
+    ok = expectTrue(map.insert(keyOf("DSN-004"), 1) == KIOTTY_SPEC_STATUS_SUCCESS, "insert middle") && ok;
+    ok = expectTrue(map.insert(keyOf("DSN-004"), 9) == KIOTTY_SPEC_STATUS_CONFLICT, "duplicate key conflicts") && ok;
+    ok = expectTrue(map.insert(keyOf("UT-001"), 3) == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "full map rejects") && ok;
+    ok = expectTrue(map.keyAt(0) == "CR-001" && map.keyAt(1) == "DSN-004" && map.keyAt(2) == "REQ-002", "keys stay sorted") && ok;
+    const auto found = map.find(keyOf("DSN-004"));
+    ok = expectTrue(static_cast<bool>(found) && found.value == 1, "find returns value") && ok;
+    ok = expectTrue(map.find(keyOf("DSN-005")).code == KIOTTY_SPEC_STATUS_NOT_FOUND, "missing key not found") && ok;
+    ok = expectTrue(map.erase(keyOf("CR-001")) == KIOTTY_SPEC_STATUS_SUCCESS && map.length() == 2, "erase shrinks") && ok;
+    ok = expectTrue(map.erase(keyOf("CR-001")) == KIOTTY_SPEC_STATUS_NOT_FOUND, "erase missing") && ok;
+    ok = expectTrue(map.keyAt(0) == "DSN-004" && map.find(keyOf("REQ-002")).value == 2, "erase keeps order") && ok;
     return ok;
 }
 
@@ -205,6 +245,8 @@ int main()
         {"span copy", testSpanCopy},
         {"fixed string assign", testFixedStringAssign},
         {"fixed string overflow clears", testFixedStringOverflowClears},
+        {"fixed string is compact", testFixedStringIsCompact},
+        {"fixed map", testFixedMap},
         {"fixed vector", testFixedVector},
         {"lazy pool acquire release", testLazyPoolAcquireRelease},
         {"lazy pool generations", testLazyPoolGenerations},

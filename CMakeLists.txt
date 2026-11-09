@@ -95,3 +95,10 @@ add_executable(kiotty_context_test
     src/implementation/context/cursor_pool.cpp)
 target_include_directories(kiotty_context_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 kiotty_warnings(kiotty_context_test)
+
+add_executable(kiotty_model_test
+    tests/model/model_test.cpp
+    src/implementation/domain/entity/item_id.cpp
+    src/implementation/domain/usecases/model_catalog.cpp)
+target_include_directories(kiotty_model_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
+kiotty_warnings(kiotty_model_test)
