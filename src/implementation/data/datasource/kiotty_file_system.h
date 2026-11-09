@@ -21,6 +21,8 @@ SystemPathResult joinPath(Span<const char> base, Span<const char> part);
 SystemPathResult normalizePath(Span<const char> path);
 SystemPathResult relativeInside(Span<const char> path, Span<const char> root);
 Span<const char> fileNameOf(Span<const char> path);
+// 마지막 구분자 앞까지. 구분자가 없으면 빈 글
+Span<const char> parentOf(Span<const char> path);
 
 KiottySpecStatus createDirectories(Span<const char> path);
 // 파일 내용을 buffer 에 읽는다. 없으면 NOT_FOUND, buffer 보다 크면 CAPACITY_EXCEEDED

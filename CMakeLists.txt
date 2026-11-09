@@ -94,6 +94,9 @@ add_executable(kiotty_datasource_test
     src/implementation/data/datasource/kiotty_row.cpp
     src/implementation/data/datasource/kiotty_savepoint.cpp
     src/implementation/data/datasource/kiotty_file_system.cpp
+    src/implementation/data/datasource/kiotty_system_path.cpp
+    src/implementation/data/datasource/backend/kiotty_platform_windows.cpp
+    src/implementation/data/datasource/backend/kiotty_platform_posix.cpp
     src/implementation/data/datasource/kiotty_file_reader.cpp
     src/implementation/data/datasource/kiotty_file_writer.cpp)
 target_include_directories(kiotty_datasource_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
