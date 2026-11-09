@@ -1,6 +1,7 @@
 #pragma once
 
 #include "implementation/context/cursor_pool.h"
+#include "implementation/context/differ.h"
 #include "implementation/context/finder.h"
 #include "implementation/core/failure.h"
 #include "implementation/core/text_buffer.h"
@@ -55,6 +56,7 @@ public:
     Lifecycle& lifecycle() { return _lifecycle; }
     Exchange& exchange() { return _exchange; }
     Finder& finder() { return _finder; }
+    Differ& differ() { return _differ; }
     CursorPool& cursors() { return _cursors; }
     TextBuffer& work() { return _work; }
 
@@ -85,6 +87,7 @@ private:
     CursorPool _cursors;
     Finder _finder;
     TextBuffer _work;
+    Differ _differ;
 };
 
 }

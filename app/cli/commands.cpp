@@ -596,6 +596,8 @@ const std::vector<CommandEntry>& commands()
         {"journey", "", "", "지나온 단계 구간", showJourney},
         {"decision", "show", "KIND", "결정 기록", showDecision},
         {"decision", "set", "KIND (--text T | --file F)", "결정 기록을 다시 쓴다 (2048 바이트 이하)", setDecision},
+        {"diff", "", "FROM TO [--kind K (--added|--removed|--modified)... [--title] [--summary] [--tag 이름]... [--tags] [--relation 이름]... [--relations] [--no-color]]",
+         "체크포인트 사이 비교. --kind 가 없으면 Kind 별 요약 (5.4)", runDiff},
         {"model", "", "[KIND]", "Kind 목록, 또는 Kind 의 태그 · 관계 정의", showModel},
         {"export", "", "jsonl [DIR]", "DB 를 jsonl 로 (기본 .kiotty/spec)", exportJsonl},
         {"import", "", "jsonl [DIR]", "jsonl 로 DB 를 다시 만든다. 옛 형식은 변환한다", importJsonl},

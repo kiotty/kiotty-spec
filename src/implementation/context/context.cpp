@@ -46,7 +46,8 @@ Context::Context(const Configuration& configuration)
       _exchange(_workspace),
       _cursors(configuration.maxCursors, configuration.maxCursorRows),
       _finder(_workspace, _cursors, _checker, configuration.maxItems),
-      _work(configuration.workBufferBytes)
+      _work(configuration.workBufferBytes),
+      _differ(_workspace, _cursors, _work)
 {
 }
 

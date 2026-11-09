@@ -105,6 +105,116 @@ bool testRoundTrip(KiottySpecContext* context)
     return passed;
 }
 
+// 설계서 v1 5.4 의 호출 예와 같은 모양의 변화를 두 체크포인트에 걸쳐 만든다.
+bool testDiff(KiottySpecContext*)
+{
+    const std::string root = g_root + "/diff";
+    std::error_code error;
+    std::filesystem::create_directories(root, error);
+    KiottySpecConfiguration configuration {};
+    configuration.project_root = textOf(root.c_str());
+    const KiottySpecContextResult created = KiottySpec_createContext(&configuration);
+    KiottySpecContext* context = created.value;
+    const KiottySpecText none {nullptr, 0};
+
+    KiottySpec_startCheckpoint(context, KIOTTY_SPEC_STEP_DESIGN_DISCUSSING, textOf("설계 1"));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("요구 1"), textOf(""));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("요구 2"), textOf(""));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf("본문 저장"), textOf("본문은 ID로만 읽는다"));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf("파일 추적"), textOf(""));
+    KiottySpec_addRelation(context, textOf("DSN-002"), 0, textOf("REQ-001"));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf("링크 그래프"), textOf("관계를 링크 타입으로 검사한다"));
+    KiottySpec_addRelation(context, textOf("DSN-003"), 0, textOf("REQ-001"));
+    KiottySpec_setItemTag(context, KiottySpec_findItem(context, textOf("DSN-003")).value, 1, 1);
+    bool passed = expectTrue(ok(KiottySpec_completeCheckpoint(context, KIOTTY_SPEC_ACTOR_USER).code), "complete first");
+
+    KiottySpec_startCheckpoint(context, KIOTTY_SPEC_STEP_DESIGN_DISCUSSING, textOf("설계 2"));
+    KiottySpec_removeItem(context, textOf("DSN-002"));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf("커서 풀"), textOf(""));
+    KiottySpec_addRelation(context, textOf("DSN-004"), 0, textOf("REQ-002"));
+    KiottySpec_updateItem(context, textOf("DSN-003"), textOf("관계 저장소"), textOf("관계를 모델의 관계 정의로 검사한다"));
+    KiottySpec_setItemTag(context, KiottySpec_findItem(context, textOf("DSN-003")).value, 1, 4);
+    KiottySpec_removeRelation(context, textOf("DSN-003"), 0, textOf("REQ-001"));
+    KiottySpec_addRelation(context, textOf("DSN-003"), 0, textOf("REQ-002"));
+    KiottySpec_writeItemBody(context, textOf("DSN-001"), textOf("## 내용\n바뀜\n"));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf("잠깐"), textOf(""));
+    KiottySpec_removeItem(context, textOf("DSN-005"));
+
+    KiottySpecDiffQuery query {1, KIOTTY_SPEC_CHECKPOINT_CURRENT, 1u << (KIOTTY_SPEC_ITEM_KIND_DESIGN - 1), 0};
+    const KiottySpecDiffSummaryResult summary = KiottySpec_summarizeDiff(context, query);
+    const KiottySpecKindDiff& design = summary.kinds[KIOTTY_SPEC_ITEM_KIND_DESIGN - 1];
+    passed = expectTrue(ok(summary.code) && summary.to == 2, "summary range") && passed;
+    passed = expectTrue(design.added == 1 && design.modified == 2 && design.removed == 1, "summary items") && passed;
+    passed = expectTrue(design.relations_added == 2 && design.relations_removed == 2, "summary relations") && passed;
+    passed = expectTrue(summary.kinds[KIOTTY_SPEC_ITEM_KIND_REQUIREMENT - 1].added == 0, "kind mask") && passed;
+
+    const KiottySpecCursorResult items = KiottySpec_openItemDiffCursor(context, query);
+    KiottySpecItemDiffPage page {};
+    KiottySpec_fetchItemDiffPage(context, items.value, &page);
+    passed = expectTrue(page.length == 4, "four item diffs") && passed;
+    if (page.length == 4) {
+        passed = expectTrue(std::strcmp(page.elements[0].id, "DSN-001") == 0 && page.elements[0].changed_fields == KIOTTY_SPEC_CHANGED_FIELD_BODY, "body only") && passed;
+        passed = expectTrue(page.elements[1].change == KIOTTY_SPEC_CHANGE_REMOVED && page.elements[1].item == KIOTTY_SPEC_INVALID_ITEM_HANDLE &&
+                                page.elements[1].before == 1 && page.elements[1].after == 2, "removed item") && passed;
+        passed = expectTrue(page.elements[2].changed_fields == (KIOTTY_SPEC_CHANGED_FIELD_TITLE | KIOTTY_SPEC_CHANGED_FIELD_SUMMARY | KIOTTY_SPEC_CHANGED_FIELD_TAGS),
+                            "modified fields") && passed;
+        passed = expectTrue(page.elements[3].change == KIOTTY_SPEC_CHANGE_ADDED && page.elements[3].before == 0, "added item") && passed;
+    }
+    passed = expectTrue(KiottySpec_fetchTagPage(context, items.value, nullptr).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "null page") && passed;
+    KiottySpec_closeCursor(context, items.value);
+
+    query.field_mask = KIOTTY_SPEC_CHANGED_FIELD_TITLE;
+    passed = expectTrue(KiottySpec_openItemDiffCursor(context, query).total == 3, "field mask keeps added and removed") && passed;
+    query.field_mask = 0;
+
+    const KiottySpecCursorResult relations = KiottySpec_openRelationDiffCursor(context, query);
+    KiottySpecRelationDiffPage relation_page {};
+    KiottySpec_fetchRelationDiffPage(context, relations.value, &relation_page);
+    passed = expectTrue(relation_page.length == 4 && std::strcmp(relation_page.elements[0].from_id, "DSN-002") == 0 &&
+                            relation_page.elements[0].change == KIOTTY_SPEC_CHANGE_REMOVED && std::strcmp(relation_page.elements[2].to_id, "REQ-002") == 0 &&
+                            relation_page.elements[2].change == KIOTTY_SPEC_CHANGE_ADDED && relation_page.elements[2].checkpoint == 2,
+                        "relation diffs") && passed;
+    KiottySpec_closeCursor(context, relations.value);
+
+    passed = expectTrue(KiottySpec_readItemAt(context, textOf("DSN-002"), 2).code == KIOTTY_SPEC_STATUS_NOT_FOUND, "removed at to") && passed;
+    const KiottySpecItemResult old = KiottySpec_readItemAt(context, textOf("DSN-003"), 1);
+    passed = expectTrue(ok(old.code) && std::strcmp(old.value.title, "링크 그래프") == 0 && old.value.checkpoint == 1, "read item at") && passed;
+    passed = expectTrue(KiottySpec_readItemTagAt(context, textOf("DSN-003"), 1, 1).value.value == 1, "read tag at") && passed;
+    char body[64] {};
+    passed = expectTrue(KiottySpec_readItemBodyAt(context, textOf("DSN-001"), 1, body, sizeof(body)).value == 0, "old body empty") && passed;
+
+    const KiottySpecItemHandle handle = KiottySpec_findItem(context, textOf("DSN-003")).value;
+    const KiottySpecCursorResult text = KiottySpec_openTextDiffCursor(context, handle, KIOTTY_SPEC_TEXT_FIELD_SUMMARY, 1, 2);
+    passed = expectTrue(ok(text.code) && text.total == 4, "text diff pieces") && passed;
+    const char* expected[] = {"관계를 ", "링크 타입으로", "모델의 관계 정의로", " 검사한다"};
+    const KiottySpecTextChange changes[] = {KIOTTY_SPEC_TEXT_UNCHANGED, KIOTTY_SPEC_TEXT_REMOVED, KIOTTY_SPEC_TEXT_ADDED, KIOTTY_SPEC_TEXT_UNCHANGED};
+    for (int index = 0; index < 4; ++index) {
+        const KiottySpecTextDiffResult piece = KiottySpec_nextTextDiff(context, text.value);
+        passed = expectTrue(piece.value.change == changes[index] && piece.value.length == std::strlen(expected[index]) &&
+                                std::memcmp(piece.value.text, expected[index], piece.value.length) == 0, expected[index]) && passed;
+    }
+    passed = expectTrue(KiottySpec_nextTextDiff(context, text.value).value.length == 0, "end of pieces") && passed;
+    KiottySpec_closeTextDiffCursor(context, text.value);
+    passed = expectTrue(KiottySpec_nextTextDiff(context, text.value).code == KIOTTY_SPEC_STATUS_INVALID_HANDLE, "closed cursor") && passed;
+
+    passed = expectTrue(KiottySpec_openTextDiffCursor(context, handle, static_cast<KiottySpecTextField>(KIOTTY_SPEC_CHANGED_FIELD_BODY), 1, 2).code ==
+                            KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "body rejected") && passed;
+    passed = expectTrue(KiottySpec_openTextDiffCursor(context, KIOTTY_SPEC_INVALID_ITEM_HANDLE, KIOTTY_SPEC_TEXT_FIELD_SUMMARY, 1, 2).code ==
+                            KIOTTY_SPEC_STATUS_INVALID_HANDLE, "invalid handle") && passed;
+    const KiottySpecCursorResult wrong = KiottySpec_openItemDiffCursor(context, query);
+    passed = expectTrue(KiottySpec_nextTextDiff(context, wrong.value).code == KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE, "wrong cursor type") && passed;
+    KiottySpec_closeCursor(context, wrong.value);
+    query.from = 2;
+    query.to = 1;
+    passed = expectTrue(KiottySpec_summarizeDiff(context, query).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "reversed range") && passed;
+    query.from = 9;
+    query.to = KIOTTY_SPEC_CHECKPOINT_CURRENT;
+    passed = expectTrue(KiottySpec_summarizeDiff(context, query).code == KIOTTY_SPEC_STATUS_NOT_FOUND, "missing checkpoint") && passed;
+    (void)none;
+    KiottySpec_releaseContext(context);
+    return passed;
+}
+
 }
 
 int main()
@@ -129,6 +239,7 @@ int main()
         {"items tags relations", testItemsTagsRelations},
         {"complete", testComplete},
         {"round trip", testRoundTrip},
+        {"diff", testDiff},
     };
     int failed = 0;
     for (const auto& test : tests) {

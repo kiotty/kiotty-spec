@@ -22,7 +22,8 @@ struct Arguments {
     bool flag(std::string_view name) const;
 };
 
-Arguments parseArguments(const std::vector<std::string>& tokens, size_t first);
+// extra_flags 는 그 명령에서만 값을 받지 않는 이름이다 (ks diff 의 --title 같은 것).
+Arguments parseArguments(const std::vector<std::string>& tokens, size_t first, const std::vector<std::string_view>& extra_flags);
 
 struct Session {
     KiottySpecContext* context {nullptr};
@@ -66,5 +67,8 @@ struct CommandEntry {
 };
 
 const std::vector<CommandEntry>& commands();
+
+int runDiff(Session& session);
+extern const std::vector<std::string_view> DIFF_FLAGS;
 
 }

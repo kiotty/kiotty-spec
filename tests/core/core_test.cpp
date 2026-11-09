@@ -6,11 +6,13 @@
 #include "result.h"
 #include "span.h"
 #include "text_buffer.h"
+#include "text_diff.h"
 #include "utf8.h"
 
 #include <cstdio>
 #include <cstring>
 #include <functional>
+#include <initializer_list>
 #include <limits>
 #include <utility>
 
@@ -234,6 +236,37 @@ bool testUtf8Invalid()
     return ok;
 }
 
+bool expectSegments(const char* before, const char* after, std::initializer_list<std::pair<core::TextChange, const char*>> expected, const char* label)
+{
+    static uint8_t table[256 * 256];
+    core::TextSegment segments[512] {};
+    const auto result = core::diffText(textOf(before), textOf(after), core::Span<uint8_t>(table, sizeof(table)), core::Span<core::TextSegment>(segments, 512));
+    bool ok = expectTrue(static_cast<bool>(result) && result.value == expected.size(), label);
+    size_t index = 0;
+    for (const auto& [change, text] : expected) {
+        if (!ok || index >= result.value) { break; }
+        const core::TextSegment& segment = segments[index++];
+        const char* source = segment.source == core::TextSource::BEFORE ? before : after;
+        const bool same = segment.change == change && segment.length == std::strlen(text) && std::memcmp(source + segment.offset, text, segment.length) == 0;
+        ok = expectTrue(same, label) && ok;
+    }
+    return ok;
+}
+
+bool testTextDiff()
+{
+    using core::TextChange;
+    bool ok = true;
+    ok = expectSegments("관계를 링크 타입으로 검사한다", "관계를 모델의 관계 정의로 검사한다",
+                        {{TextChange::UNCHANGED, "관계를 "}, {TextChange::REMOVED, "링크 타입으로"}, {TextChange::ADDED, "모델의 관계 정의로"}, {TextChange::UNCHANGED, " 검사한다"}},
+                        "design 5.4 summary example") && ok;
+    ok = expectSegments("링크 그래프", "관계 저장소", {{TextChange::REMOVED, "링크 그래프"}, {TextChange::ADDED, "관계 저장소"}}, "design 5.4 title example") && ok;
+    ok = expectSegments("같은 값", "같은 값", {{TextChange::UNCHANGED, "같은 값"}}, "same value") && ok;
+    ok = expectSegments("", "새 요약", {{TextChange::ADDED, "새 요약"}}, "added value") && ok;
+    ok = expectSegments("abc def", "abc deg", {{TextChange::UNCHANGED, "abc "}, {TextChange::REMOVED, "def"}, {TextChange::ADDED, "deg"}}, "word aligned") && ok;
+    return ok;
+}
+
 }
 
 int main()
@@ -254,6 +287,7 @@ int main()
         {"checked arithmetic", testChecked},
         {"utf8 valid", testUtf8Valid},
         {"utf8 invalid", testUtf8Invalid},
+        {"text diff", testTextDiff},
     };
 
     int failed = 0;

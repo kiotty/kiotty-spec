@@ -85,7 +85,8 @@ int run(const std::vector<std::string>& tokens)
     const CommandEntry* command = findCommand(tokens, consumed);
     if (command == nullptr) { return usage("알 수 없는 명령 '" + tokens[0] + (tokens.size() > 1 ? " " + tokens[1] : "") + "'. `ks help` 참고"); }
     Session session;
-    session.args = parseArguments(tokens, consumed);
+    const bool diff = std::string_view(command->group) == "diff";
+    session.args = parseArguments(tokens, consumed, diff ? DIFF_FLAGS : std::vector<std::string_view>());
     if (session.args.flag("help")) {
         std::cout << "ks " << command->group << (command->verb[0] != '\0' ? " " : "") << command->verb << " " << command->usage << "\n  "
                   << command->summary << "\n";

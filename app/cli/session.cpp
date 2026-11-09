@@ -64,14 +64,16 @@ bool Arguments::flag(std::string_view name) const
     return false;
 }
 
-Arguments parseArguments(const std::vector<std::string>& tokens, size_t first)
+Arguments parseArguments(const std::vector<std::string>& tokens, size_t first, const std::vector<std::string_view>& extra_flags)
 {
     Arguments args;
     for (size_t index = first; index < tokens.size(); ++index) {
         const std::string& token = tokens[index];
         if (token.size() > 2 && token.compare(0, 2, "--") == 0) {
             const std::string name = token.substr(2);
-            if (isFlag(name) || index + 1 >= tokens.size()) {
+            bool extra = false;
+            for (const std::string_view flag : extra_flags) { extra = extra || flag == name; }
+            if (isFlag(name) || extra || index + 1 >= tokens.size()) {
                 args.flags.push_back(name);
             } else {
                 args.options.emplace_back(name, tokens[++index]);

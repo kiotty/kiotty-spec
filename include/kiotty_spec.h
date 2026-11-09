@@ -315,6 +315,110 @@ KIOTTY_SPEC_API KiottySpecPositionResult   KiottySpec_readPosition(KiottySpecCon
 KIOTTY_SPEC_API KiottySpecCursorResult     KiottySpec_openStepRunCursor(KiottySpecContext *context);
 KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_fetchStepRunPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecStepRunPage *page);
 
+/* 체크포인트 사이 비교 (5.4). from < to 여야 하며 to 가 KIOTTY_SPEC_CHECKPOINT_CURRENT 이면 가장 최근 체크포인트다.
+ * 거꾸로 된 구간은 INVALID_ARGUMENT, 정리로 지워진 체크포인트는 NOT_FOUND */
+typedef enum KiottySpecChange {
+    KIOTTY_SPEC_CHANGE_ADDED = 1,
+    KIOTTY_SPEC_CHANGE_MODIFIED,
+    KIOTTY_SPEC_CHANGE_REMOVED
+} KiottySpecChange;
+
+typedef enum KiottySpecChangedField {
+    KIOTTY_SPEC_CHANGED_FIELD_TITLE   = 1 << 0,
+    KIOTTY_SPEC_CHANGED_FIELD_SUMMARY = 1 << 1,
+    KIOTTY_SPEC_CHANGED_FIELD_PARENT  = 1 << 2,
+    KIOTTY_SPEC_CHANGED_FIELD_TAGS    = 1 << 3,
+    KIOTTY_SPEC_CHANGED_FIELD_BODY    = 1 << 4
+} KiottySpecChangedField;
+
+typedef struct KiottySpecDiffQuery {
+    KiottySpecCheckpointHandle from;
+    KiottySpecCheckpointHandle to;
+    uint32_t                   kind_mask;       /* 비트 (kind - 1). 0 이면 모든 Kind */
+    uint32_t                   field_mask;      /* KiottySpecChangedField. 0 이면 거르지 않음 */
+} KiottySpecDiffQuery;                          /* 24 바이트 */
+
+typedef struct KiottySpecItemDiff {
+    KiottySpecCheckpointHandle before;          /* from 시점 버전의 체크포인트. 추가면 0 */
+    KiottySpecCheckpointHandle after;           /* to 시점 버전의 체크포인트. 삭제면 지운 체크포인트 */
+    KiottySpecItemHandle       item;            /* 지금 풀에 있으면 그 핸들, 없으면 INVALID */
+    KiottySpecItemKind         kind;
+    KiottySpecChange           change;
+    uint32_t                   changed_fields;  /* 수정일 때만 */
+    uint32_t                   reserved;
+    char                       id[KIOTTY_SPEC_MAX_ID_LENGTH + 1];
+} KiottySpecItemDiff;                           /* 56 바이트 */
+
+typedef struct KiottySpecRelationDiff {
+    KiottySpecCheckpointHandle checkpoint;      /* 추가 · 삭제가 일어난 체크포인트 */
+    KiottySpecItemKind         model;
+    uint32_t                   relation;
+    KiottySpecChange           change;          /* ADDED 또는 REMOVED */
+    uint32_t                   reserved;
+    char                       from_id[KIOTTY_SPEC_MAX_ID_LENGTH + 1];
+    char                       to_id[KIOTTY_SPEC_MAX_ID_LENGTH + 1];
+} KiottySpecRelationDiff;                       /* 56 바이트 */
+
+typedef struct KiottySpecKindDiff {
+    uint32_t added;
+    uint32_t modified;
+    uint32_t removed;
+    uint32_t relations_added;
+    uint32_t relations_removed;
+    uint32_t decision_changed;                  /* 0 또는 1 */
+} KiottySpecKindDiff;                           /* 24 바이트 */
+
+typedef struct KiottySpecDiffSummaryResult {
+    KiottySpecStatus           code;
+    uint32_t                   reserved;
+    KiottySpecCheckpointHandle from;
+    KiottySpecCheckpointHandle to;              /* CURRENT 를 실제 체크포인트로 바꾼 값 */
+    KiottySpecKindDiff         kinds[KIOTTY_SPEC_ITEM_KIND_COUNT];  /* index = kind - 1 */
+} KiottySpecDiffSummaryResult;                  /* 336 바이트 */
+
+typedef struct KiottySpecItemDiffPage     { size_t length; KiottySpecItemDiff     elements[KIOTTY_SPEC_PAGE_CAPACITY]; } KiottySpecItemDiffPage;
+typedef struct KiottySpecRelationDiffPage { size_t length; KiottySpecRelationDiff elements[KIOTTY_SPEC_PAGE_CAPACITY]; } KiottySpecRelationDiffPage;
+
+typedef enum KiottySpecTextField {
+    KIOTTY_SPEC_TEXT_FIELD_TITLE   = KIOTTY_SPEC_CHANGED_FIELD_TITLE,
+    KIOTTY_SPEC_TEXT_FIELD_SUMMARY = KIOTTY_SPEC_CHANGED_FIELD_SUMMARY
+} KiottySpecTextField;
+
+typedef enum KiottySpecTextChange {
+    KIOTTY_SPEC_TEXT_UNCHANGED = 0,
+    KIOTTY_SPEC_TEXT_ADDED,
+    KIOTTY_SPEC_TEXT_REMOVED
+} KiottySpecTextChange;
+
+/* text 는 커서 풀 안을 가리킨다. 커서를 닫을 때까지만 유효하며 null 종료가 아니다 */
+typedef struct KiottySpecTextDiff {
+    const char          *text;
+    size_t               length;                /* 0 이면 더 읽을 조각이 없다 */
+    KiottySpecTextChange change;
+    uint32_t             reserved;
+} KiottySpecTextDiff;                           /* 24 바이트 */
+
+typedef struct KiottySpecTextDiffResult { KiottySpecStatus code; uint32_t reserved; KiottySpecTextDiff value; } KiottySpecTextDiffResult;
+
+KIOTTY_SPEC_API KiottySpecDiffSummaryResult KiottySpec_summarizeDiff(KiottySpecContext *context, KiottySpecDiffQuery query);
+/* Kind 오름차순, 그다음 ID 오름차순 */
+KIOTTY_SPEC_API KiottySpecCursorResult     KiottySpec_openItemDiffCursor(KiottySpecContext *context, KiottySpecDiffQuery query);
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_fetchItemDiffPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecItemDiffPage *page);
+/* Kind, from_id, relation, to_id 순. field_mask 는 쓰지 않는다 */
+KIOTTY_SPEC_API KiottySpecCursorResult     KiottySpec_openRelationDiffCursor(KiottySpecContext *context, KiottySpecDiffQuery query);
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_fetchRelationDiffPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecRelationDiffPage *page);
+/* 그 시점의 버전. 지워진 항목도 그 시점에 있었으면 읽는다. 그 시점에 없거나 지워져 있으면 NOT_FOUND.
+ * handle 은 지금 풀에 있으면 그 핸들, 없으면 INVALID. parent 는 지금 풀에 있는 상위 항목이면 그 핸들 */
+KIOTTY_SPEC_API KiottySpecItemResult       KiottySpec_readItemAt(KiottySpecContext *context, KiottySpecText id, KiottySpecCheckpointHandle checkpoint);
+KIOTTY_SPEC_API KiottySpecTagResult        KiottySpec_readItemTagAt(KiottySpecContext *context, KiottySpecText id, uint32_t tag, KiottySpecCheckpointHandle checkpoint);
+KIOTTY_SPEC_API KiottySpecSizeResult       KiottySpec_readItemBodyAt(KiottySpecContext *context, KiottySpecText id, KiottySpecCheckpointHandle checkpoint, char *buffer, size_t capacity);
+KIOTTY_SPEC_API KiottySpecSizeResult       KiottySpec_readDecisionAt(KiottySpecContext *context, KiottySpecItemKind kind, KiottySpecCheckpointHandle checkpoint, char *buffer, size_t capacity);
+/* 제목 · 요약의 글자 diff. total 은 조각 수. 본문(BODY)이나 비트 둘 이상은 INVALID_ARGUMENT */
+KIOTTY_SPEC_API KiottySpecCursorResult     KiottySpec_openTextDiffCursor(KiottySpecContext *context, KiottySpecItemHandle item, KiottySpecTextField field,
+                                                                         KiottySpecCheckpointHandle from, KiottySpecCheckpointHandle to);
+KIOTTY_SPEC_API KiottySpecTextDiffResult   KiottySpec_nextTextDiff(KiottySpecContext *context, KiottySpecCursor cursor);
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_closeTextDiffCursor(KiottySpecContext *context, KiottySpecCursor cursor);
+
 /* 교환. directory 길이가 0 이면 .kiotty/spec. 가져오기는 DB 내용을 jsonl 로 바꾼다.
  * 옛 형식(정의서 v0)의 jsonl 은 변환해서 가져오며, 잘라 내거나 건너뛴 것을 report 에 적는다. 값은 그런 항목 수 */
 KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_exportJsonl(KiottySpecContext *context, KiottySpecText directory);

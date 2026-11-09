@@ -70,4 +70,13 @@ Result<size_t, KiottySpecStatus> CursorPool::total(CursorId cursor)
 
 KiottySpecStatus CursorPool::close(CursorId cursor) { return _slots.release(decode(cursor)); }
 
+Result<CursorSpace, KiottySpecStatus> CursorPool::space(CursorId cursor, CursorKind kind)
+{
+    const Handle handle = decode(cursor);
+    const auto slot = _slots.get(handle);
+    if (!slot) { return Result<CursorSpace, KiottySpecStatus>::failure(slot.code); }
+    if (slot.value->kind != kind) { return Result<CursorSpace, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE); }
+    return Result<CursorSpace, KiottySpecStatus>::success(CursorSpace{slot.value, rowsOf(handle)});
+}
+
 }

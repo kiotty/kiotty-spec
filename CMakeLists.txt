@@ -83,7 +83,7 @@ kiotty_no_exceptions(ks)
 # ---------------------------------------------------------------------------
 # core 단위 테스트: 개발수칙 0.1 에 따라 C++17 로 빌드한다.
 # ---------------------------------------------------------------------------
-add_executable(kiotty_core_test tests/core/core_test.cpp)
+add_executable(kiotty_core_test tests/core/core_test.cpp src/implementation/core/text_diff.cpp)
 target_include_directories(kiotty_core_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src/implementation/core)
 set_target_properties(kiotty_core_test PROPERTIES
     CXX_STANDARD 17

@@ -31,6 +31,12 @@ public:
 
     Span<const char> view() const { return Span<const char>(_data.data(), _length); }
     size_t capacity() const { return _data.size() - 1; }
+    // 내용을 버리고 영역 전체를 작업 공간으로 빌려준다.
+    Span<char> scratch()
+    {
+        clear();
+        return Span<char>(_data.data(), capacity());
+    }
 
 private:
     std::vector<char> _data;
