@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kiotty-Spec 설계서 v1</title>
+<style>
+  :root {
+    --ink: #1f2328; --muted: #59636e; --line: #d0d7de; --bg: #ffffff; --soft: #f6f8fa;
+    --accent: #0969da; --warn-bg: #fff8c5; --warn-line: #d4a72c; --ok-bg: #dafbe1; --ok-line: #1a7f37;
+    --mono: ui-monospace, "Cascadia Mono", "D2Coding", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink: #e6edf3; --muted: #9198a1; --line: #3d444d; --bg: #0d1117; --soft: #161b22; --accent: #4493f8;
+            --warn-bg: #3a2d00; --warn-line: #9e6a03; --ok-bg: #0f2e1a; --ok-line: #2ea043; }
+  }
+  html { font-size: 15px; }
+  body { margin: 0; color: var(--ink); background: var(--bg); font-family: -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", Roboto, sans-serif; line-height: 1.6; }
+  .page { max-width: 1040px; margin: 0 auto; padding: 32px 24px 96px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; }
+  h2 { font-size: 1.4rem; margin: 48px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+  h3 { font-size: 1.1rem; margin: 28px 0 8px; }
+  p { margin: 8px 0; }
+  .byline { color: var(--muted); margin-bottom: 24px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0 16px; font-size: 0.94rem; }
+  th, td { border: 1px solid var(--line); padding: 6px 10px; vertical-align: top; text-align: left; }
+  th { background: var(--soft); font-weight: 600; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  code, pre { font-family: var(--mono); font-size: 0.9em; }
+  code { background: var(--soft); padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; line-height: 1.45; }
+  pre code { background: none; padding: 0; }
+  .note { border-left: 4px solid var(--warn-line); background: var(--warn-bg); padding: 8px 14px; border-radius: 0 6px 6px 0; margin: 12px 0; }
+  .decided { border-left: 4px solid var(--ok-line); background: var(--ok-bg); padding: 8px 14px; border-radius: 0 6px 6px 0; margin: 12px 0; }
+  .toc { background: var(--soft); border: 1px solid var(--line); border-radius: 6px; padding: 12px 20px; columns: 2; column-gap: 32px; }
+  .toc ol { margin: 0; padding-left: 20px; }
+  .toc li { break-inside: avoid; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; margin: 12px 0 16px; }
+  .step { flex: 1 1 150px; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: var(--soft); font-size: 0.9rem; }
+  .step b { display: block; font-size: 0.8rem; color: var(--muted); }
+  .arrow { align-self: center; color: var(--muted); }
+  .tag { display: inline-block; font-size: 0.78rem; padding: 0 6px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); margin-left: 6px; vertical-align: middle; }
+  .del { text-decoration: line-through; color: var(--muted); }
+  footer { margin-top: 64px; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Kiotty-Spec 설계서 v1</h1>
+<p class="byline">2026-11-09 · 초안 · 참조: <code>docs/requirements/definition.md</code>, <code>docs/requirements/개발수칙.md</code>, <code>docs/issues/261108_03_compaction.md</code>, <code>docs/design/c_interface_v2.md</code></p>
+
+<p>정의서가 정한 개념(체크포인트 · 항목 · 링크 · 결정 기록 · 개발 단계)을 그대로 두고, 이슈 <code>261108_03</code>이 요구한 두 목표 ― <strong>토큰 절약</strong>과 <strong>절차 간략화</strong> ― 에 맞게 저장 모델과 C 인터페이스를 다시 정한다. 메모리 · 보안 · 가독성 규칙은 개발수칙 v2를, 인터페이스 형태는 C 인터페이스 v2 설계를 따른다.</p>
+
+<div class="toc">
+<ol>
+  <li><a href="#goal">설계 목표와 범위</a></li>
+  <li><a href="#diff">정의서에서 바뀌는 것</a></li>
+  <li><a href="#model">항목 모델</a></li>
+  <li><a href="#handle">핸들과 식별자</a></li>
+  <li><a href="#checkpoint">체크포인트와 개발 단계</a></li>
+  <li><a href="#decision">결정 기록</a></li>
+  <li><a href="#interface-files">외부 인터페이스 파일의 처리</a></li>
+  <li><a href="#query">질의와 출력</a></li>
+  <li><a href="#capi">C 인터페이스</a></li>
+  <li><a href="#memory">메모리 구조와 디렉토리</a></li>
+  <li><a href="#migration">현재 구현에서의 이행</a></li>
+  <li><a href="#open">확인이 필요한 점</a></li>
+</ol>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="goal">1. 설계 목표와 범위</h2>
+
+<table>
+<tr><th style="width:22%">목표</th><th>설계가 하는 일</th><th style="width:20%">출처</th></tr>
+<tr><td>토큰 절약</td><td>AI가 읽는 모든 기록을 <strong>고정 크기 필드</strong>로 제한한다. 제목 128 · 요약 256 · 결정 기록 2048 바이트. 긴 본문은 요청할 때만 호출자 버퍼로 읽는다. 연관 항목은 기본적으로 ID만, 깊이 1만 보여 준다.</td><td>이슈 목적 1, 모델 4 · 8</td></tr>
+<tr><td>절차 간략화</td><td>Kiotty-Spec은 파일을 관리하지 않는다. 변경 요청과 테스트 결과를 항목으로 합치고, 링크 종류를 모델의 관계 정의로 대체해 개념을 줄인다. Markdown 문서를 만드는 기능은 지운다.</td><td>이슈 "문서 관리 기능 삭제", "MD 문서 삭제", 모델 7</td></tr>
+<tr><td>메모리 예측 가능성</td><td>모든 용량은 <code>KiottySpecConfiguration</code>으로 받아 컨텍스트를 만들 때 한 번 확보한다. 외부에는 컨텍스트와 핸들만 보인다. 에러는 <code>Result</code>로만 흐른다.</td><td>개발수칙 1.1 · 1.2 · 2.5 · 5.1</td></tr>
+</table>
+
+<p><strong>범위.</strong> 라이브러리 <code>kiotty_spec</code>의 저장 모델, 컨텍스트, C 인터페이스. CLI <code>ks</code>는 인터페이스를 1:1로 노출하는 얇은 층으로만 다룬다. 여러 사람의 병합(백로그 <code>261104_02</code>)은 범위 밖이다.</p>
+
+<p><strong>우선 순위.</strong> 정의서, 이슈, C 인터페이스 v2가 서로 다를 때는 가장 나중에 쓰인 이슈 <code>261108_03</code>을 따르고, 그 차이를 <a href="#open">12절</a>에 적는다.</p>
+
+<!-- ===================================================================== -->
+<h2 id="diff">2. 정의서에서 바뀌는 것</h2>
+
+<table>
+<tr><th style="width:18%">영역</th><th style="width:32%">정의서 (현재 구현)</th><th>이 설계</th></tr>
+<tr><td>항목 종류</td><td>8종. 변경 요청, 결과, 파일은 별도 엔티티</td><td><strong>13종.</strong> 변경 요청, 세 테스트의 결과, 코드 검사 결과가 항목이 된다. 파일 엔티티는 없어진다 (<a href="#model-kind">3.1</a>)</td></tr>
+<tr><td>분류 (category)</td><td>종류별 고정 enum</td><td>모델의 <strong>태그 정의</strong>로 표현. OR 비트맵으로 검색 (<a href="#model-tag">3.4</a>)</td></tr>
+<tr><td>링크</td><td>5종의 링크 타입. 허용 쌍은 코드가 검사</td><td>모델의 <strong>관계 정의</strong>가 "무슨 Kind를 어떤 이름으로 참조하는가"를 말한다. 링크 타입 enum은 없어진다 (<a href="#model-relation">3.5</a>)</td></tr>
+<tr><td>식별자</td><td>문자열 ID만</td><td>내부는 <strong>8바이트 핸들</strong>(generation + index), 사람에게는 16바이트 ID (<a href="#handle">4</a>)</td></tr>
+<tr><td>개발 단계</td><td>Step 1 ~ 10</td><td><strong>Step 1 ~ 12.</strong> 변경 요청 접수가 1단계가 되고, 시스템 · E2E 테스트가 계획과 실행으로 나뉘며, 코드 검사가 독립 단계가 된다 (<a href="#step">5.2</a>)</td></tr>
+<tr><td>체크포인트</td><td>순번 · 단계 · 확정 여부 · 목적 · 메모</td><td>순번 핸들 · 단계 · <strong>상태(STARTED → RUNNING → DONE)</strong> · 시작 시각 · 설명 64바이트 · 이전 체크포인트 (<a href="#checkpoint">5.1</a>)</td></tr>
+<tr><td>결정 기록</td><td>종류당 문서 하나, 줄 단위 목록, 길이 제한 없음</td><td>종류당 하나는 같다. 본문은 <strong>2048바이트 상한</strong> (<a href="#decision">6</a>)</td></tr>
+<tr><td>파일</td><td>GUI 초안 · C 헤더 · 소스를 경로와 해시로 추적, html 스캔</td><td><strong>관리하지 않는다.</strong> AI가 항목을 질의해 <code>.hpp</code> · <code>.html</code>을 만든다 (<a href="#interface-files">7</a>)</td></tr>
+<tr><td>출력</td><td>맥락 문서 · 보고서 · 내보내기가 Markdown</td><td><strong>레코드 페이지만</strong> 돌려준다. <code>ks</code>는 TSV 한 줄 = 레코드 하나로 찍는다 (<a href="#query">8</a>)</td></tr>
+<tr><td>연관 항목</td><td>맥락 문서가 링크된 항목을 본문까지 깊이 2로 끌어옴</td><td>묻지 않으면 <strong>ID만, 깊이 1</strong> (<a href="#query-related">8.2</a>)</td></tr>
+</table>
+
+<p>바뀌지 않는 것: (체크포인트, 종류, ID)로 기록을 식별한다(R-1). 확정은 사용자만 한다(R-2). 1:1 조건(R-3), 마일스톤 포함 조건(R-5), RELEASE 조건(R-10), 정리(Compaction) 규칙은 그대로다. 마일스톤 포함 항목의 상태(R-6)는 계산 대신 태그로 기록한다 (<a href="#model-relation">3.5</a>).</p>
+
+<!-- ===================================================================== -->
+<h2 id="model">3. 항목 모델</h2>
+
+<p>항목 하나는 <strong>공통 속성</strong>과 <strong>자기 Kind의 모델이 정한 속성</strong>(태그 값, 관계, Kind별 필드)으로 이루어진다. 모델은 Kind마다 하나씩 있으며, 컨텍스트를 만들 때 고정된다.</p>
+
+<h3 id="model-kind">3.1 Kind</h3>
+
+<table>
+<tr><th>enum</th><th>이름</th><th>ID 접두어</th><th>만드는 Step</th><th>정의서 대응</th></tr>
+<tr><td><code>KIOTTY_SPEC_ITEM_KIND_CHANGE_REQUEST</code></td><td>변경 요청</td><td><code>CR</code></td><td>1</td><td>2.5 변경 요청 → 항목으로 합침</td></tr>
+<tr><td><code>KIOTTY_SPEC_ITEM_KIND_REQUIREMENT</code></td><td>요구사항</td><td><code>REQ</code></td><td>2</td><td>요구사항</td></tr>
+<tr><td><code>KIOTTY_SPEC_ITEM_KIND_RULE</code></td><td>개발 수칙</td><td><code>RULE</code></td><td>2</td><td>개발 규칙</td></tr>
+<tr><td><code>KIOTTY_SPEC_ITEM_KIND_EXTERNAL_INTERFACE</code></td><td>외부 인터페이스</td><td><code>UI</code></td><td>3</td><td>외부 인터페이스 항목 (이름 변경: <code>INTERFACE</code> → <code>EXTERNAL_INTERFACE</code>)</td></tr>
+<tr><td><code>KIOTTY_SPEC_ITEM_KIND_DESIGN</code></td><td>설계 사항</td><td><code>DSN</code></td><td>4</td><td>설계 항목</td></tr>
+<tr><td><code>KIOTTY_SPEC_ITEM_KIND_UNIT_TEST_PLAN</code></td><td>유닛 테스트</td><td><code>UT</code></td><td>5</td><td>유닛 테스트</td></tr>
+<tr><td><code>KIOTTY_SPEC_ITEM_KIND_MILESTONE</code></td><td>마일스톤</td><td><code>MS</code></td><td>6</td><td>마일스톤</td></tr>
+<tr><td><code>KIOTTY_SPEC_ITEM_KIND_UNIT_TEST_RESULT</code></td><td>유닛 테스트 결과</td><td><code>UTR</code></td><td>7</td><td>2.7 결과 → 항목으로 합침</td></tr>
+<tr><td><code>KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST_PLAN</code></td><td>시스템 테스트</td><td><code>ST</code></td><td>8</td><td>시스템 테스트</td></tr>
+<tr><td><code>KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST_RESULT</code></td><td>시스템 테스트 결과</td><td><code>STR</code></td><td>9</td><td>2.7 결과</td></tr>
+<tr><td><code>KIOTTY_SPEC_ITEM_KIND_CODE_INSPECTION_RESULT</code></td><td>코드 검사 결과</td><td><code>CIR</code></td><td>10</td><td>2.7 결과 (코드 검사). 개발 수칙과 1:1</td></tr>
+<tr><td><code>KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST_PLAN</code></td><td>E2E 테스트</td><td><code>E2E</code></td><td>11</td><td>E2E 테스트</td></tr>
+<tr><td><code>KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST_RESULT</code></td><td>E2E 테스트 결과</td><td><code>E2ER</code></td><td>12</td><td>2.7 결과</td></tr>
+</table>
+
+<div class="decided"><strong>결정 (2026-11-09).</strong> 코드 검사 결과는 별도 Kind <code>CODE_INSPECTION_RESULT</code>다. 개발 수칙 하나에 검사 결과 하나가 1:1로 대응하며, 위반 위치 목록은 본문에 둔다. 이 Kind를 만드는 단계로 <code>KIOTTY_SPEC_STEP_CODE_INSPECTING</code>을 둔다 (<a href="#step">5.2</a>).</div>
+
+<h3 id="model-common">3.2 공통 속성</h3>
+
+<p>모든 Kind가 가진다. 값 객체이며 포인터가 없다(개발수칙 1.4). 멤버는 크기 내림차순으로 두고 <code>static_assert(sizeof)</code>로 고정한다(3.4).</p>
+
+<table>
+<tr><th>필드</th><th class="num">바이트</th><th>타입</th><th>설명</th></tr>
+<tr><td><code>checkpoint</code></td><td class="num">8</td><td><code>CheckpointHandle</code></td><td>이 버전이 만들어진 체크포인트. 하위 4바이트 sequence로 "몇 번째 단계인지" 알 수 있다. 정의서 <code>cp_from</code></td></tr>
+<tr><td><code>parent</code></td><td class="num">8</td><td><code>ItemHandle</code></td><td>상위 항목. 하위 모듈 · 하위 요구사항 같은 계층. 비어 있으면 <code>INVALID_INDEX</code>. 핸들에서 ID를 바로 가져올 수 있다</td></tr>
+<tr><td><code>kind</code></td><td class="num">4</td><td><code>KiottySpecItemKind</code></td><td>종류. 이름 문자열(32바이트)은 모델의 <code>name</code>에서 찾는다</td></tr>
+<tr><td><code>_padding</code></td><td class="num">4</td><td></td><td></td></tr>
+<tr><td><code>id</code></td><td class="num">16</td><td><code>FixedString&lt;15&gt;</code></td><td>사람에게 보이는 식별자. <code>REQ-003</code>, <code>CR-007</code></td></tr>
+<tr><td><code>title</code></td><td class="num">128</td><td><code>FixedString&lt;127&gt;</code></td><td>제목. 한글 40자 안팎</td></tr>
+<tr><td><code>summary</code></td><td class="num">256</td><td><code>FixedString&lt;255&gt;</code></td><td>간략한 설명. 한글 80자 안팎. AI가 목록을 읽을 때 보는 것은 여기까지다</td></tr>
+<tr><th>합계</th><th class="num">424</th><th colspan="2">1024 바이트 이하 (개발수칙 1.4)</th></tr>
+</table>
+
+<pre><code>struct ItemRecord
+{
+    CheckpointHandle     checkpoint;
+    ItemHandle           parent;
+    KiottySpecItemKind   kind;
+    uint32_t             _padding;
+    FixedString&lt;15&gt;      id;
+    FixedString&lt;127&gt;     title;
+    FixedString&lt;255&gt;     summary;
+};
+static_assert(sizeof(ItemRecord) == 424, "unexpected padding");</code></pre>
+
+<p>길이는 UTF-8 바이트 수다. 상한을 넘는 입력은 <code>KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED</code>로 거부하고 잘라 넣지 않는다(C 인터페이스 v2 2절, 개발수칙 2.2).</p>
+
+<h3 id="model-model">3.3 모델</h3>
+
+<p>Kind마다 모델 하나가 있다. 모델은 데이터가 아니라 <strong>메타데이터</strong>이며, 컨텍스트를 만들 때 코드가 정의한 표를 읽어 고정한다. 사용자가 런타임에 모델을 바꾸는 기능은 v1에 두지 않는다.</p>
+
+<table>
+<tr><th>필드</th><th class="num">바이트</th><th>설명</th></tr>
+<tr><td><code>name</code></td><td class="num">32</td><td>모델 이름. 한글 10자 안팎. Kind에 대응하는 표시 이름은 여기서 찾는다 ("요구사항", "설계 사항")</td></tr>
+<tr><td><code>tags</code></td><td class="num">가변 (정의 수 × 3136)</td><td>태그 정의 목록. 모델당 최대 256개 (<a href="#model-tag">3.4</a>)</td></tr>
+<tr><td><code>relations</code></td><td class="num">가변 (정의 수 × 72)</td><td>관계 정의 목록 (<a href="#model-relation">3.5</a>)</td></tr>
+</table>
+
+<h3 id="model-tag">3.4 태그 정의와 OR 비트맵 검색</h3>
+
+<p>태그는 정의서의 category를 대신하며, 한 항목이 한 태그 안에서 여러 비트를 가질 수 있다. 검색은 "이 비트 중 하나라도 켜진 항목"을 비트 AND 한 번으로 고른다.</p>
+
+<table>
+<tr><th>필드</th><th class="num">바이트</th><th>설명</th></tr>
+<tr><td><code>name</code></td><td class="num">64</td><td>태그 이름. 예: "요구사항 종류"</td></tr>
+<tr><td><code>bit_names[48]</code></td><td class="num">64 × 48 = 3072</td><td>n번째 비트(0 ~ 47)의 이름. 예: 0 "기능 요구사항", 1 "품질 요구사항", 2 "환경 요구사항"</td></tr>
+<tr><th>합계</th><th class="num">3136</th><th>태그 정의 하나</th></tr>
+</table>
+
+<p>항목이 가진 태그 값은 태그 정의 하나당 <code>uint64_t</code> 하나(하위 48비트 사용)다. 레코드 1024바이트 제한 때문에 태그 값은 <code>ItemRecord</code> 안이 아니라 <strong>같은 index를 쓰는 별도 배열</strong>에 둔다(개발수칙 3.1 hot/cold 분리). 모델이 정의한 태그 수만큼만 확보한다.</p>
+
+<pre><code>struct TagQuery
+{
+    KiottySpecItemKind kind;
+    uint32_t           tag_index;   // 모델의 몇 번째 태그인가
+    uint64_t           mask;        // 켜져 있어야 하는 비트들 (OR)
+};
+// 항목이 선택되는 조건: (tag_values[item][tag_index] &amp; mask) != 0</code></pre>
+
+<p>v1의 모델별 태그 (정의서 2.2의 분류를 옮긴 것):</p>
+
+<table>
+<tr><th>Kind</th><th>태그 이름</th><th>비트 이름</th></tr>
+<tr><td>변경 요청</td><td>출처</td><td>사용자 피드백 · 이슈 (RELEASE 이후) · 초기 요구</td></tr>
+<tr><td>변경 요청</td><td>상태</td><td>열림 · 반영 중 · 완료 · 거부</td></tr>
+<tr><td>변경 요청</td><td>진입 단계</td><td>Step 1 ~ 12 (비트 하나만 켠다). 영향받는 가장 상류 단계이며, 흐름은 여기서 다시 시작한다</td></tr>
+<tr><td>요구사항</td><td>요구사항 종류</td><td>기능 · 품질 · 환경</td></tr>
+<tr><td>개발 수칙</td><td>수칙 종류</td><td>아키텍처 · 컨벤션 · 코딩 제약 · 의존성 · 테스트</td></tr>
+<tr><td>외부 인터페이스</td><td>인터페이스 종류</td><td>GUI 뷰 · C 함수 · C 타입</td></tr>
+<tr><td>설계 사항</td><td>설계 종류</td><td>모듈 · 동작 흐름 · 디렉토리 · 메모리 정책</td></tr>
+<tr><td>설계 사항, 유닛 테스트</td><td>구현 상태</td><td>미구현 · 변경 필요 · 구현 완료 (비트 하나만 켠다)</td></tr>
+<tr><td>결과 4종 (유닛 · 시스템 · E2E 테스트 결과, 코드 검사 결과)</td><td>결과</td><td>PASS · FAIL</td></tr>
+</table>
+
+<h3 id="model-relation">3.5 관계 정의</h3>
+
+<p>관계 정의는 "이 모델의 항목이 어떤 Kind의 항목을 무슨 이름으로 참조하는가"다. 링크 타입 enum과 허용 쌍 검사 코드를 대신한다. 관계가 어떤 참조인지를 정의 자체가 말하므로, 링크 레코드에는 타입이 없다.</p>
+
+<table>
+<tr><th>필드</th><th class="num">바이트</th><th>설명</th></tr>
+<tr><td><code>name</code></td><td class="num">64</td><td>관계 이름. 예: "만족시킨다"</td></tr>
+<tr><td><code>target_kind</code></td><td class="num">4</td><td>참조하는 Kind</td></tr>
+<tr><td><code>cardinality</code></td><td class="num">4</td><td><code>MANY</code> 또는 <code>ONE_TO_ONE</code>. 1:1 관계는 확정 조건 검사(R-3)에 쓴다</td></tr>
+<tr><th>합계</th><th class="num">72</th><th>관계 정의 하나</th></tr>
+</table>
+
+<p>링크 레코드는 24바이트다. "from은 to를 (relation)한다"로 읽는다.</p>
+
+<pre><code>struct RelationRecord
+{
+    ItemHandle          from;        // 주어
+    ItemHandle          to;          // 목적어
+    KiottySpecItemKind  model;       // from 의 Kind
+    uint32_t            relation;    // 그 모델의 몇 번째 관계 정의인가
+};
+static_assert(sizeof(RelationRecord) == 24, "unexpected padding");</code></pre>
+
+<p>v1의 관계 정의 (정의서 3절의 링크 표를 옮긴 것). 항상 아래 단계가 위 단계를 가리킨다.</p>
+
+<table>
+<tr><th>모델 (주어)</th><th>관계 이름</th><th>대상 Kind (목적어)</th><th>Cardinality</th><th>정의서</th></tr>
+<tr><td>외부 인터페이스</td><td>만족시킨다</td><td>요구사항</td><td>MANY</td><td>Step 3</td></tr>
+<tr><td>설계 사항</td><td>만족시킨다</td><td>요구사항, 외부 인터페이스</td><td>MANY</td><td>Step 4</td></tr>
+<tr><td>설계 사항</td><td>의존한다</td><td>설계 사항</td><td>MANY</td><td>Step 4 (모듈 간 수정 판단)</td></tr>
+<tr><td>유닛 테스트</td><td>검증한다</td><td>설계 사항</td><td>MANY</td><td>Step 5</td></tr>
+<tr><td>마일스톤</td><td>포함한다</td><td>설계 사항, 유닛 테스트</td><td>MANY</td><td>Step 6 (R-5)</td></tr>
+<tr><td>유닛 테스트 결과</td><td>결과다</td><td>유닛 테스트</td><td>MANY</td><td>Step 7</td></tr>
+<tr><td>시스템 테스트</td><td>검증한다</td><td>요구사항 (기능)</td><td><strong>ONE_TO_ONE</strong></td><td>Step 8 (R-3)</td></tr>
+<tr><td>시스템 테스트 결과</td><td>결과다</td><td>시스템 테스트</td><td>MANY</td><td>Step 9</td></tr>
+<tr><td>코드 검사 결과</td><td>검사한다</td><td>개발 수칙</td><td><strong>ONE_TO_ONE</strong></td><td>Step 10. 수칙마다 최신 검사 결과 하나</td></tr>
+<tr><td>E2E 테스트</td><td>검증한다</td><td>외부 인터페이스</td><td><strong>ONE_TO_ONE</strong></td><td>Step 11 (R-3)</td></tr>
+<tr><td>E2E 테스트 결과</td><td>결과다</td><td>E2E 테스트</td><td>MANY</td><td>Step 12</td></tr>
+<tr><td>변경 요청</td><td>영향을 준다</td><td>모든 Kind</td><td>MANY</td><td>진입 단계 판단 근거</td></tr>
+<tr><td class="del">인터페이스 파일 · 소스 파일</td><td class="del">구현한다</td><td class="del">외부 인터페이스 · 설계</td><td></td><td>파일 엔티티 삭제로 없어짐</td></tr>
+</table>
+
+<p><strong>마일스톤 포함 항목의 상태.</strong> 별도 배열이나 계산 없이 포함되는 항목(설계 사항 · 유닛 테스트)의 태그 "구현 상태"로 기록한다. Step 7에서 AI가 "구현 완료"로 바꾸고, 그 뒤 항목이 수정되면 Kiotty-Spec이 같은 쓰기 안에서 "변경 필요"로 바꾼다(정의서 Step 7의 상태 규칙). 마일스톤의 진행률은 <code>포함한다</code> 관계로 모은 항목들의 태그를 세어 구한다.</p>
+
+<h3 id="model-fields">3.6 Kind별 고유 필드는 두지 않는다</h3>
+
+<div class="decided"><strong>결정 (2026-11-09).</strong> 모든 항목은 같은 모양이다. <strong>항목 = 공통 속성 + 태그 값 + 본문</strong>이고, 관계는 항목 밖의 레코드다. Kind는 "어떤 태그를 쓸 수 있고, 무엇을 참조할 수 있고, 본문 틀이 무엇인가"만 정한다. 이슈 모델 8항의 "Kind별 필드"는 아래처럼 모두 태그 · 관계 · 본문으로 흡수한다.</div>
+
+<table>
+<tr><th>정의서의 Kind별 데이터</th><th>이 설계에서의 위치</th></tr>
+<tr><td>변경 요청의 출처 · 상태 · 진입 단계</td><td>태그 3개</td></tr>
+<tr><td>마일스톤 포함 항목의 상태, 구현 완료 체크포인트</td><td>포함되는 항목의 태그 "구현 상태"</td></tr>
+<tr><td>결과의 PASS / FAIL, 대상</td><td>태그 "결과", 관계 "결과다" · "검사한다"</td></tr>
+<tr><td>본문 틀(인수 조건, 시그니처, 전제 조건 · 행동 · 기대 결과), 테스트 로그, 위반 위치</td><td>본문</td></tr>
+</table>
+
+<h3 id="model-body">3.7 본문은 꼭 필요할 때만 읽는다</h3>
+
+<p>본문은 토큰이 가장 많이 드는 데이터다(최대 <code>KIOTTY_SPEC_MAX_BODY_LENGTH</code> = 16384 바이트). 그래서 본문을 읽는 길을 하나로 좁힌다.</p>
+<ul>
+  <li>본문은 <strong>항목 ID 하나를 지정해 <code>KiottySpec_readItemBody</code>로만</strong> 읽는다. 호출자 버퍼로 읽으며 C 인터페이스 v2 3.6을 따른다.</li>
+  <li>항목 레코드 · 페이지 · 관계 · 영향 탐색 · 위치 계산 어느 것도 본문을 담거나 끌어오지 않는다. 레코드에는 본문 길이도 넣지 않는다.</li>
+  <li>여러 항목의 본문을 한 번에 읽는 함수는 두지 않는다.</li>
+  <li>AI는 제목 · 요약 · 태그로 판단할 수 없을 때만 본문을 읽는다. 요약(256바이트)은 본문을 읽지 않아도 판단할 수 있게 쓴다.</li>
+  <li><code>ks</code>는 본문을 <code>ks item body &lt;ID&gt;</code> 하나로만 보여 준다. 다른 명령은 본문을 출력하지 않는다.</li>
+</ul>
+
+<!-- ===================================================================== -->
+<h2 id="handle">4. 핸들과 식별자</h2>
+
+<p>외부에는 포인터를 내보내지 않는다(개발수칙 2.5). 항목 · 체크포인트 · 커서는 모두 8바이트 핸들이며, 풀이 generation을 검증한다. 어긋나면 <code>KIOTTY_SPEC_STATUS_INVALID_HANDLE</code>이다.</p>
+
+<table>
+<tr><th>핸들</th><th>상위 4바이트</th><th>하위 4바이트</th><th>무효 값</th><th>용도</th></tr>
+<tr><td><code>ItemHandle</code></td><td>generation</td><td>index</td><td><code>index == INVALID_INDEX</code></td><td>항목 참조. 공통 속성 <code>parent</code>, 관계 레코드 <code>from</code> · <code>to</code></td></tr>
+<tr><td><code>CheckpointHandle</code></td><td>reserved (0)</td><td>sequence</td><td><code>sequence == 0</code></td><td>버전 축. sequence 자체가 순번이라 generation이 필요 없다</td></tr>
+<tr><td><code>KiottySpecCursor</code></td><td>generation</td><td>index + 1</td><td><code>0</code></td><td>목록 조회 (C 인터페이스 v2 3.5). 4단계에서 <code>CursorPool</code>로 구현 완료</td></tr>
+</table>
+
+<p><strong>표시 ID와 핸들의 관계.</strong> 저장되고 사람이 읽는 것은 <code>REQ-003</code> 같은 16바이트 ID다. 핸들은 <strong>컨텍스트가 열려 있는 동안만 유효</strong>하며 저장하지 않는다. 컨텍스트를 열 때 항목을 풀에 적재하면서 index를 배정하고, 항목을 지우면 그 슬롯의 generation을 올린다. ID → 핸들 조회는 정렬 배열 + 이진 탐색(<code>FixedMap</code>, 개발수칙 1.6)으로 한다. 핸들 → ID는 풀의 index로 바로 읽는다.</p>
+
+<p>C 인터페이스는 입력으로 ID 문자열(<code>KiottySpecText</code>)과 핸들을 모두 받되, 레코드 안의 참조는 핸들로 돌려준다. <code>ks</code>는 TSV에 ID를 찍기 위해 핸들을 ID로 바꾼다.</p>
+
+<!-- ===================================================================== -->
+<h2 id="checkpoint">5. 체크포인트와 개발 단계</h2>
+
+<h3 id="checkpoint-record">5.1 체크포인트 레코드</h3>
+
+<table>
+<tr><th>필드</th><th class="num">바이트</th><th>설명</th></tr>
+<tr><td><code>created_at</code></td><td class="num">8</td><td>시작한 시각 (epoch 초)</td></tr>
+<tr><td><code>previous</code></td><td class="num">8</td><td>이전 체크포인트 핸들. 정리(Compaction)로 지워진 경우 무효 핸들</td></tr>
+<tr><td><code>step</code></td><td class="num">4</td><td><code>KiottySpecStep</code> (<a href="#step">5.2</a>)</td></tr>
+<tr><td><code>state</code></td><td class="num">4</td><td><code>STARTED</code> → <code>RUNNING</code> → <code>DONE</code></td></tr>
+<tr><td><code>description</code></td><td class="num">64</td><td>이 체크포인트의 간략한 설명. 정의서 <code>note</code></td></tr>
+<tr><th>합계</th><th class="num">88</th><th></th></tr>
+</table>
+
+<table>
+<tr><th>상태</th><th>뜻</th><th>누가 바꾸는가</th><th>정의서 대응</th></tr>
+<tr><td><code>STARTED</code></td><td>체크포인트를 새로 시작했다. 아직 쓰기가 없다</td><td>AI</td><td>라운드 시작</td></tr>
+<tr><td><code>RUNNING</code></td><td>진행 중이거나 재개했다. 쓰기는 모두 이 체크포인트에 묶인다</td><td>AI (첫 쓰기에서 자동)</td><td>라운드 진행, "체크포인트에 묶이지 않은 쓰기"가 이 상태의 쓰기다</td></tr>
+<tr><td><code>DONE</code></td><td>사용자가 완료했다. 내용은 바뀌지 않는다</td><td><strong>사용자만</strong> (R-2)</td><td>확정</td></tr>
+</table>
+
+<p><code>DONE</code>으로 바꿀 때 그 단계의 확정 조건(R-3 ~ R-5)을 검사하고, 어긋나면 <code>KIOTTY_SPEC_STATUS_PRECONDITION</code>과 함께 이유를 에러 버퍼에 남긴다. RELEASE는 Step 12의 <code>DONE</code> 중 R-10을 만족한 것으로 표시하며, 별도 <code>purpose</code> 필드 대신 <code>description</code>을 <code>RELEASE</code>로 고정해 구별한다.</p>
+
+<h3 id="step">5.2 개발 단계 enum</h3>
+
+<div class="flow">
+  <div class="step"><b>1</b>변경 요청 접수</div><div class="arrow">→</div>
+  <div class="step"><b>2</b>요구사항</div><div class="arrow">→</div>
+  <div class="step"><b>3</b>외부 인터페이스</div><div class="arrow">→</div>
+  <div class="step"><b>4</b>설계</div><div class="arrow">→</div>
+  <div class="step"><b>5</b>유닛 테스트 계획</div><div class="arrow">→</div>
+  <div class="step"><b>6</b>개발 계획</div><div class="arrow">→</div>
+  <div class="step"><b>7</b>구현</div><div class="arrow">→</div>
+  <div class="step"><b>8</b>시스템 테스트 계획</div><div class="arrow">→</div>
+  <div class="step"><b>9</b>시스템 테스트 실행</div><div class="arrow">→</div>
+  <div class="step"><b>10</b>코드 검사</div><div class="arrow">→</div>
+  <div class="step"><b>11</b>E2E 테스트 계획</div><div class="arrow">→</div>
+  <div class="step"><b>12</b>E2E 테스트 실행</div>
+</div>
+
+<table>
+<tr><th>enum</th><th class="num">값</th><th>정의서 Step</th><th>만드는 Kind</th><th>확정 조건</th></tr>
+<tr><td><code>KIOTTY_SPEC_STEP_CHANGE_REQUEST_REPORTED</code></td><td class="num">1</td><td>(없음. 변경 요청 접수)</td><td>변경 요청</td><td>열린 변경 요청의 진입 단계가 정해져 있을 것</td></tr>
+<tr><td><code>KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING</code></td><td class="num">2</td><td>Step 1 · 2</td><td>요구사항, 개발 수칙</td><td>기능 요구사항의 본문에 인수 조건 1개 이상 (R-4)</td></tr>
+<tr><td><code>KIOTTY_SPEC_STEP_EXTERNAL_INTERFACE_DISCUSSING</code></td><td class="num">3</td><td>Step 3</td><td>외부 인터페이스</td><td>―</td></tr>
+<tr><td><code>KIOTTY_SPEC_STEP_DESIGN_DISCUSSING</code></td><td class="num">4</td><td>Step 4</td><td>설계 사항</td><td>―</td></tr>
+<tr><td><code>KIOTTY_SPEC_STEP_UNIT_TEST_PLAN_DISCUSSING</code></td><td class="num">5</td><td>Step 5</td><td>유닛 테스트</td><td>―</td></tr>
+<tr><td><code>KIOTTY_SPEC_STEP_DEVELOPMENT_PLAN_DISCUSSING</code></td><td class="num">6</td><td>Step 6</td><td>마일스톤</td><td>모든 설계 사항 · 유닛 테스트가 어느 마일스톤에 포함 (R-5)</td></tr>
+<tr><td><code>KIOTTY_SPEC_STEP_IMPLEMENTING</code></td><td class="num">7</td><td>Step 7</td><td>유닛 테스트 결과</td><td>―</td></tr>
+<tr><td><code>KIOTTY_SPEC_STEP_SYSTEM_TEST_PLAN_DISCUSSING</code></td><td class="num">8</td><td>Step 8 (계획)</td><td>시스템 테스트</td><td>기능 요구사항과 1:1 (R-3)</td></tr>
+<tr><td><code>KIOTTY_SPEC_STEP_SYSTEM_TEST_RUN</code></td><td class="num">9</td><td>Step 8 (실행)</td><td>시스템 테스트 결과</td><td>―</td></tr>
+<tr><td><code>KIOTTY_SPEC_STEP_CODE_INSPECTING</code></td><td class="num">10</td><td>Step 9</td><td>코드 검사 결과</td><td>개발 수칙과 1:1 (모든 수칙에 검사 결과가 있을 것)</td></tr>
+<tr><td><code>KIOTTY_SPEC_STEP_END_TO_END_TEST_DISCUSSING</code></td><td class="num">11</td><td>Step 10 (계획)</td><td>E2E 테스트</td><td>외부 인터페이스와 1:1 (R-3)</td></tr>
+<tr><td><code>KIOTTY_SPEC_STEP_END_TO_END_TEST_RUN</code></td><td class="num">12</td><td>Step 10 (실행)</td><td>E2E 테스트 결과</td><td>RELEASE: 시스템 · E2E 결과 전부 PASS, 검사 위반 0, 열린 변경 요청 0 (R-10)</td></tr>
+</table>
+
+<p>이슈의 <code>DEVELOPMNET</code>, 요청의 <code>CODE_INPSECTING</code>은 오타로 보고 <code>DEVELOPMENT</code>, <code>CODE_INSPECTING</code>으로 적는다. 정의서의 순서(시스템 테스트 → 코드 검사 → E2E)를 그대로 따른다. 정의서 Step 1(도출)과 Step 2(변경)는 하나의 <code>REQUIREMENT_DISCUSSING</code>으로 합쳐지며, 초기 앱의 요구도 Step 1에서 변경 요청으로 들어온다("기능(초기 앱)").</p>
+
+<h3 id="checkpoint-axis">5.3 버전 축과 정리</h3>
+
+<ul>
+  <li>쓰기는 항상 <code>RUNNING</code> 상태의 가장 최근 체크포인트에 묶인다. <code>DONE</code>인 체크포인트가 가장 최근이면 쓰기 전에 새 체크포인트를 <code>STARTED</code>로 만들어야 한다 (<code>KIOTTY_SPEC_STATUS_CONFIRMED</code>).</li>
+  <li>항목의 버전은 <code>ItemRecord.checkpoint</code>로 구별한다. 바뀌지 않은 항목은 이전 버전의 체크포인트를 그대로 가리킨다.</li>
+  <li>현재 위치와 지나온 단계(정의서 4절 "다시 돌아왔을 때")는 저장하지 않고 체크포인트 목록과 변경 요청에서 계산한다(R-12). <code>previous</code> 핸들을 따라가며 같은 단계가 이어지는 구간을 묶는다.</li>
+  <li>정리(Compaction): 사용자가 <code>DONE</code> 체크포인트 하나를 기준으로 지정하면 그 이전 체크포인트와 거기에만 속한 항목 버전 · 관계 · 결과를 지운다. 가장 최근 <code>DONE</code>과 RELEASE는 기준으로만 쓸 수 있다. 정의서 6절 그대로다.</li>
+</ul>
+
+<!-- ===================================================================== -->
+<h2 id="decision">6. 결정 기록</h2>
+
+<table>
+<tr><th>필드</th><th class="num">바이트</th><th>설명</th></tr>
+<tr><td><code>checkpoint</code></td><td class="num">8</td><td>이 결정 기록을 마지막으로 다시 쓴 체크포인트</td></tr>
+<tr><td><code>kind</code></td><td class="num">4</td><td>어느 Kind의 결정 기록인가. 이름 문자열은 모델에서 찾는다</td></tr>
+<tr><td><code>_padding</code></td><td class="num">4</td><td></td></tr>
+<tr><td><code>description</code></td><td class="num">2048</td><td>어떤 결정을 했는지. 토큰과 메모리 절약을 위해 2048바이트를 넘지 않는다</td></tr>
+<tr><th>합계</th><th class="num">2064</th><th>1024바이트를 넘으므로 Entity가 아니라 "큰 텍스트"로 취급해 호출자 버퍼로 읽는다 (C 인터페이스 v2 3.6)</th></tr>
+</table>
+
+<p>정의서 2.6의 규칙은 그대로다. 종류당 하나이고 로그가 아니다. 매 라운드 AI가 이전 기록을 입력받아 <strong>다시 쓴다</strong>. 한 줄은 <code>항목 ID · 관심사 : 결정 (이유) [기각: 대안 — 이유]</code>이고 200자 이하, 항목 하나에 관심사 8개 이하다(R-7). 2048바이트를 넘는 쓰기는 <code>CAPACITY_EXCEEDED</code>로 거부하며, 이 상한이 R-7의 길이 검사를 대신한다.</p>
+
+<p>결정 기록이 있는 Kind: 요구사항, 개발 수칙, 외부 인터페이스, 설계 사항, 유닛 테스트, 마일스톤(개발 계획). 결과 Kind와 변경 요청은 결정 기록을 두지 않는다.</p>
+
+<!-- ===================================================================== -->
+<h2 id="interface-files">7. 외부 인터페이스 파일의 처리</h2>
+
+<div class="decided"><strong>결정.</strong> Kiotty-Spec은 문서를 관리하지 않는다. <code>.hpp</code>와 <code>.html</code>은 AI가 외부 인터페이스 항목을 질의해서 만드는 산출물이며, Kiotty-Spec이 역으로 그 파일을 읽거나 분석하지 않는다.</div>
+
+<div class="flow">
+  <div class="step"><b>사용자</b>외부 인터페이스를 만들거나 고쳐 달라고 요청</div><div class="arrow">→</div>
+  <div class="step"><b>AI</b>Kiotty-Spec에 외부 인터페이스 항목을 만들거나 수정</div><div class="arrow">→</div>
+  <div class="step"><b>AI</b>외부 인터페이스 항목을 질의해 불러옴</div><div class="arrow">→</div>
+  <div class="step"><b>AI</b>질의 결과로 <code>.hpp</code> · <code>.html</code> 생성</div>
+</div>
+
+<p>따라서 다음이 없어진다.</p>
+<ul>
+  <li>파일 엔티티(<code>FILE-###</code>), 경로 · 해시 추적, "변경됨" 표시 (정의서 2.3).</li>
+  <li>GUI 초안 html의 <code>data-ks-id</code> 스캔과 "html에만 있는 ID / DB에만 있는 뷰" 보고.</li>
+  <li>인터페이스 파일 · 소스 파일의 <code>구현한다</code> 링크 (정의서 3절).</li>
+  <li>R-9 "인터페이스 파일은 사용자가 요청한 라운드에서만 바뀐다"는 Kiotty-Spec이 검사할 대상이 없어지므로 AI의 작업 규칙으로만 남는다.</li>
+</ul>
+
+<p>소스 파일을 추적하지 않으므로 Step 7의 "구현 완료"는 설계 사항 · 유닛 테스트의 태그 "구현 상태"(<a href="#model-relation">3.5</a>)로만 기록한다. 이 범위 결정은 <a href="#open">12절</a>에서 확인한다.</p>
+
+<!-- ===================================================================== -->
+<h2 id="query">8. 질의와 출력</h2>
+
+<h3 id="query-page">8.1 레코드 페이지만 돌려준다</h3>
+
+<p>Markdown 문서를 만드는 기능(<code>context step</code>, <code>context item</code>, <code>context milestone</code>, <code>context cr</code>, <code>rules</code>, <code>pending</code>, <code>status</code>, <code>where</code> 보고서, <code>export markdown</code>, <code>trace</code>, <code>check all</code> 보고서)은 모두 지운다. 라이브러리는 항목 · 관계 · 체크포인트 · 결정 기록의 <strong>고정 크기 레코드</strong>와 그 페이지만 돌려준다(개발수칙 6.6, 5.5 "문장은 presentation에서만").</p>
+
+<p><code>ks</code>는 레코드 하나를 TSV 한 줄로 찍는다. 열 순서는 레코드 필드 순서와 같고, 첫 줄은 머리글이다. 핸들은 ID로 바꿔 찍는다.</p>
+
+<pre><code>$ ks item list --kind requirement --tag 요구사항종류=기능
+id	kind	title	summary	checkpoint	parent
+REQ-001	requirement	로컬 DB에 항목을 저장한다	…	CP-0003	-
+REQ-002	requirement	체크포인트로 버전을 나눈다	…	CP-0003	-</code></pre>
+
+<h3 id="query-related">8.2 연관 항목은 ID만, 깊이 1</h3>
+
+<p>사용자가 따로 묻지 않으면 연관 항목은 <strong>ID만</strong> 돌려주고 <strong>깊이는 1</strong>로 제한한다. 관계 커서는 <code>RelationRecord</code>(핸들 두 개와 관계 번호)만 돌려주고, 연관 항목의 제목 · 요약 · 본문을 끌어오지 않는다(본문 규칙은 <a href="#model-body">3.7</a>). 연관 항목의 내용이 필요하면 호출자가 그 ID로 다시 읽는다. 깊이 2 이상의 탐색(영향 항목, 하류 전체)은 <code>depth</code>를 명시해 요청한 경우에만 하며, 결과도 ID 목록이다.</p>
+
+<h3 id="query-tag">8.3 태그 검색</h3>
+
+<p>항목 커서는 Kind 하나와 태그 조건(<code>TagQuery</code>, <a href="#model-tag">3.4</a>) 0 ~ 4개를 받는다. 조건 여러 개는 AND이고, 조건 하나 안의 비트들은 OR이다. 검색은 index 순서로 풀 전체를 훑으며(개발수칙 3.3) 태그 값 배열만 읽는다.</p>
+
+<h3 id="query-cursor">8.4 커서와 페이지</h3>
+
+<p>C 인터페이스 v2 3.5와 같다. 커서를 열면 결과 행의 키가 컨텍스트의 커서 풀에 담기고, 페이지를 가져올 때마다 최대 <code>KIOTTY_SPEC_PAGE_CAPACITY</code>(64)개의 레코드를 호출자가 넘긴 페이지 구조체에 채운다. 커서 수(<code>max_cursors</code>)와 커서당 행 수(<code>max_cursor_rows</code>)는 설정값이며, 넘으면 <code>POOL_IS_FULL</code> · <code>CAPACITY_EXCEEDED</code>다. 4단계에서 만든 <code>CursorPool</code>이 이 역할을 한다.</p>
+
+<!-- ===================================================================== -->
+<h2 id="capi">9. C 인터페이스</h2>
+
+<p>C 인터페이스 v2 설계의 형태 규칙(함수 이름 <code>KiottySpec_&lt;동사&gt;&lt;대상&gt;</code>, 길이가 붙은 입력 문자열, 결과 구조체, 고정 배열 레코드, 컨텍스트와 핸들, 호출자 버퍼 출력, 컨텍스트 안의 에러 버퍼)을 그대로 쓴다. 이 절은 이 설계로 달라지는 부분만 적는다.</p>
+
+<h3>9.1 용량 상수</h3>
+
+<table>
+<tr><th>상수</th><th class="num">값</th><th>비고</th></tr>
+<tr><td><code>KIOTTY_SPEC_MAX_ID_LENGTH</code></td><td class="num">15</td><td>버퍼 16바이트. C 인터페이스 v2의 16은 null 포함 여부가 모호해 15로 적는다</td></tr>
+<tr><td><code>KIOTTY_SPEC_MAX_TITLE_LENGTH</code></td><td class="num">127</td><td>버퍼 128바이트. <span class="tag">v2: 256 → 이슈 따름</span></td></tr>
+<tr><td><code>KIOTTY_SPEC_MAX_SUMMARY_LENGTH</code></td><td class="num">255</td><td>버퍼 256바이트. 새 필드</td></tr>
+<tr><td><code>KIOTTY_SPEC_MAX_BODY_LENGTH</code></td><td class="num">16384</td><td>호출자 버퍼로만 읽는다</td></tr>
+<tr><td><code>KIOTTY_SPEC_MAX_DECISION_LENGTH</code></td><td class="num">2048</td><td><span class="tag">v2: 8192 → 이슈 따름</span></td></tr>
+<tr><td><code>KIOTTY_SPEC_MAX_DESCRIPTION_LENGTH</code></td><td class="num">63</td><td>체크포인트 설명. 버퍼 64바이트</td></tr>
+<tr><td><code>KIOTTY_SPEC_MAX_MODEL_NAME_LENGTH</code></td><td class="num">31</td><td>버퍼 32바이트</td></tr>
+<tr><td><code>KIOTTY_SPEC_MAX_TAG_NAME_LENGTH</code></td><td class="num">63</td><td>버퍼 64바이트</td></tr>
+<tr><td><code>KIOTTY_SPEC_TAG_BIT_COUNT</code></td><td class="num">48</td><td>태그 하나의 비트 수</td></tr>
+<tr><td><code>KIOTTY_SPEC_MAX_TAGS_PER_MODEL</code></td><td class="num">256</td><td></td></tr>
+<tr><td><code>KIOTTY_SPEC_PAGE_CAPACITY</code></td><td class="num">64</td><td></td></tr>
+</table>
+
+<h3>9.2 레코드</h3>
+
+<pre><code>typedef uint64_t KiottySpecItemHandle;        /* generation &lt;&lt; 32 | index      */
+typedef uint64_t KiottySpecCheckpointHandle;  /* reserved   &lt;&lt; 32 | sequence   */
+typedef uint64_t KiottySpecCursor;            /* generation &lt;&lt; 32 | index + 1  */
+
+typedef struct KiottySpecItem {
+    KiottySpecCheckpointHandle checkpoint;
+    KiottySpecItemHandle       parent;
+    KiottySpecItemKind         kind;
+    uint32_t                   reserved;
+    char                       id[KIOTTY_SPEC_MAX_ID_LENGTH + 1];
+    char                       title[KIOTTY_SPEC_MAX_TITLE_LENGTH + 1];
+    char                       summary[KIOTTY_SPEC_MAX_SUMMARY_LENGTH + 1];
+} KiottySpecItem;                              /* 424 바이트 */
+
+typedef struct KiottySpecRelation {
+    KiottySpecItemHandle from;
+    KiottySpecItemHandle to;
+    KiottySpecItemKind   model;
+    uint32_t             relation;
+} KiottySpecRelation;                          /* 24 바이트 */
+
+typedef struct KiottySpecCheckpoint {
+    int64_t                    created_at;
+    KiottySpecCheckpointHandle previous;
+    KiottySpecStep             step;
+    KiottySpecCheckpointState  state;
+    char                       description[KIOTTY_SPEC_MAX_DESCRIPTION_LENGTH + 1];
+} KiottySpecCheckpoint;                        /* 88 바이트 */
+
+typedef struct KiottySpecItemPage     { size_t length; KiottySpecItem       elements[KIOTTY_SPEC_PAGE_CAPACITY]; } KiottySpecItemPage;
+typedef struct KiottySpecRelationPage { size_t length; KiottySpecRelation   elements[KIOTTY_SPEC_PAGE_CAPACITY]; } KiottySpecRelationPage;
+typedef struct KiottySpecIdPage       { size_t length; char elements[KIOTTY_SPEC_PAGE_CAPACITY][KIOTTY_SPEC_MAX_ID_LENGTH + 1]; } KiottySpecIdPage;</code></pre>
+
+<h3>9.3 함수 목록 (초안)</h3>
+
+<table>
+<tr><th style="width:18%">그룹</th><th>함수</th><th>비고</th></tr>
+<tr><td>컨텍스트</td><td><code>createContext(configuration)</code>, <code>releaseContext</code>, <code>readLastError(buffer)</code></td><td>v2 3.5 · 3.7. <code>Configuration</code>에 <code>max_items</code>, <code>max_relations</code>, <code>max_checkpoints</code>가 추가된다</td></tr>
+<tr><td>항목</td><td><code>createItem(kind, title, summary)</code> → <code>IdResult</code>, <code>readItem(id)</code> → <code>ItemResult</code>, <code>updateItem(id, title, summary)</code>, <code>setItemParent(id, parent_id)</code>, <code>removeItem(id)</code></td><td>쓰기는 <code>actor</code>를 받지 않는다. 사용자 권한이 필요한 것은 체크포인트 완료뿐이다</td></tr>
+<tr><td>본문</td><td><code>writeItemBody(id, text)</code>, <code>readItemBody(id, buffer, capacity)</code> → <code>SizeResult</code></td><td>v2 3.6. 버퍼가 작으면 필요한 바이트 수를 돌려준다</td></tr>
+<tr><td>태그</td><td><code>setItemTag(id, tag_index, mask)</code>, <code>readItemTag(id, tag_index)</code> → <code>TagResult</code></td><td>mask는 48비트</td></tr>
+<tr><td>관계</td><td><code>addRelation(from_id, relation_index, to_id)</code>, <code>removeRelation(...)</code>, <code>openRelationCursor(id, direction)</code></td><td>관계 정의에 없는 (model, relation, target kind) 조합은 <code>INVALID_ARGUMENT</code></td></tr>
+<tr><td>목록</td><td><code>openItemCursor(kind, tag_queries, count)</code>, <code>openChildCursor(id)</code>, <code>openImpactCursor(id, depth)</code>, <code>fetchItemPage</code>, <code>fetchRelationPage</code>, <code>fetchIdPage</code>, <code>closeCursor</code></td><td>v2 3.3 · 3.5. 영향 커서만 깊이를 받고, 결과는 ID 페이지다</td></tr>
+<tr><td>체크포인트</td><td><code>startCheckpoint(step, description)</code>, <code>resumeCheckpoint</code>, <code>completeCheckpoint(actor)</code>, <code>readCheckpoint(handle)</code>, <code>readCurrentCheckpoint</code>, <code>openCheckpointCursor(step)</code>, <code>pruneCheckpoints(actor, base)</code></td><td><code>complete</code>는 확정 조건을 검사한다. <code>actor</code>가 <code>USER</code>가 아니면 <code>PERMISSION</code></td></tr>
+<tr><td>결정 기록</td><td><code>writeDecision(kind, text)</code>, <code>readDecision(kind, buffer, capacity)</code></td><td>2048바이트 상한</td></tr>
+<tr><td>모델</td><td><code>readModel(kind)</code> → 이름 · 태그 수 · 관계 수, <code>readTagDefinition(kind, index)</code>, <code>readRelationDefinition(kind, index)</code></td><td><code>ks</code>가 태그 · 관계 이름을 보여 줄 때 쓴다. 한글 이름을 그대로 입력으로 받을 수 있다 (변경 요청 후보 <code>261104_01</code> #2)</td></tr>
+<tr><td>위치</td><td><code>readPosition</code> → <code>PositionResult</code> {현재 체크포인트, 다음 단계, 묶이지 않은 쓰기 수, 열린 변경 요청 수}, <code>openStepRunCursor</code></td><td>정의서 4절 "다시 돌아왔을 때". 문장은 <code>ks</code>가 만든다</td></tr>
+<tr><td>교환</td><td><code>exportJsonl(directory)</code>, <code>importJsonl(directory)</code></td><td>커밋 대상은 <code>.kiotty/spec/*.jsonl</code> 그대로. Markdown 내보내기 · 가져오기는 없다</td></tr>
+</table>
+
+<div class="note"><code>KiottySpec_importMarkdown</code>, <code>KiottySpec_Item_template</code>, <code>KiottySpec_Query_readonly</code>, <code>KiottySpec_Link_matrix</code>, <code>KiottySpec_File_*</code>, <code>KiottySpec_Context_*</code>, <code>KiottySpec_Check_all</code>, <code>KiottySpec_Checkpoint_diff</code>(Markdown)는 이 설계에 없다. 남겨야 할 것이 있으면 <a href="#open">12절</a>에 적는다.</div>
+
+<!-- ===================================================================== -->
+<h2 id="memory">10. 메모리 구조와 디렉토리</h2>
+
+<h3>10.1 컨텍스트가 소유하는 것</h3>
+
+<p>힙 할당은 <code>KiottySpec_createContext</code> 안에서만 한다(개발수칙 1.1). 아래가 그때 확보되는 전부이며, <code>releaseContext</code> 하나로 모두 해제된다(1.2).</p>
+
+<table>
+<tr><th>멤버</th><th>크기 계산</th><th>비고</th></tr>
+<tr><td><code>LazyPool&lt;ItemRecord&gt; items</code></td><td><code>max_items × 424</code></td><td>hot. index 순서로 훑는다</td></tr>
+<tr><td><code>std::vector&lt;uint64_t&gt; tag_values</code></td><td><code>max_items × (모델별 최대 태그 수)</code></td><td>cold. 같은 index</td></tr>
+<tr><td><code>FixedMap&lt;IdText, uint32_t&gt; id_index</code></td><td><code>max_items</code></td><td>ID → index. 정렬 배열 + 이진 탐색</td></tr>
+<tr><td><code>LazyPool&lt;RelationRecord&gt; relations</code></td><td><code>max_relations × 24</code></td><td></td></tr>
+<tr><td><code>LazyPool&lt;CheckpointRecord&gt; checkpoints</code></td><td><code>max_checkpoints × 88</code></td><td>index = sequence − 1</td></tr>
+<tr><td><code>decisions[6]</code></td><td><code>6 × 2064</code></td><td>결정 기록이 있는 Kind 수</td></tr>
+<tr><td><code>Model models[13]</code></td><td>태그 · 관계 정의 수에 따라 고정</td><td>코드가 정한 표에서 적재</td></tr>
+<tr><td><code>CursorPool cursors</code></td><td><code>max_cursors × (max_cursor_rows × 40)</code></td><td>4단계에서 구현</td></tr>
+<tr><td><code>TextBuffer work</code></td><td><code>work_buffer_bytes</code></td><td>페이지 조립, jsonl 한 줄 조립 (개발수칙 1.7)</td></tr>
+<tr><td><code>Failure failure</code></td><td>4096</td><td>에러 메시지 버퍼</td></tr>
+<tr><td><code>Connection</code>, <code>Storage</code></td><td>SQLite 내부</td><td>영속화. 편차 문서에 기록된 대로 <code>SQLITE_CONFIG_HEAP</code>으로 고정 영역을 넘긴다</td></tr>
+</table>
+
+<p><strong>영속화와 풀의 관계.</strong> SQLite 파일 <code>.kiotty/spec.db</code>와 jsonl은 저장 형식이고, 풀은 열려 있는 동안의 작업 집합이다. <code>open</code>이 DB의 현재 버전(가장 최근 체크포인트 기준)을 풀에 적재하고 index를 배정한다. 쓰기는 풀과 DB에 함께 반영된다. 이전 체크포인트의 버전은 풀에 두지 않고 DB에서만 읽는다(시점 조회는 커서 하나로 제한).</p>
+
+<h3>10.2 디렉토리</h3>
+
+<p>개발수칙 7.1을 따른다. 괄호는 현재 구현의 클래스다.</p>
+
+<pre><code>include/
+    kiotty_spec.h                 C 인터페이스 (이 설계 9절)
+src/
+    kiotty_spec.cpp               C ↔ implementation 얇은 어댑터. 예외 없음
+    implementation/
+        context/                  Context, Project, CursorPool, TextBuffer, 레코드 ↔ C 구조체 변환
+        core/                     Result, Span, FixedString, FixedVector, FixedMap, LazyPool, Handle, TextBuffer, utf8, checked
+        domain/
+            entity/               ItemRecord, RelationRecord, CheckpointRecord, DecisionRecord, Model, TagDefinition, RelationDefinition, Step
+            usecases/             Lifecycle(체크포인트 완료 · 정리), Checker(확정 조건), Journey(위치 계산), Exchange(jsonl), ModelCatalog(모델 표)
+        data/
+            repository/           ItemStore, RelationStore, CheckpointStore, DecisionStore, VersionHistory
+            datasource/           Connection, Query, Row, Savepoint, Storage, Schema, FileSystem(jsonl 디렉토리만)
+app/
+    cli/                          ks. commands / input / handler / output(TSV)</code></pre>
+
+<!-- ===================================================================== -->
+<h2 id="migration">11. 현재 구현에서의 이행</h2>
+
+<p>C 인터페이스 v2의 6단계 중 1 ~ 4단계가 끝났다(datasource · repository · usecase가 <code>Result</code>를 돌려주고, <code>Context</code> · <code>CursorPool</code> · <code>TextBuffer</code>가 있다). 이 설계는 남은 5 · 6단계의 내용을 바꾼다.</p>
+
+<table>
+<tr><th style="width:26%">현재</th><th style="width:26%">이 설계</th><th>작업</th></tr>
+<tr><td><code>ItemRecord</code> (id, kind, category, parentId, title, body, seq, cpFrom, removed)</td><td><code>ItemRecord</code> 424바이트 + cold 배열</td><td>category → 태그 값, body → 본문 저장소, 핸들 필드 추가</td></tr>
+<tr><td><code>LinkStore</code>, <code>LinkGraph</code>, <code>KiottySpecLinkType</code></td><td><code>RelationStore</code> + 모델의 관계 정의</td><td>허용 쌍 검사를 관계 정의 조회로 바꾼다. <code>traverse</code>는 ID 페이지를 돌려준다</td></tr>
+<tr><td><code>ChangeRequestStore</code>, <code>ResultStore</code></td><td><code>ItemStore</code> (Kind 5종 추가)</td><td>테이블과 store를 합친다. 출처 · 상태 · 진입 단계는 태그</td></tr>
+<tr><td><code>FileStore</code>, <code>ProjectFiles</code>, <code>scanGuiDraft</code>, <code>hashOf</code></td><td>없음</td><td>지운다. <code>FileSystem</code>은 jsonl 디렉토리와 <code>.kiotty</code> 생성에만 남는다</td></tr>
+<tr><td><code>MilestoneStore</code>, <code>MilestoneService</code></td><td>포함한다 관계 + 태그 "구현 상태"</td><td>별도 테이블을 지운다. 진행률은 태그를 세어 구한다</td></tr>
+<tr><td><code>ContextBuilder</code>, <code>StatusBoard</code>, <code>renderItem</code>, <code>bodyTemplate</code>, <code>exportMarkdown</code>, <code>traceReport</code>, <code>importMarkdown</code>, <code>queryReadonly</code></td><td>없음</td><td>지운다. 문장은 <code>ks</code>의 output 층이 만든다</td></tr>
+<tr><td><code>CheckpointRecord</code> (seq, step, confirmed, purpose, note)</td><td><code>CheckpointRecord</code> 88바이트 (state, previous, description 64)</td><td>confirmed → <code>DONE</code>, purpose → description <code>RELEASE</code>, note 512 → 64</td></tr>
+<tr><td><code>DecisionStore</code> (길이 제한 없음)</td><td>2048바이트 상한</td><td>상한 추가. 기존 데이터가 넘으면 가져오기에서 보고</td></tr>
+<tr><td>Step 1 ~ 10</td><td><code>KiottySpecStep</code> 1 ~ 12</td><td>jsonl 가져오기에서 옛 단계 번호를 새 번호로 바꾼다 (1·2 → 2, 3 ~ 7 → 그대로, 8 → 8·9, 9 → 10, 10 → 11·12)</td></tr>
+<tr><td><code>expect</code> · <code>guard</code> (어댑터의 예외)</td><td>없음</td><td>6단계. <code>-fno-exceptions</code>로 빌드</td></tr>
+</table>
+
+<p>순서: (5a) entity와 모델 표 → (5b) repository 합치기 · 파일 관련 삭제 → (5c) 공개 헤더와 어댑터 → (6) <code>ks</code> TSV 출력과 예외 제거. 각 단계는 jsonl 내보내기 비교로 데이터가 보존되는지 확인한다. Markdown 출력이 없어지므로 기존 <code>ks</code> 기준 출력 비교는 5c부터 쓰지 않는다.</p>
+
+<!-- ===================================================================== -->
+<h2 id="open">12. 확인이 필요한 점</h2>
+
+<table>
+<tr><th class="num">#</th><th>질문</th><th>이 문서의 가정</th></tr>
+<tr><td class="num">1</td><td>Kind별 고유 필드 (이슈 모델 8항)</td><td><strong>결정.</strong> 고유 필드 없음. 진입 단계 · 구현 상태는 태그, 본문은 ID로만 읽는다 (<a href="#model-fields">3.6</a>, <a href="#model-body">3.7</a>)</td></tr>
+<tr><td class="num">2</td><td>제목 상한: C 인터페이스 v2는 256, 이슈는 128 + 요약 256</td><td>이슈를 따른다. 현재 DB의 최대 제목은 80바이트라 잘리는 데이터는 없다</td></tr>
+<tr><td class="num">3</td><td>결정 기록 상한: v2는 8192, 이슈는 2048</td><td>이슈를 따른다. 현재 DB의 최대는 1338바이트</td></tr>
+<tr><td class="num">4</td><td>이슈의 "Patient Reference [8byte]"</td><td>"Parent Reference"(상위 항목 핸들)로 읽었다</td></tr>
+<tr><td class="num">5</td><td>"결정 기록만 Checkpoint 로 기록" 의 범위</td><td><strong>미정.</strong> 항목은 버전 없이 현재 값만 두고 결정 기록만 체크포인트별로 남기는 것인지, 코드 검사 단계의 체크포인트에는 결정 기록만 남기는 것인지 확인 필요</td></tr>
+<tr><td class="num">6</td><td>소스 파일 추적을 전부 없애는가 (이슈는 <code>.hpp</code> · <code>.html</code>만 언급)</td><td>파일 엔티티를 전부 없앤다. "구현 완료"는 태그 "구현 상태"로만 남는다 (<a href="#interface-files">7</a>)</td></tr>
+<tr><td class="num">7</td><td>남길 v1 기능: 시점 조회(<code>getAt</code>), 체크포인트 사이 diff, 읽기 전용 SQL</td><td>시점 조회는 커서 하나로 남기고, diff와 SQL은 지운다</td></tr>
+<tr><td class="num">8</td><td>모델(태그 · 관계 정의)을 jsonl에 함께 내보내는가</td><td>코드가 정하므로 내보내지 않는다. 태그 값은 비트 이름이 아니라 비트 번호로 저장한다</td></tr>
+<tr><td class="num">9</td><td>RELEASE 표시 방법</td><td>별도 필드 없이 <code>description == "RELEASE"</code>. 필드가 낫다면 <code>state</code>에 <code>RELEASED</code>를 추가</td></tr>
+<tr><td class="num">10</td><td><code>ks</code> TSV에서 탭 · 줄바꿈이 든 값의 표기</td><td>값 안의 탭은 공백으로, 줄바꿈은 <code>\n</code> 두 글자로 바꾼다. 본문은 목록에 없으므로 영향이 작다</td></tr>
+</table>
+
+<footer>
+Kiotty-Spec 설계서 v1 · 초안. 이 문서가 확정되면 <code>docs/design/c_interface_v2.md</code>의 2절(용량 상한)과 3.4(레코드)를 이 문서에 맞춰 고치고, <code>docs/requirements/definition.md</code>의 2절 · 3절 · 4절을 개정한다.
+</footer>
+
+</div>
+</body>
+</html>
