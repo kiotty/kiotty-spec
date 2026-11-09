@@ -121,17 +121,6 @@ KiottySpecStatus findRange(ItemKind kind, const Source (&sources)[Count], const 
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-template <typename Definition>
-Result<uint32_t, KiottySpecStatus> findByName(Span<const Definition> definitions, Span<const char> name)
-{
-    for (size_t index = 0; index < definitions.length(); ++index) {
-        if (std::string_view(definitions[index].name) == viewOf(name)) {
-            return Result<uint32_t, KiottySpecStatus>::success(static_cast<uint32_t>(index));
-        }
-    }
-    return Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
-}
-
 bool hasSingleBit(uint64_t value) { return value != 0 && (value & (value - 1)) == 0; }
 
 }
@@ -168,37 +157,6 @@ KiottySpecStatus ModelCatalog::load()
         if (const KiottySpecStatus status = findRange(source.kind, RELATION_SOURCES, _relations, model.relations); status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
-}
-
-Result<ItemKind, KiottySpecStatus> ModelCatalog::findKindByPrefix(Span<const char> prefix) const
-{
-    for (const entity::Model& model : _models) {
-        if (std::string_view(model.id_prefix) == viewOf(prefix)) { return Result<ItemKind, KiottySpecStatus>::success(model.kind); }
-    }
-    return Result<ItemKind, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
-}
-
-Result<uint32_t, KiottySpecStatus> ModelCatalog::findTag(ItemKind kind, Span<const char> name) const
-{
-    return findByName(model(kind).tags, name);
-}
-
-Result<uint32_t, KiottySpecStatus> ModelCatalog::findTagBit(ItemKind kind, uint32_t tag, Span<const char> name) const
-{
-    const Span<const entity::TagDefinition> tags = model(kind).tags;
-    if (tag >= tags.length()) { return Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
-        const entity::TagName& bit_name = tags[tag].bit_names[bit];
-        if (!bit_name.empty() && std::string_view(bit_name) == viewOf(name)) {
-            return Result<uint32_t, KiottySpecStatus>::success(static_cast<uint32_t>(bit));
-        }
-    }
-    return Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
-}
-
-Result<uint32_t, KiottySpecStatus> ModelCatalog::findRelation(ItemKind kind, Span<const char> name) const
-{
-    return findByName(model(kind).relations, name);
 }
 
 KiottySpecStatus ModelCatalog::checkTagValue(ItemKind kind, uint32_t tag, uint64_t value) const

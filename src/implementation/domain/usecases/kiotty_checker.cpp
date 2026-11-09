@@ -103,9 +103,9 @@ private:
 uint64_t Checker::tagBit(ItemKind kind, const char* tag, const char* bit, uint32_t& tag_index)
 {
     tag_index = MISSING;
-    const auto found = _w.catalog.findTag(kind, boundedText(tag, 64));
+    const auto found = _w.catalog.finder().findTag(kind, boundedText(tag, 64));
     if (!found) { return 0; }
-    const auto position = _w.catalog.findTagBit(kind, found.value, boundedText(bit, 64));
+    const auto position = _w.catalog.finder().findTagBit(kind, found.value, boundedText(bit, 64));
     if (!position) { return 0; }
     tag_index = found.value;
     return uint64_t{1} << position.value;
@@ -113,7 +113,7 @@ uint64_t Checker::tagBit(ItemKind kind, const char* tag, const char* bit, uint32
 
 uint32_t Checker::relationIndex(ItemKind kind, const char* name)
 {
-    const auto found = _w.catalog.findRelation(kind, boundedText(name, 64));
+    const auto found = _w.catalog.finder().findRelation(kind, boundedText(name, 64));
     return found ? found.value : MISSING;
 }
 
@@ -153,7 +153,7 @@ size_t Checker::openChangeRequestCount()
 
 uint32_t Checker::earliestEntryStep()
 {
-    const auto entry = _w.catalog.findTag(ItemKind::CHANGE_REQUEST, literalText("진입 단계"));
+    const auto entry = _w.catalog.finder().findTag(ItemKind::CHANGE_REQUEST, literalText("진입 단계"));
     if (!entry) { return 0; }
     uint32_t earliest = 0;
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
@@ -198,7 +198,7 @@ size_t Checker::countAcceptanceCriteria(Span<const char> body)
 void Checker::checkEntrySteps(Report& report)
 {
     report.section("진입 단계가 정해지지 않은 열린 변경 요청");
-    const auto entry = _w.catalog.findTag(ItemKind::CHANGE_REQUEST, literalText("진입 단계"));
+    const auto entry = _w.catalog.finder().findTag(ItemKind::CHANGE_REQUEST, literalText("진입 단계"));
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);

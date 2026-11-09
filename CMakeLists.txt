@@ -114,7 +114,8 @@ add_executable(kiotty_model_test
     tests/model/model_test.cpp
     src/implementation/domain/entity/kiotty_item_id.cpp
     src/implementation/domain/entity/kiotty_kind.cpp
-    src/implementation/domain/usecases/kiotty_model_catalog.cpp)
+    src/implementation/domain/usecases/kiotty_model_catalog.cpp
+    src/implementation/domain/usecases/kiotty_model_finder.cpp)
 target_include_directories(kiotty_model_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 kiotty_warnings(kiotty_model_test)
 kiotty_no_exceptions(kiotty_model_test)

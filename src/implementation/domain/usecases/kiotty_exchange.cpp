@@ -385,9 +385,9 @@ KiottySpecStatus Exchange::importLegacy(Span<const char> directory, std::string&
         const std::string category = textOf(row, "category");
         for (const LegacyCategory& entry : LEGACY_CATEGORIES) {
             if (category != entry.category) { continue; }
-            const auto tag = _w.catalog.findTag(item_kind, boundedText(entry.tag, 64));
+            const auto tag = _w.catalog.finder().findTag(item_kind, boundedText(entry.tag, 64));
             if (!tag) { break; }
-            const auto bit = _w.catalog.findTagBit(item_kind, tag.value, boundedText(entry.bit, 64));
+            const auto bit = _w.catalog.finder().findTagBit(item_kind, tag.value, boundedText(entry.bit, 64));
             if (bit) { tags.push_back(json::array({tag.value, uint64_t{1} << bit.value})); }
             break;
         }
@@ -431,7 +431,7 @@ KiottySpecStatus Exchange::importLegacy(Span<const char> directory, std::string&
         }
         const ItemKind model = static_cast<ItemKind>(entity::parseKind(from_kind->second));
         const auto index = relation == nullptr ? Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND)
-                                               : _w.catalog.findRelation(model, boundedText(relation, 64));
+                                               : _w.catalog.finder().findRelation(model, boundedText(relation, 64));
         if (!index) {
             note(report, notes, from + " -" + type + "-> " + to + " 링크는 관계 정의에 없어 건너뜀");
             continue;

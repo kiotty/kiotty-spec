@@ -30,10 +30,10 @@ KiottySpecStatus Editor::markNeedsChange(ItemHandle item, uint32_t sequence)
     if (!record) { return record.code; }
     const ItemKind kind = record.value->kind;
     if (kind != ItemKind::DESIGN && kind != ItemKind::UNIT_TEST_PLAN) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    const auto state = _w.catalog.findTag(kind, literalText("구현 상태"));
+    const auto state = _w.catalog.finder().findTag(kind, literalText("구현 상태"));
     if (!state) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    const auto done = _w.catalog.findTagBit(kind, state.value, literalText("구현 완료"));
-    const auto changed = _w.catalog.findTagBit(kind, state.value, literalText("변경 필요"));
+    const auto done = _w.catalog.finder().findTagBit(kind, state.value, literalText("구현 완료"));
+    const auto changed = _w.catalog.finder().findTagBit(kind, state.value, literalText("변경 필요"));
     if (!done || !changed) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     if (_w.items.tags().value(item, state.value) != (uint64_t{1} << done.value)) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     return _w.items.writer().setTag(item, state.value, uint64_t{1} << changed.value, sequence);

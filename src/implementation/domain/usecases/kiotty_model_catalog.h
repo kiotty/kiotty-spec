@@ -4,6 +4,7 @@
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
 #include "implementation/domain/entity/kiotty_model.h"
+#include "implementation/domain/usecases/kiotty_model_finder.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -26,10 +27,8 @@ public:
 
     const entity::Model& model(entity::ItemKind kind) const { return _models[entity::kindIndex(kind)]; }
 
-    Result<entity::ItemKind, KiottySpecStatus> findKindByPrefix(Span<const char> prefix) const;
-    Result<uint32_t, KiottySpecStatus> findTag(entity::ItemKind kind, Span<const char> name) const;
-    Result<uint32_t, KiottySpecStatus> findTagBit(entity::ItemKind kind, uint32_t tag, Span<const char> name) const;
-    Result<uint32_t, KiottySpecStatus> findRelation(entity::ItemKind kind, Span<const char> name) const;
+    // 이름으로 찾기는 세부 클래스에 맡긴다 (개발수칙 4.19). 부른 자리에서 쓰고 버린다.
+    ModelFinder finder() const { return ModelFinder(Span<const entity::Model>(_models, entity::ITEM_KIND_COUNT)); }
 
     // 태그 index 가 정의 수 이상이거나, 이름 없는 비트를 켜거나, SINGLE 태그에 비트 둘 이상을 켜면 INVALID_ARGUMENT.
     // value == 0 은 "레코드를 지운다"이므로 허용한다.
