@@ -133,8 +133,8 @@ KiottySpecSizeResult KiottySpec_readLastError(KiottySpecContext *context, char *
 2. `data/repository` 를 `Result` 로 바꾼다. **완료**: store 가 `Storage`(`Connection` + `Failure`)로 `Result` 를 돌려주고, 실패 메시지는 `Failure` 고정 버퍼에 남는다. `std::regex` 는 직접 짠 스캐너로 바꿨다. 위 계층은 임시 변환 함수 `expect` 로 기존 흐름을 유지한다.
 3. `domain/usecases` 를 바꾼다. **완료**: usecase 가 `Result` 를 돌려주고, 레코드의 ID·제목·경로·메모는 고정 크기다. 임시 변환층 `database.*` 를 지우고 `MilestoneStore` 를 만들었다. 탐색 메서드는 `ItemFinder`, `LinkGraph`, `VersionHistory` 로 나눠 store 마다 public 메서드를 7 개 이하로 줄였다. `std::filesystem` 은 `data/datasource/file_system` 으로 바꿨다. 긴 본문(항목·변경 요청 본문, 결과 로그)은 v1 C API 가 레코드 안에 돌려주므로 5단계까지 `std::string` 으로 둔다.
 4. `context/` 에 컨텍스트, 커서 풀, 작업 버퍼를 만든다. **완료**: `Context` 가 `Project`, `CursorPool`(generation 이 든 커서 ID, 행 영역은 생성자에서 확보), `TextBuffer` 를 소유하고 v1 `KiottySpec` 핸들이 이를 감싼다. `context/` 와 `domain/` 에서 `expect`·`fail`·`require` 를 없앴다. `Project` 는 store 를 숨기고 참조 묶음 `Services` 로 빌려주며, 확정·RELEASE·정리·항목 삭제는 usecase `Lifecycle` 로, `pending`·`status` 는 `StatusBoard` 로 옮겼다. 커서 풀과 작업 버퍼는 v1 C API 에 붙일 자리가 없어 5단계에서 연결한다.
-5. 공개 헤더를 v2 로 교체하고 `src/kiotty_spec.cpp` 를 다시 쓴다.
-6. `ks` 를 v2 에 맞춘다. 예외와 임시 변환 함수를 지우고 `-fno-exceptions` 로 빌드한다.
+5. 공개 헤더를 v2 로 교체하고 `src/kiotty_spec.cpp` 를 다시 쓴다. **완료 (설계서 v1 기준)**: 내용은 [설계서 v1](design_v1.html) 9절과 [구현 계획](../plan/261109_v1.md) 5a ~ 5c 다.
+6. `ks` 를 v2 에 맞춘다. 예외와 임시 변환 함수를 지우고 `-fno-exceptions` 로 빌드한다. **완료**: `ks` 는 TSV 를 찍고, 라이브러리 · `ks` · 테스트를 예외 없이(`/EHs-c-`, `_HAS_EXCEPTIONS=0`, `JSON_NOEXCEPTION`) 빌드한다.
 
 ## 5. 남은 위험
 

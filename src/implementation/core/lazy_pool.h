@@ -49,6 +49,22 @@ public:
 
     size_t capacity() const { return _values.size(); }
 
+    // index 순서로 훑을 때 쓴다. 쓰고 있지 않은 index 면 무효 핸들이다.
+    Handle handleAt(size_t index) const
+    {
+        if (index >= _values.size() || _in_use[index] == 0) { return Handle{Handle::INVALID_INDEX, 0}; }
+        return Handle{static_cast<uint32_t>(index), _generations[index]};
+    }
+
+    // 모든 슬롯을 돌려준다. 쓰던 슬롯의 generation 이 올라가 이전 핸들은 모두 무효가 된다.
+    // 큰 index 부터 돌려주어 다음 acquire 가 다시 작은 index 부터 나눠 준다.
+    void releaseAll()
+    {
+        for (size_t index = _values.size(); index > 0; --index) {
+            if (_in_use[index - 1] != 0) { release(Handle{static_cast<uint32_t>(index - 1), _generations[index - 1]}); }
+        }
+    }
+
 private:
     bool isLive(Handle handle) const
     {

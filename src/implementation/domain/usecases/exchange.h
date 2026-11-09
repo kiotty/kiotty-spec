@@ -1,45 +1,31 @@
 #pragma once
 
-#include "implementation/core/failure.h"
-#include "implementation/data/datasource/storage.h"
-#include "implementation/data/repository/item_store.h"
-#include "implementation/data/repository/link_graph.h"
-#include "implementation/domain/usecases/checker.h"
+#include "kiotty_spec.h"
+#include "implementation/core/result.h"
+#include "implementation/core/span.h"
+#include "implementation/domain/usecases/workspace.h"
 
+#include <cstddef>
 #include <string>
-#include <string_view>
-#include <vector>
 
 namespace kiotty::spec::implementation {
 
-struct ImportReport {
-    size_t rows = 0;
-    std::vector<std::string> conflicts;
-};
-
-using ImportReportResult = Result<ImportReport, KiottySpecStatus>;
-
-class Exchange {
+// jsonl 교환 (설계서 v1 9.3 교환). 테이블 하나가 파일 하나이고, 줄은 키 순서다.
+class Exchange
+{
 public:
-    Exchange(Storage &storage, ItemStore &items, LinkGraph &graph, Checker &checker, Failure &failure)
-        : _storage(storage), _items(items), _graph(graph), _checker(checker), _failure(failure) {}
+    explicit Exchange(Workspace& workspace) : _w(workspace) {}
 
-    TextResult traceReport();
     KiottySpecStatus exportJsonl(Span<const char> directory);
-    ImportReportResult importJsonl(Span<const char> directory, bool merge);
-    TextListResult importMarkdown(KiottySpecItemKind kind, std::string_view markdown);
-    TextResult queryReadonly(std::string_view sql);
+    // DB 내용을 jsonl 로 바꾼다. 옛 형식이면 변환하고, 잘라 내거나 건너뛴 것을 report 에 한 줄씩 적는다.
+    // 값은 report 의 줄 수
+    Result<size_t, KiottySpecStatus> importJsonl(Span<const char> directory, std::string& report);
 
 private:
-    KiottySpecStatus exportTable(Span<const char> directory, std::string_view table, std::string_view keyOrder);
-    KiottySpecStatus importTable(std::string_view table, std::string_view content, bool merge, ImportReport &report);
-    KiottySpecStatus importRow(const std::string &table, std::string_view line, size_t lineNo, bool merge, ImportReport &report);
+    KiottySpecStatus importCurrent(Span<const char> directory);
+    KiottySpecStatus importLegacy(Span<const char> directory, std::string& report, size_t& notes);
 
-    Storage &_storage;
-    ItemStore &_items;
-    LinkGraph &_graph;
-    Checker &_checker;
-    Failure &_failure;
+    Workspace& _w;
 };
 
 }

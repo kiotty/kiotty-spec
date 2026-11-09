@@ -1,41 +1,36 @@
 #pragma once
 
-#include "implementation/core/failure.h"
-#include "implementation/data/datasource/storage.h"
-#include "implementation/data/repository/checkpoint_store.h"
-#include "implementation/data/repository/item_store.h"
-#include "implementation/data/repository/link_store.h"
-#include "implementation/data/repository/version_history.h"
+#include "kiotty_spec.h"
+#include "implementation/core/result.h"
+#include "implementation/core/span.h"
+#include "implementation/domain/entity/item_records.h"
 #include "implementation/domain/usecases/checker.h"
+#include "implementation/domain/usecases/workspace.h"
 
-#include <string_view>
+#include <cstddef>
+#include <cstdint>
 
 namespace kiotty::spec::implementation {
 
-struct LifecycleSources {
-    Storage &storage;
-    CheckpointStore &checkpoints;
-    VersionHistory &history;
-    ItemStore &items;
-    LinkStore &links;
-    Checker &checker;
-    Failure &failure;
-};
-
-class Lifecycle {
+// 체크포인트 흐름 (설계서 v1 5.1, 5.3). 쓰기는 가장 최근 체크포인트에 묶인다.
+class Lifecycle
+{
 public:
-    explicit Lifecycle(LifecycleSources sources) : _s(sources) {}
+    Lifecycle(Workspace& workspace, Checker& checker) : _w(workspace), _checker(checker) {}
 
-    SequenceResult confirm(KiottySpecActor actor, std::string_view cpId);
-    SequenceResult release(KiottySpecActor actor, std::string_view note);
-    CountResult prune(KiottySpecActor actor, std::string_view baseCpId);
-    KiottySpecStatus removeItem(std::string_view itemId);
+    // 쓰기를 묶을 체크포인트. 없으면 PRECONDITION, DONE 이면 CONFIRMED. STARTED 면 RUNNING 으로 바꾼다.
+    Result<uint32_t, KiottySpecStatus> beginWrite();
+
+    Result<uint32_t, KiottySpecStatus> start(entity::Step step, Span<const char> description);
+    KiottySpecStatus resume();
+    KiottySpecStatus complete(KiottySpecActor actor);
+    Result<size_t, KiottySpecStatus> prune(KiottySpecActor actor, uint32_t base);
 
 private:
     KiottySpecStatus requireUser(KiottySpecActor actor, Span<const char> what);
-    KiottySpecStatus rejectVerdict(Span<const char> heading, const Verdict &verdict);
 
-    LifecycleSources _s;
+    Workspace& _w;
+    Checker& _checker;
 };
 
 }

@@ -3,7 +3,6 @@
 #include "implementation/core/lazy_pool.h"
 #include "implementation/core/result.h"
 #include "implementation/core/span.h"
-#include "implementation/domain/entity/records.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -11,14 +10,21 @@
 
 namespace kiotty::spec::implementation {
 
-enum class CursorKind : uint8_t { NONE, ITEM, LINK, FILE, CHECKPOINT, CHANGE_REQUEST, RESULT, MILESTONE_ENTRY, STEP_RUN, ID };
+enum class CursorKind : uint8_t { NONE, ITEM, TAG, RELATION, CHECKPOINT, STEP_RUN, ID };
 
-// 커서가 가리키는 행의 키. 페이지를 채울 때 이 키로 레코드를 다시 읽는다.
+// 커서가 가리키는 행의 키 (40 바이트). 페이지를 채울 때 이 키로 레코드를 다시 읽거나 그대로 옮긴다.
+// 항목 · ID: first = 항목 핸들. 태그: first = 항목 핸들, second = model | tag << 32, third = value.
+// 관계: first = from, second = to, third = model | relation << 32. 체크포인트: number = sequence.
+// 단계 구간: first = 처음 sequence, second = 마지막 sequence, third = step | state << 32, number = 개수.
 struct CursorRow {
-    IdText key;
-    IdText other;
+    uint64_t first {0};
+    uint64_t second {0};
+    uint64_t third {0};
+    uint64_t fourth {0};
     int64_t number {0};
 };
+
+static_assert(sizeof(CursorRow) == 40, "unexpected padding");
 
 struct CursorSlot {
     CursorKind kind {CursorKind::NONE};

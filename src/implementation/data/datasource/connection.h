@@ -21,6 +21,8 @@ public:
     Connection& operator=(const Connection&) = delete;
 
     KiottySpecStatus open(Span<const char> path);
+    void close();
+    bool isOpen() const { return _database != nullptr; }
     KiottySpecStatus execute(Span<const char> sql);
     Result<Query, KiottySpecStatus> prepare(Span<const char> sql);
     int64_t insertedRowId() const;

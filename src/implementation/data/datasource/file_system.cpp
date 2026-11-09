@@ -23,6 +23,7 @@
 #endif
 
 #include <cerrno>
+#include <cstdio>
 
 namespace kiotty::spec::implementation {
 
@@ -404,6 +405,52 @@ KiottySpecStatus makeExecutable(Span<const char> path)
     if (::stat(terminated.c_str(), &status) != 0) { return KIOTTY_SPEC_STATUS_INPUT_OUTPUT; }
     if (::chmod(terminated.c_str(), status.st_mode | S_IXUSR | S_IXGRP | S_IXOTH) != 0) { return KIOTTY_SPEC_STATUS_INPUT_OUTPUT; }
     return KIOTTY_SPEC_STATUS_SUCCESS;
+#endif
+}
+
+bool isFile(Span<const char> path)
+{
+#ifdef _WIN32
+    const auto wide = widen(path);
+    if (!wide) { return false; }
+    struct _stat64 status {};
+    if (_wstat64(wide.value.text, &status) != 0) { return false; }
+    return (status.st_mode & _S_IFREG) != 0;
+#else
+    SystemPath terminated;
+    if (terminated.assign(path) != KIOTTY_SPEC_STATUS_SUCCESS) { return false; }
+    struct stat status {};
+    if (::stat(terminated.c_str(), &status) != 0) { return false; }
+    return S_ISREG(status.st_mode);
+#endif
+}
+
+KiottySpecStatus removeFile(Span<const char> path)
+{
+    if (!isFile(path)) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+#ifdef _WIN32
+    const auto wide = widen(path);
+    if (!wide) { return wide.code; }
+    return _wremove(wide.value.text) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+#else
+    SystemPath terminated;
+    if (terminated.assign(path) != KIOTTY_SPEC_STATUS_SUCCESS) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+    return ::remove(terminated.c_str()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+#endif
+}
+
+KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
+{
+#ifdef _WIN32
+    const auto source = widen(from);
+    const auto target = widen(to);
+    if (!source || !target) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+    return _wrename(source.value.text, target.value.text) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+#else
+    SystemPath source;
+    SystemPath target;
+    if (source.assign(from) != KIOTTY_SPEC_STATUS_SUCCESS || target.assign(to) != KIOTTY_SPEC_STATUS_SUCCESS) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+    return ::rename(source.c_str(), target.c_str()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 #endif
 }
 

@@ -28,5 +28,9 @@ KiottySpecStatus createDirectories(Span<const char> path);
 std::optional<std::string> readWholeFile(Span<const char> path);
 KiottySpecStatus writeWholeFile(Span<const char> path, Span<const char> content);
 KiottySpecStatus makeExecutable(Span<const char> path);
+bool isFile(Span<const char> path);
+// 없는 파일이면 성공으로 본다.
+KiottySpecStatus removeFile(Span<const char> path);
+KiottySpecStatus renameFile(Span<const char> from, Span<const char> to);
 
 }

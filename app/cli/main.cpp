@@ -1,71 +1,73 @@
-#include "arguments.h"
-#include "commands.h"
-#include "output.h"
 #include "path_utf8.h"
+#include "session.h"
 
 #include "kiotty_spec.h"
 
 #include <cstdlib>
-#include <filesystem>
 #include <iostream>
 #include <string>
+#include <system_error>
 #include <vector>
-
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
-#endif
 
 namespace {
 
 using namespace kiotty::cli;
 
-std::string toUtf8(const std::filesystem::path &path) {
-    return pathToUtf8(path);
-}
-
-std::string environment(const char *name) {
+std::string environment(const char* name)
+{
 #ifdef _WIN32
-    char *value = nullptr;
+    char* value = nullptr;
     size_t size = 0;
-    if (_dupenv_s(&value, &size, name) != 0 || value == nullptr) return "";
+    if (_dupenv_s(&value, &size, name) != 0 || value == nullptr) { return ""; }
     std::string result(value);
     std::free(value);
     return result;
 #else
-    const char *value = std::getenv(name);
+    const char* value = std::getenv(name);
     return value != nullptr ? value : "";
 #endif
 }
 
-std::string findRoot(const Arguments &args) {
-    if (const auto root = args.option("root")) return *root;
-    if (const auto env = environment("KIOTTY_SPEC_ROOT"); !env.empty()) return env;
-    std::error_code ec;
-    auto dir = std::filesystem::current_path(ec);
-    for (auto probe = dir; !probe.empty(); probe = probe.parent_path()) {
-        if (std::filesystem::is_directory(probe / ".kiotty", ec)) return toUtf8(probe);
-        if (probe == probe.parent_path()) break;
+std::string findRoot(const Arguments& args)
+{
+    if (const auto root = args.option("root")) { return *root; }
+    if (const auto env = environment("KIOTTY_SPEC_ROOT"); !env.empty()) { return env; }
+    std::error_code error;
+    const auto current = std::filesystem::current_path(error);
+    for (auto probe = current; !probe.empty(); probe = probe.parent_path()) {
+        if (std::filesystem::is_directory(probe / ".kiotty", error)) { return pathToUtf8(probe); }
+        if (probe == probe.parent_path()) { break; }
     }
-    return toUtf8(dir);
+    return pathToUtf8(current);
 }
 
-KiottySpecActor findActor(const Arguments &args) {
-    std::string name = args.option("actor").value_or(environment("KIOTTY_SPEC_ACTOR"));
-    if (name.empty()) name = "ai";
-    return static_cast<KiottySpecActor>(enumValue("Actor", name));
+KiottySpecActor findActor(const Arguments& args)
+{
+    const std::string name = args.option("actor").value_or(environment("KIOTTY_SPEC_ACTOR"));
+    return name == "user" ? KIOTTY_SPEC_ACTOR_USER : KIOTTY_SPEC_ACTOR_AI;
 }
 
-const Command *findCommand(const std::vector<std::string> &tokens, size_t &consumed) {
-    if (tokens.empty()) return nullptr;
-    for (const auto &command : commands()) {
-        if (command.group != tokens[0]) continue;
-        if (command.verb.empty()) {
+void printHelp()
+{
+    std::cout << "사용법: ks <그룹> [동사] [인자...] [--root DIR] [--actor ai|user]\n"
+                 "출력은 TSV 이며 첫 줄이 머리글이다. 쓰기 명령은 성공하면 아무것도 찍지 않는다 (만든 ID 는 찍는다).\n"
+                 "Kind: change_request requirement rule external_interface design unit_test_plan milestone unit_test_result\n"
+                 "      system_test_plan system_test_result code_inspection_result e2e_test_plan e2e_test_result\n\n";
+    for (const CommandEntry& command : commands()) {
+        std::cout << "  ks " << command.group << (command.verb[0] != '\0' ? " " : "") << command.verb << " " << command.usage << "\n      "
+                  << command.summary << "\n";
+    }
+}
+
+const CommandEntry* findCommand(const std::vector<std::string>& tokens, size_t& consumed)
+{
+    for (const CommandEntry& command : commands()) {
+        if (tokens[0] != command.group) { continue; }
+        if (command.verb[0] == '\0') {
             consumed = 1;
             return &command;
         }
-        if (tokens.size() > 1 && command.verb == tokens[1]) {
+        if (tokens.size() > 1 && tokens[1] == command.verb) {
             consumed = 2;
             return &command;
         }
@@ -73,64 +75,57 @@ const Command *findCommand(const std::vector<std::string> &tokens, size_t &consu
     return nullptr;
 }
 
-int run(std::vector<std::string> tokens) {
+int run(const std::vector<std::string>& tokens)
+{
     if (tokens.empty() || tokens[0] == "help" || tokens[0] == "--help" || tokens[0] == "-h") {
-        std::cout << helpText();
+        printHelp();
         return 0;
     }
     size_t consumed = 0;
-    const Command *command = findCommand(tokens, consumed);
-    if (command == nullptr) {
-        std::cerr << "error: Usage: 알 수 없는 명령 '" << tokens[0] << (tokens.size() > 1 ? " " + tokens[1] : "")
-                  << "'. `ks help` 참고\n";
-        return 2;
-    }
-    const Arguments args(std::vector<std::string>(tokens.begin() + static_cast<std::ptrdiff_t>(consumed), tokens.end()));
-    if (args.flag("help")) {
-        std::cout << "ks " << command->group << (command->verb.empty() ? "" : " " + command->verb) << " " << command->usage
-                  << "\n  " << command->summary << "\n";
+    const CommandEntry* command = findCommand(tokens, consumed);
+    if (command == nullptr) { return usage("알 수 없는 명령 '" + tokens[0] + (tokens.size() > 1 ? " " + tokens[1] : "") + "'. `ks help` 참고"); }
+    Session session;
+    session.args = parseArguments(tokens, consumed);
+    if (session.args.flag("help")) {
+        std::cout << "ks " << command->group << (command->verb[0] != '\0' ? " " : "") << command->verb << " " << command->usage << "\n  "
+                  << command->summary << "\n";
         return 0;
     }
-
-    Session session{nullptr, findRoot(args), findActor(args), args};
-    if (command->needsDb) {
-        check(KiottySpec_open(session.root.c_str(), &session.db));
+    session.actor = findActor(session.args);
+    const std::string root = findRoot(session.args);
+    KiottySpecConfiguration configuration {};
+    configuration.project_root = textOf(root);
+    const KiottySpecContextResult created = KiottySpec_createContext(&configuration);
+    session.context = created.value;
+    int code = 0;
+    if (created.code != KIOTTY_SPEC_STATUS_SUCCESS) {
+        code = fail(session, created.code);
+    } else {
+        code = command->run(session);
     }
-    struct Closer {
-        KiottySpec *db;
-        ~Closer() { if (db != nullptr) KiottySpec_close(db); }
-    } closer{session.db};
-    command->run(session);
-    return 0;
+    KiottySpec_releaseContext(session.context);
+    return code;
 }
 
 }
 
 #ifdef _WIN32
-int wmain(int argc, wchar_t **argv) {
+int wmain(int argc, wchar_t** argv)
+{
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
     std::vector<std::string> tokens;
-    for (int i = 1; i < argc; ++i) {
-        const int size = WideCharToMultiByte(CP_UTF8, 0, argv[i], -1, nullptr, 0, nullptr, nullptr);
+    for (int index = 1; index < argc; ++index) {
+        const int size = WideCharToMultiByte(CP_UTF8, 0, argv[index], -1, nullptr, 0, nullptr, nullptr);
         std::string token(static_cast<size_t>(size > 0 ? size - 1 : 0), '\0');
-        WideCharToMultiByte(CP_UTF8, 0, argv[i], -1, token.data(), size, nullptr, nullptr);
+        WideCharToMultiByte(CP_UTF8, 0, argv[index], -1, token.data(), size, nullptr, nullptr);
         tokens.push_back(std::move(token));
     }
-#else
-int main(int argc, char **argv) {
-    std::vector<std::string> tokens(argv + 1, argv + argc);
-#endif
-    try {
-        return run(std::move(tokens));
-    } catch (const UsageError &e) {
-        std::cerr << "error: Usage: " << e.what() << "\n";
-        return 2;
-    } catch (const CallError &e) {
-        std::cerr << "error: " << KiottySpec_strerror(e.status) << ": " << e.what() << "\n";
-        return 1;
-    } catch (const std::exception &e) {
-        std::cerr << "error: " << e.what() << "\n";
-        return 1;
-    }
+    return run(tokens);
 }
+#else
+int main(int argc, char** argv)
+{
+    return run(std::vector<std::string>(argv + 1, argv + argc));
+}
+#endif

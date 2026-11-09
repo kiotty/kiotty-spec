@@ -1,13 +1,19 @@
 #include "implementation/domain/usecases/exchange.h"
 
-#include "implementation/core/markdown.h"
-#include "implementation/core/text.h"
 #include "implementation/core/text_view.h"
+#include "implementation/core/utf8.h"
 #include "implementation/data/datasource/file_system.h"
 #include "implementation/data/datasource/savepoint.h"
 #include "implementation/data/datasource/schema.h"
 
 #include <nlohmann/json.hpp>
+
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <map>
+#include <string_view>
+#include <vector>
 
 namespace kiotty::spec::implementation {
 
@@ -15,24 +21,112 @@ using nlohmann::json;
 
 namespace {
 
+using entity::ItemKind;
+
 constexpr char JSONL_EXTENSION[] = ".jsonl";
-constexpr char META_TABLE[] = "meta";
-constexpr char COUNTER_TABLE[] = "id_counter";
-constexpr char RAISE_COUNTER_SQL[] = "UPDATE id_counter SET next = MAX(next, ?2) WHERE prefix = ?1";
+constexpr int64_t LEGACY_PENDING = std::numeric_limits<int64_t>::max();
+// 정의서 v0 에만 있던 파일. 내보낼 때 지운다.
+constexpr std::string_view LEGACY_FILES[] = {"link_version", "file_version", "milestone_state", "change_request", "result"};
 
-constexpr std::pair<KiottySpecItemKind, KiottySpecItemKind> TRACE_PAIRS[] = {
-    {KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, KIOTTY_SPEC_ITEM_KIND_INTERFACE},
-    {KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, KIOTTY_SPEC_ITEM_KIND_DESIGN},
-    {KIOTTY_SPEC_ITEM_KIND_INTERFACE, KIOTTY_SPEC_ITEM_KIND_DESIGN},
-    {KIOTTY_SPEC_ITEM_KIND_DESIGN, KIOTTY_SPEC_ITEM_KIND_UNIT_TEST},
-    {KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST},
-    {KIOTTY_SPEC_ITEM_KIND_INTERFACE, KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST},
-    {KIOTTY_SPEC_ITEM_KIND_MILESTONE, KIOTTY_SPEC_ITEM_KIND_DESIGN},
-};
-
-nlohmann::ordered_json orderedRow(const Row &row)
+SystemPathResult tableFile(Span<const char> directory, std::string_view table)
 {
-    nlohmann::ordered_json object = nlohmann::ordered_json::object();
+    std::string name(table);
+    name += JSONL_EXTENSION;
+    return joinPath(directory, spanOf(name));
+}
+
+std::string dumpLine(const json& value)
+{
+    return value.dump(-1, ' ', false, json::error_handler_t::replace) + "\n";
+}
+
+bool isColumnName(std::string_view name)
+{
+    if (name.empty()) { return false; }
+    for (const char letter : name) {
+        if (!((letter >= 'a' && letter <= 'z') || letter == '_')) { return false; }
+    }
+    return true;
+}
+
+int64_t integerOf(const json& object, const char* key, int64_t fallback)
+{
+    const auto found = object.find(key);
+    if (found == object.end()) { return fallback; }
+    if (found->is_number_integer()) { return found->get<int64_t>(); }
+    if (found->is_number_unsigned()) {
+        const uint64_t value = found->get<uint64_t>();
+        return value > static_cast<uint64_t>(LEGACY_PENDING) ? LEGACY_PENDING : static_cast<int64_t>(value);
+    }
+    if (found->is_boolean()) { return found->get<bool>() ? 1 : 0; }
+    return fallback;
+}
+
+std::string textOf(const json& object, const char* key)
+{
+    const auto found = object.find(key);
+    if (found == object.end() || !found->is_string()) { return std::string(); }
+    return found->get<std::string>();
+}
+
+bool hasText(const json& object, const char* key)
+{
+    const auto found = object.find(key);
+    return found != object.end() && found->is_string();
+}
+
+// UTF-8 글자 경계에서 limit 바이트 이하로 자른다.
+std::string cutUtf8(const std::string& text, size_t limit)
+{
+    if (text.size() <= limit) { return text; }
+    size_t cut = limit;
+    while (cut > 0 && isUtf8Continuation(text[cut])) { --cut; }
+    return text.substr(0, cut);
+}
+
+// 파일을 줄마다 json 객체로 읽는다. 파일이 없으면 빈 목록. 깨진 줄이 있으면 false
+bool readObjects(Span<const char> directory, std::string_view table, std::vector<json>& rows, bool& present)
+{
+    rows.clear();
+    const auto path = tableFile(directory, table);
+    present = path && isFile(path.value.view());
+    if (!present) { return true; }
+    const auto content = readWholeFile(path.value.view());
+    if (!content) { return false; }
+    size_t start = 0;
+    while (start < content->size()) {
+        size_t end = content->find('\n', start);
+        if (end == std::string::npos) { end = content->size(); }
+        std::string_view line(content->data() + start, end - start);
+        while (!line.empty() && (line.back() == '\r' || line.back() == ' ')) { line.remove_suffix(1); }
+        if (!line.empty()) {
+            json row = json::parse(line, nullptr, false);
+            if (row.is_discarded() || !row.is_object()) { return false; }
+            rows.push_back(std::move(row));
+        }
+        start = end + 1;
+    }
+    return true;
+}
+
+KiottySpecStatus bindValue(Query& query, int index, const json& value)
+{
+    if (value.is_null()) { return query.bind(index, nullptr); }
+    if (value.is_boolean()) { return query.bind(index, static_cast<int64_t>(value.get<bool>() ? 1 : 0)); }
+    if (value.is_number_integer()) { return query.bind(index, value.get<int64_t>()); }
+    if (value.is_number_unsigned()) { return query.bind(index, static_cast<int64_t>(value.get<uint64_t>())); }
+    if (value.is_number()) { return query.bind(index, value.get<double>()); }
+    if (value.is_string()) {
+        const std::string& text = value.get_ref<const std::string&>();
+        return query.bind(index, spanOf(text));
+    }
+    const std::string text = value.dump(-1, ' ', false, json::error_handler_t::replace);
+    return query.bind(index, spanOf(text));
+}
+
+json rowObject(const Row& row, std::string_view table)
+{
+    json object = json::object();
     for (int column = 0; column < row.count(); ++column) {
         const std::string key(viewOf(row.name(column)));
         switch (row.type(column)) {
@@ -43,270 +137,339 @@ nlohmann::ordered_json orderedRow(const Row &row)
         case ColumnType::BLOB: object[key] = std::string(viewOf(row.text(column))); break;
         }
     }
+    // 태그는 DB 에 "[[1,4]]" 글자로 두고, jsonl 에는 배열로 쓴다 (3.6).
+    if (table == "item_version" && object["tags"].is_string()) {
+        json tags = json::parse(object["tags"].get<std::string>(), nullptr, false);
+        object["tags"] = tags.is_discarded() ? json::array() : tags;
+    }
     return object;
 }
 
-void bindJson(Query &query, int index, const json &value)
+void note(std::string& report, size_t& notes, const std::string& line)
 {
-    if (value.is_null()) {
-        query.bind(index, nullptr);
-        return;
-    }
-    if (value.is_boolean()) {
-        query.bind(index, static_cast<int64_t>(value.get<bool>() ? 1 : 0));
-        return;
-    }
-    if (value.is_number_integer()) {
-        query.bind(index, value.get<int64_t>());
-        return;
-    }
-    if (value.is_number()) {
-        query.bind(index, value.get<double>());
-        return;
-    }
-    const std::string text = value.is_string() ? value.get<std::string>() : value.dump();
-    query.bind(index, spanOf(text));
+    report += "- ";
+    report += line;
+    report += "\n";
+    ++notes;
 }
 
-void bindAll(Query &query, const json &row)
+std::string checkpointLabel(int64_t sequence)
 {
-    int index = 1;
-    for (const auto &entry : row.items()) { bindJson(query, index++, entry.value()); }
+    std::string digits = std::to_string(sequence);
+    while (digits.size() < 4) { digits.insert(digits.begin(), '0'); }
+    return "CP-" + digits;
 }
 
-std::string insertSql(const std::string &table, const json &row, bool merge)
+// 정의서 v0 의 단계 번호 → 설계서 v1 (11절)
+int64_t mapLegacyStep(int64_t step, bool release)
 {
-    std::string columns;
-    std::string placeholders;
-    int index = 0;
-    for (const auto &entry : row.items()) {
-        columns += (index == 0 ? "" : ", ") + entry.key();
-        placeholders += (index == 0 ? "?" : ", ?") + std::to_string(index + 1);
-        ++index;
-    }
-    const std::string verb = merge ? "INSERT OR IGNORE" : "INSERT";
-    return verb + " INTO " + table + " (" + columns + ") VALUES (" + placeholders + ")";
+    if (step <= 2) { return 2; }
+    if (step <= 8) { return step; }
+    if (step == 9) { return 10; }
+    return release ? 12 : 11;
 }
 
-std::string sameRowSql(const std::string &table, const json &row)
+const char* mapLegacyKind(const std::string& kind)
 {
-    std::string where;
-    int column = 1;
-    for (const auto &entry : row.items()) {
-        where += (column == 1 ? "" : " AND ") + entry.key() + " IS ?" + std::to_string(column);
-        ++column;
-    }
-    return "SELECT COUNT(*) FROM " + table + " WHERE " + where;
+    if (kind == "requirement") { return "requirement"; }
+    if (kind == "rule") { return "rule"; }
+    if (kind == "interface") { return "external_interface"; }
+    if (kind == "design") { return "design"; }
+    if (kind == "unit_test" ) { return "unit_test_plan"; }
+    if (kind == "system_test") { return "system_test_plan"; }
+    if (kind == "e2e_test") { return "e2e_test_plan"; }
+    if (kind == "milestone") { return "milestone"; }
+    if (kind == "plan") { return "milestone"; }
+    return nullptr;
 }
 
-std::string textField(const json &row, const char *key)
-{
-    const auto found = row.find(key);
-    if (found == row.end() || !found->is_string()) { return std::string(); }
-    return found->get<std::string>();
-}
+struct LegacyCategory {
+    const char* category;
+    const char* tag;
+    const char* bit;
+};
 
-int64_t integerField(const json &row, const char *key)
-{
-    const auto found = row.find(key);
-    if (found == row.end() || !found->is_number_integer()) { return 0; }
-    return found->get<int64_t>();
-}
+constexpr LegacyCategory LEGACY_CATEGORIES[] = {
+    {"functional", "요구사항 종류", "기능 요구사항"}, {"quality", "요구사항 종류", "품질 요구사항"},
+    {"environment", "요구사항 종류", "환경 요구사항"}, {"architecture", "수칙 종류", "아키텍처"},
+    {"convention", "수칙 종류", "컨벤션"},          {"coding", "수칙 종류", "코딩 제약"},
+    {"dependency", "수칙 종류", "의존성"},          {"test", "수칙 종류", "테스트"},
+    {"view", "인터페이스 종류", "GUI 뷰"},           {"c_api", "인터페이스 종류", "C 함수"},
+    {"module", "설계 종류", "모듈"},                 {"flow", "설계 종류", "동작 흐름"},
+    {"directory", "설계 종류", "디렉토리"},          {"memory", "설계 종류", "메모리 정책"},
+};
 
-KiottySpecStatus raiseCounter(Storage &storage, const json &row)
-{
-    auto query = storage.prepare(literalText(RAISE_COUNTER_SQL));
-    if (!query) { return query.code; }
-    const std::string prefix = textField(row, "prefix");
-    query.value.bind(1, spanOf(prefix));
-    query.value.bind(2, integerField(row, "next"));
-    return storage.check(query.value.run());
-}
+struct LegacyLink {
+    const char* from_kind;
+    const char* type;
+    const char* to_kind;
+    const char* relation;
+};
 
-FlagResult sameRowExists(Storage &storage, const std::string &table, const json &row)
-{
-    auto query = storage.prepare(spanOf(sameRowSql(table, row)));
-    if (!query) { return FlagResult::failure(query.code); }
-    bindAll(query.value, row);
-    const auto stepped = query.value.step();
-    if (!stepped) { return FlagResult::failure(storage.check(stepped.code)); }
-    return FlagResult::success(query.value.row().integer(0) != 0);
-}
+constexpr LegacyLink LEGACY_LINKS[] = {
+    {"requirement", "satisfies", "requirement", "관련 요구사항"},
+    {"external_interface", "satisfies", "requirement", "관련 요구사항"},
+    {"design", "satisfies", "requirement", "관련 요구사항"},
+    {"design", "satisfies", "external_interface", "관련 외부 인터페이스"},
+    {"design", "depends_on", "design", "의존 설계 사항"},
+    {"unit_test_plan", "verifies", "design", "검증 설계 사항"},
+    {"system_test_plan", "verifies", "requirement", "검증 요구사항"},
+    {"e2e_test_plan", "verifies", "external_interface", "검증 외부 인터페이스"},
+    {"milestone", "covers", "design", "포함 설계 사항"},
+    {"milestone", "covers", "unit_test_plan", "포함 유닛 테스트"},
+};
 
-KiottySpecItemCategory splitCategory(std::string &heading)
-{
-    KiottySpecItemCategory category = KIOTTY_SPEC_ITEM_CATEGORY_NONE;
-    const std::string_view trimmed = trim(heading);
-    if (trimmed.empty() || trimmed.front() != '[') { return category; }
-    const size_t close = trimmed.find(']');
-    if (close == std::string_view::npos) { return category; }
-    const std::string tag(trim(trimmed.substr(1, close - 1)));
-    parse(tag, category);
-    heading = std::string(trim(trimmed.substr(close + 1)));
-    return category;
-}
-
-KiottySpecItemCategory defaultCategory(KiottySpecItemKind kind)
-{
-    switch (kind) {
-    case KIOTTY_SPEC_ITEM_KIND_REQUIREMENT: return KIOTTY_SPEC_ITEM_CATEGORY_REQUIREMENT_FUNCTIONAL;
-    case KIOTTY_SPEC_ITEM_KIND_RULE: return KIOTTY_SPEC_ITEM_CATEGORY_RULE_ARCHITECTURE;
-    case KIOTTY_SPEC_ITEM_KIND_INTERFACE: return KIOTTY_SPEC_ITEM_CATEGORY_INTERFACE_C_API;
-    case KIOTTY_SPEC_ITEM_KIND_DESIGN: return KIOTTY_SPEC_ITEM_CATEGORY_DESIGN_MODULE;
-    case KIOTTY_SPEC_ITEM_KIND_UNIT_TEST:
-    case KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST:
-    case KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST:
-    case KIOTTY_SPEC_ITEM_KIND_MILESTONE: return KIOTTY_SPEC_ITEM_CATEGORY_NONE;
-    }
-    return KIOTTY_SPEC_ITEM_CATEGORY_NONE;
-}
-
-std::string sectionBody(std::string_view body)
-{
-    std::string out;
-    for (const auto line : splitLines(body)) {
-        std::string text(line);
-        if (text.rfind("###", 0) == 0) { text.erase(0, 1); }
-        out += text + "\n";
-    }
-    return out;
-}
-
-}
-
-TextResult Exchange::traceReport()
-{
-    std::string out = "# 추적 보고서\n\n";
-    for (const auto &[row, col] : TRACE_PAIRS) {
-        const auto matrix = _graph.matrix(row, col);
-        if (!matrix) { return matrix; }
-        out += "## " + std::string(label(row)) + " × " + std::string(label(col)) + "\n```csv\n" + matrix.value + "```\n\n";
-    }
-    const auto checks = _checker.all();
-    if (!checks) { return checks; }
-    return TextResult::success(out + checks.value);
 }
 
 KiottySpecStatus Exchange::exportJsonl(Span<const char> directory)
 {
-    if (createDirectories(directory) != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("디렉토리를 만들 수 없음: "), directory}); }
-    for (const OrderedTable &ordered : orderedTables()) {
-        const KiottySpecStatus exported = exportTable(directory, ordered.name, ordered.key_order);
-        if (exported != KIOTTY_SPEC_STATUS_SUCCESS) { return exported; }
+    if (createDirectories(directory) != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return _w.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("디렉토리를 만들 수 없음: "), directory});
+    }
+    for (const OrderedTable& table : orderedTables()) {
+        std::string sql = "SELECT * FROM ";
+        sql += table.name;
+        sql += " ORDER BY ";
+        sql += table.key_order;
+        auto query = _w.storage.prepare(spanOf(sql));
+        if (!query) { return query.code; }
+        std::string content;
+        while (true) {
+            const auto stepped = query.value.step();
+            if (!stepped) { return _w.storage.check(stepped.code); }
+            if (!stepped.value) { break; }
+            content += dumpLine(rowObject(query.value.row(), table.name));
+        }
+        const auto path = tableFile(directory, table.name);
+        if (!path) { return _w.failure.raise(path.code, {literalText("경로가 너무 김: "), directory}); }
+        if (writeWholeFile(path.value.view(), spanOf(content)) != KIOTTY_SPEC_STATUS_SUCCESS) {
+            return _w.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("파일을 쓸 수 없음: "), path.value.view()});
+        }
+    }
+    for (const std::string_view legacy : LEGACY_FILES) {
+        const auto path = tableFile(directory, legacy);
+        if (path) { removeFile(path.value.view()); }
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-ImportReportResult Exchange::importJsonl(Span<const char> directory, bool merge)
+Result<size_t, KiottySpecStatus> Exchange::importJsonl(Span<const char> directory, std::string& report)
 {
-    ImportReport report;
-    Savepoint savepoint(_storage.connection());
-    const KiottySpecStatus begun = _storage.check(savepoint.begin());
-    if (begun != KIOTTY_SPEC_STATUS_SUCCESS) { return ImportReportResult::failure(begun); }
-    for (const OrderedTable &ordered : orderedTables()) {
-        const std::string file = std::string(ordered.name) + JSONL_EXTENSION;
-        const auto path = joinPath(directory, spanOf(file));
-        if (!path) { return ImportReportResult::failure(_failure.raise(path.code, {literalText("경로가 너무 김: "), directory})); }
-        const auto content = readWholeFile(path.value.view());
-        if (!content) { continue; }
-        const KiottySpecStatus imported = importTable(ordered.name, *content, merge, report);
-        if (imported != KIOTTY_SPEC_STATUS_SUCCESS) { return ImportReportResult::failure(imported); }
+    using CountResult = Result<size_t, KiottySpecStatus>;
+    if (!isDirectory(directory)) { return CountResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("jsonl 디렉토리가 없음: "), directory})); }
+    const auto legacyMarker = tableFile(directory, "link_version");
+    const bool legacy = legacyMarker && isFile(legacyMarker.value.view());
+    size_t notes = 0;
+    KiottySpecStatus status = KIOTTY_SPEC_STATUS_SUCCESS;
+    {
+        Savepoint savepoint(_w.storage.connection());
+        status = _w.storage.check(savepoint.begin());
+        if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = recreate(_w.storage); }
+        if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = legacy ? importLegacy(directory, report, notes) : importCurrent(directory); }
+        if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _w.storage.check(savepoint.commit()); }
     }
-    const KiottySpecStatus committed = _storage.check(savepoint.commit());
-    if (committed != KIOTTY_SPEC_STATUS_SUCCESS) { return ImportReportResult::failure(committed); }
-    return ImportReportResult::success(std::move(report));
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
+        _w.reload();
+        return CountResult::failure(status);
+    }
+    const KiottySpecStatus reloaded = _w.reload();
+    if (reloaded != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(reloaded); }
+    return CountResult::success(notes);
 }
 
-TextListResult Exchange::importMarkdown(KiottySpecItemKind kind, std::string_view markdown)
+KiottySpecStatus Exchange::importCurrent(Span<const char> directory)
 {
-    std::vector<std::string> created;
-    Savepoint savepoint(_storage.connection());
-    const KiottySpecStatus begun = _storage.check(savepoint.begin());
-    if (begun != KIOTTY_SPEC_STATUS_SUCCESS) { return TextListResult::failure(begun); }
-    for (auto &section : splitSections(markdown, 2)) {
-        std::string title = section.heading;
-        KiottySpecItemCategory category = splitCategory(title);
-        if (category == KIOTTY_SPEC_ITEM_CATEGORY_NONE) { category = defaultCategory(kind); }
-        auto id = _items.create(kind, category, std::nullopt, title, sectionBody(section.body));
-        if (!id) { return TextListResult::failure(id.code); }
-        created.push_back(std::move(id.value));
-    }
-    if (created.empty()) { return TextListResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("가져올 '## 제목' 절이 없음")})); }
-    const KiottySpecStatus committed = _storage.check(savepoint.commit());
-    if (committed != KIOTTY_SPEC_STATUS_SUCCESS) { return TextListResult::failure(committed); }
-    return TextListResult::success(std::move(created));
-}
-
-TextResult Exchange::queryReadonly(std::string_view sql)
-{
-    auto query = _storage.prepare(spanOf(sql));
-    if (!query) { return TextResult::failure(query.code); }
-    if (!query.value.isReadOnly()) { return TextResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_PERMISSION, {literalText("읽기 전용 SQL 만 허용됨")})); }
-    nlohmann::ordered_json rows = nlohmann::ordered_json::array();
-    auto stepped = query.value.step();
-    while (stepped.value) {
-        rows.push_back(orderedRow(query.value.row()));
-        stepped = query.value.step();
-    }
-    if (!stepped) { return TextResult::failure(_storage.check(stepped.code)); }
-    return TextResult::success(rows.dump(2));
-}
-
-KiottySpecStatus Exchange::exportTable(Span<const char> directory, std::string_view table, std::string_view keyOrder)
-{
-    const std::string sql = "SELECT * FROM " + std::string(table) + " ORDER BY " + std::string(keyOrder);
-    auto query = _storage.prepare(spanOf(sql));
-    if (!query) { return query.code; }
-    std::string content;
-    auto stepped = query.value.step();
-    while (stepped.value) {
-        content += json(orderedRow(query.value.row())).dump() + "\n";
-        stepped = query.value.step();
-    }
-    if (!stepped) { return _storage.check(stepped.code); }
-    const std::string file = std::string(table) + JSONL_EXTENSION;
-    const auto path = joinPath(directory, spanOf(file));
-    if (!path) { return _failure.raise(path.code, {literalText("경로가 너무 김: "), directory}); }
-    if (writeWholeFile(path.value.view(), spanOf(content)) == KIOTTY_SPEC_STATUS_SUCCESS) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("파일을 쓸 수 없음: "), path.value.view()});
-}
-
-KiottySpecStatus Exchange::importTable(std::string_view table, std::string_view content, bool merge, ImportReport &report)
-{
-    const std::string name(table);
-    if (!merge) {
-        const KiottySpecStatus cleared = _storage.execute(spanOf("DELETE FROM " + name));
-        if (cleared != KIOTTY_SPEC_STATUS_SUCCESS) { return cleared; }
-    }
-    size_t lineNo = 0;
-    for (const auto line : splitLines(content)) {
-        ++lineNo;
-        if (trim(line).empty()) { continue; }
-        const KiottySpecStatus imported = importRow(name, line, lineNo, merge, report);
-        if (imported != KIOTTY_SPEC_STATUS_SUCCESS) { return imported; }
-        ++report.rows;
+    std::vector<json> rows;
+    for (const OrderedTable& table : orderedTables()) {
+        bool present = false;
+        if (!readObjects(directory, table.name, rows, present)) {
+            return _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("jsonl 을 읽을 수 없음: "), spanOf(table.name)});
+        }
+        for (const json& row : rows) {
+            std::string sql = "INSERT INTO ";
+            sql += table.name;
+            std::string columns;
+            std::string values;
+            int index = 0;
+            for (const auto& entry : row.items()) {
+                if (!isColumnName(entry.key())) {
+                    return _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("알 수 없는 열: "), spanOf(entry.key())});
+                }
+                columns += (index == 0 ? "" : ", ") + entry.key();
+                values += (index == 0 ? "?" : ", ?") + std::to_string(index + 1);
+                ++index;
+            }
+            sql += " (" + columns + ") VALUES (" + values + ")";
+            auto query = _w.storage.prepare(spanOf(sql));
+            if (!query) { return query.code; }
+            index = 1;
+            for (const auto& entry : row.items()) { bindValue(query.value, index++, entry.value()); }
+            const KiottySpecStatus inserted = _w.storage.check(query.value.run());
+            if (inserted != KIOTTY_SPEC_STATUS_SUCCESS) { return inserted; }
+        }
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-KiottySpecStatus Exchange::importRow(const std::string &table, std::string_view line, size_t lineNo, bool merge, ImportReport &report)
+KiottySpecStatus Exchange::importLegacy(Span<const char> directory, std::string& report, size_t& notes)
 {
-    const json row = json::parse(line.begin(), line.end(), nullptr, false);
-    if (row.is_discarded() || !row.is_object()) {
-        const std::string where = table + ".jsonl " + std::to_string(lineNo) + "행 파싱 실패: 올바른 JSON 객체가 아님";
-        return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {spanOf(where)});
+    std::vector<json> rows;
+    bool present = false;
+    auto readTable = [&](std::string_view table) -> KiottySpecStatus {
+        if (readObjects(directory, table, rows, present)) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+        return _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("jsonl 을 읽을 수 없음: "), spanOf(table)});
+    };
+    auto run = [&](const char* sql, std::initializer_list<json> values) -> KiottySpecStatus {
+        auto query = _w.storage.prepare(boundedText(sql, 512));
+        if (!query) { return query.code; }
+        int index = 1;
+        for (const json& value : values) { bindValue(query.value, index++, value); }
+        return _w.storage.check(query.value.run());
+    };
+
+    KiottySpecStatus status = readTable("meta");
+    for (const json& row : rows) {
+        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
+        status = run("INSERT INTO meta (key, value) VALUES (?1, ?2)", {textOf(row, "key"), textOf(row, "value")});
     }
-    auto query = _storage.prepare(spanOf(insertSql(table, row, merge)));
-    if (!query) { return query.code; }
-    bindAll(query.value, row);
-    const KiottySpecStatus ran = _storage.check(query.value.run());
-    if (ran != KIOTTY_SPEC_STATUS_SUCCESS) { return ran; }
-    const bool skipped = merge && _storage.changedRowCount() == 0 && table != META_TABLE;
-    if (!skipped) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    if (table == COUNTER_TABLE) { return raiseCounter(_storage, row); }
-    const auto same = sameRowExists(_storage, table, row);
-    if (!same) { return same.code; }
-    if (!same.value) { report.conflicts.push_back(table + ": " + row.dump()); }
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+
+    status = readTable("id_counter");
+    for (const json& row : rows) {
+        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
+        const std::string prefix = textOf(row, "prefix");
+        if (prefix.empty() || prefix[0] == '#' || prefix == "FILE") { continue; }
+        status = run("INSERT INTO id_counter (prefix, next) VALUES (?1, ?2)", {prefix, integerOf(row, "next", 1)});
+    }
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+
+    // 체크포인트: confirmed → DONE, 나머지 → RUNNING. note 는 63 바이트로 자른다.
+    status = readTable("checkpoint");
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+    std::sort(rows.begin(), rows.end(), [](const json& left, const json& right) { return integerOf(left, "seq", 0) < integerOf(right, "seq", 0); });
+    int64_t previous = 0;
+    for (const json& row : rows) {
+        const int64_t sequence = integerOf(row, "seq", 0);
+        const bool release = textOf(row, "purpose") == "release";
+        const std::string description = textOf(row, "note");
+        const std::string cut = cutUtf8(description, entity::MAX_DESCRIPTION_LENGTH);
+        if (cut.size() < description.size()) { note(report, notes, checkpointLabel(sequence) + " 설명을 63 바이트로 자름: " + description); }
+        status = run("INSERT INTO checkpoint (sequence, created_at, previous, step, state, description) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                     {sequence, integerOf(row, "created_at", 0), previous, mapLegacyStep(integerOf(row, "step", 1), release),
+                      integerOf(row, "confirmed", 0) != 0 ? "done" : "running", cut});
+        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+        previous = sequence;
+    }
+    const int64_t latest = previous;
+
+    // 항목: category → 태그, 제목이 127 바이트를 넘으면 자르고 원래 제목을 요약에 둔다.
+    status = readTable("item_version");
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+    std::map<std::string, std::string> kinds;
+    size_t pending = 0;
+    for (const json& row : rows) {
+        const std::string id = textOf(row, "item_id");
+        const char* kind = mapLegacyKind(textOf(row, "kind"));
+        if (kind == nullptr) {
+            note(report, notes, id + " 알 수 없는 Kind 라 건너뜀");
+            continue;
+        }
+        kinds[id] = kind;
+        const ItemKind item_kind = static_cast<ItemKind>(entity::parseKind(kind));
+        int64_t checkpoint = integerOf(row, "cp_seq", latest);
+        if (checkpoint == LEGACY_PENDING) {
+            checkpoint = latest;
+            ++pending;
+        }
+        json tags = json::array();
+        const std::string category = textOf(row, "category");
+        for (const LegacyCategory& entry : LEGACY_CATEGORIES) {
+            if (category != entry.category) { continue; }
+            const auto tag = _w.catalog.findTag(item_kind, boundedText(entry.tag, 64));
+            if (!tag) { break; }
+            const auto bit = _w.catalog.findTagBit(item_kind, tag.value, boundedText(entry.bit, 64));
+            if (bit) { tags.push_back(json::array({tag.value, uint64_t{1} << bit.value})); }
+            break;
+        }
+        const std::string title = textOf(row, "title");
+        std::string summary;
+        std::string cut = cutUtf8(title, entity::MAX_TITLE_LENGTH);
+        if (cut.size() < title.size()) {
+            summary = cutUtf8(title, entity::MAX_SUMMARY_LENGTH);
+            note(report, notes, id + " 제목을 127 바이트로 자르고 원래 제목을 요약에 둠");
+        }
+        std::string body = textOf(row, "body");
+        if (body.size() > entity::MAX_BODY_LENGTH) {
+            body = cutUtf8(body, entity::MAX_BODY_LENGTH);
+            note(report, notes, id + " 본문을 16384 바이트로 자름");
+        }
+        json parent = hasText(row, "parent_id") ? json(textOf(row, "parent_id")) : json(nullptr);
+        status = run("INSERT OR REPLACE INTO item_version (item_id, checkpoint, kind, parent_id, title, summary, body, tags, removed) "
+                     "VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+                     {id, checkpoint, kind, parent, cut, summary, body, tags.dump(), integerOf(row, "removed", 0)});
+        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+    }
+    if (pending > 0) { note(report, notes, "체크포인트에 묶이지 않은 쓰기 " + std::to_string(pending) + " 건을 가장 최근 체크포인트에 묶음"); }
+
+    // 링크 → 관계. 파일 링크는 파일 엔티티와 함께 없어진다 (7).
+    status = readTable("link_version");
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+    size_t file_links = 0;
+    for (const json& row : rows) {
+        const std::string from = textOf(row, "from_id");
+        const std::string to = textOf(row, "to_id");
+        const std::string type = textOf(row, "type");
+        const auto from_kind = kinds.find(from);
+        const auto to_kind = kinds.find(to);
+        if (from_kind == kinds.end() || to_kind == kinds.end()) {
+            ++file_links;
+            continue;
+        }
+        const char* relation = nullptr;
+        for (const LegacyLink& link : LEGACY_LINKS) {
+            if (from_kind->second == link.from_kind && type == link.type && to_kind->second == link.to_kind) { relation = link.relation; }
+        }
+        const ItemKind model = static_cast<ItemKind>(entity::parseKind(from_kind->second));
+        const auto index = relation == nullptr ? Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND)
+                                               : _w.catalog.findRelation(model, boundedText(relation, 64));
+        if (!index) {
+            note(report, notes, from + " -" + type + "-> " + to + " 링크는 관계 정의에 없어 건너뜀");
+            continue;
+        }
+        int64_t checkpoint = integerOf(row, "cp_seq", latest);
+        if (checkpoint == LEGACY_PENDING) { checkpoint = latest; }
+        status = run("INSERT OR REPLACE INTO relation_version (from_id, model, relation, to_id, checkpoint, removed) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                     {from, from_kind->second, index.value, to, checkpoint, integerOf(row, "removed", 0)});
+        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+    }
+    if (file_links > 0) { note(report, notes, "파일 엔티티와 이어진 링크 " + std::to_string(file_links) + " 건을 지움 (설계서 v1 7)"); }
+
+    status = readTable("decision_version");
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+    for (const json& row : rows) {
+        const std::string legacy_kind = textOf(row, "kind");
+        const char* kind = mapLegacyKind(legacy_kind);
+        if (kind == nullptr) {
+            note(report, notes, "결정 기록 " + legacy_kind + " 는 Kind 를 알 수 없어 건너뜀");
+            continue;
+        }
+        const int64_t checkpoint = integerOf(row, "cp_seq", latest) == LEGACY_PENDING ? latest : integerOf(row, "cp_seq", latest);
+        std::string text = textOf(row, "body");
+        if (text.size() > MAX_DECISION_BYTES) {
+            note(report, notes, std::string("결정 기록 ") + kind + " (" + checkpointLabel(checkpoint) + ") 을 2048 바이트로 자름 (원래 " +
+                                    std::to_string(text.size()) + " 바이트)");
+            text = cutUtf8(text, MAX_DECISION_BYTES);
+        }
+        status = run("INSERT OR REPLACE INTO decision_version (kind, checkpoint, description) VALUES (?1, ?2, ?3)", {kind, checkpoint, text});
+        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+    }
+
+    const std::string_view skipped[] = {"file_version", "change_request", "result", "milestone_state"};
+    for (const std::string_view table : skipped) {
+        status = readTable(table);
+        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+        if (!rows.empty()) { note(report, notes, std::string(table) + " 의 " + std::to_string(rows.size()) + " 줄은 옮기지 않음"); }
+    }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 

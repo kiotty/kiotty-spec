@@ -25,6 +25,12 @@ bool fitsInt(Span<const char> text)
 
 Connection::~Connection() { sqlite3_close(_database); }
 
+void Connection::close()
+{
+    sqlite3_close(_database);
+    _database = nullptr;
+}
+
 KiottySpecStatus Connection::open(Span<const char> path)
 {
     FixedString<MAX_PATH_LENGTH> terminated;

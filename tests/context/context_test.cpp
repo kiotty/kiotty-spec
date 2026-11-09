@@ -43,7 +43,7 @@ bool testCursorPages()
 bool testCursorKindAndHandles()
 {
     impl::CursorPool pool(1, 4);
-    const auto cursor = pool.open(impl::CursorKind::LINK);
+    const auto cursor = pool.open(impl::CursorKind::RELATION);
     bool ok = expectTrue(pool.open(impl::CursorKind::ITEM).code == KIOTTY_SPEC_STATUS_POOL_IS_FULL, "pool full");
     ok = expectTrue(pool.fetch(cursor.value, impl::CursorKind::ITEM, 1).code == KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE, "wrong kind") && ok;
     ok = expectTrue(pool.close(cursor.value) == KIOTTY_SPEC_STATUS_SUCCESS, "close") && ok;

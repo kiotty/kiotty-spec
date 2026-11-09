@@ -1,6 +1,12 @@
 #ifndef KIOTTY_SPEC_H
 #define KIOTTY_SPEC_H
 
+/* Kiotty-Spec C 인터페이스. 설계서 v1 9절과 C 인터페이스 v2 3절의 형태 규칙을 따른다.
+ * - 문자열 입력은 길이가 붙은 KiottySpecText 다. null 종료를 가정하지 않는다.
+ * - 결과는 상태 코드를 담은 결과 구조체다. 실패 이유는 readLastError 로 읽는다.
+ * - 레코드는 포인터가 없는 고정 크기 구조체다. 목록은 커서를 열고 페이지를 받아 온다.
+ * - 본문 · 결정 기록 같은 큰 텍스트는 호출자 버퍼로 읽는다. */
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -13,8 +19,22 @@ extern "C" {
 #define KIOTTY_SPEC_API
 #endif
 
-typedef struct KiottySpec       KiottySpec;
-typedef struct KiottySpecCursor KiottySpecCursor;
+/* 9.1 용량 상수. 길이는 null 종료 문자를 뺀 UTF-8 바이트 수다. */
+#define KIOTTY_SPEC_MAX_ID_LENGTH          15
+#define KIOTTY_SPEC_MAX_TITLE_LENGTH       127
+#define KIOTTY_SPEC_MAX_SUMMARY_LENGTH     255
+#define KIOTTY_SPEC_MAX_BODY_LENGTH        16384
+#define KIOTTY_SPEC_MAX_DECISION_LENGTH    2048
+#define KIOTTY_SPEC_MAX_DESCRIPTION_LENGTH 63
+#define KIOTTY_SPEC_MAX_MODEL_NAME_LENGTH  31
+#define KIOTTY_SPEC_MAX_TAG_NAME_LENGTH    63
+#define KIOTTY_SPEC_TAG_BIT_COUNT          48
+#define KIOTTY_SPEC_MAX_TAGS_PER_MODEL     256
+#define KIOTTY_SPEC_MAX_TAG_QUERIES        4
+#define KIOTTY_SPEC_PAGE_CAPACITY          64
+#define KIOTTY_SPEC_ITEM_KIND_COUNT        13
+#define KIOTTY_SPEC_STEP_COUNT             12
+#define KIOTTY_SPEC_CHECKPOINT_CURRENT     0
 
 typedef enum KiottySpecStatus {
     KIOTTY_SPEC_STATUS_SUCCESS = 0,
@@ -40,305 +60,265 @@ typedef enum KiottySpecActor {
     KIOTTY_SPEC_ACTOR_AI
 } KiottySpecActor;
 
+/* 3.1. 값은 1부터이며 kind_mask 의 비트 (kind - 1) 이다. */
 typedef enum KiottySpecItemKind {
-    KIOTTY_SPEC_ITEM_KIND_REQUIREMENT = 1,
+    KIOTTY_SPEC_ITEM_KIND_CHANGE_REQUEST = 1,
+    KIOTTY_SPEC_ITEM_KIND_REQUIREMENT,
     KIOTTY_SPEC_ITEM_KIND_RULE,
-    KIOTTY_SPEC_ITEM_KIND_INTERFACE,
+    KIOTTY_SPEC_ITEM_KIND_EXTERNAL_INTERFACE,
     KIOTTY_SPEC_ITEM_KIND_DESIGN,
-    KIOTTY_SPEC_ITEM_KIND_UNIT_TEST,
-    KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST,
-    KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST,
-    KIOTTY_SPEC_ITEM_KIND_MILESTONE
+    KIOTTY_SPEC_ITEM_KIND_UNIT_TEST_PLAN,
+    KIOTTY_SPEC_ITEM_KIND_MILESTONE,
+    KIOTTY_SPEC_ITEM_KIND_UNIT_TEST_RESULT,
+    KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST_PLAN,
+    KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST_RESULT,
+    KIOTTY_SPEC_ITEM_KIND_CODE_INSPECTION_RESULT,
+    KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST_PLAN,
+    KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST_RESULT
 } KiottySpecItemKind;
 
-typedef enum KiottySpecItemCategory {
-    KIOTTY_SPEC_ITEM_CATEGORY_NONE = 0,
-    KIOTTY_SPEC_ITEM_CATEGORY_REQUIREMENT_FUNCTIONAL,
-    KIOTTY_SPEC_ITEM_CATEGORY_REQUIREMENT_QUALITY,
-    KIOTTY_SPEC_ITEM_CATEGORY_REQUIREMENT_ENVIRONMENT,
-    KIOTTY_SPEC_ITEM_CATEGORY_RULE_ARCHITECTURE,
-    KIOTTY_SPEC_ITEM_CATEGORY_RULE_CONVENTION,
-    KIOTTY_SPEC_ITEM_CATEGORY_RULE_CODING,
-    KIOTTY_SPEC_ITEM_CATEGORY_RULE_DEPENDENCY,
-    KIOTTY_SPEC_ITEM_CATEGORY_RULE_TEST,
-    KIOTTY_SPEC_ITEM_CATEGORY_INTERFACE_VIEW,
-    KIOTTY_SPEC_ITEM_CATEGORY_INTERFACE_C_API,
-    KIOTTY_SPEC_ITEM_CATEGORY_DESIGN_MODULE,
-    KIOTTY_SPEC_ITEM_CATEGORY_DESIGN_FLOW,
-    KIOTTY_SPEC_ITEM_CATEGORY_DESIGN_DIRECTORY,
-    KIOTTY_SPEC_ITEM_CATEGORY_DESIGN_MEMORY
-} KiottySpecItemCategory;
+/* 5.2 */
+typedef enum KiottySpecStep {
+    KIOTTY_SPEC_STEP_CHANGE_REQUEST_REPORTED = 1,
+    KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING,
+    KIOTTY_SPEC_STEP_EXTERNAL_INTERFACE_DISCUSSING,
+    KIOTTY_SPEC_STEP_DESIGN_DISCUSSING,
+    KIOTTY_SPEC_STEP_UNIT_TEST_PLAN_DISCUSSING,
+    KIOTTY_SPEC_STEP_DEVELOPMENT_PLAN_DISCUSSING,
+    KIOTTY_SPEC_STEP_IMPLEMENTING,
+    KIOTTY_SPEC_STEP_SYSTEM_TEST_PLAN_DISCUSSING,
+    KIOTTY_SPEC_STEP_SYSTEM_TEST_RUN,
+    KIOTTY_SPEC_STEP_CODE_INSPECTING,
+    KIOTTY_SPEC_STEP_END_TO_END_TEST_DISCUSSING,
+    KIOTTY_SPEC_STEP_END_TO_END_TEST_RUN
+} KiottySpecStep;
 
-typedef enum KiottySpecFileRole {
-    KIOTTY_SPEC_FILE_ROLE_GUI_DRAFT = 1,
-    KIOTTY_SPEC_FILE_ROLE_C_HEADER,
-    KIOTTY_SPEC_FILE_ROLE_SOURCE
-} KiottySpecFileRole;
+/* 5.1 */
+typedef enum KiottySpecCheckpointState {
+    KIOTTY_SPEC_CHECKPOINT_STATE_STARTED = 1,
+    KIOTTY_SPEC_CHECKPOINT_STATE_RUNNING,
+    KIOTTY_SPEC_CHECKPOINT_STATE_DONE
+} KiottySpecCheckpointState;
 
-typedef enum KiottySpecLinkType {
-    KIOTTY_SPEC_LINK_TYPE_SATISFIES = 1,
-    KIOTTY_SPEC_LINK_TYPE_VERIFIES,
-    KIOTTY_SPEC_LINK_TYPE_IMPLEMENTS,
-    KIOTTY_SPEC_LINK_TYPE_COVERS,
-    KIOTTY_SPEC_LINK_TYPE_DEPENDS_ON
-} KiottySpecLinkType;
+typedef enum KiottySpecCardinality {
+    KIOTTY_SPEC_CARDINALITY_MANY = 1,
+    KIOTTY_SPEC_CARDINALITY_SINGLE
+} KiottySpecCardinality;
 
+/* 관계는 아래 단계가 위 단계를 가리킨다. UPSTREAM 은 이 항목이 주어(from)인 관계, DOWNSTREAM 은 목적어(to)인 관계다. */
 typedef enum KiottySpecDirection {
     KIOTTY_SPEC_DIRECTION_UPSTREAM = 1,
     KIOTTY_SPEC_DIRECTION_DOWNSTREAM,
     KIOTTY_SPEC_DIRECTION_BOTH
 } KiottySpecDirection;
 
-typedef enum KiottySpecChangeSource {
-    KIOTTY_SPEC_CHANGE_SOURCE_FEEDBACK = 1,
-    KIOTTY_SPEC_CHANGE_SOURCE_ISSUE
-} KiottySpecChangeSource;
+typedef struct KiottySpecContext KiottySpecContext;
 
-typedef enum KiottySpecChangeState {
-    KIOTTY_SPEC_CHANGE_STATE_OPEN = 1,
-    KIOTTY_SPEC_CHANGE_STATE_IN_PROGRESS,
-    KIOTTY_SPEC_CHANGE_STATE_DONE,
-    KIOTTY_SPEC_CHANGE_STATE_REJECTED
-} KiottySpecChangeState;
+typedef uint64_t KiottySpecItemHandle;        /* generation << 32 | index    */
+typedef uint64_t KiottySpecCheckpointHandle;  /* reserved   << 32 | sequence */
+typedef uint64_t KiottySpecCursor;            /* generation << 32 | index + 1 */
 
-typedef enum KiottySpecImplementationState {
-    KIOTTY_SPEC_IMPLEMENTATION_STATE_NOT_IMPLEMENTED = 1,
-    KIOTTY_SPEC_IMPLEMENTATION_STATE_NEEDS_CHANGE,
-    KIOTTY_SPEC_IMPLEMENTATION_STATE_IMPLEMENTED
-} KiottySpecImplementationState;
+#define KIOTTY_SPEC_INVALID_ITEM_HANDLE ((KiottySpecItemHandle)0xFFFFFFFFu)
 
-typedef enum KiottySpecTestResult {
-    KIOTTY_SPEC_TEST_RESULT_PASS = 1,
-    KIOTTY_SPEC_TEST_RESULT_FAIL
-} KiottySpecTestResult;
+typedef struct KiottySpecText {
+    const char *data;
+    size_t length;
+} KiottySpecText;
 
-typedef enum KiottySpecScope {
-    KIOTTY_SPEC_SCOPE_INTRA_MODULE = 1,
-    KIOTTY_SPEC_SCOPE_INTER_MODULE
-} KiottySpecScope;
+/* 9.2 레코드 */
+typedef struct KiottySpecItem {
+    KiottySpecCheckpointHandle checkpoint;
+    KiottySpecItemHandle       parent;
+    KiottySpecItemKind         kind;
+    uint32_t                   reserved;
+    char                       id[KIOTTY_SPEC_MAX_ID_LENGTH + 1];
+    char                       title[KIOTTY_SPEC_MAX_TITLE_LENGTH + 1];
+    char                       summary[KIOTTY_SPEC_MAX_SUMMARY_LENGTH + 1];
+} KiottySpecItem;                                /* 424 바이트 */
 
-typedef enum KiottySpecDecisionKind {
-    KIOTTY_SPEC_DECISION_KIND_REQUIREMENT = 1,
-    KIOTTY_SPEC_DECISION_KIND_RULE,
-    KIOTTY_SPEC_DECISION_KIND_INTERFACE,
-    KIOTTY_SPEC_DECISION_KIND_DESIGN,
-    KIOTTY_SPEC_DECISION_KIND_UNIT_TEST,
-    KIOTTY_SPEC_DECISION_KIND_PLAN
-} KiottySpecDecisionKind;
+typedef struct KiottySpecTag {
+    KiottySpecItemHandle item;
+    KiottySpecItemKind   model;
+    uint32_t             tag;
+    uint64_t             value;
+} KiottySpecTag;                                 /* 24 바이트 */
 
-typedef enum KiottySpecCheckpointPurpose {
-    KIOTTY_SPEC_CHECKPOINT_PURPOSE_NONE = 0,
-    KIOTTY_SPEC_CHECKPOINT_PURPOSE_RELEASE
-} KiottySpecCheckpointPurpose;
+typedef struct KiottySpecRelation {
+    KiottySpecItemHandle from;
+    KiottySpecItemHandle to;
+    KiottySpecItemKind   model;
+    uint32_t             relation;
+} KiottySpecRelation;                            /* 24 바이트 */
 
 typedef struct KiottySpecCheckpoint {
-    const char *id;
-    int32_t step;
-    bool confirmed;
-    KiottySpecCheckpointPurpose purpose;
-    const char *note;
-    int64_t createdAt;
-} KiottySpecCheckpoint;
+    int64_t                    created_at;
+    KiottySpecCheckpointHandle previous;
+    KiottySpecStep             step;
+    KiottySpecCheckpointState  state;
+    char                       description[KIOTTY_SPEC_MAX_DESCRIPTION_LENGTH + 1];
+} KiottySpecCheckpoint;                          /* 88 바이트 */
 
-typedef struct KiottySpecItem {
-    const char *id;
-    KiottySpecItemKind kind;
-    KiottySpecItemCategory category;
-    const char *parentId;
-    int32_t seq;
-    const char *title;
-    const char *body;
-    const char *cpFrom;
-} KiottySpecItem;
-
-typedef struct KiottySpecMilestoneEntry {
-    const char *milestoneId;
-    const char *itemId;
-    KiottySpecImplementationState state;
-    const char *implementedCp;
-} KiottySpecMilestoneEntry;
-
-typedef struct KiottySpecFile {
-    const char *id;
-    KiottySpecFileRole role;
-    const char *path;
-    const char *hash;
-    const char *cpFrom;
-} KiottySpecFile;
-
-typedef struct KiottySpecLink {
-    const char *fromId;
-    const char *toId;
-    KiottySpecLinkType type;
-    const char *cpFrom;
-} KiottySpecLink;
-
-typedef struct KiottySpecChangeRequest {
-    const char *id;
-    KiottySpecChangeSource source;
-    const char *body;
-    int32_t entryStep;
-    KiottySpecChangeState state;
-    const char *cpOpened;
-    const char *cpClosed;
-} KiottySpecChangeRequest;
-
-typedef struct KiottySpecResult {
-    const char *targetId;
-    KiottySpecTestResult result;
-    const char *log;
-    const char *cpFrom;
-    int64_t runAt;
-} KiottySpecResult;
-
-typedef struct KiottySpecPosition {
-    const char *checkpointId;
-    int32_t step;
-    bool confirmed;
-    bool released;
-    size_t pendingWrites;
-    int32_t nextStep;
-    const char *nextAction;
-} KiottySpecPosition;
-
+/* 같은 단계가 이어진 체크포인트 구간. 정의서 4절 "지나온 단계" */
 typedef struct KiottySpecStepRun {
-    int32_t step;
-    const char *firstCheckpointId;
-    const char *lastCheckpointId;
-    const char *confirmedCheckpointId;
-    size_t checkpointCount;
-    const char *lastNote;
-    const char *reason;
+    KiottySpecCheckpointHandle first;
+    KiottySpecCheckpointHandle last;
+    KiottySpecStep             step;
+    KiottySpecCheckpointState  state;            /* last 의 상태 */
+    uint64_t                   count;
 } KiottySpecStepRun;
 
-typedef struct KiottySpecItemFilter {
+typedef struct KiottySpecModel {
+    char                  name[KIOTTY_SPEC_MAX_MODEL_NAME_LENGTH + 1];
+    char                  id_prefix[KIOTTY_SPEC_MAX_ID_LENGTH + 1];
+    KiottySpecItemKind    kind;
+    KiottySpecStep        created_in;
+    uint32_t              tag_count;
+    uint32_t              relation_count;
+} KiottySpecModel;
+
+typedef struct KiottySpecTagDefinition {
+    char                  name[KIOTTY_SPEC_MAX_TAG_NAME_LENGTH + 1];
+    char                  bit_names[KIOTTY_SPEC_TAG_BIT_COUNT][KIOTTY_SPEC_MAX_TAG_NAME_LENGTH + 1];
+    KiottySpecCardinality cardinality;
+} KiottySpecTagDefinition;                       /* 3140 바이트. 결과 구조체 대신 호출자 메모리에 채운다 */
+
+typedef struct KiottySpecRelationDefinition {
+    char                  name[KIOTTY_SPEC_MAX_TAG_NAME_LENGTH + 1];
+    KiottySpecItemKind    target_kind;
+    KiottySpecCardinality cardinality;
+} KiottySpecRelationDefinition;                  /* 72 바이트 */
+
+/* 3.4. 항목이 고르는 조건: TagRecord(model == kind, tag == tag_index) 가 있고 (value & mask) != 0 */
+typedef struct KiottySpecTagQuery {
     KiottySpecItemKind kind;
-    KiottySpecItemCategory category;
-    const char *parentId;
-    const char *text;
-    const char *atCheckpoint;
-} KiottySpecItemFilter;
+    uint32_t           tag_index;
+    uint64_t           mask;
+} KiottySpecTagQuery;
 
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_open(const char *projectRoot, KiottySpec **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_close(KiottySpec *db);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_init(KiottySpec *db, const char *projectName, bool installGitHooks);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_setPolicy(KiottySpec *db, const char *key, const char *value);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_getPolicy(KiottySpec *db, const char *key, char **outValue);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Transaction_start(KiottySpec *db);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Transaction_commit(KiottySpec *db);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Transaction_rollback(KiottySpec *db);
-KIOTTY_SPEC_API void             KiottySpec_free(void *ptr);
-KIOTTY_SPEC_API const char      *KiottySpec_strerror(KiottySpecStatus status);
-KIOTTY_SPEC_API const char      *KiottySpec_enumName(const char *enumType, int value);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_enumParse(const char *enumType, const char *name, int *outValue);
-KIOTTY_SPEC_API const char      *KiottySpec_lastError(void);
+/* 정의서 4절 "다시 돌아왔을 때". 문장은 ks 가 만든다. */
+typedef struct KiottySpecPosition {
+    KiottySpecCheckpointHandle current;          /* 체크포인트가 없으면 0 */
+    KiottySpecStep             step;             /* current 의 단계. 없으면 0 */
+    KiottySpecCheckpointState  state;            /* current 의 상태. 없으면 0 */
+    KiottySpecStep             next_step;        /* 다음에 할 단계. 끝났으면 0 */
+    uint64_t                   pending_writes;   /* current 가 RUNNING 일 때 거기에 묶인 쓰기 수 */
+    uint64_t                   open_change_requests;
+} KiottySpecPosition;
 
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Cursor_count(KiottySpecCursor *cursor, size_t *outCount);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Cursor_getItem(KiottySpecCursor *cursor, size_t index, const KiottySpecItem **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Cursor_getLink(KiottySpecCursor *cursor, size_t index, const KiottySpecLink **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Cursor_getFile(KiottySpecCursor *cursor, size_t index, const KiottySpecFile **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Cursor_getCheckpoint(KiottySpecCursor *cursor, size_t index, const KiottySpecCheckpoint **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Cursor_getChangeRequest(KiottySpecCursor *cursor, size_t index, const KiottySpecChangeRequest **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Cursor_getResult(KiottySpecCursor *cursor, size_t index, const KiottySpecResult **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Cursor_getMilestoneEntry(KiottySpecCursor *cursor, size_t index, const KiottySpecMilestoneEntry **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Cursor_getStepRun(KiottySpecCursor *cursor, size_t index, const KiottySpecStepRun **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Cursor_getId(KiottySpecCursor *cursor, size_t index, const char **out);
-KIOTTY_SPEC_API void             KiottySpec_Cursor_end(KiottySpecCursor *cursor);
+typedef struct KiottySpecItemPage       { size_t length; KiottySpecItem       elements[KIOTTY_SPEC_PAGE_CAPACITY]; } KiottySpecItemPage;
+typedef struct KiottySpecTagPage        { size_t length; KiottySpecTag        elements[KIOTTY_SPEC_PAGE_CAPACITY]; } KiottySpecTagPage;
+typedef struct KiottySpecRelationPage   { size_t length; KiottySpecRelation   elements[KIOTTY_SPEC_PAGE_CAPACITY]; } KiottySpecRelationPage;
+typedef struct KiottySpecCheckpointPage { size_t length; KiottySpecCheckpointHandle handles[KIOTTY_SPEC_PAGE_CAPACITY]; KiottySpecCheckpoint elements[KIOTTY_SPEC_PAGE_CAPACITY]; } KiottySpecCheckpointPage;
+typedef struct KiottySpecStepRunPage    { size_t length; KiottySpecStepRun    elements[KIOTTY_SPEC_PAGE_CAPACITY]; } KiottySpecStepRunPage;
+typedef struct KiottySpecIdPage         { size_t length; char elements[KIOTTY_SPEC_PAGE_CAPACITY][KIOTTY_SPEC_MAX_ID_LENGTH + 1]; } KiottySpecIdPage;
 
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Checkpoint_create(KiottySpec *db, KiottySpecActor actor, int32_t step, const char *note, char **outId);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Checkpoint_confirm(KiottySpec *db, KiottySpecActor actor, const char *cpId);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Checkpoint_get(KiottySpec *db, const char *cpId, KiottySpecCheckpoint **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Checkpoint_current(KiottySpec *db, KiottySpecCheckpoint **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Checkpoint_lastConfirmed(KiottySpec *db, int32_t stepOr0, KiottySpecCheckpoint **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Checkpoint_listBegin(KiottySpec *db, int32_t stepOr0, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Checkpoint_changedItemsBegin(KiottySpec *db, const char *cpFrom, const char *cpToOrNull, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Checkpoint_diff(KiottySpec *db, const char *cpA, const char *cpB, char **outMarkdown);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Checkpoint_confirmCheck(KiottySpec *db, int32_t step, bool *outOk, char **outReport);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Checkpoint_releaseCheck(KiottySpec *db, bool *outOk, char **outReport);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Checkpoint_release(KiottySpec *db, KiottySpecActor actor, const char *note, char **outId);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Checkpoint_position(KiottySpec *db, KiottySpecPosition **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Checkpoint_journeyBegin(KiottySpec *db, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Checkpoint_prune(KiottySpec *db, KiottySpecActor actor, const char *baseCpId, size_t *outRemoved);
+/* 결과 구조체 (C 인터페이스 v2 3.3) */
+typedef struct KiottySpecStatusResult           { KiottySpecStatus code; } KiottySpecStatusResult;
+typedef struct KiottySpecSizeResult             { KiottySpecStatus code; size_t value; } KiottySpecSizeResult;
+typedef struct KiottySpecIdResult               { KiottySpecStatus code; char value[KIOTTY_SPEC_MAX_ID_LENGTH + 1]; } KiottySpecIdResult;
+typedef struct KiottySpecItemResult             { KiottySpecStatus code; KiottySpecItemHandle handle; KiottySpecItem value; } KiottySpecItemResult;
+typedef struct KiottySpecItemHandleResult       { KiottySpecStatus code; KiottySpecItemHandle value; } KiottySpecItemHandleResult;
+typedef struct KiottySpecTagResult              { KiottySpecStatus code; KiottySpecTag value; } KiottySpecTagResult;
+typedef struct KiottySpecCheckpointResult       { KiottySpecStatus code; KiottySpecCheckpointHandle handle; KiottySpecCheckpoint value; } KiottySpecCheckpointResult;
+typedef struct KiottySpecCheckpointHandleResult { KiottySpecStatus code; KiottySpecCheckpointHandle value; } KiottySpecCheckpointHandleResult;
+typedef struct KiottySpecCursorResult           { KiottySpecStatus code; KiottySpecCursor value; size_t total; } KiottySpecCursorResult;
+typedef struct KiottySpecPositionResult         { KiottySpecStatus code; KiottySpecPosition value; } KiottySpecPositionResult;
+typedef struct KiottySpecModelResult            { KiottySpecStatus code; KiottySpecModel value; } KiottySpecModelResult;
+typedef struct KiottySpecRelationDefinitionResult { KiottySpecStatus code; KiottySpecRelationDefinition value; } KiottySpecRelationDefinitionResult;
+typedef struct KiottySpecContextResult          { KiottySpecStatus code; KiottySpecContext *value; } KiottySpecContextResult;
 
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Item_create(KiottySpec *db, KiottySpecActor actor, KiottySpecItemKind kind, KiottySpecItemCategory category,
-                                                        const char *parentIdOrNull, const char *title, const char *body, char **outId);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Item_get(KiottySpec *db, const char *itemId, KiottySpecItem **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Item_getAt(KiottySpec *db, const char *itemId, const char *cpId, KiottySpecItem **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Item_update(KiottySpec *db, KiottySpecActor actor, const char *itemId, const char *title, const char *body);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Item_setParent(KiottySpec *db, KiottySpecActor actor, const char *itemId, const char *parentIdOrNull, int32_t seq);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Item_remove(KiottySpec *db, KiottySpecActor actor, const char *itemId, const char *reason);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Item_exists(KiottySpec *db, const char *itemId, bool *outExists);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Item_listBegin(KiottySpec *db, const KiottySpecItemFilter *filter, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Item_childrenBegin(KiottySpec *db, const char *itemId, bool recursive, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Item_searchBegin(KiottySpec *db, const char *query, size_t limit, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Item_template(KiottySpecItemKind kind, KiottySpecItemCategory category, char **outMarkdown);
+/* 0 인 용량은 기본값을 쓴다. */
+typedef struct KiottySpecConfiguration {
+    KiottySpecText project_root;
+    size_t         max_items;
+    size_t         max_relations;
+    size_t         max_tags;
+    size_t         max_checkpoints;
+    size_t         max_cursors;
+    size_t         max_cursor_rows;
+    size_t         work_buffer_bytes;
+} KiottySpecConfiguration;
 
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Milestone_setEntryState(KiottySpec *db, KiottySpecActor actor, const char *milestoneId, const char *itemId, KiottySpecImplementationState state);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Milestone_entriesBegin(KiottySpec *db, const char *milestoneId, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Milestone_uncoveredBegin(KiottySpec *db, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Milestone_next(KiottySpec *db, char **outMilestoneId);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Milestone_progress(KiottySpec *db, size_t *outTotal, size_t *outImplemented, size_t *outNeedsChange);
+/* 컨텍스트. 힙 할당은 createContext 안에서만 한다. */
+KIOTTY_SPEC_API KiottySpecContextResult KiottySpec_createContext(const KiottySpecConfiguration *configuration);
+KIOTTY_SPEC_API void                    KiottySpec_releaseContext(KiottySpecContext *context);
+KIOTTY_SPEC_API KiottySpecSizeResult    KiottySpec_readLastError(KiottySpecContext *context, char *buffer, size_t capacity);
+KIOTTY_SPEC_API const char             *KiottySpec_statusName(KiottySpecStatus status);
+KIOTTY_SPEC_API KiottySpecStatusResult  KiottySpec_initProject(KiottySpecContext *context, KiottySpecText project_name, bool install_git_hooks);
 
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_File_register(KiottySpec *db, KiottySpecActor actor, KiottySpecFileRole role, const char *path, char **outId);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_File_get(KiottySpec *db, const char *fileId, KiottySpecFile **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_File_byPath(KiottySpec *db, const char *path, KiottySpecFile **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_File_rescan(KiottySpec *db, KiottySpecActor actor, const char *fileId, bool *outChanged);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_File_listBegin(KiottySpec *db, KiottySpecFileRole roleOr0, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_File_changedSinceBegin(KiottySpec *db, const char *cpId, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_File_scanGuiDraft(KiottySpec *db, const char *fileId, KiottySpecCursor **outUnknownIds, KiottySpecCursor **outMissingViews);
+/* 이름 표. Kind 이름은 jsonl 과 ks 가 쓰는 영문 snake_case 다 ("design"). 모르는 이름이면 0 */
+KIOTTY_SPEC_API const char             *KiottySpec_kindName(KiottySpecItemKind kind);
+KIOTTY_SPEC_API KiottySpecItemKind      KiottySpec_parseKind(KiottySpecText name);
+KIOTTY_SPEC_API const char             *KiottySpec_checkpointStateName(KiottySpecCheckpointState state);
 
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Link_add(KiottySpec *db, KiottySpecActor actor, const char *fromId, const char *toId, KiottySpecLinkType type);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Link_remove(KiottySpec *db, KiottySpecActor actor, const char *fromId, const char *toId, KiottySpecLinkType type);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Link_listBegin(KiottySpec *db, const char *id, KiottySpecDirection dir, KiottySpecLinkType typeOr0, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Link_upstreamBegin(KiottySpec *db, const char *id, int32_t depth, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Link_downstreamBegin(KiottySpec *db, const char *id, int32_t depth, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Link_impactBegin(KiottySpec *db, const char *sinceCpId, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Link_scopeOf(KiottySpec *db, const char *designOrFileId, KiottySpecScope *outScope, KiottySpecCursor **outAffectedModules);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Link_matrix(KiottySpec *db, KiottySpecItemKind rowKind, KiottySpecItemKind colKind, char **outCsv);
+/* 항목 */
+KIOTTY_SPEC_API KiottySpecIdResult         KiottySpec_createItem(KiottySpecContext *context, KiottySpecItemKind kind, KiottySpecText title, KiottySpecText summary);
+KIOTTY_SPEC_API KiottySpecItemResult       KiottySpec_readItem(KiottySpecContext *context, KiottySpecText id);
+KIOTTY_SPEC_API KiottySpecItemResult       KiottySpec_readItemByHandle(KiottySpecContext *context, KiottySpecItemHandle item);
+KIOTTY_SPEC_API KiottySpecItemHandleResult KiottySpec_findItem(KiottySpecContext *context, KiottySpecText id);
+/* data 가 NULL 인 입력은 바꾸지 않는다. */
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_updateItem(KiottySpecContext *context, KiottySpecText id, KiottySpecText title, KiottySpecText summary);
+/* parent_id 길이가 0 이면 상위 항목을 없앤다. */
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_setItemParent(KiottySpecContext *context, KiottySpecText id, KiottySpecText parent_id);
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_removeItem(KiottySpecContext *context, KiottySpecText id);
 
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_ChangeRequest_create(KiottySpec *db, KiottySpecActor actor, KiottySpecChangeSource source, const char *body, int32_t entryStep, char **outId);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_ChangeRequest_get(KiottySpec *db, const char *crId, KiottySpecChangeRequest **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_ChangeRequest_setState(KiottySpec *db, KiottySpecActor actor, const char *crId, KiottySpecChangeState state, const char *note);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_ChangeRequest_setEntryStep(KiottySpec *db, KiottySpecActor actor, const char *crId, int32_t entryStep);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_ChangeRequest_listBegin(KiottySpec *db, KiottySpecChangeState stateOr0, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_ChangeRequest_openCount(KiottySpec *db, size_t *outCount);
+/* 본문 (3.7, C 인터페이스 v2 3.6) */
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_writeItemBody(KiottySpecContext *context, KiottySpecText id, KiottySpecText text);
+KIOTTY_SPEC_API KiottySpecSizeResult       KiottySpec_readItemBody(KiottySpecContext *context, KiottySpecText id, char *buffer, size_t capacity);
 
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Decision_get(KiottySpec *db, KiottySpecDecisionKind kind, char **outMarkdown);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Decision_rewrite(KiottySpec *db, KiottySpecActor actor, KiottySpecDecisionKind kind, const char *markdown);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Decision_check(KiottySpec *db, KiottySpecDecisionKind kind, char **outReport);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Decision_getAt(KiottySpec *db, KiottySpecDecisionKind kind, const char *cpId, char **outMarkdown);
+/* 태그 (3.6). 0 을 쓰면 레코드를 지운다. 레코드가 없으면 readItemTag 는 value = 0 으로 SUCCESS */
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_setItemTag(KiottySpecContext *context, KiottySpecItemHandle item, uint32_t tag, uint64_t value);
+KIOTTY_SPEC_API KiottySpecTagResult        KiottySpec_readItemTag(KiottySpecContext *context, KiottySpecItemHandle item, uint32_t tag);
+KIOTTY_SPEC_API KiottySpecCursorResult     KiottySpec_openTagCursor(KiottySpecContext *context, KiottySpecItemHandle item);
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_fetchTagPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecTagPage *page);
 
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Result_record(KiottySpec *db, KiottySpecActor actor, const char *targetId, KiottySpecTestResult result, const char *log);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Result_last(KiottySpec *db, const char *targetId, KiottySpecResult **out);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Result_listBegin(KiottySpec *db, const char *targetId, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Result_failedBegin(KiottySpec *db, KiottySpecItemKind kindOr0, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Result_summary(KiottySpec *db, KiottySpecItemKind kind, size_t *outTotal, size_t *outPass, size_t *outFail, size_t *outNotRun);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Result_suspectsBegin(KiottySpec *db, const char *failedTargetId, KiottySpecCursor **outCursor);
+/* 관계 (3.5) */
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_addRelation(KiottySpecContext *context, KiottySpecText from_id, uint32_t relation, KiottySpecText to_id);
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_removeRelation(KiottySpecContext *context, KiottySpecText from_id, uint32_t relation, KiottySpecText to_id);
+KIOTTY_SPEC_API KiottySpecCursorResult     KiottySpec_openRelationCursor(KiottySpecContext *context, KiottySpecText id, KiottySpecDirection direction);
+KIOTTY_SPEC_API KiottySpecCursorResult     KiottySpec_openRelationCursorByModel(KiottySpecContext *context, KiottySpecItemKind kind, uint32_t relation);
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_fetchRelationPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecRelationPage *page);
 
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Check_requirementsWithoutCriteriaBegin(KiottySpec *db, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Check_systemTestOneToOne(KiottySpec *db, KiottySpecCursor **outMissing, KiottySpecCursor **outDuplicated);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Check_e2eTestOneToOne(KiottySpec *db, KiottySpecCursor **outMissing, KiottySpecCursor **outDuplicated);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Check_unlinkedBegin(KiottySpec *db, KiottySpecItemKind kind, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Check_orphanTestsBegin(KiottySpec *db, KiottySpecCursor **outCursor);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Check_all(KiottySpec *db, char **outReport);
+/* 목록 (8.3, 8.5). tag_queries 는 0 ~ KIOTTY_SPEC_MAX_TAG_QUERIES 개이며 AND 다. kind 가 0 이면 모든 Kind */
+KIOTTY_SPEC_API KiottySpecCursorResult     KiottySpec_openItemCursor(KiottySpecContext *context, KiottySpecItemKind kind, const KiottySpecTagQuery *tag_queries, size_t count);
+KIOTTY_SPEC_API KiottySpecCursorResult     KiottySpec_openChildCursor(KiottySpecContext *context, KiottySpecText id);
+/* 이 항목을 (깊이 depth 까지) 가리키는 하류 항목. 결과는 ID 페이지다. */
+KIOTTY_SPEC_API KiottySpecCursorResult     KiottySpec_openImpactCursor(KiottySpecContext *context, KiottySpecText id, uint32_t depth);
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_fetchItemPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecItemPage *page);
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_fetchIdPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecIdPage *page);
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_closeCursor(KiottySpecContext *context, KiottySpecCursor cursor);
 
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Context_forStep(KiottySpec *db, int32_t step, size_t maxBytes, char **outMarkdown);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Context_forItem(KiottySpec *db, const char *itemId, int32_t depth, size_t maxBytes, char **outMarkdown);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Context_forMilestone(KiottySpec *db, const char *milestoneId, size_t maxBytes, char **outMarkdown);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Context_forChangeRequest(KiottySpec *db, const char *crId, size_t maxBytes, char **outMarkdown);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Context_rules(KiottySpec *db, char **outMarkdown);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Context_pending(KiottySpec *db, char **outMarkdown);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Context_whereAmI(KiottySpec *db, size_t maxBytes, char **outMarkdown);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Context_status(KiottySpec *db, char **outMarkdown);
+/* 체크포인트 (5). 쓰기는 가장 최근 체크포인트에 묶이며, 그것이 DONE 이면 CONFIRMED 다. */
+KIOTTY_SPEC_API KiottySpecCheckpointHandleResult KiottySpec_startCheckpoint(KiottySpecContext *context, KiottySpecStep step, KiottySpecText description);
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_resumeCheckpoint(KiottySpecContext *context);
+/* 확정 조건을 검사하고 DONE 으로 바꾼다. actor 가 USER 가 아니면 PERMISSION, 조건이 어긋나면 PRECONDITION */
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_completeCheckpoint(KiottySpecContext *context, KiottySpecActor actor);
+/* handle 이 KIOTTY_SPEC_CHECKPOINT_CURRENT 이면 가장 최근 체크포인트 */
+KIOTTY_SPEC_API KiottySpecCheckpointResult KiottySpec_readCheckpoint(KiottySpecContext *context, KiottySpecCheckpointHandle handle);
+/* step 이 0 이면 모든 단계 */
+KIOTTY_SPEC_API KiottySpecCursorResult     KiottySpec_openCheckpointCursor(KiottySpecContext *context, KiottySpecStep step);
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_fetchCheckpointPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecCheckpointPage *page);
+/* base 이전의 체크포인트와 거기에만 속한 버전을 지운다. 값은 지운 체크포인트 수 */
+KIOTTY_SPEC_API KiottySpecSizeResult       KiottySpec_pruneCheckpoints(KiottySpecContext *context, KiottySpecActor actor, KiottySpecCheckpointHandle base);
 
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Export_markdown(KiottySpec *db, KiottySpecItemKind kind, char **outMarkdown);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Export_traceReport(KiottySpec *db, char **outMarkdown);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Export_jsonl(KiottySpec *db, const char *dir);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Import_jsonl(KiottySpec *db, const char *dir, bool merge, char **outConflictReport);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Import_markdown(KiottySpec *db, KiottySpecActor actor, KiottySpecItemKind kind, const char *markdown, KiottySpecCursor **outCreatedIds);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Query_readonly(KiottySpec *db, const char *sql, char **outJson);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Schema_version(KiottySpec *db, int32_t *outVersion);
-KIOTTY_SPEC_API KiottySpecStatus KiottySpec_Schema_migrate(KiottySpec *db);
+/* 결정 기록 (6). 결정 기록이 있는 Kind: 요구사항, 개발 수칙, 외부 인터페이스, 설계 사항, 유닛 테스트, 마일스톤 */
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_writeDecision(KiottySpecContext *context, KiottySpecItemKind kind, KiottySpecText text);
+KIOTTY_SPEC_API KiottySpecSizeResult       KiottySpec_readDecision(KiottySpecContext *context, KiottySpecItemKind kind, char *buffer, size_t capacity);
+
+/* 모델 (3.3 ~ 3.5) */
+KIOTTY_SPEC_API KiottySpecModelResult      KiottySpec_readModel(KiottySpecContext *context, KiottySpecItemKind kind);
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_readTagDefinition(KiottySpecContext *context, KiottySpecItemKind kind, uint32_t index, KiottySpecTagDefinition *out);
+KIOTTY_SPEC_API KiottySpecRelationDefinitionResult KiottySpec_readRelationDefinition(KiottySpecContext *context, KiottySpecItemKind kind, uint32_t index);
+
+/* 위치 */
+KIOTTY_SPEC_API KiottySpecPositionResult   KiottySpec_readPosition(KiottySpecContext *context);
+KIOTTY_SPEC_API KiottySpecCursorResult     KiottySpec_openStepRunCursor(KiottySpecContext *context);
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_fetchStepRunPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecStepRunPage *page);
+
+/* 교환. directory 길이가 0 이면 .kiotty/spec. 가져오기는 DB 내용을 jsonl 로 바꾼다.
+ * 옛 형식(정의서 v0)의 jsonl 은 변환해서 가져오며, 잘라 내거나 건너뛴 것을 report 에 적는다. 값은 그런 항목 수 */
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_exportJsonl(KiottySpecContext *context, KiottySpecText directory);
+KIOTTY_SPEC_API KiottySpecSizeResult       KiottySpec_importJsonl(KiottySpecContext *context, KiottySpecText directory, char *report, size_t capacity);
 
 #ifdef __cplusplus
 }
