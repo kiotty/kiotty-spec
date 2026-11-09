@@ -43,6 +43,7 @@ Context::Context(const Configuration& configuration)
       _checker(_workspace),
       _lifecycle(_workspace, _checker),
       _editor(_workspace, _lifecycle),
+      _relation_editor(_workspace, _lifecycle),
       _exchange(_workspace),
       _cursors(configuration.maxCursors, configuration.maxCursorRows),
       _finder(_workspace, _cursors, _checker, configuration.maxItems),

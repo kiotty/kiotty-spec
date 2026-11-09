@@ -17,6 +17,7 @@
 #include "implementation/domain/usecases/kiotty_editor.h"
 #include "implementation/domain/usecases/kiotty_exchange.h"
 #include "implementation/domain/usecases/kiotty_lifecycle.h"
+#include "implementation/domain/usecases/kiotty_relation_editor.h"
 #include "implementation/domain/usecases/kiotty_model_catalog.h"
 #include "implementation/domain/usecases/kiotty_workspace.h"
 
@@ -53,6 +54,7 @@ public:
     Workspace& workspace() { return _workspace; }
     const ModelCatalog& catalog() const { return _catalog; }
     Editor& editor() { return _editor; }
+    RelationEditor& relationEditor() { return _relation_editor; }
     Lifecycle& lifecycle() { return _lifecycle; }
     Exchange& exchange() { return _exchange; }
     Finder& finder() { return _finder; }
@@ -83,6 +85,7 @@ private:
     Checker _checker;
     Lifecycle _lifecycle;
     Editor _editor;
+    RelationEditor _relation_editor;
     Exchange _exchange;
     CursorPool _cursors;
     Finder _finder;

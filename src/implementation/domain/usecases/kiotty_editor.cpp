@@ -12,27 +12,7 @@ using entity::IdText;
 using entity::ItemHandle;
 using entity::ItemKind;
 using entity::ItemRecord;
-using entity::RelationRecord;
 
-}
-
-template <typename Operation>
-KiottySpecStatus Editor::write(Operation operation)
-{
-    KiottySpecStatus status = KIOTTY_SPEC_STATUS_SUCCESS;
-    bool touched = false;
-    {
-        Savepoint savepoint(_w.storage.connection());
-        status = _w.storage.check(savepoint.begin());
-        if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
-            const auto sequence = _lifecycle.beginWrite();
-            touched = true;
-            status = sequence ? operation(sequence.value) : sequence.code;
-        }
-        if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _w.storage.check(savepoint.commit()); }
-    }
-    if (status != KIOTTY_SPEC_STATUS_SUCCESS && touched) { _w.reload(); }
-    return status;
 }
 
 KiottySpecStatus Editor::checkText(Span<const char> text, size_t limit, const char* field)
@@ -42,13 +22,6 @@ KiottySpecStatus Editor::checkText(Span<const char> text, size_t limit, const ch
     }
     if (!isValidUtf8(text)) { return _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_UTF8, {boundedText(field, 32), literalText(" 이 UTF-8 이 아님")}); }
     return KIOTTY_SPEC_STATUS_SUCCESS;
-}
-
-Result<ItemHandle, KiottySpecStatus> Editor::resolve(Span<const char> id)
-{
-    const auto found = _w.items.reader().find(id);
-    if (!found) { return Result<ItemHandle, KiottySpecStatus>::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("없는 항목: "), id})); }
-    return found;
 }
 
 KiottySpecStatus Editor::markNeedsChange(ItemHandle item, uint32_t sequence)
@@ -77,7 +50,7 @@ Result<IdText, KiottySpecStatus> Editor::createItem(ItemKind kind, Span<const ch
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = checkText(summary, entity::MAX_SUMMARY_LENGTH, "요약"); }
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return IdResult::failure(status); }
     IdText created;
-    status = write([&](uint32_t sequence) {
+    status = _lifecycle.write([&](uint32_t sequence) {
         const auto id = _w.meta.nextId(_w.catalog.model(kind).id_prefix.view());
         if (!id) { return id.code; }
         ItemRecord record {};
@@ -97,7 +70,7 @@ Result<IdText, KiottySpecStatus> Editor::createItem(ItemKind kind, Span<const ch
 
 KiottySpecStatus Editor::updateItem(Span<const char> id, Span<const char> title, Span<const char> summary)
 {
-    const auto item = resolve(id);
+    const auto item = _w.resolve(id);
     if (!item) { return item.code; }
     ItemRecord record = *_w.items.reader().get(item.value).value;
     if (title.data() != nullptr) {
@@ -111,7 +84,7 @@ KiottySpecStatus Editor::updateItem(Span<const char> id, Span<const char> title,
         if (checked != KIOTTY_SPEC_STATUS_SUCCESS) { return checked; }
         record.summary.assign(summary);
     }
-    return write([&](uint32_t sequence) {
+    return _lifecycle.write([&](uint32_t sequence) {
         const KiottySpecStatus updated = _w.items.writer().update(item.value, record, sequence);
         if (updated != KIOTTY_SPEC_STATUS_SUCCESS) { return updated; }
         return markNeedsChange(item.value, sequence);
@@ -120,12 +93,12 @@ KiottySpecStatus Editor::updateItem(Span<const char> id, Span<const char> title,
 
 KiottySpecStatus Editor::setParent(Span<const char> id, Span<const char> parent_id)
 {
-    const auto item = resolve(id);
+    const auto item = _w.resolve(id);
     if (!item) { return item.code; }
     ItemRecord record = *_w.items.reader().get(item.value).value;
     record.parent = entity::INVALID_ITEM_HANDLE;
     if (parent_id.length() > 0) {
-        const auto parent = resolve(parent_id);
+        const auto parent = _w.resolve(parent_id);
         if (!parent) { return parent.code; }
         for (ItemHandle probe = parent.value; probe.isValid();) {
             if (probe.index == item.value.index) {
@@ -137,12 +110,12 @@ KiottySpecStatus Editor::setParent(Span<const char> id, Span<const char> parent_
         }
         record.parent = parent.value;
     }
-    return write([&](uint32_t sequence) { return _w.items.writer().update(item.value, record, sequence); });
+    return _lifecycle.write([&](uint32_t sequence) { return _w.items.writer().update(item.value, record, sequence); });
 }
 
 KiottySpecStatus Editor::removeItem(Span<const char> id)
 {
-    const auto item = resolve(id);
+    const auto item = _w.resolve(id);
     if (!item) { return item.code; }
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
         const auto child = _w.items.reader().get(_w.items.reader().handleAt(index));
@@ -150,7 +123,7 @@ KiottySpecStatus Editor::removeItem(Span<const char> id)
             return _w.failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, {literalText("하위 항목이 있어 지울 수 없음: "), child.value->id.view()});
         }
     }
-    return write([&](uint32_t sequence) {
+    return _lifecycle.write([&](uint32_t sequence) {
         const KiottySpecStatus unlinked = _w.relations.removeAllOf(item.value, sequence);
         if (unlinked != KIOTTY_SPEC_STATUS_SUCCESS) { return unlinked; }
         return _w.items.writer().remove(item.value, sequence);
@@ -159,11 +132,11 @@ KiottySpecStatus Editor::removeItem(Span<const char> id)
 
 KiottySpecStatus Editor::writeBody(Span<const char> id, Span<const char> body)
 {
-    const auto item = resolve(id);
+    const auto item = _w.resolve(id);
     if (!item) { return item.code; }
     const KiottySpecStatus checked = checkText(body, entity::MAX_BODY_LENGTH, "본문");
     if (checked != KIOTTY_SPEC_STATUS_SUCCESS) { return checked; }
-    return write([&](uint32_t sequence) {
+    return _lifecycle.write([&](uint32_t sequence) {
         const KiottySpecStatus written = _w.items.writer().writeBody(item.value, body, sequence);
         if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
         return markNeedsChange(item.value, sequence);
@@ -178,40 +151,7 @@ KiottySpecStatus Editor::setTag(ItemHandle item, uint32_t tag, uint64_t value)
     if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _w.failure.raise(allowed, {literalText("태그 값이 모델의 태그 정의에 맞지 않음: "), record.value->id.view()});
     }
-    return write([&](uint32_t sequence) { return _w.items.writer().setTag(item, tag, value, sequence); });
-}
-
-Result<RelationRecord, KiottySpecStatus> Editor::relationOf(Span<const char> from_id, uint32_t relation, Span<const char> to_id)
-{
-    using RelationResult = Result<RelationRecord, KiottySpecStatus>;
-    const auto from = resolve(from_id);
-    if (!from) { return RelationResult::failure(from.code); }
-    const auto to = resolve(to_id);
-    if (!to) { return RelationResult::failure(to.code); }
-    const ItemKind from_kind = _w.items.reader().get(from.value).value->kind;
-    const ItemKind to_kind = _w.items.reader().get(to.value).value->kind;
-    const KiottySpecStatus allowed = _w.catalog.checkRelation(from_kind, relation, to_kind);
-    if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return RelationResult::failure(
-            _w.failure.raise(allowed, {literalText("모델의 관계 정의에 없는 관계: "), from_id, literalText(" -> "), to_id}));
-    }
-    return RelationResult::success(RelationRecord{from.value, to.value, from_kind, relation});
-}
-
-KiottySpecStatus Editor::addRelation(Span<const char> from_id, uint32_t relation, Span<const char> to_id)
-{
-    const auto record = relationOf(from_id, relation, to_id);
-    if (!record) { return record.code; }
-    if (_w.relations.contains(record.value)) { return _w.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("이미 있는 관계")}); }
-    return write([&](uint32_t sequence) { return _w.relations.add(record.value, sequence); });
-}
-
-KiottySpecStatus Editor::removeRelation(Span<const char> from_id, uint32_t relation, Span<const char> to_id)
-{
-    const auto record = relationOf(from_id, relation, to_id);
-    if (!record) { return record.code; }
-    if (!_w.relations.contains(record.value)) { return _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("없는 관계")}); }
-    return write([&](uint32_t sequence) { return _w.relations.remove(record.value, sequence); });
+    return _lifecycle.write([&](uint32_t sequence) { return _w.items.writer().setTag(item, tag, value, sequence); });
 }
 
 KiottySpecStatus Editor::writeDecision(ItemKind kind, Span<const char> text)
@@ -221,7 +161,7 @@ KiottySpecStatus Editor::writeDecision(ItemKind kind, Span<const char> text)
     }
     const KiottySpecStatus checked = checkText(text, MAX_DECISION_BYTES, "결정 기록");
     if (checked != KIOTTY_SPEC_STATUS_SUCCESS) { return checked; }
-    return write([&](uint32_t sequence) { return _w.decisions.write(kind, text, sequence); });
+    return _lifecycle.write([&](uint32_t sequence) { return _w.decisions.write(kind, text, sequence); });
 }
 
 }

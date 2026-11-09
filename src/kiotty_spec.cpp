@@ -319,13 +319,13 @@ KiottySpecStatusResult KiottySpec_fetchTagPage(KiottySpecContext* context, Kiott
 KiottySpecStatusResult KiottySpec_addRelation(KiottySpecContext* context, KiottySpecText from_id, uint32_t relation, KiottySpecText to_id)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    return status(context->context.editor().addRelation(spanOf(from_id), relation, spanOf(to_id)));
+    return status(context->context.relationEditor().add(spanOf(from_id), relation, spanOf(to_id)));
 }
 
 KiottySpecStatusResult KiottySpec_removeRelation(KiottySpecContext* context, KiottySpecText from_id, uint32_t relation, KiottySpecText to_id)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    return status(context->context.editor().removeRelation(spanOf(from_id), relation, spanOf(to_id)));
+    return status(context->context.relationEditor().remove(spanOf(from_id), relation, spanOf(to_id)));
 }
 
 KiottySpecCursorResult KiottySpec_openRelationCursor(KiottySpecContext* context, KiottySpecText id, KiottySpecDirection direction)

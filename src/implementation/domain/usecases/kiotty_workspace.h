@@ -2,6 +2,7 @@
 
 #include "kiotty_spec.h"
 #include "implementation/core/kiotty_failure.h"
+#include "implementation/core/kiotty_text_view.h"
 #include "implementation/data/datasource/kiotty_storage.h"
 #include "implementation/data/repository/kiotty_checkpoint_store.h"
 #include "implementation/data/repository/kiotty_decision_store.h"
@@ -30,6 +31,14 @@ struct Workspace {
         if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = items.load(); }
         if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = relations.load(); }
         return status;
+    }
+
+    // 없으면 NOT_FOUND 와 이유를 남긴다.
+    Result<entity::ItemHandle, KiottySpecStatus> resolve(Span<const char> id)
+    {
+        const auto found = items.reader().find(id);
+        if (!found) { return Result<entity::ItemHandle, KiottySpecStatus>::failure(failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("없는 항목: "), id})); }
+        return found;
     }
 };
 
