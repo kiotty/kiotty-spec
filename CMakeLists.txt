@@ -31,9 +31,10 @@ target_compile_definitions(kiotty_sqlite3 PRIVATE SQLITE_THREADSAFE=1 SQLITE_OMI
 # ---------------------------------------------------------------------------
 function(kiotty_warnings target)
     if(MSVC)
-        target_compile_options(${target} PRIVATE /W4 /utf-8 /permissive- /Zc:__cplusplus)
+        # enum switch 에서 빠진 멤버는 에러 (개발수칙 2.8)
+        target_compile_options(${target} PRIVATE /W4 /utf-8 /permissive- /Zc:__cplusplus /we4062)
     else()
-        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Werror=switch)
     endif()
 endfunction()
 

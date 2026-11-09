@@ -63,8 +63,15 @@ bool hasDecision(ItemKind kind)
     case ItemKind::DESIGN:
     case ItemKind::UNIT_TEST_PLAN:
     case ItemKind::MILESTONE: return true;
-    default: return false;
+    case ItemKind::CHANGE_REQUEST:
+    case ItemKind::UNIT_TEST_RESULT:
+    case ItemKind::SYSTEM_TEST_PLAN:
+    case ItemKind::SYSTEM_TEST_RESULT:
+    case ItemKind::CODE_INSPECTION_RESULT:
+    case ItemKind::END_TO_END_TEST_PLAN:
+    case ItemKind::END_TO_END_TEST_RESULT: return false;
     }
+    return false;
 }
 
 }

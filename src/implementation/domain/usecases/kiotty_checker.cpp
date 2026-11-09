@@ -304,7 +304,11 @@ KiottySpecStatus Checker::check(entity::Step step)
         checkOneToOne(report, ItemKind::EXTERNAL_INTERFACE, ItemKind::END_TO_END_TEST_PLAN, "검증 외부 인터페이스", false);
         break;
     case entity::Step::END_TO_END_TEST_RUN: checkResults(report); break;
-    default: break;
+    case entity::Step::EXTERNAL_INTERFACE_DISCUSSING:
+    case entity::Step::DESIGN_DISCUSSING:
+    case entity::Step::UNIT_TEST_PLAN_DISCUSSING:
+    case entity::Step::IMPLEMENTING:
+    case entity::Step::SYSTEM_TEST_RUN: break;
     }
     if (!report.failed()) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     return _w.failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, {report.text()});
