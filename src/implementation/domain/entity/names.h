@@ -37,9 +37,6 @@ bool parse(std::string_view text, KiottySpecTestResult &out);
 bool parse(std::string_view text, KiottySpecDecisionKind &out);
 bool parse(std::string_view text, KiottySpecCheckpointPurpose &out);
 
-template <class Enum>
-Enum parseOrThrow(std::string_view text, std::string_view what);
-
 std::string_view idPrefix(KiottySpecItemKind kind);
 std::string_view label(KiottySpecItemKind kind);
 std::string_view label(KiottySpecItemCategory category);

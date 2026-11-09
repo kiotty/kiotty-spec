@@ -89,3 +89,9 @@ add_executable(kiotty_datasource_test
 target_include_directories(kiotty_datasource_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(kiotty_datasource_test PRIVATE kiotty_sqlite3)
 kiotty_warnings(kiotty_datasource_test)
+
+add_executable(kiotty_context_test
+    tests/context/context_test.cpp
+    src/implementation/context/cursor_pool.cpp)
+target_include_directories(kiotty_context_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
+kiotty_warnings(kiotty_context_test)

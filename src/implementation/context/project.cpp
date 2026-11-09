@@ -1,22 +1,22 @@
 #include "implementation/context/project.h"
 
-#include "implementation/core/error.h"
 #include "implementation/core/text.h"
 #include "implementation/core/text_view.h"
-#include "implementation/data/datasource/savepoint.h"
 #include "implementation/data/datasource/schema.h"
+
+#include <string>
 
 namespace kiotty::spec::implementation {
 
 namespace {
 
-constexpr std::string_view kPreCommit =
+constexpr char PRE_COMMIT_HOOK[] =
     "#!/bin/sh\n"
     "# kiotty-spec: 커밋 전에 DB 를 jsonl 로 내보내고 스테이징한다.\n"
     "ks export jsonl || exit 1\n"
     "git add .kiotty/spec\n";
 
-constexpr std::string_view kPostSync =
+constexpr char POST_SYNC_HOOK[] =
     "#!/bin/sh\n"
     "# kiotty-spec: 병합·체크아웃 뒤 jsonl 로 DB 를 다시 만든다.\n"
     "[ -d .kiotty/spec ] && ks import jsonl\n"
@@ -29,151 +29,140 @@ constexpr char GITIGNORE_FILE[] = ".gitignore";
 constexpr char GIT_DIRECTORY[] = ".git";
 constexpr char HOOKS_DIRECTORY[] = ".git/hooks";
 
-void requireUser(KiottySpecActor actor, std::string_view what) {
-    require(actor == KIOTTY_SPEC_ACTOR_USER, KIOTTY_SPEC_STATUS_PERMISSION, std::string(what) + ": 사용자만 할 수 있음 (R-2)");
 }
 
-std::string textOf(Span<const char> text) { return std::string(viewOf(text)); }
+Project::Project()
+    : _storage(_connection, _failure),
+      _projectFiles(_root, _failure),
+      _meta(_storage),
+      _checkpoints(_storage),
+      _history(_storage),
+      _items(_storage, _meta),
+      _finder(_storage, _items),
+      _files(_storage, _meta, _projectFiles),
+      _links(_storage, _items, _files),
+      _graph(_storage, _links, _items, _finder, _files, _projectFiles),
+      _milestoneStore(_storage),
+      _milestones(_milestoneStore, _items, _finder, _links, _failure),
+      _changes(_storage, _meta),
+      _decisions(_storage, _meta, _items),
+      _results(_storage, _items, _finder),
+      _checker(CheckSources{_items, _finder, _links, _milestones, _results, _decisions, _changes}),
+      _context(Stores{_checkpoints, _items, _finder, _files, _links, _graph, _history, _milestones, _changes, _decisions, _results, _checker, _failure}),
+      _board(Stores{_checkpoints, _items, _finder, _files, _links, _graph, _history, _milestones, _changes, _decisions, _results, _checker, _failure}),
+      _exchange(_storage, _items, _graph, _checker, _failure),
+      _journey(JourneySources{_meta, _checkpoints, _history, _finder, _changes, _checker, _failure}),
+      _lifecycle(LifecycleSources{_storage, _checkpoints, _history, _items, _links, _checker, _failure}),
+      _services(Services{_storage, _meta, _checkpoints, _items, _finder, _files, _links, _graph, _milestones, _changes, _decisions, _results,
+                         _checker, _context, _board, _exchange, _journey, _lifecycle, _failure}) {}
 
-SystemPath under(Span<const char> root, Span<const char> part) {
-    const auto joined = joinPath(root, part);
-    require(static_cast<bool>(joined), KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "경로가 너무 김: " + textOf(root));
-    return joined.value;
+SystemPathResult Project::under(Span<const char> base, Span<const char> part) {
+    const auto joined = joinPath(base, part);
+    if (!joined) { return SystemPathResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, {literalText("경로가 너무 김: "), base})); }
+    return joined;
 }
 
-void writeText(Span<const char> path, std::string_view content) {
-    require(writeWholeFile(path, spanOf(content)) == KIOTTY_SPEC_STATUS_SUCCESS, KIOTTY_SPEC_STATUS_INPUT_OUTPUT,
-            "파일을 쓸 수 없음: " + textOf(path));
+KiottySpecStatus Project::writeText(Span<const char> path, Span<const char> content) {
+    if (writeWholeFile(path, content) == KIOTTY_SPEC_STATUS_SUCCESS) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("파일을 쓸 수 없음: "), path});
 }
 
-}
-
-SystemPath Project::prepareRoot(std::string_view root) {
-    const SystemPath given = under(spanOf(root), Span<const char>());
-    require(isDirectory(spanOf(root)), KIOTTY_SPEC_STATUS_INPUT_OUTPUT, "프로젝트 루트가 디렉토리가 아님: " + textOf(given.view()));
+KiottySpecStatus Project::prepareRoot(std::string_view root) {
+    const auto given = under(spanOf(root), Span<const char>());
+    if (!given) { return given.code; }
+    if (!isDirectory(spanOf(root))) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("프로젝트 루트가 디렉토리가 아님: "), given.value.view()});
+    }
     const auto absolute = absolutePath(spanOf(root));
-    require(static_cast<bool>(absolute), KIOTTY_SPEC_STATUS_INPUT_OUTPUT, "프로젝트 루트를 절대 경로로 바꿀 수 없음: " + textOf(given.view()));
-    const SystemPath spec = under(absolute.value.view(), literalText(SPEC_DIRECTORY));
-    require(createDirectories(spec.view()) == KIOTTY_SPEC_STATUS_SUCCESS, KIOTTY_SPEC_STATUS_INPUT_OUTPUT, ".kiotty 디렉토리를 만들 수 없음");
-    return absolute.value;
+    if (!absolute) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("프로젝트 루트를 절대 경로로 바꿀 수 없음: "), given.value.view()});
+    }
+    const auto spec = under(absolute.value.view(), literalText(SPEC_DIRECTORY));
+    if (!spec) { return spec.code; }
+    if (createDirectories(spec.value.view()) != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText(".kiotty 디렉토리를 만들 수 없음")});
+    }
+    _root = absolute.value;
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-Project::Project(std::string_view root)
-    : root_(prepareRoot(root)),
-      storage_(connection_, failure_),
-      projectFiles_(root_, failure_),
-      meta(storage_),
-      checkpoints(storage_),
-      history(storage_),
-      items(storage_, meta),
-      finder(storage_, items),
-      files(storage_, meta, projectFiles_),
-      links(storage_, items, files),
-      graph(storage_, links, items, finder, files, projectFiles_),
-      milestoneStore(storage_),
-      milestones(milestoneStore, items, finder, links, failure_),
-      changes(storage_, meta),
-      decisions(storage_, meta, items),
-      results(storage_, items, finder),
-      checker(CheckSources{items, finder, links, milestones, results, decisions, changes}),
-      context(Stores{checkpoints, items, finder, files, links, graph, history, milestones, changes, decisions, results, checker, failure_}),
-      exchange(storage_, items, graph, checker, failure_),
-      journey(JourneySources{meta, checkpoints, history, finder, changes, checker, failure_}) {
-    open();
+KiottySpecStatus Project::openDatabase() {
+    const auto database = under(_root.view(), literalText(DATABASE_FILE));
+    if (!database) { return database.code; }
+    const KiottySpecStatus opened = _connection.open(database.value.view());
+    if (opened == KIOTTY_SPEC_STATUS_INPUT_OUTPUT || opened == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT,
+                              {literalText("cannot open database "), database.value.view(), literalText(": "), _connection.message()});
+    }
+    if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(opened, {literalText("exec failed: "), _connection.message()}); }
+    return ensure(_storage);
 }
 
-SystemPath Project::jsonlDir() const { return under(root_.view(), literalText(JSONL_DIRECTORY)); }
-
-void Project::open() {
-    const SystemPath database = under(root_.view(), literalText(DATABASE_FILE));
-    const KiottySpecStatus opened = connection_.open(database.view());
-    const bool cannotOpen = opened == KIOTTY_SPEC_STATUS_INPUT_OUTPUT || opened == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED;
-    if (cannotOpen) { fail(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, "cannot open database " + textOf(database.view()) + ": " + textOf(connection_.message())); }
-    if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { fail(opened, "exec failed: " + textOf(connection_.message())); }
-    expect(ensure(storage_), failure_);
+KiottySpecStatus Project::open(std::string_view root) {
+    if (_opened) { return _failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, {literalText("프로젝트가 이미 열려 있음")}); }
+    const KiottySpecStatus prepared = prepareRoot(root);
+    if (prepared != KIOTTY_SPEC_STATUS_SUCCESS) { return prepared; }
+    const KiottySpecStatus opened = openDatabase();
+    if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return opened; }
+    _opened = true;
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-void Project::init(std::string_view projectName, bool installGitHooks) {
-    const std::string name = projectName.empty() ? textOf(fileNameOf(root_.view())) : std::string(projectName);
-    expect(meta.set("project.name", name), failure_);
-    expect(meta.set("project.created_at", std::to_string(nowEpochSeconds())), failure_);
+SystemPathResult Project::jsonlDir() { return under(_root.view(), literalText(JSONL_DIRECTORY)); }
 
-    const SystemPath gitignore = under(root_.view(), literalText(GITIGNORE_FILE));
-    std::string content = readWholeFile(gitignore.view()).value_or("");
+KiottySpecStatus Project::updateGitignore() {
+    const auto gitignore = under(_root.view(), literalText(GITIGNORE_FILE));
+    if (!gitignore) { return gitignore.code; }
+    std::string content = readWholeFile(gitignore.value.view()).value_or("");
     const std::string_view entries[] = {".kiotty/spec.db", ".kiotty/spec.db-wal", ".kiotty/spec.db-shm"};
     for (const auto entry : entries) {
         if (content.find(entry) != std::string::npos) { continue; }
         if (!content.empty() && content.back() != '\n') { content += "\n"; }
         content += std::string(entry) + "\n";
     }
-    writeText(gitignore.view(), content);
-
-    if (installGitHooks) { installHooks(); }
+    return writeText(gitignore.value.view(), spanOf(content));
 }
 
-void Project::installHooks() {
-    const SystemPath git = under(root_.view(), literalText(GIT_DIRECTORY));
-    require(isDirectory(git.view()), KIOTTY_SPEC_STATUS_PRECONDITION, "git 저장소가 아님 (.git 없음): " + textOf(root_.view()));
-    const SystemPath hooks = under(root_.view(), literalText(HOOKS_DIRECTORY));
-    createDirectories(hooks.view());
-    const std::pair<const char *, std::string_view> scripts[] = {
-        {"pre-commit", kPreCommit}, {"post-merge", kPostSync}, {"post-checkout", kPostSync}};
+KiottySpecStatus Project::init(std::string_view projectName, bool installGitHooks) {
+    const std::string name = projectName.empty() ? std::string(viewOf(fileNameOf(_root.view()))) : std::string(projectName);
+    KiottySpecStatus status = _meta.set("project.name", name);
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+    status = _meta.set("project.created_at", std::to_string(nowEpochSeconds()));
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+    status = updateGitignore();
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS || !installGitHooks) { return status; }
+    return installHooks();
+}
+
+KiottySpecStatus Project::installHooks() {
+    const auto git = under(_root.view(), literalText(GIT_DIRECTORY));
+    if (!git) { return git.code; }
+    if (!isDirectory(git.value.view())) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, {literalText("git 저장소가 아님 (.git 없음): "), _root.view()});
+    }
+    const auto hooks = under(_root.view(), literalText(HOOKS_DIRECTORY));
+    if (!hooks) { return hooks.code; }
+    createDirectories(hooks.value.view());
+    const std::pair<Span<const char>, Span<const char>> scripts[] = {{literalText("pre-commit"), literalText(PRE_COMMIT_HOOK)},
+                                                                     {literalText("post-merge"), literalText(POST_SYNC_HOOK)},
+                                                                     {literalText("post-checkout"), literalText(POST_SYNC_HOOK)}};
     for (const auto &[name, script] : scripts) {
-        const SystemPath hook = under(hooks.view(), boundedText(name, MAX_SYSTEM_PATH_LENGTH));
-        writeText(hook.view(), script);
-        makeExecutable(hook.view());
+        const auto hook = under(hooks.value.view(), name);
+        if (!hook) { return hook.code; }
+        const KiottySpecStatus written = writeText(hook.value.view(), script);
+        if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
+        makeExecutable(hook.value.view());
     }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-int64_t Project::confirm(KiottySpecActor actor, std::string_view cpId) {
-    requireUser(actor, "체크포인트 확정");
-    const int64_t seq = expect(checkpoints.resolve(cpId), failure_);
-    require(seq != kPending, KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "PENDING 은 확정할 수 없음. 먼저 체크포인트를 찍을 것");
-    const auto record = expect(checkpoints.get(seq), failure_);
-    if (record.confirmed) {
-        return seq;
+KiottySpecStatus Project::transaction(TransactionStep step) {
+    switch (step) {
+    case TransactionStep::BEGIN: return _storage.execute(literalText("BEGIN IMMEDIATE"));
+    case TransactionStep::COMMIT: return _storage.execute(literalText("COMMIT"));
+    case TransactionStep::ROLLBACK: return _storage.execute(literalText("ROLLBACK"));
     }
-    const auto verdict = expect(checker.confirmCheck(record.step, seq), failure_);
-    require(verdict.ok, KIOTTY_SPEC_STATUS_PRECONDITION, "Step " + std::to_string(record.step) + " 확정 조건 미충족:\n" + verdict.report);
-    expect(checkpoints.markConfirmed(seq), failure_);
-    return seq;
+    return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("알 수 없는 트랜잭션 단계")});
 }
-
-int64_t Project::release(KiottySpecActor actor, std::string_view note) {
-    requireUser(actor, "RELEASE");
-    const auto verdict = expect(checker.releaseCheck(), failure_);
-    require(verdict.ok, KIOTTY_SPEC_STATUS_PRECONDITION, "RELEASE 조건 미충족 (R-10):\n" + verdict.report);
-    Savepoint savepoint(connection_);
-    expect(storage_.check(savepoint.begin()), failure_);
-    const int64_t seq = expect(checkpoints.create(10, note, KIOTTY_SPEC_CHECKPOINT_PURPOSE_RELEASE), failure_);
-    expect(checkpoints.markConfirmed(seq), failure_);
-    expect(storage_.check(savepoint.commit()), failure_);
-    return seq;
-}
-
-size_t Project::prune(KiottySpecActor actor, std::string_view baseCpId) {
-    requireUser(actor, "체크포인트 정리");
-    const int64_t base = expect(checkpoints.resolve(baseCpId), failure_);
-    require(base != kPending, KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "PENDING 은 기준이 될 수 없음");
-    require(expect(checkpoints.get(base), failure_).confirmed, KIOTTY_SPEC_STATUS_PRECONDITION, "기준 체크포인트는 확정된 것이어야 함");
-    for (const auto &record : expect(checkpoints.list(0), failure_)) {
-        require(!(record.seq < base && record.purpose == KIOTTY_SPEC_CHECKPOINT_PURPOSE_RELEASE), KIOTTY_SPEC_STATUS_PRECONDITION,
-                "RELEASE 체크포인트 " + checkpointName(record.seq) + " 는 지울 수 없음. 그 이후를 기준으로 할 것");
-    }
-    return expect(history.prune(base), failure_);
-}
-
-void Project::removeItem(std::string_view itemId) {
-    Savepoint savepoint(connection_);
-    expect(storage_.check(savepoint.begin()), failure_);
-    expect(items.get(itemId), failure_);
-    expect(links.removeAllFor(itemId), failure_);
-    expect(items.remove(itemId), failure_);
-    expect(storage_.check(savepoint.commit()), failure_);
-}
-
-void Project::beginTransaction() { expect(storage_.execute(literalText("BEGIN IMMEDIATE")), failure_); }
-void Project::commitTransaction() { expect(storage_.execute(literalText("COMMIT")), failure_); }
-void Project::rollbackTransaction() { expect(storage_.execute(literalText("ROLLBACK")), failure_); }
 
 }

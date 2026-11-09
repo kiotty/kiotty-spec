@@ -1,6 +1,5 @@
 #include "implementation/domain/entity/names.h"
 
-#include "implementation/core/error.h"
 
 #include <array>
 #include <charconv>
@@ -159,25 +158,6 @@ bool parse(std::string_view text, KiottySpecTestResult &out) { return lookupValu
 bool parse(std::string_view text, KiottySpecDecisionKind &out) { return lookupValue(kDecisionKinds, text, out); }
 bool parse(std::string_view text, KiottySpecCheckpointPurpose &out) { return lookupValue(kPurposes, text, out); }
 
-template <class Enum>
-Enum parseOrThrow(std::string_view text, std::string_view what) {
-    Enum value{};
-    if (!parse(text, value)) {
-        fail(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "알 수 없는 " + std::string(what) + ": '" + std::string(text) + "'");
-    }
-    return value;
-}
-
-template KiottySpecItemKind parseOrThrow<KiottySpecItemKind>(std::string_view, std::string_view);
-template KiottySpecItemCategory parseOrThrow<KiottySpecItemCategory>(std::string_view, std::string_view);
-template KiottySpecFileRole parseOrThrow<KiottySpecFileRole>(std::string_view, std::string_view);
-template KiottySpecLinkType parseOrThrow<KiottySpecLinkType>(std::string_view, std::string_view);
-template KiottySpecChangeSource parseOrThrow<KiottySpecChangeSource>(std::string_view, std::string_view);
-template KiottySpecChangeState parseOrThrow<KiottySpecChangeState>(std::string_view, std::string_view);
-template KiottySpecImplementationState parseOrThrow<KiottySpecImplementationState>(std::string_view, std::string_view);
-template KiottySpecTestResult parseOrThrow<KiottySpecTestResult>(std::string_view, std::string_view);
-template KiottySpecDecisionKind parseOrThrow<KiottySpecDecisionKind>(std::string_view, std::string_view);
-template KiottySpecCheckpointPurpose parseOrThrow<KiottySpecCheckpointPurpose>(std::string_view, std::string_view);
 
 std::string_view idPrefix(KiottySpecItemKind kind) {
     switch (kind) {

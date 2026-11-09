@@ -4,6 +4,7 @@
 #include "lazy_pool.h"
 #include "result.h"
 #include "span.h"
+#include "text_buffer.h"
 #include "utf8.h"
 
 #include <cstdio>
@@ -145,6 +146,20 @@ bool testLazyPoolGenerations()
     return ok;
 }
 
+bool testTextBuffer()
+{
+    core::TextBuffer buffer(8);
+    bool ok = true;
+    ok = expectTrue(buffer.append(textOf("abcd")) == KIOTTY_SPEC_STATUS_SUCCESS, "append fits") && ok;
+    ok = expectTrue(buffer.append(textOf("efgh")) == KIOTTY_SPEC_STATUS_SUCCESS, "append fills capacity") && ok;
+    ok = expectTrue(buffer.append(textOf("i")) == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "append over capacity fails") && ok;
+    ok = expectTrue(buffer.view().length() == 8 && std::memcmp(buffer.view().data(), "abcdefgh", 8) == 0, "failed append keeps text") && ok;
+    ok = expectTrue(buffer.view().data()[8] == 0, "text stays null terminated") && ok;
+    buffer.clear();
+    ok = expectTrue(buffer.view().length() == 0 && buffer.capacity() == 8, "clear keeps capacity") && ok;
+    return ok;
+}
+
 bool testChecked()
 {
     const size_t maximum = std::numeric_limits<size_t>::max();
@@ -193,6 +208,7 @@ int main()
         {"fixed vector", testFixedVector},
         {"lazy pool acquire release", testLazyPoolAcquireRelease},
         {"lazy pool generations", testLazyPoolGenerations},
+        {"text buffer", testTextBuffer},
         {"checked arithmetic", testChecked},
         {"utf8 valid", testUtf8Valid},
         {"utf8 invalid", testUtf8Invalid},

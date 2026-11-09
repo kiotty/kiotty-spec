@@ -21,63 +21,87 @@
 #include "implementation/domain/usecases/checker.h"
 #include "implementation/domain/usecases/exchange.h"
 #include "implementation/domain/usecases/journey.h"
+#include "implementation/domain/usecases/lifecycle.h"
 #include "implementation/domain/usecases/milestone_service.h"
 
-#include <string>
 #include <string_view>
 
 namespace kiotty::spec::implementation {
 
+enum class TransactionStep { BEGIN, COMMIT, ROLLBACK };
+
+// Project 가 소유한 store 와 usecase 를 빌려 쓰는 참조 묶음.
+struct Services {
+    Storage &storage;
+    Meta &meta;
+    CheckpointStore &checkpoints;
+    ItemStore &items;
+    ItemFinder &finder;
+    FileStore &files;
+    LinkStore &links;
+    LinkGraph &graph;
+    MilestoneService &milestones;
+    ChangeRequestStore &changes;
+    DecisionStore &decisions;
+    ResultStore &results;
+    Checker &checker;
+    ContextBuilder &context;
+    StatusBoard &board;
+    Exchange &exchange;
+    Journey &journey;
+    Lifecycle &lifecycle;
+    const Failure &failure;
+};
+
 class Project {
 public:
-    explicit Project(std::string_view root);
+    Project();
 
-    Span<const char> root() const { return root_.view(); }
-    SystemPath jsonlDir() const;
+    Project(const Project &) = delete;
+    Project &operator=(const Project &) = delete;
 
-    void init(std::string_view projectName, bool installGitHooks);
-
-    int64_t confirm(KiottySpecActor actor, std::string_view cpId);
-    int64_t release(KiottySpecActor actor, std::string_view note);
-    size_t prune(KiottySpecActor actor, std::string_view baseCpId);
-    void removeItem(std::string_view itemId);
-
-    void beginTransaction();
-    void commitTransaction();
-    void rollbackTransaction();
+    KiottySpecStatus open(std::string_view root);
+    KiottySpecStatus init(std::string_view projectName, bool installGitHooks);
+    KiottySpecStatus transaction(TransactionStep step);
+    SystemPathResult jsonlDir();
+    Span<const char> root() const { return _root.view(); }
+    Services &services() { return _services; }
+    const Failure &failure() const { return _failure; }
 
 private:
-    static SystemPath prepareRoot(std::string_view root);
-    void open();
-    void installHooks();
+    KiottySpecStatus prepareRoot(std::string_view root);
+    KiottySpecStatus openDatabase();
+    KiottySpecStatus updateGitignore();
+    KiottySpecStatus installHooks();
+    SystemPathResult under(Span<const char> base, Span<const char> part);
+    KiottySpecStatus writeText(Span<const char> path, Span<const char> content);
 
-    SystemPath root_;
-    Connection connection_;
-    Failure failure_;
-    Storage storage_;
-    ProjectFiles projectFiles_;
-
-public:
-    Meta meta;
-    CheckpointStore checkpoints;
-    VersionHistory history;
-    ItemStore items;
-    ItemFinder finder;
-    FileStore files;
-    LinkStore links;
-    LinkGraph graph;
-    MilestoneStore milestoneStore;
-    MilestoneService milestones;
-    ChangeRequestStore changes;
-    DecisionStore decisions;
-    ResultStore results;
-    Checker checker;
-    ContextBuilder context;
-    Exchange exchange;
-    Journey journey;
-
-    Storage &storage() { return storage_; }
-    const Failure &failure() const { return failure_; }
+    SystemPath _root;
+    bool _opened {false};
+    Connection _connection;
+    Failure _failure;
+    Storage _storage;
+    ProjectFiles _projectFiles;
+    Meta _meta;
+    CheckpointStore _checkpoints;
+    VersionHistory _history;
+    ItemStore _items;
+    ItemFinder _finder;
+    FileStore _files;
+    LinkStore _links;
+    LinkGraph _graph;
+    MilestoneStore _milestoneStore;
+    MilestoneService _milestones;
+    ChangeRequestStore _changes;
+    DecisionStore _decisions;
+    ResultStore _results;
+    Checker _checker;
+    ContextBuilder _context;
+    StatusBoard _board;
+    Exchange _exchange;
+    Journey _journey;
+    Lifecycle _lifecycle;
+    Services _services;
 };
 
 }

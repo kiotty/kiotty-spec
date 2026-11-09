@@ -1,58 +1,19 @@
 #include "implementation/context/context_builder.h"
 
-#include "implementation/core/error.h"
 #include "implementation/core/text.h"
+#include "implementation/core/text_view.h"
+#include "implementation/domain/entity/names.h"
 
 #include <set>
+#include <utility>
 
 namespace kiotty::spec::implementation {
 
 namespace {
 
-constexpr size_t kDefaultBudget = 60000;
-
-class Budget {
-public:
-    explicit Budget(size_t maxBytes) : max_(maxBytes == 0 ? kDefaultBudget : maxBytes) {}
-
-    void text(const std::string &value) {
-        if (out_.size() + value.size() <= max_) out_ += value;
-        else ++omitted_;
-    }
-
-    template <class Render>
-    void items(const std::vector<ItemRecord> &list, Render render) {
-        if (list.empty()) {
-            text("없음\n\n");
-            return;
-        }
-        for (const auto &item : list) {
-            const std::string full = render(item, true);
-            if (out_.size() + full.size() <= max_ * 85 / 100) {
-                out_ += full;
-                continue;
-            }
-            const std::string brief = render(item, false);
-            if (out_.size() + brief.size() <= max_) out_ += brief;
-            else ++omitted_;
-        }
-        out_ += "\n";
-    }
-
-    std::string finish() {
-        if (omitted_ > 0) {
-            out_ += "\n> 한도 초과로 " + std::to_string(omitted_) + "개 조각 생략. `ks context item <ID>` 로 개별 조회할 것.\n";
-        }
-        return out_;
-    }
-
-private:
-    size_t max_;
-    size_t omitted_ = 0;
-    std::string out_;
-};
-
-std::string stepTitle(int32_t step) { return std::string(stepLabel(step)); }
+constexpr size_t DEFAULT_BUDGET = 60000;
+constexpr int32_t DEFAULT_DEPTH = 2;
+constexpr char EMPTY_HEADING[] = "# 지금 할 일\n\n";
 
 std::string stepGoal(int32_t step) {
     switch (step) {
@@ -71,313 +32,471 @@ std::string stepGoal(int32_t step) {
 }
 
 std::string fileList(const std::vector<FileRecord> &files) {
-    if (files.empty()) return "없음\n\n";
+    if (files.empty()) { return "없음\n\n"; }
     std::string out;
-    for (const auto &file : files) {
-        out += "- " + file.id + " [" + std::string(name(file.role)) + "] " + file.path + "\n";
-    }
+    for (const auto &file : files) { out += "- " + file.id + " [" + std::string(name(file.role)) + "] " + file.path + "\n"; }
     return out + "\n";
 }
 
+const char *changeVerb(const ItemChange &change) {
+    if (change.record.removed) { return " (삭제)"; }
+    return change.added ? " (추가)" : " (수정)";
 }
 
-std::string ContextBuilder::renderItem(const ItemRecord &item, bool full) {
+bool isOpen(KiottySpecChangeState state) {
+    return state == KIOTTY_SPEC_CHANGE_STATE_OPEN || state == KIOTTY_SPEC_CHANGE_STATE_IN_PROGRESS;
+}
+
+}
+
+class Budget {
+public:
+    Budget(size_t maxBytes, LinkStore &links) : _max(maxBytes == 0 ? DEFAULT_BUDGET : maxBytes), _links(links) {}
+
+    void text(const std::string &value) {
+        if (_out.size() + value.size() <= _max) { _out += value; }
+        else { ++_omitted; }
+    }
+
+    KiottySpecStatus items(const std::vector<ItemRecord> &list, bool allowFull) {
+        if (list.empty()) {
+            text("없음\n\n");
+            return KIOTTY_SPEC_STATUS_SUCCESS;
+        }
+        for (const auto &item : list) {
+            const KiottySpecStatus added = add(item, allowFull);
+            if (added != KIOTTY_SPEC_STATUS_SUCCESS) { return added; }
+        }
+        _out += "\n";
+        return KIOTTY_SPEC_STATUS_SUCCESS;
+    }
+
+    std::string finish() {
+        if (_omitted > 0) {
+            _out += "\n> 한도 초과로 " + std::to_string(_omitted) + "개 조각 생략. `ks context item <ID>` 로 개별 조회할 것.\n";
+        }
+        return std::move(_out);
+    }
+
+private:
+    KiottySpecStatus add(const ItemRecord &item, bool allowFull) {
+        const auto full = renderItem(_links, item, allowFull);
+        if (!full) { return full.code; }
+        if (_out.size() + full.value.size() <= _max * 85 / 100) {
+            _out += full.value;
+            return KIOTTY_SPEC_STATUS_SUCCESS;
+        }
+        const auto brief = renderItem(_links, item, false);
+        if (!brief) { return brief.code; }
+        if (_out.size() + brief.value.size() <= _max) { _out += brief.value; }
+        else { ++_omitted; }
+        return KIOTTY_SPEC_STATUS_SUCCESS;
+    }
+
+    size_t _max;
+    LinkStore &_links;
+    size_t _omitted = 0;
+    std::string _out;
+};
+
+TextResult renderItem(LinkStore &links, const ItemRecord &item, bool full) {
     std::string out = "### " + item.id;
     const auto category = label(item.category);
-    if (!category.empty()) out += " [" + std::string(category) + "]";
+    if (!category.empty()) { out += " [" + std::string(category) + "]"; }
     out += " " + item.title + "\n";
-    std::string links;
-    for (const auto &link : expect(s_.links.list(item.id, KIOTTY_SPEC_DIRECTION_UPSTREAM, static_cast<KiottySpecLinkType>(0)), s_.failure)) {
-        links += (links.empty() ? "" : ", ") + std::string(name(link.type)) + " " + link.toId;
-    }
-    if (!links.empty()) out += "> " + links + "\n";
-    if (!item.parentId.empty()) out += "> parent " + item.parentId + "\n";
-    if (full && !item.body.empty()) out += "\n" + item.body + "\n";
-    return out + "\n";
+    const auto upstream = links.list(item.id, KIOTTY_SPEC_DIRECTION_UPSTREAM, static_cast<KiottySpecLinkType>(0));
+    if (!upstream) { return TextResult::failure(upstream.code); }
+    std::string joined;
+    for (const auto &link : upstream.value) { joined += (joined.empty() ? "" : ", ") + std::string(name(link.type)) + " " + link.toId; }
+    if (!joined.empty()) { out += "> " + joined + "\n"; }
+    if (!item.parentId.empty()) { out += "> parent " + item.parentId + "\n"; }
+    if (full && !item.body.empty()) { out += "\n" + item.body + "\n"; }
+    return TextResult::success(out + "\n");
 }
 
-std::string ContextBuilder::forStep(int32_t step, size_t maxBytes) {
-    require(step >= 1 && step <= 10, KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "step 은 1 ~ 10 이어야 함");
-    Budget b(maxBytes);
-    const auto render = [this](const ItemRecord &item, bool full) { return renderItem(item, full); };
-    const auto decision = [&](KiottySpecDecisionKind kind) {
-        const auto body = expect(s_.decisions.get(kind), s_.failure);
-        b.text("## 결정 기록: " + std::string(name(kind)) + "\n" + (body.empty() ? "없음\n" : body) + "\n\n");
-    };
-    const auto section = [&](const std::string &title, const std::vector<ItemRecord> &items) {
-        b.text("## " + title + " (" + std::to_string(items.size()) + ")\n");
-        b.items(items, render);
-    };
+KiottySpecStatus ContextBuilder::section(Budget &budget, std::string_view title, const ItemListResult &items) {
+    if (!items) { return items.code; }
+    budget.text("## " + std::string(title) + " (" + std::to_string(items.value.size()) + ")\n");
+    return budget.items(items.value, true);
+}
 
-    b.text("# Step " + std::to_string(step) + " " + stepTitle(step) + "\n\n목표: " + stepGoal(step) + "\n\n");
+KiottySpecStatus ContextBuilder::kindSection(Budget &budget, std::string_view title, KiottySpecItemKind kind) {
+    return section(budget, title, _s.finder.ofKind(kind));
+}
 
-    if (const auto confirmed = expect(s_.checkpoints.lastConfirmed(0), s_.failure)) {
-        const auto changed = expect(s_.finder.changedBetween(confirmed->seq, kCurrent), s_.failure);
-        if (!changed.empty()) {
+KiottySpecStatus ContextBuilder::decision(Budget &budget, KiottySpecDecisionKind kind) {
+    const auto body = _s.decisions.get(kind);
+    if (!body) { return body.code; }
+    budget.text("## 결정 기록: " + std::string(name(kind)) + "\n" + (body.value.empty() ? "없음\n" : body.value) + "\n\n");
+    return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+KiottySpecStatus ContextBuilder::fileSection(Budget &budget, std::string_view title, std::initializer_list<KiottySpecFileRole> roles) {
+    std::string text = "## " + std::string(title) + "\n";
+    for (const KiottySpecFileRole role : roles) {
+        const auto files = _s.files.list(role);
+        if (!files) { return files.code; }
+        text += fileList(files.value);
+    }
+    budget.text(text);
+    return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+KiottySpecStatus ContextBuilder::stepChanges(Budget &budget) {
+    const auto confirmed = _s.checkpoints.lastConfirmed(0);
+    if (!confirmed) { return confirmed.code; }
+    if (confirmed.value) {
+        const auto changed = _s.finder.changedBetween(confirmed.value->seq, kCurrent);
+        if (!changed) { return changed.code; }
+        if (!changed.value.empty()) {
             std::string list;
-            for (const auto &change : changed) {
-                list += "- " + change.record.id + (change.record.removed ? " (삭제)" : change.added ? " (추가)" : " (수정)") +
-                        " " + change.record.title + "\n";
-            }
-            b.text("## " + checkpointName(confirmed->seq) + " 이후 바뀐 항목\n" + list + "\n");
-            section("바뀐 항목과 링크된 영향 항목 (다시 볼 것)", expect(s_.graph.impactSince(confirmed->seq), s_.failure));
+            for (const auto &change : changed.value) { list += "- " + change.record.id + changeVerb(change) + " " + change.record.title + "\n"; }
+            budget.text("## " + checkpointName(confirmed.value->seq) + " 이후 바뀐 항목\n" + list + "\n");
+            const KiottySpecStatus impact = section(budget, "바뀐 항목과 링크된 영향 항목 (다시 볼 것)", _s.graph.impactSince(confirmed.value->seq));
+            if (impact != KIOTTY_SPEC_STATUS_SUCCESS) { return impact; }
         }
     }
-    const auto openChanges = expect(s_.changes.list(KIOTTY_SPEC_CHANGE_STATE_OPEN), s_.failure);
-    if (!openChanges.empty()) {
+    const auto open = _s.changes.list(KIOTTY_SPEC_CHANGE_STATE_OPEN);
+    if (!open) { return open.code; }
+    if (!open.value.empty()) {
         std::string list;
-        for (const auto &change : openChanges) {
+        for (const auto &change : open.value) {
             list += "- " + change.id + " (진입 Step " + std::to_string(change.entryStep) + ") " + change.body + "\n";
         }
-        b.text("## 열린 변경 요청\n" + list + "\n");
+        budget.text("## 열린 변경 요청\n" + list + "\n");
     }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
+}
 
-    const auto requirements = expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_REQUIREMENT), s_.failure);
-    const auto rulesList = expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_RULE), s_.failure);
-    const auto interfaces = expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_INTERFACE), s_.failure);
-    const auto designs = expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_DESIGN), s_.failure);
-    const auto unitTests = expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_UNIT_TEST), s_.failure);
+KiottySpecStatus ContextBuilder::stepSections(Budget &budget, int32_t step, size_t maxBytes) {
+    KiottySpecStatus status = KIOTTY_SPEC_STATUS_SUCCESS;
+    const auto next = [&status](KiottySpecStatus result) {
+        if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = result; }
+        return status == KIOTTY_SPEC_STATUS_SUCCESS;
+    };
+    const auto basics = [&]() {
+        return next(kindSection(budget, "요구사항", KIOTTY_SPEC_ITEM_KIND_REQUIREMENT)) &&
+               next(kindSection(budget, "개발 규칙", KIOTTY_SPEC_ITEM_KIND_RULE));
+    };
     switch (step) {
     case 1:
-        section("요구사항", requirements);
-        section("개발 규칙", rulesList);
+        basics();
         break;
     case 2:
-        section("요구사항", requirements);
-        section("개발 규칙", rulesList);
-        decision(KIOTTY_SPEC_DECISION_KIND_REQUIREMENT);
-        decision(KIOTTY_SPEC_DECISION_KIND_RULE);
+        basics() && next(decision(budget, KIOTTY_SPEC_DECISION_KIND_REQUIREMENT)) && next(decision(budget, KIOTTY_SPEC_DECISION_KIND_RULE));
         break;
     case 3:
-        section("요구사항", requirements);
-        section("개발 규칙", rulesList);
-        section("외부 인터페이스 항목", interfaces);
-        b.text("## 인터페이스 파일\n" + fileList(expect(s_.files.list(KIOTTY_SPEC_FILE_ROLE_GUI_DRAFT), s_.failure)) +
-               fileList(expect(s_.files.list(KIOTTY_SPEC_FILE_ROLE_C_HEADER), s_.failure)));
-        decision(KIOTTY_SPEC_DECISION_KIND_INTERFACE);
+        basics() && next(kindSection(budget, "외부 인터페이스 항목", KIOTTY_SPEC_ITEM_KIND_INTERFACE)) &&
+            next(fileSection(budget, "인터페이스 파일", {KIOTTY_SPEC_FILE_ROLE_GUI_DRAFT, KIOTTY_SPEC_FILE_ROLE_C_HEADER})) &&
+            next(decision(budget, KIOTTY_SPEC_DECISION_KIND_INTERFACE));
         break;
     case 4:
-        section("요구사항", requirements);
-        section("개발 규칙", rulesList);
-        section("외부 인터페이스 항목", interfaces);
-        section("설계 항목", designs);
-        decision(KIOTTY_SPEC_DECISION_KIND_DESIGN);
+        basics() && next(kindSection(budget, "외부 인터페이스 항목", KIOTTY_SPEC_ITEM_KIND_INTERFACE)) &&
+            next(kindSection(budget, "설계 항목", KIOTTY_SPEC_ITEM_KIND_DESIGN)) && next(decision(budget, KIOTTY_SPEC_DECISION_KIND_DESIGN));
         break;
     case 5: {
         ItemQuery testRules;
         testRules.kind = KIOTTY_SPEC_ITEM_KIND_RULE;
         testRules.category = KIOTTY_SPEC_ITEM_CATEGORY_RULE_TEST;
-        section("설계 항목", designs);
-        section("테스트 규칙", expect(s_.items.list(testRules), s_.failure));
-        section("유닛 테스트", unitTests);
-        decision(KIOTTY_SPEC_DECISION_KIND_UNIT_TEST);
+        next(kindSection(budget, "설계 항목", KIOTTY_SPEC_ITEM_KIND_DESIGN)) && next(section(budget, "테스트 규칙", _s.items.list(testRules))) &&
+            next(kindSection(budget, "유닛 테스트", KIOTTY_SPEC_ITEM_KIND_UNIT_TEST)) && next(decision(budget, KIOTTY_SPEC_DECISION_KIND_UNIT_TEST));
         break;
     }
     case 6:
-        section("설계 항목", designs);
-        section("유닛 테스트", unitTests);
-        section("개발 규칙", rulesList);
-        section("마일스톤", expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_MILESTONE), s_.failure));
-        section("아직 어떤 마일스톤에도 포함되지 않은 항목", expect(s_.milestones.uncovered(), s_.failure));
-        decision(KIOTTY_SPEC_DECISION_KIND_PLAN);
+        next(kindSection(budget, "설계 항목", KIOTTY_SPEC_ITEM_KIND_DESIGN)) && next(kindSection(budget, "유닛 테스트", KIOTTY_SPEC_ITEM_KIND_UNIT_TEST)) &&
+            next(kindSection(budget, "개발 규칙", KIOTTY_SPEC_ITEM_KIND_RULE)) && next(kindSection(budget, "마일스톤", KIOTTY_SPEC_ITEM_KIND_MILESTONE)) &&
+            next(section(budget, "아직 어떤 마일스톤에도 포함되지 않은 항목", _s.milestones.uncovered())) &&
+            next(decision(budget, KIOTTY_SPEC_DECISION_KIND_PLAN));
         break;
     case 7: {
-        const auto next = expect(s_.milestones.next(), s_.failure);
-        b.text(next ? forMilestone(*next, maxBytes / 2) : std::string("## 다음 마일스톤\n남은 마일스톤 없음\n\n"));
-        b.text("## 소스 파일\n" + fileList(expect(s_.files.list(KIOTTY_SPEC_FILE_ROLE_SOURCE), s_.failure)));
+        const auto milestone = _s.milestones.next();
+        if (!milestone) { return milestone.code; }
+        if (milestone.value) {
+            const auto text = forMilestone(*milestone.value, maxBytes / 2);
+            if (!text) { return text.code; }
+            budget.text(text.value);
+        } else {
+            budget.text("## 다음 마일스톤\n남은 마일스톤 없음\n\n");
+        }
+        next(fileSection(budget, "소스 파일", {KIOTTY_SPEC_FILE_ROLE_SOURCE}));
         break;
     }
     case 8: {
         ItemQuery functional;
         functional.kind = KIOTTY_SPEC_ITEM_KIND_REQUIREMENT;
         functional.category = KIOTTY_SPEC_ITEM_CATEGORY_REQUIREMENT_FUNCTIONAL;
-        section("기능 요구사항", expect(s_.items.list(functional), s_.failure));
-        section("시스템 테스트", expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST), s_.failure));
-        b.text("## 1:1 검사\n" + expect(s_.checker.confirmCheck(8), s_.failure).report + "\n");
-        b.text("## 소스 파일\n" + fileList(expect(s_.files.list(KIOTTY_SPEC_FILE_ROLE_SOURCE), s_.failure)));
+        if (!(next(section(budget, "기능 요구사항", _s.items.list(functional))) &&
+              next(kindSection(budget, "시스템 테스트", KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST)))) { break; }
+        const auto verdict = _s.checker.confirmCheck(8);
+        if (!verdict) { return verdict.code; }
+        budget.text("## 1:1 검사\n" + verdict.value.report + "\n");
+        next(fileSection(budget, "소스 파일", {KIOTTY_SPEC_FILE_ROLE_SOURCE}));
         break;
     }
     case 9:
-        section("개발 규칙", rulesList);
-        b.text("## 소스 파일\n" + fileList(expect(s_.files.list(KIOTTY_SPEC_FILE_ROLE_SOURCE), s_.failure)));
+        next(kindSection(budget, "개발 규칙", KIOTTY_SPEC_ITEM_KIND_RULE)) && next(fileSection(budget, "소스 파일", {KIOTTY_SPEC_FILE_ROLE_SOURCE}));
         break;
-    case 10:
-        section("외부 인터페이스 항목", interfaces);
-        section("E2E 테스트", expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST), s_.failure));
-        b.text("## 1:1 검사\n" + expect(s_.checker.confirmCheck(10), s_.failure).report + "\n");
-        b.text("## 인터페이스 파일\n" + fileList(expect(s_.files.list(KIOTTY_SPEC_FILE_ROLE_GUI_DRAFT), s_.failure)) +
-               fileList(expect(s_.files.list(KIOTTY_SPEC_FILE_ROLE_C_HEADER), s_.failure)));
-        b.text("## 소스 파일\n" + fileList(expect(s_.files.list(KIOTTY_SPEC_FILE_ROLE_SOURCE), s_.failure)));
+    case 10: {
+        if (!(next(kindSection(budget, "외부 인터페이스 항목", KIOTTY_SPEC_ITEM_KIND_INTERFACE)) &&
+              next(kindSection(budget, "E2E 테스트", KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST)))) { break; }
+        const auto verdict = _s.checker.confirmCheck(10);
+        if (!verdict) { return verdict.code; }
+        budget.text("## 1:1 검사\n" + verdict.value.report + "\n");
+        next(fileSection(budget, "인터페이스 파일", {KIOTTY_SPEC_FILE_ROLE_GUI_DRAFT, KIOTTY_SPEC_FILE_ROLE_C_HEADER})) &&
+            next(fileSection(budget, "소스 파일", {KIOTTY_SPEC_FILE_ROLE_SOURCE}));
         break;
+    }
     default:
         break;
     }
-    return b.finish();
+    return status;
 }
 
-std::string ContextBuilder::forItem(std::string_view itemId, int32_t depth, size_t maxBytes) {
-    const auto item = expect(s_.items.get(itemId), s_.failure);
-    Budget b(maxBytes);
-    b.text("# " + item.id + " 맥락\n\n" + renderItem(item, true));
-    const auto render = [this](const ItemRecord &record, bool full) { return renderItem(record, full); };
-    const auto collect = [&](KiottySpecDirection dir) {
+TextResult ContextBuilder::forStep(int32_t step, size_t maxBytes) {
+    if (step < 1 || step > 10) {
+        return TextResult::failure(_s.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("step 은 1 ~ 10 이어야 함")}));
+    }
+    Budget budget(maxBytes, _s.links);
+    budget.text("# Step " + std::to_string(step) + " " + std::string(stepLabel(step)) + "\n\n목표: " + stepGoal(step) + "\n\n");
+    const KiottySpecStatus changes = stepChanges(budget);
+    if (changes != KIOTTY_SPEC_STATUS_SUCCESS) { return TextResult::failure(changes); }
+    const KiottySpecStatus sections = stepSections(budget, step, maxBytes);
+    if (sections != KIOTTY_SPEC_STATUS_SUCCESS) { return TextResult::failure(sections); }
+    return TextResult::success(budget.finish());
+}
+
+KiottySpecStatus ContextBuilder::related(Budget &budget, const ItemRecord &item, int32_t depth) {
+    std::string files;
+    for (const auto dir : {KIOTTY_SPEC_DIRECTION_UPSTREAM, KIOTTY_SPEC_DIRECTION_DOWNSTREAM}) {
+        const auto ids = _s.graph.traverse(item.id, dir, depth <= 0 ? DEFAULT_DEPTH : depth);
+        if (!ids) { return ids.code; }
         std::vector<ItemRecord> records;
-        std::string files;
-        for (const auto &id : expect(s_.graph.traverse(item.id, dir, depth <= 0 ? 2 : depth), s_.failure)) {
-            if (auto found = expect(s_.items.find(id), s_.failure)) records.push_back(std::move(*found));
-            else if (auto file = expect(s_.files.find(id), s_.failure)) files += "- " + file->id + " " + file->path + "\n";
+        for (const auto &id : ids.value) {
+            const auto found = _s.items.find(id);
+            if (!found) { return found.code; }
+            if (found.value) {
+                records.push_back(*found.value);
+                continue;
+            }
+            const auto file = _s.files.find(id);
+            if (!file) { return file.code; }
+            if (file.value) { files += "- " + file.value->id + " " + file.value->path + "\n"; }
         }
-        return std::make_pair(records, files);
-    };
-    const auto [up, upFiles] = collect(KIOTTY_SPEC_DIRECTION_UPSTREAM);
-    b.text("## 상류 (이 항목이 만족·검증·구현하는 것)\n");
-    b.items(up, render);
-    const auto [down, downFiles] = collect(KIOTTY_SPEC_DIRECTION_DOWNSTREAM);
-    b.text("## 하류 (이 항목을 만족·검증·구현하는 것)\n");
-    b.items(down, render);
-    if (!downFiles.empty() || !upFiles.empty()) b.text("## 연결된 파일\n" + upFiles + downFiles + "\n");
+        budget.text(dir == KIOTTY_SPEC_DIRECTION_UPSTREAM ? "## 상류 (이 항목이 만족·검증·구현하는 것)\n" : "## 하류 (이 항목을 만족·검증·구현하는 것)\n");
+        const KiottySpecStatus added = budget.items(records, true);
+        if (added != KIOTTY_SPEC_STATUS_SUCCESS) { return added; }
+    }
+    if (!files.empty()) { budget.text("## 연결된 파일\n" + files + "\n"); }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+TextResult ContextBuilder::forItem(std::string_view itemId, int32_t depth, size_t maxBytes) {
+    const auto item = _s.items.get(itemId);
+    if (!item) { return TextResult::failure(item.code); }
+    const auto rendered = renderItem(_s.links, item.value, true);
+    if (!rendered) { return rendered; }
+    Budget budget(maxBytes, _s.links);
+    budget.text("# " + item.value.id + " 맥락\n\n" + rendered.value);
+    const KiottySpecStatus linked = related(budget, item.value, depth);
+    if (linked != KIOTTY_SPEC_STATUS_SUCCESS) { return TextResult::failure(linked); }
 
     std::string lines;
     for (const auto kind : {KIOTTY_SPEC_DECISION_KIND_REQUIREMENT, KIOTTY_SPEC_DECISION_KIND_RULE, KIOTTY_SPEC_DECISION_KIND_INTERFACE,
                             KIOTTY_SPEC_DECISION_KIND_DESIGN, KIOTTY_SPEC_DECISION_KIND_UNIT_TEST, KIOTTY_SPEC_DECISION_KIND_PLAN}) {
-        const std::string body = expect(s_.decisions.get(kind), s_.failure);
-        for (const auto line : splitLines(body)) {
-            if (line.find(item.id) != std::string_view::npos) lines += std::string(line) + "\n";
+        const auto body = _s.decisions.get(kind);
+        if (!body) { return body; }
+        for (const auto line : splitLines(body.value)) {
+            if (line.find(viewOf(item.value.id.view())) != std::string_view::npos) { lines += std::string(line) + "\n"; }
         }
     }
-    if (!lines.empty()) b.text("## 관련 결정\n" + lines + "\n");
-    if (const auto result = expect(s_.results.last(item.id), s_.failure)) {
-        b.text("## 마지막 결과\n" + std::string(name(result->result)) + "\n" + result->log + "\n");
-    }
-    return b.finish();
+    if (!lines.empty()) { budget.text("## 관련 결정\n" + lines + "\n"); }
+    const auto result = _s.results.last(item.value.id);
+    if (!result) { return TextResult::failure(result.code); }
+    if (result.value) { budget.text("## 마지막 결과\n" + std::string(name(result.value->result)) + "\n" + result.value->log + "\n"); }
+    return TextResult::success(budget.finish());
 }
 
-std::string ContextBuilder::forMilestone(std::string_view milestoneId, size_t maxBytes) {
-    const auto milestone = expect(s_.items.get(milestoneId), s_.failure);
-    Budget b(maxBytes);
-    b.text("## 마일스톤 " + milestone.id + " " + milestone.title + "\n\n" + milestone.body + "\n\n");
+TextResult ContextBuilder::forMilestone(std::string_view milestoneId, size_t maxBytes) {
+    const auto milestone = _s.items.get(milestoneId);
+    if (!milestone) { return TextResult::failure(milestone.code); }
+    Budget budget(maxBytes, _s.links);
+    budget.text("## 마일스톤 " + milestone.value.id + " " + milestone.value.title + "\n\n" + milestone.value.body + "\n\n");
+    const auto entries = _s.milestones.entries(milestone.value.id);
+    if (!entries) { return TextResult::failure(entries.code); }
     std::vector<ItemRecord> todo;
     std::string states;
     std::set<std::string> requirementIds;
-    for (const auto &entry : expect(s_.milestones.entries(milestone.id), s_.failure)) {
+    for (const auto &entry : entries.value) {
         states += "- " + entry.itemId + " : " + std::string(name(entry.state)) + "\n";
-        if (entry.state == KIOTTY_SPEC_IMPLEMENTATION_STATE_IMPLEMENTED) continue;
-        if (auto item = expect(s_.items.find(entry.itemId), s_.failure)) {
-            for (const auto &target : expect(s_.links.targets(item->id, KIOTTY_SPEC_LINK_TYPE_SATISFIES), s_.failure)) requirementIds.insert(target);
-            todo.push_back(std::move(*item));
-        }
+        if (entry.state == KIOTTY_SPEC_IMPLEMENTATION_STATE_IMPLEMENTED) { continue; }
+        const auto item = _s.items.find(entry.itemId);
+        if (!item) { return TextResult::failure(item.code); }
+        if (!item.value) { continue; }
+        const auto targets = _s.links.targets(item.value->id, KIOTTY_SPEC_LINK_TYPE_SATISFIES);
+        if (!targets) { return TextResult::failure(targets.code); }
+        requirementIds.insert(targets.value.begin(), targets.value.end());
+        todo.push_back(*item.value);
     }
-    b.text("### 포함 항목 상태\n" + states + "\n");
-    const auto render = [this](const ItemRecord &record, bool full) { return renderItem(record, full); };
-    b.text("## 구현할 항목 (미구현·변경 필요)\n");
-    b.items(todo, render);
+    budget.text("### 포함 항목 상태\n" + states + "\n");
+    budget.text("## 구현할 항목 (미구현·변경 필요)\n");
+    KiottySpecStatus added = budget.items(todo, true);
+    if (added != KIOTTY_SPEC_STATUS_SUCCESS) { return TextResult::failure(added); }
     std::vector<ItemRecord> upstream;
     for (const auto &id : requirementIds) {
-        if (auto item = expect(s_.items.find(id), s_.failure)) upstream.push_back(std::move(*item));
+        const auto item = _s.items.find(id);
+        if (!item) { return TextResult::failure(item.code); }
+        if (item.value) { upstream.push_back(*item.value); }
     }
-    b.text("## 관련 요구사항·인터페이스\n");
-    b.items(upstream, [this](const ItemRecord &record, bool) { return renderItem(record, false); });
-    b.text(rules());
-    const auto decisions = expect(s_.decisions.get(KIOTTY_SPEC_DECISION_KIND_DESIGN), s_.failure);
-    b.text("## 결정 기록: design\n" + (decisions.empty() ? std::string("없음\n") : decisions) + "\n");
-    return b.finish();
+    budget.text("## 관련 요구사항·인터페이스\n");
+    added = budget.items(upstream, false);
+    if (added != KIOTTY_SPEC_STATUS_SUCCESS) { return TextResult::failure(added); }
+    const auto ruleText = rules();
+    if (!ruleText) { return ruleText; }
+    budget.text(ruleText.value);
+    const auto design = _s.decisions.get(KIOTTY_SPEC_DECISION_KIND_DESIGN);
+    if (!design) { return design; }
+    budget.text("## 결정 기록: design\n" + (design.value.empty() ? std::string("없음\n") : design.value) + "\n");
+    return TextResult::success(budget.finish());
 }
 
-std::string ContextBuilder::forChangeRequest(std::string_view crId, size_t maxBytes) {
-    const auto change = expect(s_.changes.get(crId), s_.failure);
-    Budget b(maxBytes);
-    b.text("# 변경 요청 " + change.id + " (" + std::string(name(change.source)) + ", " +
-           std::string(name(change.state)) + ", 진입 Step " + std::to_string(change.entryStep) + ")\n\n" +
-           change.body + "\n\n");
+TextResult ContextBuilder::forChangeRequest(std::string_view crId, size_t maxBytes) {
+    const auto change = _s.changes.get(crId);
+    if (!change) { return TextResult::failure(change.code); }
+    const ChangeRequestRecord &record = change.value;
+    Budget budget(maxBytes, _s.links);
+    budget.text("# 변경 요청 " + record.id + " (" + std::string(name(record.source)) + ", " + std::string(name(record.state)) +
+                ", 진입 Step " + std::to_string(record.entryStep) + ")\n\n" + record.body + "\n\n");
     std::vector<ItemRecord> mentioned;
     for (const auto kind : {KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, KIOTTY_SPEC_ITEM_KIND_RULE, KIOTTY_SPEC_ITEM_KIND_INTERFACE,
                             KIOTTY_SPEC_ITEM_KIND_DESIGN, KIOTTY_SPEC_ITEM_KIND_UNIT_TEST, KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST,
                             KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST, KIOTTY_SPEC_ITEM_KIND_MILESTONE}) {
-        for (auto &item : expect(s_.finder.ofKind(kind), s_.failure)) {
-            if (change.body.find(item.id) != std::string::npos) mentioned.push_back(std::move(item));
+        const auto items = _s.finder.ofKind(kind);
+        if (!items) { return TextResult::failure(items.code); }
+        for (const auto &item : items.value) {
+            if (record.body.find(viewOf(item.id.view())) != std::string::npos) { mentioned.push_back(item); }
         }
     }
-    const auto render = [this](const ItemRecord &record, bool full) { return renderItem(record, full); };
-    b.text("## 언급된 항목\n");
-    b.items(mentioned, render);
+    budget.text("## 언급된 항목\n");
+    KiottySpecStatus added = budget.items(mentioned, true);
+    if (added != KIOTTY_SPEC_STATUS_SUCCESS) { return TextResult::failure(added); }
     std::vector<ItemRecord> affected;
     std::set<std::string> seen;
-    for (const auto &item : mentioned) seen.insert(std::string(item.id));
+    for (const auto &item : mentioned) { seen.insert(std::string(item.id)); }
     for (const auto &item : mentioned) {
-        for (const auto &id : expect(s_.graph.traverse(item.id, KIOTTY_SPEC_DIRECTION_DOWNSTREAM, 0), s_.failure)) {
-            if (!seen.insert(id).second) continue;
-            if (auto found = expect(s_.items.find(id), s_.failure)) affected.push_back(std::move(*found));
+        const auto ids = _s.graph.traverse(item.id, KIOTTY_SPEC_DIRECTION_DOWNSTREAM, 0);
+        if (!ids) { return TextResult::failure(ids.code); }
+        for (const auto &id : ids.value) {
+            if (!seen.insert(id).second) { continue; }
+            const auto found = _s.items.find(id);
+            if (!found) { return TextResult::failure(found.code); }
+            if (found.value) { affected.push_back(*found.value); }
         }
     }
-    b.text("## 하류 영향 항목 (진입 단계 판단 근거)\n");
-    b.items(affected, [this](const ItemRecord &record, bool) { return renderItem(record, false); });
-    return b.finish();
+    budget.text("## 하류 영향 항목 (진입 단계 판단 근거)\n");
+    added = budget.items(affected, false);
+    if (added != KIOTTY_SPEC_STATUS_SUCCESS) { return TextResult::failure(added); }
+    return TextResult::success(budget.finish());
 }
 
-std::string ContextBuilder::rules() {
+TextResult ContextBuilder::rules() {
     std::string out = "## 개발 규칙\n";
-    const auto list = expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_RULE), s_.failure);
-    if (list.empty()) return out + "없음\n\n";
-    for (const auto &rule : list) out += renderItem(rule, true);
-    return out;
+    const auto list = _s.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_RULE);
+    if (!list) { return TextResult::failure(list.code); }
+    if (list.value.empty()) { return TextResult::success(out + "없음\n\n"); }
+    for (const auto &rule : list.value) {
+        const auto rendered = renderItem(_s.links, rule, true);
+        if (!rendered) { return rendered; }
+        out += rendered.value;
+    }
+    return TextResult::success(out);
 }
 
-std::string ContextBuilder::pending() {
-    std::string out = "# 지금 할 일\n\n";
-    const auto latest = expect(s_.checkpoints.latest(), s_.failure);
-    if (latest && !latest->confirmed) {
-        out += "- 미확정 체크포인트 " + checkpointName(latest->seq) + " (Step " + std::to_string(latest->step) +
-               ") — 사용자 확정 대기\n";
+KiottySpecStatus StatusBoard::pendingChanges(std::string &out) {
+    const auto changes = _s.changes.list(static_cast<KiottySpecChangeState>(0));
+    if (!changes) { return changes.code; }
+    for (const auto &change : changes.value) {
+        if (!isOpen(change.state)) { continue; }
+        out += "- 변경 요청 " + change.id + " (" + std::string(name(change.state)) + ", 진입 Step " + std::to_string(change.entryStep) + ")\n";
     }
-    const size_t writes = expect(s_.history.pendingCount(), s_.failure);
-    if (writes > 0) out += "- 아직 체크포인트에 묶이지 않은 쓰기 " + std::to_string(writes) + "건 — 라운드를 마치면 `ks checkpoint create`\n";
-    for (const auto &change : expect(s_.changes.list(static_cast<KiottySpecChangeState>(0)), s_.failure)) {
-        if (change.state == KIOTTY_SPEC_CHANGE_STATE_OPEN || change.state == KIOTTY_SPEC_CHANGE_STATE_IN_PROGRESS) {
-            out += "- 변경 요청 " + change.id + " (" + std::string(name(change.state)) + ", 진입 Step " +
-                   std::to_string(change.entryStep) + ")\n";
-        }
-    }
-    for (const auto &item : expect(s_.results.failed(static_cast<KiottySpecItemKind>(0)), s_.failure)) {
-        out += "- FAIL " + item.id + " " + item.title + "\n";
-    }
-    for (const auto &milestone : expect(s_.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_MILESTONE), s_.failure)) {
-        for (const auto &entry : expect(s_.milestones.entries(milestone.id), s_.failure)) {
-            if (entry.state == KIOTTY_SPEC_IMPLEMENTATION_STATE_NEEDS_CHANGE) {
-                out += "- 변경 필요 " + entry.itemId + " (" + milestone.id + ")\n";
-            }
-        }
-    }
-    return out == "# 지금 할 일\n\n" ? out + "없음\n" : out;
+    const auto failed = _s.results.failed(static_cast<KiottySpecItemKind>(0));
+    if (!failed) { return failed.code; }
+    for (const auto &item : failed.value) { out += "- FAIL " + item.id + " " + item.title + "\n"; }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-std::string ContextBuilder::status() {
+KiottySpecStatus StatusBoard::pendingMilestones(std::string &out) {
+    const auto milestones = _s.finder.ofKind(KIOTTY_SPEC_ITEM_KIND_MILESTONE);
+    if (!milestones) { return milestones.code; }
+    for (const auto &milestone : milestones.value) {
+        const auto entries = _s.milestones.entries(milestone.id);
+        if (!entries) { return entries.code; }
+        for (const auto &entry : entries.value) {
+            if (entry.state == KIOTTY_SPEC_IMPLEMENTATION_STATE_NEEDS_CHANGE) { out += "- 변경 필요 " + entry.itemId + " (" + milestone.id + ")\n"; }
+        }
+    }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+TextResult StatusBoard::pending() {
+    std::string out = EMPTY_HEADING;
+    const auto latest = _s.checkpoints.latest();
+    if (!latest) { return TextResult::failure(latest.code); }
+    if (latest.value && !latest.value->confirmed) {
+        out += "- 미확정 체크포인트 " + checkpointName(latest.value->seq) + " (Step " + std::to_string(latest.value->step) + ") — 사용자 확정 대기\n";
+    }
+    const auto writes = _s.history.pendingCount();
+    if (!writes) { return TextResult::failure(writes.code); }
+    if (writes.value > 0) { out += "- 아직 체크포인트에 묶이지 않은 쓰기 " + std::to_string(writes.value) + "건 — 라운드를 마치면 `ks checkpoint create`\n"; }
+    KiottySpecStatus status = pendingChanges(out);
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return TextResult::failure(status); }
+    status = pendingMilestones(out);
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return TextResult::failure(status); }
+    return TextResult::success(out == EMPTY_HEADING ? out + "없음\n" : out);
+}
+
+KiottySpecStatus StatusBoard::testTable(std::string &out) {
+    out += "\n| 테스트 | 전체 | PASS | FAIL | 미실행 |\n| --- | --- | --- | --- | --- |\n";
+    for (const auto kind : {KIOTTY_SPEC_ITEM_KIND_UNIT_TEST, KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST, KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST,
+                            KIOTTY_SPEC_ITEM_KIND_RULE}) {
+        const auto summary = _s.results.summary(kind);
+        if (!summary) { return summary.code; }
+        out += "| " + std::string(kind == KIOTTY_SPEC_ITEM_KIND_RULE ? "코드 검사(규칙)" : label(kind)) + " | " + std::to_string(summary.value.total) +
+               " | " + std::to_string(summary.value.pass) + " | " + std::to_string(summary.value.fail) + " | " + std::to_string(summary.value.notRun) + " |\n";
+    }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+TextResult StatusBoard::status() {
     std::string out = "# 프로젝트 상태\n\n";
-    const auto latest = expect(s_.checkpoints.latest(), s_.failure);
-    const auto confirmed = expect(s_.checkpoints.lastConfirmed(0), s_.failure);
-    out += "- 최근 체크포인트: " + (latest ? checkpointName(latest->seq) + " (Step " + std::to_string(latest->step) +
-                                                 (latest->confirmed ? ", 확정" : ", 미확정") + ")"
-                                           : std::string("없음")) + "\n";
-    out += "- 마지막 확정: " + (confirmed ? checkpointName(confirmed->seq) + " (Step " + std::to_string(confirmed->step) + ")"
-                                          : std::string("없음")) + "\n";
+    const auto latest = _s.checkpoints.latest();
+    if (!latest) { return TextResult::failure(latest.code); }
+    const auto confirmed = _s.checkpoints.lastConfirmed(0);
+    if (!confirmed) { return TextResult::failure(confirmed.code); }
+    std::string latestText = "없음";
+    if (latest.value) {
+        latestText = checkpointName(latest.value->seq) + " (Step " + std::to_string(latest.value->step) + (latest.value->confirmed ? ", 확정" : ", 미확정") + ")";
+    }
+    std::string confirmedText = "없음";
+    if (confirmed.value) { confirmedText = checkpointName(confirmed.value->seq) + " (Step " + std::to_string(confirmed.value->step) + ")"; }
+    out += "- 최근 체크포인트: " + latestText + "\n- 마지막 확정: " + confirmedText + "\n";
     out += "\n| 종류 | 개수 |\n| --- | --- |\n";
     for (const auto kind : {KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, KIOTTY_SPEC_ITEM_KIND_RULE, KIOTTY_SPEC_ITEM_KIND_INTERFACE,
                             KIOTTY_SPEC_ITEM_KIND_DESIGN, KIOTTY_SPEC_ITEM_KIND_UNIT_TEST, KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST,
                             KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST, KIOTTY_SPEC_ITEM_KIND_MILESTONE}) {
-        out += "| " + std::string(label(kind)) + " | " + std::to_string(expect(s_.finder.ofKind(kind), s_.failure).size()) + " |\n";
+        const auto items = _s.finder.ofKind(kind);
+        if (!items) { return TextResult::failure(items.code); }
+        out += "| " + std::string(label(kind)) + " | " + std::to_string(items.value.size()) + " |\n";
     }
-    const auto progress = expect(s_.milestones.progress(), s_.failure);
-    out += "\n- 마일스톤 포함 항목: " + std::to_string(progress.total) + " (구현 완료 " + std::to_string(progress.implemented) +
-           ", 변경 필요 " + std::to_string(progress.needsChange) + ")\n";
-    out += "\n| 테스트 | 전체 | PASS | FAIL | 미실행 |\n| --- | --- | --- | --- | --- |\n";
-    for (const auto kind : {KIOTTY_SPEC_ITEM_KIND_UNIT_TEST, KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST, KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST,
-                            KIOTTY_SPEC_ITEM_KIND_RULE}) {
-        const auto summary = expect(s_.results.summary(kind), s_.failure);
-        out += "| " + std::string(kind == KIOTTY_SPEC_ITEM_KIND_RULE ? "코드 검사(규칙)" : label(kind)) + " | " +
-               std::to_string(summary.total) + " | " + std::to_string(summary.pass) + " | " + std::to_string(summary.fail) +
-               " | " + std::to_string(summary.notRun) + " |\n";
-    }
-    out += "\n- 열린 변경 요청: " + std::to_string(expect(s_.changes.openCount(), s_.failure)) + "\n";
-    return out;
+    const auto progress = _s.milestones.progress();
+    if (!progress) { return TextResult::failure(progress.code); }
+    out += "\n- 마일스톤 포함 항목: " + std::to_string(progress.value.total) + " (구현 완료 " + std::to_string(progress.value.implemented) +
+           ", 변경 필요 " + std::to_string(progress.value.needsChange) + ")\n";
+    const KiottySpecStatus table = testTable(out);
+    if (table != KIOTTY_SPEC_STATUS_SUCCESS) { return TextResult::failure(table); }
+    const auto open = _s.changes.openCount();
+    if (!open) { return TextResult::failure(open.code); }
+    out += "\n- 열린 변경 요청: " + std::to_string(open.value) + "\n";
+    return TextResult::success(out);
 }
 
 }
