@@ -3,7 +3,9 @@
 #include "kiotty_spec.h"
 #include "implementation/context/kiotty_cursor_pool.h"
 #include "implementation/context/kiotty_diff_range.h"
+#include "implementation/context/kiotty_item_diff_query.h"
 #include "implementation/context/kiotty_past_reader.h"
+#include "implementation/context/kiotty_relation_diff_query.h"
 #include "implementation/context/kiotty_text_differ.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
@@ -44,10 +46,10 @@ public:
     TextDiffer text() { return TextDiffer(_w, _cursors, _work); }
 
 private:
-    template <typename Visit>
-    KiottySpecStatus eachItemDiff(DiffRange range, uint32_t kind_mask, uint32_t field_mask, Visit visit);
-    template <typename Visit>
-    KiottySpecStatus eachRelationDiff(DiffRange range, uint32_t kind_mask, Visit visit);
+    KiottySpecStatus countItems(DiffRange range, uint32_t kind_mask, uint32_t field_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
+    KiottySpecStatus countRelations(DiffRange range, uint32_t kind_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
+    KiottySpecStatus countDecisions(DiffRange range, uint32_t kind_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
+    KiottySpecStatus pushRow(CursorId cursor, const CursorRow& row, Span<const char> overflow);
 
     Workspace& _w;
     CursorPool& _cursors;
@@ -55,24 +57,6 @@ private:
 };
 
 // 커서 행에 담은 항목 diff · 관계 diff 를 푼다.
-struct ItemDiffRow {
-    entity::IdText id;
-    uint32_t before;
-    uint32_t after;
-    uint32_t kind;
-    uint32_t change;
-    uint32_t fields;
-};
-
-struct RelationDiffRow {
-    entity::IdText from_id;
-    entity::IdText to_id;
-    uint32_t checkpoint;
-    uint32_t relation;
-    uint32_t model;
-    uint32_t change;
-};
-
 ItemDiffRow unpackItemDiff(const CursorRow& row);
 RelationDiffRow unpackRelationDiff(const CursorRow& row);
 
