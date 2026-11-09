@@ -15,7 +15,7 @@ KiottySpecStatus DecisionStore::write(entity::ItemKind kind, Span<const char> te
     query.value.bind(1, spanOf(entity::kindName(kind)));
     query.value.bind(2, static_cast<int64_t>(sequence));
     query.value.bind(3, text);
-    return _storage.check(query.value.run());
+    return _storage.check(query.value.execute());
 }
 
 Result<size_t, KiottySpecStatus> DecisionStore::read(entity::ItemKind kind, char* buffer, size_t capacity)
@@ -42,7 +42,7 @@ KiottySpecStatus pruneVersions(Storage& storage, uint32_t base)
             auto query = storage.prepare(spanOf(sql));
             if (!query) { return query.code; }
             query.value.bind(1, static_cast<int64_t>(base));
-            const KiottySpecStatus ran = storage.check(query.value.run());
+            const KiottySpecStatus ran = storage.check(query.value.execute());
             if (ran != KIOTTY_SPEC_STATUS_SUCCESS) { return ran; }
         }
     }

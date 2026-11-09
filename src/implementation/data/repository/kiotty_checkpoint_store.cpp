@@ -77,7 +77,7 @@ Result<uint32_t, KiottySpecStatus> CheckpointStore::create(entity::Step step, Sp
     query.value.bind(4, static_cast<int64_t>(step));
     query.value.bind(5, spanOf(entity::stateName(CheckpointState::STARTED)));
     query.value.bind(6, description);
-    const KiottySpecStatus inserted = _storage.check(query.value.run());
+    const KiottySpecStatus inserted = _storage.check(query.value.execute());
     if (inserted != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(inserted); }
     _records[sequence - 1] = record;
     _exists[sequence - 1] = 1;
@@ -92,7 +92,7 @@ KiottySpecStatus CheckpointStore::setState(uint32_t sequence, CheckpointState st
     if (!query) { return query.code; }
     query.value.bind(1, static_cast<int64_t>(sequence));
     query.value.bind(2, spanOf(entity::stateName(state)));
-    const KiottySpecStatus updated = _storage.check(query.value.run());
+    const KiottySpecStatus updated = _storage.check(query.value.execute());
     if (updated != KIOTTY_SPEC_STATUS_SUCCESS) { return updated; }
     _records[sequence - 1].state = state;
     return KIOTTY_SPEC_STATUS_SUCCESS;
@@ -104,13 +104,13 @@ Result<size_t, KiottySpecStatus> CheckpointStore::dropBefore(uint32_t base)
     auto removed = _storage.prepare(literalText("DELETE FROM checkpoint WHERE sequence < ?1"));
     if (!removed) { return CountResult::failure(removed.code); }
     removed.value.bind(1, static_cast<int64_t>(base));
-    const KiottySpecStatus deleted = _storage.check(removed.value.run());
+    const KiottySpecStatus deleted = _storage.check(removed.value.execute());
     if (deleted != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(deleted); }
-    const size_t count = static_cast<size_t>(_storage.changedRowCount());
+    const size_t count = static_cast<size_t>(removed.value.changedRowCount());
     auto detached = _storage.prepare(literalText("UPDATE checkpoint SET previous = 0 WHERE sequence = ?1"));
     if (!detached) { return CountResult::failure(detached.code); }
     detached.value.bind(1, static_cast<int64_t>(base));
-    const KiottySpecStatus updated = _storage.check(detached.value.run());
+    const KiottySpecStatus updated = _storage.check(detached.value.execute());
     if (updated != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(updated); }
     for (uint32_t sequence = 1; sequence < base && sequence <= _records.size(); ++sequence) { _exists[sequence - 1] = 0; }
     if (base >= 1 && base <= _records.size()) { _records[base - 1].previous = entity::INVALID_CHECKPOINT_HANDLE; }

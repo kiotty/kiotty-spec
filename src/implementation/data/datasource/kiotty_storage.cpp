@@ -2,20 +2,24 @@
 
 #include "implementation/core/kiotty_text_view.h"
 
+#include <utility>
+
 namespace kiotty::spec::implementation {
 
-Result<Query, KiottySpecStatus> Storage::prepare(Span<const char> sql)
+Result<Statement, KiottySpecStatus> Storage::prepare(Span<const char> sql)
 {
-    auto prepared = _connection.prepare(sql);
-    if (!prepared) {
-        _failure.raise(prepared.code, {literalText("prepare failed ["), sql, literalText("]: "), _connection.message()});
+    Statement statement(_connection, sql);
+    if (statement.status() != KIOTTY_SPEC_STATUS_SUCCESS) {
+        const KiottySpecStatus status = statement.status();
+        _failure.raise(status, {literalText("prepare failed ["), sql, literalText("]: "), _connection.message()});
+        return Result<Statement, KiottySpecStatus>::failure(status);
     }
-    return prepared;
+    return Result<Statement, KiottySpecStatus>::success(std::move(statement));
 }
 
-KiottySpecStatus Storage::execute(Span<const char> sql)
+KiottySpecStatus Storage::executeScript(Span<const char> sql)
 {
-    const KiottySpecStatus status = _connection.execute(sql);
+    const KiottySpecStatus status = _connection.executeScript(sql);
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
     return _failure.raise(status, {literalText("exec failed: "), _connection.message()});
 }

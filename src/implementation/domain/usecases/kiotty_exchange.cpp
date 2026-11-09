@@ -109,7 +109,7 @@ bool readObjects(Span<const char> directory, std::string_view table, std::vector
     return true;
 }
 
-KiottySpecStatus bindValue(Query& query, int index, const json& value)
+KiottySpecStatus bindValue(Statement& query, int index, const json& value)
 {
     if (value.is_null()) { return query.bind(index, nullptr); }
     if (value.is_boolean()) { return query.bind(index, static_cast<int64_t>(value.get<bool>() ? 1 : 0)); }
@@ -304,7 +304,7 @@ KiottySpecStatus Exchange::importCurrent(Span<const char> directory)
             if (!query) { return query.code; }
             index = 1;
             for (const auto& entry : row.items()) { bindValue(query.value, index++, entry.value()); }
-            const KiottySpecStatus inserted = _w.storage.check(query.value.run());
+            const KiottySpecStatus inserted = _w.storage.check(query.value.execute());
             if (inserted != KIOTTY_SPEC_STATUS_SUCCESS) { return inserted; }
         }
     }
@@ -324,7 +324,7 @@ KiottySpecStatus Exchange::importLegacy(Span<const char> directory, std::string&
         if (!query) { return query.code; }
         int index = 1;
         for (const json& value : values) { bindValue(query.value, index++, value); }
-        return _w.storage.check(query.value.run());
+        return _w.storage.check(query.value.execute());
     };
 
     KiottySpecStatus status = readTable("meta");

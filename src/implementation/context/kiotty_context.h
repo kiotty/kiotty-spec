@@ -5,7 +5,7 @@
 #include "implementation/context/kiotty_finder.h"
 #include "implementation/core/kiotty_failure.h"
 #include "implementation/core/kiotty_text_buffer.h"
-#include "implementation/data/datasource/kiotty_connection.h"
+#include "implementation/data/datasource/kiotty_db_connection.h"
 #include "implementation/data/datasource/kiotty_file_system.h"
 #include "implementation/data/datasource/kiotty_storage.h"
 #include "implementation/data/repository/kiotty_checkpoint_store.h"
@@ -73,7 +73,7 @@ private:
     bool _opened {false};
     bool _moved_legacy {false};
     Failure _failure;
-    Connection _connection;
+    DBConnection _connection;
     Storage _storage;
     ModelCatalog _catalog;
     MetaStore _meta;

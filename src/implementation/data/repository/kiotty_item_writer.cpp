@@ -82,7 +82,7 @@ KiottySpecStatus ItemWriter::writeVersion(const ItemRecord& record, TagEdit edit
     if (body != nullptr) { query.value.bind(7, *body); } else { query.value.bind(7, nullptr); }
     query.value.bind(8, tags.view());
     query.value.bind(9, static_cast<int64_t>(removed ? 1 : 0));
-    return _storage.check(query.value.run());
+    return _storage.check(query.value.execute());
 }
 
 Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record, uint32_t sequence)

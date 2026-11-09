@@ -94,8 +94,8 @@ kiotty_no_exceptions(kiotty_core_test)
 
 add_executable(kiotty_datasource_test
     tests/datasource/datasource_test.cpp
-    src/implementation/data/datasource/kiotty_connection.cpp
-    src/implementation/data/datasource/kiotty_query.cpp
+    src/implementation/data/datasource/kiotty_db_connection.cpp
+    src/implementation/data/datasource/kiotty_statement.cpp
     src/implementation/data/datasource/kiotty_row.cpp
     src/implementation/data/datasource/kiotty_savepoint.cpp)
 target_include_directories(kiotty_datasource_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)

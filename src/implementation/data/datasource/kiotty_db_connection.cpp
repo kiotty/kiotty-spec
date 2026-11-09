@@ -1,4 +1,4 @@
-#include "implementation/data/datasource/kiotty_connection.h"
+#include "implementation/data/datasource/kiotty_db_connection.h"
 
 #include "implementation/core/kiotty_fixed_string.h"
 #include "implementation/core/kiotty_text_view.h"
@@ -23,15 +23,15 @@ bool fitsInt(Span<const char> text)
 
 }
 
-Connection::~Connection() { sqlite3_close(_database); }
+DBConnection::~DBConnection() { sqlite3_close(_database); }
 
-void Connection::close()
+void DBConnection::close()
 {
     sqlite3_close(_database);
     _database = nullptr;
 }
 
-KiottySpecStatus Connection::open(Span<const char> path)
+KiottySpecStatus DBConnection::open(Span<const char> path)
 {
     FixedString<MAX_PATH_LENGTH> terminated;
     const KiottySpecStatus copied = terminated.assign(path);
@@ -44,10 +44,10 @@ KiottySpecStatus Connection::open(Span<const char> path)
         return KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
     }
     sqlite3_busy_timeout(_database, BUSY_TIMEOUT_MILLISECONDS);
-    return execute(literalText(OPEN_PRAGMAS));
+    return executeScript(literalText(OPEN_PRAGMAS));
 }
 
-KiottySpecStatus Connection::execute(Span<const char> sql)
+KiottySpecStatus DBConnection::executeScript(Span<const char> sql)
 {
     if (!fitsInt(sql)) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
     const char* position = sql.data();
@@ -55,32 +55,17 @@ KiottySpecStatus Connection::execute(Span<const char> sql)
     while (position < end) {
         sqlite3_stmt* statement = nullptr;
         const int length = static_cast<int>(end - position);
-        const int code = sqlite3_prepare_v2(_database, position, length, &statement, &position);
-        if (code != SQLITE_OK) { return KIOTTY_SPEC_STATUS_DATABASE; }
+        if (sqlite3_prepare_v2(_database, position, length, &statement, &position) != SQLITE_OK) { return KIOTTY_SPEC_STATUS_DATABASE; }
         if (statement == nullptr) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-        Query query(statement);
-        const KiottySpecStatus status = query.run();
-        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+        int code = sqlite3_step(statement);
+        while (code == SQLITE_ROW) { code = sqlite3_step(statement); }
+        sqlite3_finalize(statement);
+        if (code != SQLITE_DONE) { return KIOTTY_SPEC_STATUS_DATABASE; }
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-Result<Query, KiottySpecStatus> Connection::prepare(Span<const char> sql)
-{
-    using QueryResult = Result<Query, KiottySpecStatus>;
-    if (!fitsInt(sql)) { return QueryResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
-    sqlite3_stmt* statement = nullptr;
-    const int length = static_cast<int>(sql.length());
-    const int code = sqlite3_prepare_v2(_database, sql.data(), length, &statement, nullptr);
-    if (code != SQLITE_OK) { return QueryResult::failure(KIOTTY_SPEC_STATUS_DATABASE); }
-    return QueryResult::success(Query(statement));
-}
-
-int64_t Connection::insertedRowId() const { return sqlite3_last_insert_rowid(_database); }
-
-int64_t Connection::changedRowCount() const { return sqlite3_changes64(_database); }
-
-Span<const char> Connection::message() const
+Span<const char> DBConnection::message() const
 {
     if (_database == nullptr) { return boundedText(sqlite3_errstr(_open_code), MAX_MESSAGE_LENGTH); }
     return boundedText(sqlite3_errmsg(_database), MAX_MESSAGE_LENGTH);

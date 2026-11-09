@@ -136,10 +136,10 @@ Result<int32_t, KiottySpecStatus> ensure(Storage& storage)
     if (current.value == LEGACY_SCHEMA_VERSION || (current.value == 0 && hasTable(storage, literalText("link_version")))) {
         return Result<int32_t, KiottySpecStatus>::success(LEGACY_SCHEMA_VERSION);
     }
-    const KiottySpecStatus created = storage.execute(spanOf(SCHEMA_V2));
+    const KiottySpecStatus created = storage.executeScript(spanOf(SCHEMA_V2));
     if (created != KIOTTY_SPEC_STATUS_SUCCESS) { return Result<int32_t, KiottySpecStatus>::failure(created); }
     if (current.value != SCHEMA_VERSION) {
-        const KiottySpecStatus marked = storage.execute(literalText(SET_USER_VERSION_SQL));
+        const KiottySpecStatus marked = storage.executeScript(literalText(SET_USER_VERSION_SQL));
         if (marked != KIOTTY_SPEC_STATUS_SUCCESS) { return Result<int32_t, KiottySpecStatus>::failure(marked); }
     }
     return Result<int32_t, KiottySpecStatus>::success(SCHEMA_VERSION);
@@ -147,11 +147,11 @@ Result<int32_t, KiottySpecStatus> ensure(Storage& storage)
 
 KiottySpecStatus recreate(Storage& storage)
 {
-    const KiottySpecStatus dropped = storage.execute(literalText(DROP_ALL_SQL));
+    const KiottySpecStatus dropped = storage.executeScript(literalText(DROP_ALL_SQL));
     if (dropped != KIOTTY_SPEC_STATUS_SUCCESS) { return dropped; }
-    const KiottySpecStatus created = storage.execute(spanOf(SCHEMA_V2));
+    const KiottySpecStatus created = storage.executeScript(spanOf(SCHEMA_V2));
     if (created != KIOTTY_SPEC_STATUS_SUCCESS) { return created; }
-    return storage.execute(literalText(SET_USER_VERSION_SQL));
+    return storage.executeScript(literalText(SET_USER_VERSION_SQL));
 }
 
 }

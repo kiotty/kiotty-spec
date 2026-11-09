@@ -57,7 +57,7 @@ KiottySpecStatus MetaStore::set(Span<const char> key, Span<const char> value)
     if (!query) { return query.code; }
     query.value.bind(1, key);
     query.value.bind(2, value);
-    return _storage.check(query.value.run());
+    return _storage.check(query.value.execute());
 }
 
 Result<MetaValue, KiottySpecStatus> MetaStore::get(Span<const char> key)
@@ -104,7 +104,7 @@ KiottySpecStatus MetaStore::observeId(Span<const char> id)
     if (!query) { return query.code; }
     query.value.bind(1, prefix);
     query.value.bind(2, static_cast<int64_t>(number) + 1);
-    return _storage.check(query.value.run());
+    return _storage.check(query.value.execute());
 }
 
 }

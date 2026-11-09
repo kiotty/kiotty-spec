@@ -1,14 +1,14 @@
 #pragma once
 
 #include "kiotty_spec.h"
-#include "implementation/data/datasource/kiotty_connection.h"
+#include "implementation/data/datasource/kiotty_db_connection.h"
 
 namespace kiotty::spec::implementation {
 
 class Savepoint
 {
 public:
-    explicit Savepoint(Connection& connection) : _connection(connection) {}
+    explicit Savepoint(DBConnection& connection) : _connection(connection) {}
     ~Savepoint();
 
     Savepoint(const Savepoint&) = delete;
@@ -18,7 +18,7 @@ public:
     KiottySpecStatus commit();
 
 private:
-    Connection& _connection;
+    DBConnection& _connection;
     bool _is_open {false};
 };
 

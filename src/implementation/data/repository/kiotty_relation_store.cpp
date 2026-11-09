@@ -84,7 +84,7 @@ KiottySpecStatus RelationStore::writeVersion(const RelationRecord& relation, boo
     query.value.bind(4, to.value->id.view());
     query.value.bind(5, static_cast<int64_t>(sequence));
     query.value.bind(6, static_cast<int64_t>(removed ? 1 : 0));
-    return _storage.check(query.value.run());
+    return _storage.check(query.value.execute());
 }
 
 KiottySpecStatus RelationStore::add(const RelationRecord& relation, uint32_t sequence)
