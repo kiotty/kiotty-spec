@@ -21,6 +21,12 @@ enum class JsonType : uint32_t {
     COMPOSITE,
 };
 
+// 값을 scratch 에 풀지, 형식만 확인하고 건너뛸지
+enum class JsonDecode : uint32_t {
+    STORE,
+    SKIP,
+};
+
 struct JsonField {
     Span<const char> key;
     JsonType type {JsonType::NULL_VALUE};
@@ -43,16 +49,48 @@ public:
     Result<bool, KiottySpecStatus> next(JsonField& field, Span<char> scratch);
     // 처음부터 다시 훑어 key 를 찾는다. 없으면 false
     Result<bool, KiottySpecStatus> find(Span<const char> key, JsonField& field, Span<char> scratch);
+    // key 의 정수 값. 정수가 아니면 fallback. 불은 1 · 0, INT64_MAX 를 넘는 수는 64 비트로 접는다.
+    int64_t findInteger(Span<const char> key, int64_t fallback, Span<char> scratch);
+    // key 의 글자 값. 없거나 글자가 아니면 NOT_FOUND
+    Result<Span<const char>, KiottySpecStatus> findText(Span<const char> key, Span<char> scratch);
     void rewind();
 
 private:
-    // wanted 가 있으면 그 키의 값만 scratch 에 푼다.
-    Result<bool, KiottySpecStatus> advance(JsonField& field, Span<char> scratch, const Span<const char>* wanted);
+    // 값을 쌓는 곳. SKIP 이면 쌓지 않는다.
+    class Sink
+    {
+    public:
+        Sink(Span<char> area, JsonDecode decode) : _area(area), _decode(decode) {}
+        bool put(char letter);
+        bool putCodePoint(uint32_t point);
+        Span<const char> view() const { return Span<const char>(_area.data(), _length); }
+
+    private:
+        Span<char> _area;
+        JsonDecode _decode;
+        size_t _length {0};
+    };
+
+    // wanted 가 비어 있으면 모든 값을, 아니면 그 키의 값만 scratch 에 푼다.
+    Result<bool, KiottySpecStatus> advance(JsonField& field, Span<char> scratch, Span<const char> wanted);
+    KiottySpecStatus open();
+    KiottySpecStatus separate();
+    KiottySpecStatus close();
+    KiottySpecStatus readValue(JsonField& field, Sink sink);
+    KiottySpecStatus readLiteral(JsonField& field);
     void skipSpace();
-    KiottySpecStatus readString(Span<char> scratch, Span<const char>& out, bool store);
-    KiottySpecStatus readKey(Span<const char>& out);
+    void skipDigits();
+    bool accept(char letter);
+    Result<Span<const char>, KiottySpecStatus> readKey();
+    KiottySpecStatus readString(Sink& sink);
+    KiottySpecStatus readEscape(Sink& sink);
+    KiottySpecStatus readUnicode(Sink& sink);
+    Result<uint32_t, KiottySpecStatus> readHex();
     KiottySpecStatus readNumber(JsonField& field);
-    KiottySpecStatus readComposite(Span<char> scratch, Span<const char>& out, bool store);
+    Result<bool, KiottySpecStatus> scanNumber();
+    bool scanDigits();
+    bool readInteger(JsonField& field, Span<const char> text);
+    KiottySpecStatus readComposite(Sink& sink);
 
     Span<const char> _line;
     size_t _position {0};

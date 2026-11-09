@@ -15,57 +15,56 @@
 
 namespace kiotty::spec::implementation {
 
+// value[index] 부터 이스케이프 없이 그대로 쓸 수 있는 바이트 수
+inline size_t plainJsonRun(Span<const char> value, size_t index)
+{
+    const size_t start = index;
+    while (index < value.length()) {
+        const unsigned char byte = static_cast<unsigned char>(value[index]);
+        const bool ascii = byte >= 0x20 && byte < 0x80 && byte != '"' && byte != '\\';
+        const size_t length = ascii ? 1 : utf8SequenceLength(byte);
+        const bool sequence = !ascii && length > 1 && index + length <= value.length() && isUtf8SequenceWellFormed(value, index, length);
+        if (!ascii && !sequence) { break; }
+        index += length;
+    }
+    return index - start;
+}
+
+// 그대로 쓸 수 없는 바이트 하나: 이스케이프, 제어 문자, 잘못된 UTF-8 바이트(U+FFFD)
 template <typename Text>
-KiottySpecStatus appendJsonString(Text& text, Span<const char> value)
+KiottySpecStatus appendJsonSpecial(Text& text, unsigned char byte)
 {
     constexpr char HEX[] = "0123456789abcdef";
     constexpr char REPLACEMENT[] = "\xEF\xBF\xBD";
-    KiottySpecStatus status = text.append(Span<const char>("\"", 1));
-    size_t start = 0;
-    size_t index = 0;
-    auto flush = [&](size_t end) {
-        if (status == KIOTTY_SPEC_STATUS_SUCCESS && end > start) { status = text.append(Span<const char>(value.data() + start, end - start)); }
-    };
-    while (index < value.length() && status == KIOTTY_SPEC_STATUS_SUCCESS) {
-        const unsigned char byte = static_cast<unsigned char>(value[index]);
-        const char* escape = nullptr;
-        switch (byte) {
-        case '"': escape = "\\\""; break;
-        case '\\': escape = "\\\\"; break;
-        case '\b': escape = "\\b"; break;
-        case '\f': escape = "\\f"; break;
-        case '\n': escape = "\\n"; break;
-        case '\r': escape = "\\r"; break;
-        case '\t': escape = "\\t"; break;
-        default: break;
-        }
-        if (escape != nullptr) {
-            flush(index);
-            if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = text.append(Span<const char>(escape, 2)); }
-            start = ++index;
-            continue;
-        }
-        if (byte < 0x20) {
-            flush(index);
-            const char unicode[6] = {'\\', 'u', '0', '0', HEX[byte >> 4], HEX[byte & 0x0F]};
-            if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = text.append(Span<const char>(unicode, 6)); }
-            start = ++index;
-            continue;
-        }
-        if (byte < 0x80) {
-            ++index;
-            continue;
-        }
-        const size_t length = utf8SequenceLength(byte);
-        if (length > 1 && index + length <= value.length() && isUtf8SequenceWellFormed(value, index, length)) {
-            index += length;
-            continue;
-        }
-        flush(index);
-        if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = text.append(Span<const char>(REPLACEMENT, 3)); }
-        start = ++index;
+    switch (byte) {
+    case '"': return text.append(Span<const char>("\\\"", 2));
+    case '\\': return text.append(Span<const char>("\\\\", 2));
+    case '\b': return text.append(Span<const char>("\\b", 2));
+    case '\f': return text.append(Span<const char>("\\f", 2));
+    case '\n': return text.append(Span<const char>("\\n", 2));
+    case '\r': return text.append(Span<const char>("\\r", 2));
+    case '\t': return text.append(Span<const char>("\\t", 2));
+    default: break;
     }
-    flush(index);
+    if (byte >= 0x20) { return text.append(Span<const char>(REPLACEMENT, 3)); }
+    const char unicode[6] = {'\\', 'u', '0', '0', HEX[byte >> 4], HEX[byte & 0x0F]};
+    return text.append(Span<const char>(unicode, 6));
+}
+
+template <typename Text>
+KiottySpecStatus appendJsonString(Text& text, Span<const char> value)
+{
+    KiottySpecStatus status = text.append(Span<const char>("\"", 1));
+    size_t index = 0;
+    while (index < value.length() && status == KIOTTY_SPEC_STATUS_SUCCESS) {
+        const size_t run = plainJsonRun(value, index);
+        status = text.append(Span<const char>(value.data() + index, run));
+        index += run;
+        if (index < value.length() && status == KIOTTY_SPEC_STATUS_SUCCESS) {
+            status = appendJsonSpecial(text, static_cast<unsigned char>(value[index]));
+            ++index;
+        }
+    }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = text.append(Span<const char>("\"", 1)); }
     return status;
 }

@@ -1,21 +1,20 @@
 #pragma once
 
 #include "kiotty_spec.h"
+#include "implementation/core/kiotty_json_reader.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
-#include "implementation/core/kiotty_span_text.h"
 #include "implementation/core/kiotty_text_buffer.h"
+#include "implementation/data/datasource/kiotty_schema.h"
+#include "implementation/domain/usecases/kiotty_import_areas.h"
 #include "implementation/domain/usecases/kiotty_workspace.h"
 
 #include <cstddef>
-#include <string_view>
 
 namespace kiotty::spec::implementation {
 
-class JsonReader;
-
 // jsonl 교환 (설계서 v1 9.3 교환). 테이블 하나가 파일 하나이고, 줄은 키 순서다.
-// 힙을 쓰지 않는다. 한 줄씩 읽고 쓰며, 줄과 값은 작업 버퍼에 둔다.
+// 힙을 쓰지 않는다. 한 줄씩 읽고 쓰며, 줄과 값은 작업 버퍼에 둔다. 옛 형식은 LegacyImporter 가 옮긴다.
 class Exchange
 {
 public:
@@ -27,20 +26,12 @@ public:
     Result<size_t, KiottySpecStatus> importJsonl(Span<const char> directory, Span<char> report);
 
 private:
-    // 작업 버퍼를 나눈 영역. 줄 · 짧은 값 둘 · 긴 값
-    struct Areas {
-        Span<char> line;
-        Span<char> first;
-        Span<char> second;
-        Span<char> text;
-    };
-
-    Areas areas();
-    KiottySpecStatus importCurrent(Span<const char> directory, const Areas& areas);
-    KiottySpecStatus importLegacy(Span<const char> directory, const Areas& areas, SpanText& report, size_t& notes);
-    // table 파일의 줄마다 visit(JsonReader&) 를 부른다. 파일이 없으면 부르지 않는다.
-    template <typename Visit>
-    KiottySpecStatus eachRow(Span<const char> directory, std::string_view table, const Areas& areas, Visit visit);
+    ImportAreas areas();
+    KiottySpecStatus exportTable(Span<const char> directory, const OrderedTable& table);
+    Result<size_t, KiottySpecStatus> importAll(Span<const char> directory, Span<char> report);
+    KiottySpecStatus importCurrent(Span<const char> directory, const ImportAreas& areas);
+    KiottySpecStatus importTable(Span<const char> directory, const OrderedTable& table, const ImportAreas& areas);
+    KiottySpecStatus insertRow(const OrderedTable& table, JsonReader& row, Span<char> scratch);
 
     Workspace& _w;
     TextBuffer& _work;
