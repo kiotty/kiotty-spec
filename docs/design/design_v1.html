@@ -142,7 +142,7 @@
 <tr><td><code>parent</code></td><td class="num">8</td><td><code>ItemHandle</code></td><td>상위 항목. 하위 모듈 · 하위 요구사항 같은 계층. 비어 있으면 <code>INVALID_INDEX</code>. 핸들에서 ID를 바로 가져올 수 있다</td></tr>
 <tr><td><code>kind</code></td><td class="num">4</td><td><code>KiottySpecItemKind</code></td><td>종류. 이름 문자열(32바이트)은 모델의 <code>name</code>에서 찾는다</td></tr>
 <tr><td><code>_padding</code></td><td class="num">4</td><td></td><td></td></tr>
-<tr><td><code>id</code></td><td class="num">16</td><td><code>FixedString&lt;15&gt;</code></td><td>사람에게 보이는 식별자. <code>REQ-003</code>, <code>CR-007</code></td></tr>
+<tr><td><code>id</code></td><td class="num">16</td><td><code>FixedString&lt;15&gt;</code></td><td>사람에게 보이는 식별자. <code>REQ-003</code>, <code>CR-007</code>. <strong>ASCII 영문 대소문자, 숫자, 하이픈 <code>-</code>, 밑줄 <code>_</code>만</strong> 허용한다. <code>ks</code> 출력을 Markdown 안에 그대로 붙일 수 있도록 <code>* ~ [ ] # `</code> 같은 Markdown 특수문자와 공백을 ID에 넣지 못하게 하는 규칙이며, 어긋나면 <code>INVALID_ARGUMENT</code>다 (<a href="#open">12</a> #11)</td></tr>
 <tr><td><code>title</code></td><td class="num">128</td><td><code>FixedString&lt;127&gt;</code></td><td>제목. 한글 40자 안팎</td></tr>
 <tr><td><code>summary</code></td><td class="num">256</td><td><code>FixedString&lt;255&gt;</code></td><td>간략한 설명. 한글 80자 안팎. AI가 목록을 읽을 때 보는 것은 여기까지다</td></tr>
 <tr><th>합계</th><th class="num">424</th><th colspan="2">1024 바이트 이하 (개발수칙 1.4)</th></tr>
@@ -184,7 +184,7 @@ static_assert(sizeof(ItemRecord) == 424, "unexpected padding");</code></pre>
 <tr><th>합계</th><th class="num">3136</th><th>태그 정의 하나</th></tr>
 </table>
 
-<p>항목이 가진 태그 값은 태그 정의 하나당 <code>uint64_t</code> 하나(하위 48비트 사용)다. 레코드 1024바이트 제한 때문에 태그 값은 <code>ItemRecord</code> 안이 아니라 <strong>같은 index를 쓰는 별도 배열</strong>에 둔다(개발수칙 3.1 hot/cold 분리). 모델이 정의한 태그 수만큼만 확보한다.</p>
+<p>항목이 가진 태그 값은 태그 정의 하나당 <code>uint64_t</code> 하나(하위 48비트 사용)이며, <code>ItemRecord</code> 밖의 <code>TagRecord</code>로 둔다 (<a href="#model-tag-record">3.6</a>).</p>
 
 <pre><code>struct TagQuery
 {
@@ -192,7 +192,7 @@ static_assert(sizeof(ItemRecord) == 424, "unexpected padding");</code></pre>
     uint32_t           tag_index;   // 모델의 몇 번째 태그인가
     uint64_t           mask;        // 켜져 있어야 하는 비트들 (OR)
 };
-// 항목이 선택되는 조건: (tag_values[item][tag_index] &amp; mask) != 0</code></pre>
+// 항목이 선택되는 조건: 그 항목의 TagRecord(model == kind, tag == tag_index) 가 있고 (value &amp; mask) != 0</code></pre>
 
 <p>v1의 모델별 태그 (정의서 2.2의 분류를 옮긴 것):</p>
 
@@ -215,13 +215,13 @@ static_assert(sizeof(ItemRecord) == 424, "unexpected padding");</code></pre>
 
 <table>
 <tr><th>필드</th><th class="num">바이트</th><th>설명</th></tr>
-<tr><td><code>name</code></td><td class="num">64</td><td>관계 이름. 예: "만족시킨다"</td></tr>
+<tr><td><code>name</code></td><td class="num">64</td><td>관계 이름. <code>&lt;역할&gt; &lt;대상 Kind 이름&gt;</code> 꼴로 짓는다. 예: "관련 요구사항", "의존 설계 사항"</td></tr>
 <tr><td><code>target_kind</code></td><td class="num">4</td><td>참조하는 Kind</td></tr>
 <tr><td><code>cardinality</code></td><td class="num">4</td><td><code>MANY</code> 또는 <code>ONE_TO_ONE</code>. 1:1 관계는 확정 조건 검사(R-3)에 쓴다</td></tr>
 <tr><th>합계</th><th class="num">72</th><th>관계 정의 하나</th></tr>
 </table>
 
-<p>링크 레코드는 24바이트다. "from은 to를 (relation)한다"로 읽는다.</p>
+<p>링크 레코드는 24바이트다. "from의 (relation)은 to다"로 읽는다. 예: "DSN-004의 관련 요구사항은 REQ-002다".</p>
 
 <pre><code>struct RelationRecord
 {
@@ -232,38 +232,65 @@ static_assert(sizeof(ItemRecord) == 424, "unexpected padding");</code></pre>
 };
 static_assert(sizeof(RelationRecord) == 24, "unexpected padding");</code></pre>
 
-<p>v1의 관계 정의 (정의서 3절의 링크 표를 옮긴 것). 항상 아래 단계가 위 단계를 가리킨다.</p>
+<div class="decided"><strong>결정 (2026-11-09, 2차).</strong> 관계 이름은 동사("만족시킨다")가 아니라 <strong>역할 + 대상 Kind 이름</strong>("관련 요구사항")으로 짓는다. 이름만 보고 어느 Kind의 항목이 연결되는지 알 수 있어야 <code>ks</code>의 관계 열 머리글과 <code>--relation</code> 입력이 설명 없이 읽힌다. 역할은 일곱 가지다: <strong>관련</strong>(만족시키는 상위 항목, 같은 Kind 끼리의 연관) · <strong>의존</strong> · <strong>검증</strong>(테스트가 보는 대상) · <strong>포함</strong>(마일스톤) · <strong>대상</strong>(결과가 가리키는 계획) · <strong>검사</strong>(코드 검사) · <strong>영향</strong>(변경 요청). 대상 Kind가 둘이던 정의("만족시킨다 → 요구사항, 외부 인터페이스")는 Kind마다 하나로 나눈다. 정의의 <code>target_kind</code>가 Kind 하나인 것과도 이렇게 맞아떨어진다. <strong>대상 Kind는 주어 모델 자신이어도 된다</strong>("관련 요구사항" → 요구사항, "의존 설계 사항" → 설계 사항).</div>
+
+<div class="decided"><strong>결정 (2026-11-09, 3차).</strong> 변경 요청은 소프트웨어의 <strong>입력</strong>에만 영향을 준다. 입력은 요구사항 · 외부 인터페이스 · 설계 사항 · 개발 수칙이고, 테스트 계획과 결과 같은 <strong>출력</strong>은 입력이 바뀌면 흐름(Step 5 이후)을 다시 타면서 따라 바뀐다. 그래서 변경 요청의 관계는 "영향" 넷과 일정을 잇는 "관련 마일스톤" 하나만 둔다. 출력 항목에 미치는 영향은 입력 항목에서 관계를 따라 내려가는 영향 탐색(<code>openImpactCursor</code>)으로 구한다.</div>
+
+<p>v1의 관계 정의 (정의서 3절의 링크 표를 옮긴 것). 항상 아래 단계가 위 단계를 가리킨다. 번호는 모델 안의 관계 index이며 <code>RelationRecord.relation</code>에 들어가는 값이다.</p>
 
 <table>
-<tr><th>모델 (주어)</th><th>관계 이름</th><th>대상 Kind (목적어)</th><th>Cardinality</th><th>정의서</th></tr>
-<tr><td>외부 인터페이스</td><td>만족시킨다</td><td>요구사항</td><td>MANY</td><td>Step 3</td></tr>
-<tr><td>설계 사항</td><td>만족시킨다</td><td>요구사항, 외부 인터페이스</td><td>MANY</td><td>Step 4</td></tr>
-<tr><td>설계 사항</td><td>의존한다</td><td>설계 사항</td><td>MANY</td><td>Step 4 (모듈 간 수정 판단)</td></tr>
-<tr><td>유닛 테스트</td><td>검증한다</td><td>설계 사항</td><td>MANY</td><td>Step 5</td></tr>
-<tr><td>마일스톤</td><td>포함한다</td><td>설계 사항, 유닛 테스트</td><td>MANY</td><td>Step 6 (R-5)</td></tr>
-<tr><td>유닛 테스트 결과</td><td>결과다</td><td>유닛 테스트</td><td>MANY</td><td>Step 7</td></tr>
-<tr><td>시스템 테스트</td><td>검증한다</td><td>요구사항 (기능)</td><td><strong>ONE_TO_ONE</strong></td><td>Step 8 (R-3)</td></tr>
-<tr><td>시스템 테스트 결과</td><td>결과다</td><td>시스템 테스트</td><td>MANY</td><td>Step 9</td></tr>
-<tr><td>코드 검사 결과</td><td>검사한다</td><td>개발 수칙</td><td><strong>ONE_TO_ONE</strong></td><td>Step 10. 수칙마다 최신 검사 결과 하나</td></tr>
-<tr><td>E2E 테스트</td><td>검증한다</td><td>외부 인터페이스</td><td><strong>ONE_TO_ONE</strong></td><td>Step 11 (R-3)</td></tr>
-<tr><td>E2E 테스트 결과</td><td>결과다</td><td>E2E 테스트</td><td>MANY</td><td>Step 12</td></tr>
-<tr><td>변경 요청</td><td>영향을 준다</td><td>모든 Kind</td><td>MANY</td><td>진입 단계 판단 근거</td></tr>
-<tr><td class="del">인터페이스 파일 · 소스 파일</td><td class="del">구현한다</td><td class="del">외부 인터페이스 · 설계</td><td></td><td>파일 엔티티 삭제로 없어짐</td></tr>
+<tr><th>모델 (주어)</th><th class="num">번호</th><th>관계 이름</th><th>대상 Kind (목적어)</th><th>Cardinality</th><th>정의서</th></tr>
+<tr><td>요구사항</td><td class="num">0</td><td>관련 요구사항</td><td>요구사항</td><td>MANY</td><td>Step 2. 같은 모델 안의 관계. 서로 맞물린 요구사항을 잇는다</td></tr>
+<tr><td>외부 인터페이스</td><td class="num">0</td><td>관련 요구사항</td><td>요구사항</td><td>MANY</td><td>Step 3</td></tr>
+<tr><td>설계 사항</td><td class="num">0</td><td>관련 요구사항</td><td>요구사항</td><td>MANY</td><td>Step 4</td></tr>
+<tr><td>설계 사항</td><td class="num">1</td><td>관련 외부 인터페이스</td><td>외부 인터페이스</td><td>MANY</td><td>Step 4</td></tr>
+<tr><td>설계 사항</td><td class="num">2</td><td>의존 설계 사항</td><td>설계 사항</td><td>MANY</td><td>Step 4 (모듈 간 수정 판단)</td></tr>
+<tr><td>유닛 테스트</td><td class="num">0</td><td>검증 설계 사항</td><td>설계 사항</td><td>MANY</td><td>Step 5</td></tr>
+<tr><td>마일스톤</td><td class="num">0</td><td>포함 설계 사항</td><td>설계 사항</td><td>MANY</td><td>Step 6 (R-5)</td></tr>
+<tr><td>마일스톤</td><td class="num">1</td><td>포함 유닛 테스트</td><td>유닛 테스트</td><td>MANY</td><td>Step 6 (R-5)</td></tr>
+<tr><td>유닛 테스트 결과</td><td class="num">0</td><td>대상 유닛 테스트</td><td>유닛 테스트</td><td>MANY</td><td>Step 7</td></tr>
+<tr><td>시스템 테스트</td><td class="num">0</td><td>검증 요구사항</td><td>요구사항 (기능)</td><td><strong>ONE_TO_ONE</strong></td><td>Step 8 (R-3)</td></tr>
+<tr><td>시스템 테스트 결과</td><td class="num">0</td><td>대상 시스템 테스트</td><td>시스템 테스트</td><td>MANY</td><td>Step 9</td></tr>
+<tr><td>코드 검사 결과</td><td class="num">0</td><td>검사 개발 수칙</td><td>개발 수칙</td><td><strong>ONE_TO_ONE</strong></td><td>Step 10. 수칙마다 최신 검사 결과 하나</td></tr>
+<tr><td>E2E 테스트</td><td class="num">0</td><td>검증 외부 인터페이스</td><td>외부 인터페이스</td><td><strong>ONE_TO_ONE</strong></td><td>Step 11 (R-3)</td></tr>
+<tr><td>E2E 테스트 결과</td><td class="num">0</td><td>대상 E2E 테스트</td><td>E2E 테스트</td><td>MANY</td><td>Step 12</td></tr>
+<tr><td>변경 요청</td><td class="num">0</td><td>영향 요구사항</td><td>요구사항</td><td>MANY</td><td>진입 단계 판단 근거 (입력)</td></tr>
+<tr><td>변경 요청</td><td class="num">1</td><td>영향 개발 수칙</td><td>개발 수칙</td><td>MANY</td><td>진입 단계 판단 근거 (입력)</td></tr>
+<tr><td>변경 요청</td><td class="num">2</td><td>영향 외부 인터페이스</td><td>외부 인터페이스</td><td>MANY</td><td>진입 단계 판단 근거 (입력)</td></tr>
+<tr><td>변경 요청</td><td class="num">3</td><td>영향 설계 사항</td><td>설계 사항</td><td>MANY</td><td>진입 단계 판단 근거 (입력)</td></tr>
+<tr><td>변경 요청</td><td class="num">4</td><td>관련 마일스톤</td><td>마일스톤</td><td>MANY</td><td>변경을 반영할 마일스톤</td></tr>
+<tr><td class="del">인터페이스 파일 · 소스 파일</td><td></td><td class="del">구현한다</td><td class="del">외부 인터페이스 · 설계</td><td></td><td>파일 엔티티 삭제로 없어짐</td></tr>
 </table>
 
-<p><strong>마일스톤 포함 항목의 상태.</strong> 별도 배열이나 계산 없이 포함되는 항목(설계 사항 · 유닛 테스트)의 태그 "구현 상태"로 기록한다. Step 7에서 AI가 "구현 완료"로 바꾸고, 그 뒤 항목이 수정되면 Kiotty-Spec이 같은 쓰기 안에서 "변경 필요"로 바꾼다(정의서 Step 7의 상태 규칙). 마일스톤의 진행률은 <code>포함한다</code> 관계로 모은 항목들의 태그를 세어 구한다.</p>
+<p><strong>마일스톤 포함 항목의 상태.</strong> 별도 배열이나 계산 없이 포함되는 항목(설계 사항 · 유닛 테스트)의 태그 "구현 상태"로 기록한다. Step 7에서 AI가 "구현 완료"로 바꾸고, 그 뒤 항목이 수정되면 Kiotty-Spec이 같은 쓰기 안에서 "변경 필요"로 바꾼다(정의서 Step 7의 상태 규칙). 마일스톤의 진행률은 "포함 설계 사항" · "포함 유닛 테스트" 관계로 모은 항목들의 태그를 세어 구한다.</p>
 
-<h3 id="model-fields">3.6 Kind별 고유 필드는 두지 않는다</h3>
+<h3 id="model-tag-record">3.6 태그 레코드</h3>
 
-<div class="decided"><strong>결정 (2026-11-09).</strong> 모든 항목은 같은 모양이다. <strong>항목 = 공통 속성 + 태그 값 + 본문</strong>이고, 관계는 항목 밖의 레코드다. Kind는 "어떤 태그를 쓸 수 있고, 무엇을 참조할 수 있고, 본문 틀이 무엇인가"만 정한다. 이슈 모델 8항의 "Kind별 필드"는 아래처럼 모두 태그 · 관계 · 본문으로 흡수한다.</div>
+<div class="decided"><strong>결정 (2026-11-09, 3차).</strong> Kind별 고유 필드는 두지 않는다. 항목은 <strong>공통 속성 + 태그 레코드 + 본문</strong>이고, 항목 사이의 연결은 관계 레코드다. 정의서의 Kind별 데이터(변경 요청의 출처 · 상태 · 진입 단계, 구현 상태, 결과의 PASS / FAIL)는 태그로, 결과가 가리키는 계획은 관계로, 본문 틀 · 로그 · 위반 위치는 본문으로 옮긴다. 태그 값은 <code>RelationRecord</code>와 같은 꼴의 <strong>독립 레코드 <code>TagRecord</code></strong>로 둔다.</div>
+
+<p><strong>태그와 관계의 경계.</strong> 태그 값은 모델이 미리 정한 이름(비트)의 집합이고, 관계는 다른 <em>항목</em>을 가리킨다. 그래서 "기능 요구사항"은 태그, "REQ-002와 맞물린 요구사항"은 관계다. 같은 Kind 끼리의 연결("관련 요구사항", "의존 설계 사항")도 관계로 표현하며 태그로 흉내 내지 않는다 (<a href="#model-relation">3.5</a>).</p>
+
+<pre><code>struct TagRecord
+{
+    ItemHandle          item;       // 이 태그 값을 가진 항목
+    KiottySpecItemKind  model;      // item 의 Kind. 태그 정의를 찾는 모델
+    uint32_t            tag;        // 그 모델의 몇 번째 태그 정의인가 (0 ~ 255)
+    uint64_t            value;      // 켜진 비트. 하위 48비트만 쓴다
+};
+static_assert(sizeof(TagRecord) == 24, "unexpected padding");</code></pre>
 
 <table>
-<tr><th>정의서의 Kind별 데이터</th><th>이 설계에서의 위치</th></tr>
-<tr><td>변경 요청의 출처 · 상태 · 진입 단계</td><td>태그 3개</td></tr>
-<tr><td>마일스톤 포함 항목의 상태, 구현 완료 체크포인트</td><td>포함되는 항목의 태그 "구현 상태"</td></tr>
-<tr><td>결과의 PASS / FAIL, 대상</td><td>태그 "결과", 관계 "결과다" · "검사한다"</td></tr>
-<tr><td>본문 틀(인수 조건, 시그니처, 전제 조건 · 행동 · 기대 결과), 테스트 로그, 위반 위치</td><td>본문</td></tr>
+<tr><th style="width:20%">규칙</th><th>내용</th></tr>
+<tr><td>있고 없음</td><td>값이 0인 태그는 레코드를 두지 않는다. 레코드가 없으면 "아무 비트도 켜지지 않음"이다. 태그 정의가 많아도 실제로 쓴 태그만 메모리를 쓴다</td></tr>
+<tr><td>유일성</td><td>(item, tag) 쌍마다 레코드 하나. 같은 쌍에 다시 쓰면 <code>value</code>를 바꾼다. 0을 쓰면 레코드를 지운다</td></tr>
+<tr><td>검사</td><td><code>tag</code>가 모델의 태그 정의 수 이상이거나, 이름 없는 비트(<code>bit_names</code>가 빈 칸)를 켜면 <code>INVALID_ARGUMENT</code>. "비트 하나만 켠다"로 정의된 태그(구현 상태, 진입 단계)에 비트 둘 이상을 켜도 <code>INVALID_ARGUMENT</code></td></tr>
+<tr><td>풀</td><td><code>LazyPool&lt;TagRecord&gt; tags</code>, <code>max_tags × 24</code> 바이트 (<a href="#memory">10</a>). (item index, tag) 순으로 정렬해 두어 항목 하나의 태그를 이진 탐색 한 번과 연속 읽기로 얻는다</td></tr>
+<tr><td>검색</td><td>태그 검색(<a href="#query-tag">8.3</a>)은 항목 풀이 아니라 태그 풀을 처음부터 끝까지 훑어 (model, tag)가 맞고 <code>value &amp; mask</code>가 0이 아닌 레코드의 <code>item</code>을 모은다. 조건이 여럿이면 조건마다 모은 index 집합을 AND 한다</td></tr>
+<tr><td>항목 삭제</td><td>항목을 지우면 그 항목의 태그 레코드도 같은 쓰기 안에서 지운다</td></tr>
+<tr><td>저장</td><td>DB에서는 항목 버전 행에 태그 레코드 묶음을 함께 둔다 (diff는 묶음 단위로 비교, <a href="#checkpoint-diff">5.4</a>). jsonl은 항목 한 줄 안에 <code>"tags": {"구현 상태": ["구현 완료"]}</code> 대신 <code>"tags": [[1, 4]]</code>처럼 (tag, value) 쌍으로 쓴다 (<a href="#open">12</a> #7)</td></tr>
 </table>
+
+<p><strong>고르는 것은 Kind별 코드가 아니다.</strong> <code>ks</code>가 "구현 상태" 태그나 "의존 설계 사항" 관계만 골라 열로 찍는 것(<a href="#query-columns">8.4</a>)은 모델 메타데이터에서 이름을 index로 바꾼 뒤 모든 Kind에 같은 함수(<code>readItemTag</code>, <code>openRelationCursorByModel</code>)를 부르는 일이라, 라이브러리에 Kind별 레코드나 함수가 생기지 않는다.</p>
 
 <h3 id="model-body">3.7 본문은 꼭 필요할 때만 읽는다</h3>
 
@@ -414,12 +441,13 @@ typedef struct KiottySpecDiffQuery {
 typedef struct KiottySpecItemDiff {
     KiottySpecCheckpointHandle before;      /* from 시점 버전의 체크포인트. 추가면 0 */
     KiottySpecCheckpointHandle after;       /* to 시점 버전의 체크포인트. 삭제면 지운 체크포인트 */
+    KiottySpecItemHandle       item;        /* 지금 풀에 있는 항목이면 그 핸들, 지금은 지워져 없으면 INVALID */
     KiottySpecItemKind         kind;
     KiottySpecChange           change;
     uint32_t                   changed_fields;  /* KiottySpecChangedField 비트. 수정일 때만 */
     uint32_t                   reserved;
     char                       id[KIOTTY_SPEC_MAX_ID_LENGTH + 1];
-} KiottySpecItemDiff;                       /* 48 바이트 */
+} KiottySpecItemDiff;                       /* 56 바이트 */
 
 typedef struct KiottySpecRelationDiff {
     KiottySpecCheckpointHandle checkpoint;  /* 추가 · 삭제가 일어난 체크포인트 */
@@ -449,9 +477,30 @@ typedef struct KiottySpecDiffSummaryResult {
 } KiottySpecDiffSummaryResult;              /* 24 + 13 × 24 = 336 바이트 */
 
 typedef struct KiottySpecItemDiffPage     { size_t length; KiottySpecItemDiff     elements[KIOTTY_SPEC_PAGE_CAPACITY]; } KiottySpecItemDiffPage;
-typedef struct KiottySpecRelationDiffPage { size_t length; KiottySpecRelationDiff elements[KIOTTY_SPEC_PAGE_CAPACITY]; } KiottySpecRelationDiffPage;</code></pre>
+typedef struct KiottySpecRelationDiffPage { size_t length; KiottySpecRelationDiff elements[KIOTTY_SPEC_PAGE_CAPACITY]; } KiottySpecRelationDiffPage;
 
-<p>항목이 지워졌을 수 있으므로 diff 레코드는 핸들이 아니라 ID를 담는다. 레코드마다 1024바이트 이하이고, 페이지는 호출자 메모리에 채운다.</p>
+/* 글자 diff (아래 "글자 diff 커서") */
+typedef enum KiottySpecTextField {
+    KIOTTY_SPEC_TEXT_FIELD_TITLE   = KIOTTY_SPEC_CHANGED_FIELD_TITLE,     /* 128 바이트 */
+    KIOTTY_SPEC_TEXT_FIELD_SUMMARY = KIOTTY_SPEC_CHANGED_FIELD_SUMMARY    /* 256 바이트 */
+} KiottySpecTextField;
+
+typedef enum KiottySpecTextChange {
+    KIOTTY_SPEC_TEXT_UNCHANGED = 0,
+    KIOTTY_SPEC_TEXT_ADDED,
+    KIOTTY_SPEC_TEXT_REMOVED
+} KiottySpecTextChange;
+
+typedef struct KiottySpecTextDiff {
+    const char*          text;      /* 커서 풀 안의 버퍼. 커서를 닫을 때까지만 유효하며 null 종료가 아니다 */
+    size_t               length;    /* 바이트 수. 0 이면 더 읽을 조각이 없다 */
+    KiottySpecTextChange change;
+    uint32_t             reserved;
+} KiottySpecTextDiff;                       /* 24 바이트 */
+
+typedef struct KiottySpecTextDiffResult { KiottySpecStatus code; uint32_t reserved; KiottySpecTextDiff value; } KiottySpecTextDiffResult;</code></pre>
+
+<p>항목이 지워졌을 수 있으므로 diff 레코드는 핸들이 아니라 ID를 담는다. 레코드마다 1024바이트 이하이고, 페이지는 호출자 메모리에 채운다. <code>KiottySpecTextDiff</code>만은 포인터를 가진다. 글자 두 버전을 커서 풀에 복사해 두고 그 안을 가리키는 것이라, 수명이 커서와 같고 호출자는 복사하지 않고 바로 찍는다(개발수칙 1.4의 예외).</p>
 
 <h4>함수</h4>
 
@@ -463,9 +512,96 @@ typedef struct KiottySpecRelationDiffPage { size_t length; KiottySpecRelationDif
 <tr><td><code>readItemAt(context, id, checkpoint)</code> → <code>ItemResult</code></td><td>그 시점의 항목 레코드 (제목 · 요약 · 태그). 지워진 항목도 읽을 수 있다</td></tr>
 <tr><td><code>readItemBodyAt(context, id, checkpoint, buffer, capacity)</code> → <code>SizeResult</code></td><td>그 시점의 본문. <code>changed_fields</code>에 <code>BODY</code>가 있고 내용을 꼭 봐야 할 때만 쓴다</td></tr>
 <tr><td><code>readDecisionAt(context, kind, checkpoint, buffer, capacity)</code> → <code>SizeResult</code></td><td>그 시점의 결정 기록</td></tr>
+<tr><td><code>openTextDiffCursor(context, item, field, from, to)</code> → <code>CursorResult</code></td><td>항목 핸들 <code>item</code>의 <code>field</code>(제목 또는 요약)를 <code>from</code> 시점과 <code>to</code> 시점에서 읽어 커서 풀에 복사하고 글자 diff 분석기를 초기화한다. <code>total</code>은 조각 수</td></tr>
+<tr><td><code>nextTextDiff(context, cursor)</code> → <code>TextDiffResult</code></td><td>다음 조각 하나. 조각이 다 나오면 <code>length == 0</code>인 조각을 돌려주고 그 뒤로도 같다</td></tr>
+<tr><td><code>closeTextDiffCursor(context, cursor)</code> → <code>Status</code></td><td>커서를 닫고 풀의 행을 돌려준다. <code>closeCursor</code>와 같은 일을 하며 이름만 짝을 맞춘 것이다</td></tr>
 </table>
 
-<p>권장하는 읽는 순서: 요약으로 바뀐 Kind 확인 → 그 Kind만 <code>kind_mask</code>로 항목 diff → 제목 · 요약이 바뀐 것은 <code>readItemAt</code> 두 번으로 비교 → 본문은 꼭 필요할 때만 <code>readItemBodyAt</code>.</p>
+<p><strong>호출 예.</strong> 아래 "<code>ks</code> 출력"의 예와 같은 데이터다. 설계 사항 Kind에서 CP-0003 → CP-0007 사이에 <code>DSN-004</code>가 추가, <code>DSN-002</code>가 삭제, <code>DSN-007</code>의 제목 · 요약 · 태그와 <code>DSN-009</code>의 본문이 바뀌었다. <code>h(X)</code>는 항목 X의 핸들, <code>CP-n</code>은 sequence가 n인 체크포인트 핸들, 관계 번호는 설계 사항 모델의 0 관련 요구사항 · 1 관련 외부 인터페이스 · 2 의존 설계 사항이다 (<a href="#model-relation">3.5</a>).</p>
+
+<pre><code>KiottySpecDiffQuery q = { .from = CP-0003, .to = CP-0007, .kind_mask = 1u &lt;&lt; (DESIGN − 1), .field_mask = 0 };
+
+summarizeDiff(ctx, q)
+  → { code = SUCCESS, from = CP-0003, to = CP-0007,
+      kinds[DESIGN − 1] = { added = 1, modified = 2, removed = 1,
+                            relations_added = 5, relations_removed = 2, decision_changed = 1 },
+      그 밖의 kinds[]   = 모두 0 }                 /* kind_mask 밖의 Kind는 세지 않는다 */
+
+openItemDiffCursor(ctx, q)                         → { SUCCESS, cursor = c1, total = 4, page_count = 1 }
+fetchItemDiffPage(ctx, c1, &amp;page)                  → SUCCESS, page.length = 4     /* ID 오름차순 */
+  [0] { id = "DSN-002", item = INVALID,    change = REMOVED,  before = CP-0001, after = CP-0004, changed_fields = 0 }
+  [1] { id = "DSN-004", item = h(DSN-004), change = ADDED,    before = 0,       after = CP-0005, changed_fields = 0 }
+  [2] { id = "DSN-007", item = h(DSN-007), change = MODIFIED, before = CP-0002, after = CP-0006, changed_fields = TITLE | SUMMARY | TAGS }
+  [3] { id = "DSN-009", item = h(DSN-009), change = MODIFIED, before = CP-0001, after = CP-0007, changed_fields = BODY }
+fetchItemDiffPage(ctx, c1, &amp;page)                  → SUCCESS, page.length = 0     /* 끝 */
+closeCursor(ctx, c1)                               → SUCCESS
+
+q.field_mask = TITLE;  openItemDiffCursor(ctx, q)  → total = 3                    /* 제목이 바뀐 수정은 DSN-007 하나, 추가 · 삭제는 언제나 나온다 */
+
+openRelationDiffCursor(ctx, q)                     → { SUCCESS, cursor = c2, total = 7, page_count = 1 }
+fetchRelationDiffPage(ctx, c2, &amp;page)              → SUCCESS, page.length = 7     /* from_id, relation, to_id 순 */
+  [0] { from_id = "DSN-002", relation = 0, to_id = "REQ-005", change = REMOVED, checkpoint = CP-0004, model = DESIGN }
+  [1] { from_id = "DSN-004", relation = 0, to_id = "REQ-002", change = ADDED,   checkpoint = CP-0005, model = DESIGN }
+  [2] { from_id = "DSN-004", relation = 1, to_id = "UI-003",  change = ADDED,   checkpoint = CP-0005, model = DESIGN }
+  [3] { from_id = "DSN-004", relation = 2, to_id = "DSN-001", change = ADDED,   checkpoint = CP-0005, model = DESIGN }
+  [4] { from_id = "DSN-007", relation = 0, to_id = "REQ-001", change = REMOVED, checkpoint = CP-0006, model = DESIGN }
+  [5] { from_id = "DSN-007", relation = 0, to_id = "REQ-003", change = ADDED,   checkpoint = CP-0006, model = DESIGN }
+  [6] { from_id = "DSN-009", relation = 2, to_id = "DSN-004", change = ADDED,   checkpoint = CP-0007, model = DESIGN }
+closeCursor(ctx, c2)                               → SUCCESS
+
+readItemAt(ctx, "DSN-007", CP-0003)                → { SUCCESS, value = { id = "DSN-007", title = "링크 그래프", summary = "관계를 링크 타입으로 검사한다", checkpoint = CP-0002, … } }
+readItemAt(ctx, "DSN-007", CP-0007)                → { SUCCESS, value = { id = "DSN-007", title = "관계 저장소", summary = "관계를 모델의 관계 정의로 검사한다", checkpoint = CP-0006, … } }
+readItemAt(ctx, "DSN-002", CP-0007)                → { NOT_FOUND }                 /* 그 시점에는 지워져 있다. CP-0003 으로 읽으면 나온다 */
+
+char body[16385];
+readItemBodyAt(ctx, "DSN-009", CP-0007, body, sizeof body)  → { SUCCESS, value = 1834 }   /* 쓴 바이트 수 */
+readItemBodyAt(ctx, "DSN-009", CP-0007, body, 512)          → { CAPACITY_EXCEEDED, value = 1835 } /* 필요한 바이트 수 (null 포함) */
+
+char decision[2049];
+readDecisionAt(ctx, DESIGN, CP-0007, decision, sizeof decision)  → { SUCCESS, value = 612 }
+
+/* 잘못된 입력 */
+q.from = CP-0007; q.to = CP-0003;  summarizeDiff(ctx, q)  → { INVALID_ARGUMENT }      /* 거꾸로 된 구간 */
+q.from = CP-0001 (정리로 지워짐);   summarizeDiff(ctx, q)  → { NOT_FOUND }</code></pre>
+
+<p>읽는 순서대로 보면 <code>summarizeDiff</code> 한 번으로 바뀐 Kind와 수를 알고, 항목 diff 페이지로 무엇이 어떻게 바뀌었는지 알고, 관계 diff로 연결 변화를 안다. 제목 · 요약 내용은 글자 diff 커서로, 본문은 <code>readItemBodyAt</code>으로만 읽는다.</p>
+
+<p>권장하는 읽는 순서: 요약으로 바뀐 Kind 확인 → 그 Kind만 <code>kind_mask</code>로 항목 diff → 제목 · 요약이 바뀐 것은 글자 diff 커서로 바뀐 글자만 읽기 → 본문은 꼭 필요할 때만 <code>readItemBodyAt</code>.</p>
+
+<h4>글자 diff 커서</h4>
+
+<p>제목(128바이트)과 요약(256바이트)은 통째로 두 번 보여 주면 토큰이 두 배로 들고, 본문처럼 안 보여 주기에는 짧다. 그래서 이 두 값은 라이브러리가 <strong>어느 글자가 더해지고 지워졌는지</strong>를 조각으로 돌려주고, 색을 입히는 것은 <code>ks</code>의 output 층이 한다(개발수칙 5.5 "문장은 presentation에서만").</p>
+
+<ol>
+  <li><strong>단위.</strong> UTF-8 글자(code point) 단위로 비교한다. 바이트 중간에서 조각이 끊기지 않는다. 입력이 UTF-8이 아니면 저장 단계에서 이미 <code>INVALID_UTF8</code>로 거부되어 있다.</li>
+  <li><strong>분석.</strong> 두 버전의 최장 공통 부분열(LCS)을 구해 글자마다 <code>UNCHANGED</code> · <code>ADDED</code> · <code>REMOVED</code>를 매기고, 같은 종류가 이어지는 글자는 조각 하나로 합친다. 같은 자리에서 지워지고 더해진 것은 <code>REMOVED</code> 조각 다음에 <code>ADDED</code> 조각이 나온다. 요약이 같으면 <code>UNCHANGED</code> 조각 하나다.</li>
+  <li><strong>대상 값.</strong> <code>field</code>는 <code>TITLE</code> 또는 <code>SUMMARY</code> 하나다. 본문은 최대 16KB라 LCS 표가 작업 버퍼에 들어가지 않고, 본문 규칙(<a href="#model-body">3.7</a>)에도 어긋나므로 <code>BODY</code>나 비트 둘 이상은 <code>INVALID_ARGUMENT</code>다. 태그 값은 비트 이름을 비교하면 되므로 글자 diff를 쓰지 않는다.</li>
+  <li><strong>핸들.</strong> 항목은 ID가 아니라 핸들로 받는다. 핸들은 <code>ItemDiff.item</code>이나 <code>findItem(id)</code>로 얻는다. 지금 풀에 없는 항목(구간 뒤에 지워진 항목)은 핸들이 <code>INVALID</code>라 열 수 없으며, 그때는 <code>readItemAt</code>을 두 번 읽어 통째로 비교한다.</li>
+  <li><strong>없는 쪽.</strong> <code>from</code> 시점에 항목이 없으면(추가) 전부 <code>ADDED</code>, <code>to</code> 시점에 지워져 있으면(삭제) 전부 <code>REMOVED</code>다.</li>
+  <li><strong>메모리.</strong> 열 때 두 버전(각 최대 256바이트)과 조각 목록(조각마다 어느 버전의 몇 바이트부터 몇 바이트인지, 8바이트)을 커서 풀의 행 공간에 넣는다. 최악 511조각이라 5KB 남짓이며, <code>max_cursor_rows</code> 공간에 들어가지 않으면 <code>CAPACITY_EXCEEDED</code>다. LCS 표는 (글자 수 + 1)² 바이트 이하(최대 64KB)이고 열 때만 컨텍스트 작업 버퍼를 빌려 쓴다. <code>nextTextDiff</code>는 조각 목록을 차례로 읽을 뿐이라 작업 버퍼를 건드리지 않는다.</li>
+  <li><strong>구간 규칙.</strong> <code>from</code> · <code>to</code>의 조건은 항목 diff와 같다. 항목이 두 시점 모두 없으면 <code>NOT_FOUND</code>다.</li>
+</ol>
+
+<p><strong>호출 예.</strong> <code>h(DSN-007)</code>은 <code>DSN-007</code>의 항목 핸들이다. 요약이 CP-0003에서 "관계를 링크 타입으로 검사한다", CP-0007에서 "관계를 모델의 관계 정의로 검사한다"일 때. 길이는 UTF-8 바이트 수다.</p>
+
+<table>
+<tr><th style="width:44%">호출</th><th>돌려주는 값</th></tr>
+<tr><td><code>openTextDiffCursor(ctx, h(DSN-007), SUMMARY, CP-0003, CP-0007)</code></td><td><code>CursorResult { code = SUCCESS, value = cursor, total = 4, page_count = 0 }</code></td></tr>
+<tr><td><code>nextTextDiff(ctx, cursor)</code> 1번째</td><td><code>{ SUCCESS, { text = "관계를 ", length = 10, change = UNCHANGED } }</code></td></tr>
+<tr><td><code>nextTextDiff(ctx, cursor)</code> 2번째</td><td><code>{ SUCCESS, { text = "링크 타입으로", length = 19, change = REMOVED } }</code></td></tr>
+<tr><td><code>nextTextDiff(ctx, cursor)</code> 3번째</td><td><code>{ SUCCESS, { text = "모델의 관계 정의로", length = 26, change = ADDED } }</code></td></tr>
+<tr><td><code>nextTextDiff(ctx, cursor)</code> 4번째</td><td><code>{ SUCCESS, { text = " 검사한다", length = 13, change = UNCHANGED } }</code></td></tr>
+<tr><td><code>nextTextDiff(ctx, cursor)</code> 5번째 이후</td><td><code>{ SUCCESS, { text = NULL, length = 0, change = UNCHANGED } }</code> — 끝. 몇 번을 더 불러도 같다</td></tr>
+<tr><td><code>closeTextDiffCursor(ctx, cursor)</code></td><td><code>SUCCESS</code>. 이 뒤로 앞서 받은 <code>text</code> 포인터는 쓸 수 없다</td></tr>
+<tr><td>닫은 뒤 <code>nextTextDiff(ctx, cursor)</code></td><td><code>{ INVALID_HANDLE, … }</code></td></tr>
+<tr><td>값이 같은 항목에 열었을 때의 1번째</td><td><code>{ SUCCESS, { text = 값 전체, length = 값 길이, change = UNCHANGED } }</code>, 2번째부터 <code>length = 0</code></td></tr>
+<tr><td><code>openTextDiffCursor(ctx, h(DSN-007), TITLE, CP-0003, CP-0007)</code> 뒤 <code>nextTextDiff</code> 넷</td><td><code>"링크 그래프"</code> REMOVED, <code>"관계 저장소"</code> ADDED, 그 뒤 <code>length = 0</code></td></tr>
+<tr><td><code>openTextDiffCursor(ctx, h(DSN-007), BODY, …)</code></td><td><code>CursorResult { code = INVALID_ARGUMENT }</code></td></tr>
+<tr><td><code>openTextDiffCursor(ctx, INVALID, SUMMARY, …)</code></td><td><code>CursorResult { code = INVALID_HANDLE }</code></td></tr>
+<tr><td>항목 diff 커서를 넘겼을 때</td><td><code>{ WRONG_CURSOR_TYPE, … }</code></td></tr>
+</table>
+
+<p><code>ks</code>는 이 조각들을 이어 <code>관계를 [-링크 타입으로-]{+모델의 관계 정의로+} 검사한다</code>로 찍고, 색이 켜져 있으면 괄호 대신 빨강 · 밝은 파랑을 입힌다.</p>
 
 <h4>저장</h4>
 
@@ -473,21 +609,64 @@ typedef struct KiottySpecRelationDiffPage { size_t length; KiottySpecRelationDif
 
 <h4><code>ks</code> 출력</h4>
 
-<pre><code>$ ks diff CP-0003 CP-0007 --summary
+<p><code>ks diff</code>는 두 가지 모양이다. <code>--kind</code>가 없으면 Kind별 요약 표(<code>summarizeDiff</code>) 하나를 찍고, <code>--kind</code>가 있으면 그 Kind의 바뀐 항목을 <strong>추가 · 삭제 · 변경 묶음</strong>으로 나눠 찍는다.</p>
+
+<pre><code>ks diff &lt;from&gt; &lt;to&gt;
+ks diff &lt;from&gt; &lt;to&gt; --kind &lt;kind&gt; (--added | --removed | --modified)…
+                               [--title] [--summary] [--relations] [--no-color]</code></pre>
+
+<table>
+<tr><th style="width:22%">입력</th><th>뜻</th></tr>
+<tr><td><code>--kind</code></td><td>필수. Kind 하나. <code>kind_mask</code>로 넘긴다</td></tr>
+<tr><td><code>--added</code>, <code>--removed</code>, <code>--modified</code></td><td>필수. 하나 이상을 조합한다. 고른 묶음만 찍는다</td></tr>
+<tr><td><code>--title</code>, <code>--summary</code></td><td>선택 열. 주지 않으면 <code>id</code>와 <code>kind</code>만 찍는다</td></tr>
+<tr><td><code>--tag &lt;이름&gt;</code>, <code>--tags</code></td><td>태그 열. 이름을 준 태그만, <code>--tags</code>면 그 모델의 모든 태그. 여러 번 줄 수 있다 (<a href="#query-columns">8.4</a>)</td></tr>
+<tr><td><code>--relation &lt;이름&gt;</code>, <code>--relations</code></td><td>관계 열. 이름을 준 관계만, <code>--relations</code>면 그 모델의 모든 관계. 열 이름은 관계 이름이다 (<a href="#query-columns">8.4</a>)</td></tr>
+<tr><td><code>--no-color</code></td><td>색을 끈다. 출력이 터미널이 아니면 자동으로 꺼진다</td></tr>
+</table>
+
+<p><strong>묶음.</strong> 추가 · 삭제 · 변경 순서로, 묶음마다 <code># added</code> 같은 표시 줄 다음에 머리글과 행이 온다. 묶음 사이는 빈 줄이다. 세 묶음의 열은 같다.</p>
+
+<pre><code>id	kind	title	summary	&lt;태그 이름&gt;…	&lt;관계 이름&gt;…</code></pre>
+
+<table>
+<tr><th style="width:12%">열</th><th style="width:30%">추가 · 삭제</th><th>변경</th></tr>
+<tr><td><code>id</code>, <code>kind</code></td><td colspan="2"><code>ItemDiff</code>의 ID와 Kind 이름. 항상 찍는다</td></tr>
+<tr><td><code>title</code></td><td>그 시점의 제목 (<code>readItemAt</code>, 추가는 <code>after</code>, 삭제는 <code>before</code>)</td><td>바뀌었으면 <code>"이전 제목" -&gt; "새 제목"</code>. 제목 안의 큰따옴표는 <code>\"</code>로 쓴다. 바뀌지 않았으면 제목만</td></tr>
+<tr><td><code>summary</code></td><td>그 시점의 요약</td><td>바뀌었으면 글자 diff 커서를 열어 조각을 이어 찍는다. <code>ADDED</code>는 밝은 파랑, <code>REMOVED</code>는 빨강이고, 색이 꺼져 있으면 <code>{+더한 글자+}</code> · <code>[-지운 글자-]</code>로 감싼다. 찍고 나면 <code>closeTextDiffCursor</code>. 바뀌지 않았으면 요약만</td></tr>
+<tr><td>태그 열</td><td>그 시점의 태그 값. 켜진 비트의 이름을 <code>|</code>로 잇는다 (예: <code>모듈|메모리 정책</code>)</td><td>바뀌었으면 제목처럼 <code>"이전" -&gt; "이후"</code>. 바뀌지 않았으면 값만</td></tr>
+<tr><td>관계 열</td><td><code>RelationDiff</code>에서 <code>from_id</code>가 이 항목이고 <code>relation</code>이 이 열인 것의 <code>to_id</code>를 쉼표로 잇는다. 추가 항목은 모두 <code>ADDED</code>, 삭제 항목은 모두 <code>REMOVED</code>라 부호 없이 ID만 찍는다</td><td><code>ADDED</code>는 <code>+ID</code>를 파랑, <code>REMOVED</code>는 <code>-ID</code>를 빨강으로 찍고 공백으로 잇는다. 바뀌지 않은 관계는 <code>RelationDiff</code>에 없으므로 나오지 않는다</td></tr>
+</table>
+
+<p><code>ks</code>는 <code>openItemDiffCursor</code> 한 번으로 세 묶음을 나누고, <code>--relations</code>면 <code>openRelationDiffCursor</code> 한 번을 더 열어 <code>from_id</code> · <code>relation</code>으로 모은다. 값이 비면 <code>-</code>, 탭 · 줄바꿈은 <a href="#open">12</a> #9대로 바꾼다. 색은 ANSI(밝은 파랑 <code>ESC[94m</code>, 빨강 <code>ESC[31m</code>)이며 output 층만 안다.</p>
+
+<pre><code>$ ks diff CP-0003 CP-0007
 kind	added	modified	removed	relations_added	relations_removed	decision
 requirement	0	1	0	0	0	changed
-design	1	2	0	3	1	changed
+design	1	2	1	5	2	changed
 unit_test_result	4	0	0	4	0	-
 
-$ ks diff CP-0003 CP-0007 --kind design
-kind	id	change	fields	before	after
-design	DSN-004	added	-	-	CP-0005
-design	DSN-007	modified	title,tags	CP-0002	CP-0006
-design	DSN-009	modified	body	CP-0001	CP-0007
+$ ks diff CP-0003 CP-0007 --kind design --added --removed --modified --title --summary --relations
+# added
+id	kind	title	summary	관련 요구사항	관련 외부 인터페이스	의존 설계 사항
+DSN-004	design	커서 풀	커서마다 결과 행의 키를 담는 고정 풀	REQ-002	UI-003	DSN-001
 
-$ ks diff CP-0003 CP-0007 --kind design --relations
-model	from	relation	to	change	checkpoint
-design	DSN-004	만족시킨다	REQ-002	added	CP-0005</code></pre>
+# removed
+id	kind	title	summary	관련 요구사항	관련 외부 인터페이스	의존 설계 사항
+DSN-002	design	파일 추적	소스 파일과 설계 사항의 대응을 기록한다	REQ-005	-	-
+
+# modified
+id	kind	title	summary	관련 요구사항	관련 외부 인터페이스	의존 설계 사항
+DSN-007	design	"링크 그래프" -&gt; "관계 저장소"	관계를 [-링크 타입으로-]{+모델의 관계 정의로+} 검사한다	+REQ-003 -REQ-001	-	-
+DSN-009	design	본문 저장	본문은 ID로만 읽는다	-	-	+DSN-004
+
+$ ks diff CP-0003 CP-0007 --kind design --modified --tag "구현 상태" --relation "의존 설계 사항"
+# modified
+id	kind	구현 상태	의존 설계 사항
+DSN-007	design	"미구현" -&gt; "구현 완료"	-
+DSN-009	design	변경 필요	+DSN-004</code></pre>
+
+<p>첫 예에서 <code>DSN-009</code>는 본문만 바뀐 항목이라 제목 · 요약은 그대로 찍히고, 관계 열에 더해진 의존 관계만 나타난다. 둘째 예는 태그 하나와 관계 하나만 골라 본 것이다. 표시 줄 <code>#</code>은 Markdown 머리글로도 읽히므로 출력을 문서에 그대로 붙일 수 있다.</p>
 
 <!-- ===================================================================== -->
 <h2 id="decision">6. 결정 기록</h2>
@@ -547,9 +726,35 @@ REQ-002	requirement	체크포인트로 버전을 나눈다	…	CP-0003	-</code><
 
 <h3 id="query-tag">8.3 태그 검색</h3>
 
-<p>항목 커서는 Kind 하나와 태그 조건(<code>TagQuery</code>, <a href="#model-tag">3.4</a>) 0 ~ 4개를 받는다. 조건 여러 개는 AND이고, 조건 하나 안의 비트들은 OR이다. 검색은 index 순서로 풀 전체를 훑으며(개발수칙 3.3) 태그 값 배열만 읽는다.</p>
+<p>항목 커서는 Kind 하나와 태그 조건(<code>TagQuery</code>, <a href="#model-tag">3.4</a>) 0 ~ 4개를 받는다. 조건 여러 개는 AND이고, 조건 하나 안의 비트들은 OR이다. 검색은 태그 풀을 처음부터 끝까지 훑으며(개발수칙 3.3) 태그 레코드만 읽는다 (<a href="#model-tag-record">3.6</a>).</p>
 
-<h3 id="query-cursor">8.4 커서와 페이지</h3>
+<h3 id="query-columns">8.4 태그 · 관계 열 고르기</h3>
+
+<p>모델마다 태그와 관계가 여럿이므로, 항목 목록과 diff에서 <strong>보고 싶은 태그 · 관계만</strong> 열로 고를 수 있다. 기본은 아무 태그 · 관계 열도 찍지 않는 것이다(8.2 "ID만, 깊이 1"과 같은 이유로 토큰을 아낀다).</p>
+
+<table>
+<tr><th style="width:26%">입력</th><th>뜻</th></tr>
+<tr><td><code>--tag &lt;이름&gt;</code></td><td>그 이름의 태그 열 하나를 더한다. 여러 번 줄 수 있고 준 순서대로 찍는다. 값은 켜진 비트의 이름을 <code>|</code>로 이은 것, 하나도 없으면 <code>-</code></td></tr>
+<tr><td><code>--tag &lt;이름&gt;=&lt;비트 이름&gt;[,…]</code></td><td>그 태그의 비트가 하나라도 켜진 항목만 고른다(<a href="#query-tag">8.3</a>). 거른 태그의 열도 함께 찍는다</td></tr>
+<tr><td><code>--tags</code></td><td>모델의 모든 태그 열. 정의 순서</td></tr>
+<tr><td><code>--relation &lt;이름&gt;</code></td><td>그 이름의 관계 열 하나를 더한다. 여러 번 줄 수 있다. 값은 대상 ID를 쉼표로 이은 것, 없으면 <code>-</code></td></tr>
+<tr><td><code>--relations</code></td><td>모델의 모든 관계 열. 정의 순서</td></tr>
+</table>
+
+<p>이름은 모델의 태그 · 관계 이름과 <strong>정확히</strong> 같아야 하며, 공백이 있으면 따옴표로 감싼다. 없는 이름이면 <code>ks</code>가 "<code>design</code>에 그런 태그가 없다. 있는 것: 설계 종류, 구현 상태"처럼 알려 주고 끝낸다. 이름을 index로 바꾸는 것은 <code>readModel</code> · <code>readTagDefinition</code> · <code>readRelationDefinition</code>이며, 그 뒤는 Kind와 상관없는 같은 함수다(<a href="#model-tag-record">3.6</a>).</p>
+
+<p>관계 열은 항목마다 관계 커서를 여는 대신, <code>openRelationCursorByModel(kind, relation_index)</code>로 그 모델 · 그 관계의 레코드를 <code>from</code> 순서로 한 번에 받아 항목에 나눠 붙인다. 커서는 고른 관계 수만큼만 연다. diff에서는 <code>RelationDiff</code>를 같은 방식으로 나눠 붙인다(<a href="#checkpoint-diff">5.4</a>).</p>
+
+<pre><code>$ ks item list --kind design --tag "구현 상태" --relation "의존 설계 사항"
+id	kind	title	summary	checkpoint	parent	구현 상태	의존 설계 사항
+DSN-004	design	커서 풀	…	CP-0005	-	구현 완료	DSN-001
+DSN-007	design	관계 저장소	…	CP-0006	-	변경 필요	-
+
+$ ks item list --kind design --tag "설계 종류=모듈,메모리 정책" --relations
+id	kind	title	summary	checkpoint	parent	설계 종류	관련 요구사항	관련 외부 인터페이스	의존 설계 사항
+DSN-004	design	커서 풀	…	CP-0005	-	모듈|메모리 정책	REQ-002	UI-003	DSN-001</code></pre>
+
+<h3 id="query-cursor">8.5 커서와 페이지</h3>
 
 <p>C 인터페이스 v2 3.5와 같다. 커서를 열면 결과 행의 키가 컨텍스트의 커서 풀에 담기고, 페이지를 가져올 때마다 최대 <code>KIOTTY_SPEC_PAGE_CAPACITY</code>(64)개의 레코드를 호출자가 넘긴 페이지 구조체에 채운다. 커서 수(<code>max_cursors</code>)와 커서당 행 수(<code>max_cursor_rows</code>)는 설정값이며, 넘으면 <code>POOL_IS_FULL</code> · <code>CAPACITY_EXCEEDED</code>다. 4단계에서 만든 <code>CursorPool</code>이 이 역할을 한다.</p>
 
@@ -616,15 +821,15 @@ typedef struct KiottySpecIdPage       { size_t length; char elements[KIOTTY_SPEC
 
 <table>
 <tr><th style="width:18%">그룹</th><th>함수</th><th>비고</th></tr>
-<tr><td>컨텍스트</td><td><code>createContext(configuration)</code>, <code>releaseContext</code>, <code>readLastError(buffer)</code></td><td>v2 3.5 · 3.7. <code>Configuration</code>에 <code>max_items</code>, <code>max_relations</code>, <code>max_checkpoints</code>가 추가된다</td></tr>
-<tr><td>항목</td><td><code>createItem(kind, title, summary)</code> → <code>IdResult</code>, <code>readItem(id)</code> → <code>ItemResult</code>, <code>updateItem(id, title, summary)</code>, <code>setItemParent(id, parent_id)</code>, <code>removeItem(id)</code></td><td>쓰기는 <code>actor</code>를 받지 않는다. 사용자 권한이 필요한 것은 체크포인트 완료뿐이다</td></tr>
+<tr><td>컨텍스트</td><td><code>createContext(configuration)</code>, <code>releaseContext</code>, <code>readLastError(buffer)</code></td><td>v2 3.5 · 3.7. <code>Configuration</code>에 <code>max_items</code>, <code>max_relations</code>, <code>max_tags</code>, <code>max_checkpoints</code>가 추가된다</td></tr>
+<tr><td>항목</td><td><code>createItem(kind, title, summary)</code> → <code>IdResult</code>, <code>readItem(id)</code> → <code>ItemResult</code>, <code>findItem(id)</code> → <code>ItemHandleResult</code>, <code>updateItem(id, title, summary)</code>, <code>setItemParent(id, parent_id)</code>, <code>removeItem(id)</code></td><td>쓰기는 <code>actor</code>를 받지 않는다. 사용자 권한이 필요한 것은 체크포인트 완료뿐이다</td></tr>
 <tr><td>본문</td><td><code>writeItemBody(id, text)</code>, <code>readItemBody(id, buffer, capacity)</code> → <code>SizeResult</code></td><td>v2 3.6. 버퍼가 작으면 필요한 바이트 수를 돌려준다</td></tr>
-<tr><td>태그</td><td><code>setItemTag(id, tag_index, mask)</code>, <code>readItemTag(id, tag_index)</code> → <code>TagResult</code></td><td>mask는 48비트</td></tr>
-<tr><td>관계</td><td><code>addRelation(from_id, relation_index, to_id)</code>, <code>removeRelation(...)</code>, <code>openRelationCursor(id, direction)</code></td><td>관계 정의에 없는 (model, relation, target kind) 조합은 <code>INVALID_ARGUMENT</code></td></tr>
+<tr><td>태그</td><td><code>setItemTag(item, tag, value)</code>, <code>readItemTag(item, tag)</code> → <code>TagResult</code>, <code>openTagCursor(item)</code>, <code>fetchTagPage</code></td><td><code>TagResult.value</code>와 페이지 원소는 <code>TagRecord</code>(24바이트, <a href="#model-tag-record">3.6</a>). 값은 48비트. 0을 쓰면 레코드를 지운다. 레코드가 없으면 <code>readItemTag</code>는 <code>value = 0</code>으로 <code>SUCCESS</code></td></tr>
+<tr><td>관계</td><td><code>addRelation(from_id, relation_index, to_id)</code>, <code>removeRelation(...)</code>, <code>openRelationCursor(id, direction)</code>, <code>openRelationCursorByModel(kind, relation_index)</code></td><td>관계 정의에 없는 (model, relation, target kind) 조합은 <code>INVALID_ARGUMENT</code>. <code>ByModel</code>은 그 모델 · 그 관계의 레코드 전부를 <code>from</code> 순서로 돌려주며 <code>ks</code>의 관계 열(<a href="#query-columns">8.4</a>)이 쓴다</td></tr>
 <tr><td>목록</td><td><code>openItemCursor(kind, tag_queries, count)</code>, <code>openChildCursor(id)</code>, <code>openImpactCursor(id, depth)</code>, <code>fetchItemPage</code>, <code>fetchRelationPage</code>, <code>fetchIdPage</code>, <code>closeCursor</code></td><td>v2 3.3 · 3.5. 영향 커서만 깊이를 받고, 결과는 ID 페이지다</td></tr>
 <tr><td>체크포인트</td><td><code>startCheckpoint(step, description)</code>, <code>resumeCheckpoint</code>, <code>completeCheckpoint(actor)</code>, <code>readCheckpoint(handle)</code>, <code>readCurrentCheckpoint</code>, <code>openCheckpointCursor(step)</code>, <code>pruneCheckpoints(actor, base)</code></td><td><code>complete</code>는 확정 조건을 검사한다. <code>actor</code>가 <code>USER</code>가 아니면 <code>PERMISSION</code></td></tr>
 <tr><td>결정 기록</td><td><code>writeDecision(kind, text)</code>, <code>readDecision(kind, buffer, capacity)</code></td><td>2048바이트 상한</td></tr>
-<tr><td>비교</td><td><code>summarizeDiff(query)</code>, <code>openItemDiffCursor(query)</code>, <code>fetchItemDiffPage</code>, <code>openRelationDiffCursor(query)</code>, <code>fetchRelationDiffPage</code>, <code>readItemAt(id, checkpoint)</code>, <code>readItemBodyAt</code>, <code>readDecisionAt</code></td><td><a href="#checkpoint-diff">5.4</a>. Kind별 추적은 요약과 <code>kind_mask</code>로 한다</td></tr>
+<tr><td>비교</td><td><code>summarizeDiff(query)</code>, <code>openItemDiffCursor(query)</code>, <code>fetchItemDiffPage</code>, <code>openRelationDiffCursor(query)</code>, <code>fetchRelationDiffPage</code>, <code>readItemAt(id, checkpoint)</code>, <code>readItemBodyAt</code>, <code>readDecisionAt</code>, <code>openTextDiffCursor(item, field, from, to)</code>, <code>nextTextDiff</code>, <code>closeTextDiffCursor</code></td><td><a href="#checkpoint-diff">5.4</a>. Kind별 추적은 요약과 <code>kind_mask</code>로 한다. 글자 diff는 제목 · 요약에만 쓴다</td></tr>
 <tr><td>모델</td><td><code>readModel(kind)</code> → 이름 · 태그 수 · 관계 수, <code>readTagDefinition(kind, index)</code>, <code>readRelationDefinition(kind, index)</code></td><td><code>ks</code>가 태그 · 관계 이름을 보여 줄 때 쓴다. 한글 이름을 그대로 입력으로 받을 수 있다 (변경 요청 후보 <code>261104_01</code> #2)</td></tr>
 <tr><td>위치</td><td><code>readPosition</code> → <code>PositionResult</code> {현재 체크포인트, 다음 단계, 묶이지 않은 쓰기 수, 열린 변경 요청 수}, <code>openStepRunCursor</code></td><td>정의서 4절 "다시 돌아왔을 때". 문장은 <code>ks</code>가 만든다</td></tr>
 <tr><td>교환</td><td><code>exportJsonl(directory)</code>, <code>importJsonl(directory)</code></td><td>커밋 대상은 <code>.kiotty/spec/*.jsonl</code> 그대로. Markdown 내보내기 · 가져오기는 없다</td></tr>
@@ -642,7 +847,7 @@ typedef struct KiottySpecIdPage       { size_t length; char elements[KIOTTY_SPEC
 <table>
 <tr><th>멤버</th><th>크기 계산</th><th>비고</th></tr>
 <tr><td><code>LazyPool&lt;ItemRecord&gt; items</code></td><td><code>max_items × 424</code></td><td>hot. index 순서로 훑는다</td></tr>
-<tr><td><code>std::vector&lt;uint64_t&gt; tag_values</code></td><td><code>max_items × (모델별 최대 태그 수)</code></td><td>cold. 같은 index</td></tr>
+<tr><td><code>LazyPool&lt;TagRecord&gt; tags</code></td><td><code>max_tags × 24</code></td><td>cold. (item index, tag) 순으로 정렬 (<a href="#model-tag-record">3.6</a>)</td></tr>
 <tr><td><code>FixedMap&lt;IdText, uint32_t&gt; id_index</code></td><td><code>max_items</code></td><td>ID → index. 정렬 배열 + 이진 탐색</td></tr>
 <tr><td><code>LazyPool&lt;RelationRecord&gt; relations</code></td><td><code>max_relations × 24</code></td><td></td></tr>
 <tr><td><code>LazyPool&lt;CheckpointRecord&gt; checkpoints</code></td><td><code>max_checkpoints × 88</code></td><td>index = sequence − 1</td></tr>
@@ -683,11 +888,11 @@ app/
 
 <table>
 <tr><th style="width:26%">현재</th><th style="width:26%">이 설계</th><th>작업</th></tr>
-<tr><td><code>ItemRecord</code> (id, kind, category, parentId, title, body, seq, cpFrom, removed)</td><td><code>ItemRecord</code> 424바이트 + cold 배열</td><td>category → 태그 값, body → 본문 저장소, 핸들 필드 추가</td></tr>
+<tr><td><code>ItemRecord</code> (id, kind, category, parentId, title, body, seq, cpFrom, removed)</td><td><code>ItemRecord</code> 424바이트 + <code>TagRecord</code> 풀</td><td>category → 태그 레코드, body → 본문 저장소, 핸들 필드 추가, ID 글자 검사</td></tr>
 <tr><td><code>LinkStore</code>, <code>LinkGraph</code>, <code>KiottySpecLinkType</code></td><td><code>RelationStore</code> + 모델의 관계 정의</td><td>허용 쌍 검사를 관계 정의 조회로 바꾼다. <code>traverse</code>는 ID 페이지를 돌려준다</td></tr>
 <tr><td><code>ChangeRequestStore</code>, <code>ResultStore</code></td><td><code>ItemStore</code> (Kind 5종 추가)</td><td>테이블과 store를 합친다. 출처 · 상태 · 진입 단계는 태그</td></tr>
 <tr><td><code>FileStore</code>, <code>ProjectFiles</code>, <code>scanGuiDraft</code>, <code>hashOf</code></td><td>없음</td><td>지운다. <code>FileSystem</code>은 jsonl 디렉토리와 <code>.kiotty</code> 생성에만 남는다</td></tr>
-<tr><td><code>MilestoneStore</code>, <code>MilestoneService</code></td><td>포함한다 관계 + 태그 "구현 상태"</td><td>별도 테이블을 지운다. 진행률은 태그를 세어 구한다</td></tr>
+<tr><td><code>MilestoneStore</code>, <code>MilestoneService</code></td><td>"포함 설계 사항" · "포함 유닛 테스트" 관계 + 태그 "구현 상태"</td><td>별도 테이블을 지운다. 진행률은 태그를 세어 구한다</td></tr>
 <tr><td><code>ContextBuilder</code>, <code>StatusBoard</code>, <code>renderItem</code>, <code>bodyTemplate</code>, <code>exportMarkdown</code>, <code>traceReport</code>, <code>importMarkdown</code>, <code>queryReadonly</code></td><td>없음</td><td>지운다. 문장은 <code>ks</code>의 output 층이 만든다</td></tr>
 <tr><td><code>CheckpointRecord</code> (seq, step, confirmed, purpose, note)</td><td><code>CheckpointRecord</code> 88바이트 (state, previous, description 64)</td><td>confirmed → <code>DONE</code>, purpose(RELEASE) 는 지운다, note 512 → 64</td></tr>
 <tr><td><code>DecisionStore</code> (길이 제한 없음)</td><td>2048바이트 상한</td><td>상한 추가. 기존 데이터가 넘으면 가져오기에서 보고</td></tr>
@@ -704,7 +909,7 @@ app/
 
 <table>
 <tr><th class="num">#</th><th>질문</th><th>결정</th></tr>
-<tr><td class="num">1</td><td>Kind별 고유 필드 (이슈 모델 8항)</td><td>고유 필드 없음. 진입 단계 · 구현 상태는 태그, 본문은 ID로만 읽는다 (<a href="#model-fields">3.6</a>, <a href="#model-body">3.7</a>)</td></tr>
+<tr><td class="num">1</td><td>Kind별 고유 필드 (이슈 모델 8항)</td><td>고유 필드 없음. 진입 단계 · 구현 상태는 태그 레코드, 본문은 ID로만 읽는다 (<a href="#model-tag-record">3.6</a>, <a href="#model-body">3.7</a>)</td></tr>
 <tr><td class="num">2</td><td>제목 상한: C 인터페이스 v2는 256, 이슈는 128 + 요약 256</td><td>이슈를 따른다. 제목 128, 요약 256</td></tr>
 <tr><td class="num">3</td><td>결정 기록 상한: v2는 8192, 이슈는 2048</td><td>이슈를 따른다. 2048</td></tr>
 <tr><td class="num">4</td><td>이슈의 "Patient Reference [8byte]"</td><td>상위 항목 핸들 (<code>parent</code>)</td></tr>
@@ -712,8 +917,15 @@ app/
 <tr><td class="num">6</td><td>남길 v1 기능: 시점 조회, 체크포인트 사이 diff, 읽기 전용 SQL</td><td>시점 조회와 diff는 남긴다. diff는 전체와 Kind별로 추적할 수 있게 한다 (<a href="#checkpoint-diff">5.4</a>). 읽기 전용 SQL은 지운다</td></tr>
 <tr><td class="num">7</td><td>모델(태그 · 관계 정의)을 jsonl에 함께 내보내는가</td><td>내보내지 않는다. 태그 값은 비트 번호로 저장한다</td></tr>
 <tr><td class="num">8</td><td>RELEASE 표시 방법</td><td>표시하지 않는다. Step 12의 확정 조건이 R-10이다</td></tr>
-<tr><td class="num">9</td><td><code>ks</code> TSV에서 탭 · 줄바꿈이 든 값의 표기</td><td>탭은 공백, 줄바꿈은 <code>
-</code> 두 글자로 바꾼다</td></tr>
+<tr><td class="num">9</td><td><code>ks</code> TSV에서 탭 · 줄바꿈이 든 값의 표기</td><td>탭은 공백, 줄바꿈은 <code>\n</code> 두 글자로 바꾼다</td></tr>
+<tr><td class="num">10</td><td><code>ks diff</code>의 출력 양식</td><td>Kind와 추가 · 삭제 · 변경의 조합을 필수로 받고 묶음별 TSV로 찍는다. 제목은 <code>"이전" -&gt; "이후"</code>, 요약은 글자 diff 커서, 관계는 <code>RelationDiff</code>로 찍고 더한 것은 파랑 · 지운 것은 빨강이다 (<a href="#checkpoint-diff">5.4</a>). 예전 <code>--summary</code>(Kind별 요약 표)는 <code>--kind</code> 없는 호출로 바뀌어 선택 열 <code>--summary</code>와 겹치지 않는다</td></tr>
+<tr><td class="num">11</td><td>ID에 쓸 수 있는 글자</td><td>Markdown에 그대로 붙이기 위해 ASCII 영문 대소문자, 숫자, 하이픈, 밑줄만 허용한다 (<a href="#model-common">3.2</a>). <code>DSN-004</code> 같은 기존 ID와 저장소의 jsonl 데이터는 모두 이 규칙에 맞는다. Markdown 양식에 관한 다섯 번째 항목은 메시지가 끊겨 아직 받지 못했다</td></tr>
+<tr><td class="num">12</td><td>관계 이름이 "만족시킨다" · "의존한다"로는 어느 Kind와 이어지는지 알기 어렵다</td><td>"관련 요구사항" · "의존 설계 사항"처럼 <strong>역할 + 대상 Kind 이름</strong>으로 짓고, 대상 Kind가 둘이던 정의는 Kind마다 하나로 나눈다 (<a href="#model-relation">3.5</a>)</td></tr>
+<tr><td class="num">13</td><td>모델의 태그 · 관계 중 원하는 것만 보여 줄 수 있는가</td><td>있다. <code>--tag &lt;이름&gt;</code> · <code>--relation &lt;이름&gt;</code>으로 열을 고르고, 기본은 아무 열도 찍지 않는다 (<a href="#query-columns">8.4</a>)</td></tr>
+<tr><td class="num">14</td><td>13번이 "Kind별 고유 필드를 두지 않는다"와 충돌하지 않는가</td><td>충돌하지 않는다. 그 결정은 라이브러리의 레코드 · 함수가 Kind마다 달라지는 것을 막고, 열 고르기는 모델 메타데이터의 이름을 index로 바꿔 모든 Kind에 같은 함수를 부르는 <code>ks</code>의 표시 선택이다 (<a href="#model-tag-record">3.6</a> 끝 문단)</td></tr>
+<tr><td class="num">15</td><td>변경 요청이 모든 Kind에 영향 관계를 가져야 하는가</td><td>아니다. 입력(요구사항 · 외부 인터페이스 · 설계 사항 · 개발 수칙)에만 "영향" 관계를 두고 "관련 마일스톤"을 더한다. 출력(테스트 계획 · 결과)은 입력을 따라 바뀐다 (<a href="#model-relation">3.5</a>)</td></tr>
+<tr><td class="num">16</td><td>글자 diff 커서의 입력</td><td>ID 대신 항목 핸들을 받고, 제목 · 요약 중 어느 값을 비교할지 <code>field</code>로 받는다. 본문은 받지 않는다. 핸들을 넘기기 위해 <code>ItemDiff</code>에 <code>item</code>을 더해 56바이트가 된다 (<a href="#checkpoint-diff">5.4</a>)</td></tr>
+<tr><td class="num">17</td><td>"Kind별 고유 필드" 절과 태그 저장 방식</td><td>그 절은 결정 한 문단으로 줄여 새 3.6에 넣고, 3.6은 태그 레코드 절이 된다. 태그 값은 항목 index에 붙은 배열이 아니라 <code>RelationRecord</code>와 같은 꼴의 <code>TagRecord</code>(24바이트)로 두며, 같은 Kind 끼리의 연결은 태그가 아니라 관계로 표현한다 (<a href="#model-tag-record">3.6</a>).</td></tr>
 </table>
 
 <footer>
