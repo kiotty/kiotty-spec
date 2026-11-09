@@ -32,7 +32,7 @@ SequenceResult Lifecycle::beginWrite()
             _w.failure.raise(KIOTTY_SPEC_STATUS_CONFIRMED, {literalText("가장 최근 체크포인트가 DONE 임. 새 체크포인트를 시작할 것")}));
     }
     if (record->state == CheckpointState::STARTED) {
-        const KiottySpecStatus running = _w.checkpoints.setState(latest, CheckpointState::RUNNING);
+        const KiottySpecStatus running = _w.checkpoints.writer().setState(latest, CheckpointState::RUNNING);
         if (running != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(running); }
     }
     return SequenceResult::success(latest);
@@ -43,7 +43,7 @@ SequenceResult Lifecycle::start(entity::Step step, Span<const char> description)
     if (!entity::isValidStep(static_cast<uint32_t>(step))) {
         return SequenceResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("단계는 1 ~ 12")}));
     }
-    return _w.checkpoints.create(step, description, nowEpochSeconds());
+    return _w.checkpoints.writer().create(step, description, nowEpochSeconds());
 }
 
 KiottySpecStatus Lifecycle::resume()
@@ -62,7 +62,7 @@ KiottySpecStatus Lifecycle::complete(KiottySpecActor actor)
     if (record->state == CheckpointState::DONE) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     const KiottySpecStatus checked = _checker.check(record->step);
     if (checked != KIOTTY_SPEC_STATUS_SUCCESS) { return checked; }
-    return _w.checkpoints.setState(latest, CheckpointState::DONE);
+    return _w.checkpoints.writer().setState(latest, CheckpointState::DONE);
 }
 
 Result<size_t, KiottySpecStatus> Lifecycle::prune(KiottySpecActor actor, uint32_t base)
@@ -80,7 +80,7 @@ Result<size_t, KiottySpecStatus> Lifecycle::prune(KiottySpecActor actor, uint32_
     if (begun != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(begun); }
     const KiottySpecStatus pruned = pruneVersions(_w.storage, base);
     if (pruned != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(pruned); }
-    const auto dropped = _w.checkpoints.dropBefore(base);
+    const auto dropped = _w.checkpoints.writer().dropBefore(base);
     if (!dropped) { return dropped; }
     const KiottySpecStatus committed = _w.storage.check(savepoint.commit());
     if (committed != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(committed); }

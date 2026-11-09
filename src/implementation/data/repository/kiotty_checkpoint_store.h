@@ -4,6 +4,7 @@
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
 #include "implementation/data/datasource/kiotty_storage.h"
+#include "implementation/data/repository/kiotty_checkpoint_writer.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 
 #include <cstddef>
@@ -26,12 +27,11 @@ public:
     // sequence 순서로 훑을 때 쓴다. 지운 슬롯이면 nullptr
     const entity::CheckpointRecord* at(uint32_t sequence) const;
 
-    Result<uint32_t, KiottySpecStatus> create(entity::Step step, Span<const char> description, int64_t created_at);
-    KiottySpecStatus setState(uint32_t sequence, entity::CheckpointState state);
-    // base 이전의 체크포인트를 지우고 base 의 previous 를 비운다. DB 의 버전 정리는 VersionHistory 가 한다.
-    Result<size_t, KiottySpecStatus> dropBefore(uint32_t base);
     // 이 체크포인트에 묶인 버전 행 수 (항목 · 관계 · 결정 기록)
     Result<uint64_t, KiottySpecStatus> countWrites(uint32_t sequence);
+
+    // 쓰기는 세부 클래스에 맡긴다 (개발수칙 4.19). 부른 자리에서 쓰고 버린다.
+    CheckpointWriter writer() { return CheckpointWriter(_storage, _records, _exists, _latest); }
 
 private:
     Storage& _storage;
