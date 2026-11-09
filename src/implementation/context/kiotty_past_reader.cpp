@@ -1,6 +1,7 @@
 #include "implementation/context/kiotty_past_reader.h"
 
 #include "implementation/core/kiotty_text_view.h"
+#include "implementation/domain/entity/kiotty_tag_pairs.h"
 
 #include <cstring>
 #include <string_view>
@@ -75,26 +76,11 @@ Result<uint64_t, KiottySpecStatus> PastReader::tagAt(Span<const char> id, uint32
     if (!stepped.value || query.value.row().integer(6) != 0) {
         return TagResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("그 시점에 없는 항목: "), id}));
     }
-    // "[[1,4],[2,1]]" 에서 tag 의 값을 찾는다.
-    const std::string_view text = viewOf(query.value.row().text(5));
-    uint64_t numbers[2] {};
-    size_t count = 0;
-    uint64_t current = 0;
-    bool digits = false;
-    for (const char letter : text) {
-        if (letter >= '0' && letter <= '9') {
-            current = current * 10 + static_cast<uint64_t>(letter - '0');
-            digits = true;
-            continue;
-        }
-        if (digits && count < 2) { numbers[count++] = current; }
-        current = 0;
-        digits = false;
-        if (letter == ']' && count == 2) {
-            if (numbers[0] == tag) { return TagResult::success(numbers[1]); }
-            count = 0;
-        }
-    }
+    // "[[1,4],[2,1]]" 에서 tag 의 값을 찾는다. 형식이 어긋나면 값이 없는 것으로 본다.
+    entity::TagPairs pairs(query.value.row().text(5));
+    Result<bool, KiottySpecStatus> next = pairs.next();
+    while (next && next.value && pairs.current().tag != tag) { next = pairs.next(); }
+    if (next && next.value) { return TagResult::success(pairs.current().value); }
     return TagResult::success(0);
 }
 

@@ -112,6 +112,7 @@ add_executable(kiotty_model_test
     tests/model/model_test.cpp
     src/implementation/domain/entity/kiotty_item_id.cpp
     src/implementation/domain/entity/kiotty_kind.cpp
+    src/implementation/domain/entity/kiotty_tag_pairs.cpp
     src/implementation/domain/usecases/kiotty_model_catalog.cpp
     src/implementation/domain/usecases/kiotty_model_finder.cpp)
 target_include_directories(kiotty_model_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)

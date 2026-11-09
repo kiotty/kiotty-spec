@@ -1,5 +1,6 @@
 #include "implementation/domain/entity/kiotty_item_id.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
+#include "implementation/domain/entity/kiotty_tag_pairs.h"
 #include "implementation/domain/usecases/kiotty_model_catalog.h"
 
 #include <cstdio>
@@ -130,6 +131,31 @@ bool testRelations()
     return ok;
 }
 
+
+bool testTagPairs()
+{
+    entity::TagPairs pairs(textOf("[[1,4],[12,0],[3,18446744073709551615]]"));
+    bool ok = true;
+    const uint64_t expected[][2] = {{1, 4}, {12, 0}, {3, 18446744073709551615ull}};
+    for (const auto& pair : expected) {
+        const auto next = pairs.next();
+        ok = expectTrue(next && next.value && pairs.current().tag == pair[0] && pairs.current().value == pair[1], "tag pair") && ok;
+    }
+    const auto end = pairs.next();
+    ok = expectTrue(end && !end.value, "end of pairs") && ok;
+    entity::TagPairs empty(textOf("[]"));
+    const auto none = empty.next();
+    ok = expectTrue(none && !none.value, "empty tags") && ok;
+    const char* const broken[] = {"[[1,2,3]]", "[[1,2],[3", "[[1,2],[3]]"};
+    for (const char* text : broken) {
+        entity::TagPairs bad(textOf(text));
+        auto next = bad.next();
+        while (next && next.value) { next = bad.next(); }
+        ok = expectTrue(!next, text) && ok;
+    }
+    return ok;
+}
+
 }
 
 int main()
@@ -146,6 +172,7 @@ int main()
         {"tag lookup", testTagLookup},
         {"tag value", testTagValue},
         {"relations", testRelations},
+        {"tag pairs", testTagPairs},
     };
 
     int failed = 0;

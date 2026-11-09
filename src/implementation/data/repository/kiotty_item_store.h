@@ -31,6 +31,10 @@ public:
     ItemWriter writer() { return ItemWriter(_storage, _items, _id_index, _tags, _tag_count); }
 
 private:
+    KiottySpecStatus loadRow(const Row& row);
+    KiottySpecStatus loadTags(entity::ItemHandle handle, entity::ItemKind kind, Span<const char> id, Span<const char> text);
+    KiottySpecStatus linkParents();
+
     Storage& _storage;
     LazyPool<entity::ItemRecord> _items;
     FixedMap<entity::IdText, uint32_t> _id_index;
