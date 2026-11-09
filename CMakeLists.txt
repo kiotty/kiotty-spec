@@ -54,8 +54,10 @@ endfunction()
 file(GLOB_RECURSE KIOTTY_IMPL_SOURCES CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/implementation/*.cpp)
 
+file(GLOB KIOTTY_ADAPTER_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+
 add_library(kiotty_spec STATIC
-    src/kiotty_spec.cpp
+    ${KIOTTY_ADAPTER_SOURCES}
     ${KIOTTY_IMPL_SOURCES})
 target_include_directories(kiotty_spec
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include

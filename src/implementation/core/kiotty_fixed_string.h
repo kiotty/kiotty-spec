@@ -96,4 +96,15 @@ std::string operator+(const FixedString<Capacity>& left, const char* right)
     return left + std::string_view(right);
 }
 
+
+// FixedString 을 같은 용량의 C 배열(null 종료)로 옮긴다. C 구조체로 내보낼 때 쓴다.
+template <size_t Capacity, size_t Size>
+void copyText(char (&target)[Size], const FixedString<Capacity>& source)
+{
+    static_assert(Size == Capacity + 1, "buffer must match FixedString capacity");
+    const size_t length = source.length();
+    for (size_t index = 0; index < length; ++index) { target[index] = source.c_str()[index]; }
+    target[length] = '\0';
+}
+
 }
