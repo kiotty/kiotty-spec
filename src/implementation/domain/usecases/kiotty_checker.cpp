@@ -16,12 +16,10 @@ using entity::ItemRecord;
 using entity::RelationRecord;
 
 constexpr uint32_t MISSING = 0xFFFFFFFFu;
-constexpr size_t MAX_REPORT_LENGTH = 3800;
 
 bool startsWithKeyword(std::string_view text)
 {
-    const std::string_view keywords[] = {"인수 조건", "인수조건"};
-    for (const std::string_view keyword : keywords) {
+    for (const std::string_view keyword : ACCEPTANCE_CRITERIA_KEYWORDS) {
         if (text.find(keyword) != std::string_view::npos) { return true; }
     }
     for (size_t index = 0; index + 10 <= text.size(); ++index) {
@@ -52,68 +50,47 @@ bool isListLine(std::string_view line)
 
 }
 
-// 어긋난 조건과 항목 ID 를 모은다. 길면 잘라 낸다.
-class Checker::Report
+Span<const UnmetCondition> Checker::collect(entity::Step step)
 {
-public:
-    explicit Report(entity::Step step)
-    {
-        _text.assign(literalText("Step "));
-        const char digits[3] = {static_cast<char>('0' + static_cast<int>(step) / 10), static_cast<char>('0' + static_cast<int>(step) % 10), '\0'};
-        _text.append(static_cast<int>(step) >= 10 ? Span<const char>(digits, 2) : Span<const char>(digits + 1, 1));
-        _text.append(literalText(" 확정 조건 미충족"));
+    _length = 0;
+    switch (step) {
+    case entity::Step::CHANGE_REQUEST_REPORTED: checkEntrySteps(); break;
+    case entity::Step::REQUIREMENT_DISCUSSING: checkAcceptanceCriteria(); break;
+    case entity::Step::DEVELOPMENT_PLAN_DISCUSSING: checkMilestoneCoverage(); break;
+    case entity::Step::SYSTEM_TEST_PLAN_DISCUSSING:
+        checkOneToOne(ItemKind::REQUIREMENT, ItemKind::SYSTEM_TEST_PLAN, SYSTEM_TEST_REQUIREMENT_RELATION, KIOTTY_SPEC_CONDITION_SYSTEM_TEST_PAIR, true);
+        break;
+    case entity::Step::CODE_INSPECTING:
+        checkOneToOne(ItemKind::RULE, ItemKind::CODE_INSPECTION_RESULT, CODE_INSPECTION_RULE_RELATION, KIOTTY_SPEC_CONDITION_CODE_INSPECTION_PAIR, false);
+        break;
+    case entity::Step::END_TO_END_TEST_DISCUSSING:
+        checkOneToOne(ItemKind::EXTERNAL_INTERFACE, ItemKind::END_TO_END_TEST_PLAN, END_TO_END_TEST_INTERFACE_RELATION,
+                      KIOTTY_SPEC_CONDITION_END_TO_END_TEST_PAIR, false);
+        break;
+    case entity::Step::END_TO_END_TEST_RUN: checkResults(); break;
+    case entity::Step::EXTERNAL_INTERFACE_DISCUSSING:
+    case entity::Step::DESIGN_DISCUSSING:
+    case entity::Step::UNIT_TEST_PLAN_DISCUSSING:
+    case entity::Step::IMPLEMENTING:
+    case entity::Step::SYSTEM_TEST_RUN: break;
     }
+    return Span<const UnmetCondition>(_rows.data(), _length);
+}
 
-    void section(const char* title)
-    {
-        _pending = title;
-    }
-
-    void add(Span<const char> id)
-    {
-        if (_pending != nullptr) {
-            append(literalText("\n- "));
-            append(boundedText(_pending, 128));
-            append(literalText(":"));
-            _pending = nullptr;
-            _failed = true;
-        }
-        append(literalText(" "));
-        append(id);
-    }
-
-    bool failed() const { return _failed; }
-    Span<const char> text() const { return _text.view(); }
-
-private:
-    void append(Span<const char> part)
-    {
-        if (_text.append(part) != KIOTTY_SPEC_STATUS_SUCCESS && !_truncated) {
-            _truncated = true;
-            _text.append(literalText(" …"));
-        }
-    }
-
-    FixedString<MAX_REPORT_LENGTH> _text;
-    const char* _pending {nullptr};
-    bool _failed {false};
-    bool _truncated {false};
-};
-
-uint64_t Checker::tagBit(ItemKind kind, const char* tag, const char* bit, uint32_t& tag_index)
+uint64_t Checker::tagBit(ItemKind kind, std::string_view tag, std::string_view bit, uint32_t& tag_index)
 {
     tag_index = MISSING;
-    const auto found = _w.catalog.finder().findTag(kind, boundedText(tag, 64));
+    const auto found = _w.catalog.finder().findTag(kind, spanOf(tag));
     if (!found) { return 0; }
-    const auto position = _w.catalog.finder().findTagBit(kind, found.value, boundedText(bit, 64));
+    const auto position = _w.catalog.finder().findTagBit(kind, found.value, spanOf(bit));
     if (!position) { return 0; }
     tag_index = found.value;
     return uint64_t{1} << position.value;
 }
 
-uint32_t Checker::relationIndex(ItemKind kind, const char* name)
+uint32_t Checker::relationIndex(ItemKind kind, std::string_view name)
 {
-    const auto found = _w.catalog.finder().findRelation(kind, boundedText(name, 64));
+    const auto found = _w.catalog.finder().findRelation(kind, spanOf(name));
     return found ? found.value : MISSING;
 }
 
@@ -131,9 +108,9 @@ size_t Checker::countRelations(ItemKind model, uint32_t relation, ItemHandle ite
 bool Checker::isOpenChangeRequest(ItemHandle handle)
 {
     uint32_t state = MISSING;
-    const uint64_t open = tagBit(ItemKind::CHANGE_REQUEST, "상태", "열림", state);
+    const uint64_t open = tagBit(ItemKind::CHANGE_REQUEST, CHANGE_REQUEST_STATE_TAG, CHANGE_REQUEST_OPEN_BIT, state);
     uint32_t ignored = MISSING;
-    const uint64_t in_progress = tagBit(ItemKind::CHANGE_REQUEST, "상태", "반영 중", ignored);
+    const uint64_t in_progress = tagBit(ItemKind::CHANGE_REQUEST, CHANGE_REQUEST_STATE_TAG, CHANGE_REQUEST_IN_PROGRESS_BIT, ignored);
     if (state == MISSING) { return true; }
     const uint64_t value = _w.items.tags().value(handle, state);
     return value == 0 || (value & (open | in_progress)) != 0;
@@ -153,7 +130,7 @@ size_t Checker::openChangeRequestCount()
 
 uint32_t Checker::earliestEntryStep()
 {
-    const auto entry = _w.catalog.finder().findTag(ItemKind::CHANGE_REQUEST, literalText("진입 단계"));
+    const auto entry = _w.catalog.finder().findTag(ItemKind::CHANGE_REQUEST, spanOf(CHANGE_REQUEST_ENTRY_STEP_TAG));
     if (!entry) { return 0; }
     uint32_t earliest = 0;
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
@@ -195,24 +172,22 @@ size_t Checker::countAcceptanceCriteria(Span<const char> body)
     return count;
 }
 
-void Checker::checkEntrySteps(Report& report)
+void Checker::checkEntrySteps()
 {
-    report.section("진입 단계가 정해지지 않은 열린 변경 요청");
-    const auto entry = _w.catalog.finder().findTag(ItemKind::CHANGE_REQUEST, literalText("진입 단계"));
+    const auto entry = _w.catalog.finder().findTag(ItemKind::CHANGE_REQUEST, spanOf(CHANGE_REQUEST_ENTRY_STEP_TAG));
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != ItemKind::CHANGE_REQUEST || !isOpenChangeRequest(handle)) { continue; }
         if (entry && _w.items.tags().value(handle, entry.value) != 0) { continue; }
-        report.add(item.value->id.view());
+        add(KIOTTY_SPEC_CONDITION_ENTRY_STEP, item.value->id);
     }
 }
 
-void Checker::checkAcceptanceCriteria(Report& report)
+void Checker::checkAcceptanceCriteria()
 {
-    report.section("인수 조건이 없는 기능 요구사항 (R-4)");
     uint32_t kind_tag = MISSING;
-    const uint64_t functional = tagBit(ItemKind::REQUIREMENT, "요구사항 종류", "기능 요구사항", kind_tag);
+    const uint64_t functional = tagBit(ItemKind::REQUIREMENT, REQUIREMENT_KIND_TAG, FUNCTIONAL_REQUIREMENT_BIT, kind_tag);
     if (kind_tag == MISSING) { return; }
     std::vector<char>& buffer = _body;
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
@@ -221,15 +196,16 @@ void Checker::checkAcceptanceCriteria(Report& report)
         if (!item || item.value->kind != ItemKind::REQUIREMENT) { continue; }
         if ((_w.items.tags().value(handle, kind_tag) & functional) == 0) { continue; }
         const auto length = _w.items.reader().readBody(handle, buffer.data(), buffer.size());
-        if (!length || countAcceptanceCriteria(Span<const char>(buffer.data(), length.value)) == 0) { report.add(item.value->id.view()); }
+        if (!length || countAcceptanceCriteria(Span<const char>(buffer.data(), length.value)) == 0) {
+            add(KIOTTY_SPEC_CONDITION_ACCEPTANCE_CRITERIA, item.value->id);
+        }
     }
 }
 
-void Checker::checkMilestoneCoverage(Report& report)
+void Checker::checkMilestoneCoverage()
 {
-    report.section("어떤 마일스톤에도 포함되지 않은 설계 사항 · 유닛 테스트 (R-5)");
-    const uint32_t designs = relationIndex(ItemKind::MILESTONE, "포함 설계 사항");
-    const uint32_t tests = relationIndex(ItemKind::MILESTONE, "포함 유닛 테스트");
+    const uint32_t designs = relationIndex(ItemKind::MILESTONE, MILESTONE_DESIGN_RELATION);
+    const uint32_t tests = relationIndex(ItemKind::MILESTONE, MILESTONE_UNIT_TEST_RELATION);
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
@@ -238,37 +214,33 @@ void Checker::checkMilestoneCoverage(Report& report)
         if (item.value->kind == ItemKind::DESIGN) { relation = designs; }
         if (item.value->kind == ItemKind::UNIT_TEST_PLAN) { relation = tests; }
         if (relation == MISSING) { continue; }
-        if (countRelations(ItemKind::MILESTONE, relation, handle, true) == 0) { report.add(item.value->id.view()); }
+        if (countRelations(ItemKind::MILESTONE, relation, handle, true) == 0) { add(KIOTTY_SPEC_CONDITION_MILESTONE_COVERAGE, item.value->id); }
     }
 }
 
-void Checker::checkOneToOne(Report& report, ItemKind target_kind, ItemKind test_kind, const char* relation_name, bool functional_only)
+void Checker::checkOneToOne(ItemKind target_kind, ItemKind test_kind, std::string_view relation_name, KiottySpecCondition pair_condition,
+                            bool functional_only)
 {
     const uint32_t relation = relationIndex(test_kind, relation_name);
     uint32_t kind_tag = MISSING;
-    const uint64_t functional = functional_only ? tagBit(ItemKind::REQUIREMENT, "요구사항 종류", "기능 요구사항", kind_tag) : 0;
-    report.section(test_kind == ItemKind::SYSTEM_TEST_PLAN ? "시스템 테스트와 1:1 이 아닌 기능 요구사항 (R-3)"
-                   : test_kind == ItemKind::END_TO_END_TEST_PLAN ? "E2E 테스트와 1:1 이 아닌 외부 인터페이스 (R-3)"
-                                                                 : "코드 검사 결과와 1:1 이 아닌 개발 수칙");
+    const uint64_t functional = functional_only ? tagBit(ItemKind::REQUIREMENT, REQUIREMENT_KIND_TAG, FUNCTIONAL_REQUIREMENT_BIT, kind_tag) : 0;
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != target_kind) { continue; }
         if (functional_only && (kind_tag == MISSING || (_w.items.tags().value(handle, kind_tag) & functional) == 0)) { continue; }
-        if (countRelations(test_kind, relation, handle, true) != 1) { report.add(item.value->id.view()); }
+        if (countRelations(test_kind, relation, handle, true) != 1) { add(pair_condition, item.value->id); }
     }
-    report.section("대상이 하나가 아닌 테스트 · 검사 항목");
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != test_kind) { continue; }
-        if (countRelations(test_kind, relation, handle, false) != 1) { report.add(item.value->id.view()); }
+        if (countRelations(test_kind, relation, handle, false) != 1) { add(KIOTTY_SPEC_CONDITION_SINGLE_TARGET, item.value->id); }
     }
 }
 
-void Checker::checkResults(Report& report)
+void Checker::checkResults()
 {
-    report.section("PASS 가 아닌 결과 (R-10)");
     const ItemKind kinds[] = {ItemKind::SYSTEM_TEST_RESULT, ItemKind::END_TO_END_TEST_RESULT, ItemKind::CODE_INSPECTION_RESULT};
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
@@ -277,41 +249,24 @@ void Checker::checkResults(Report& report)
         for (const ItemKind kind : kinds) {
             if (item.value->kind != kind) { continue; }
             uint32_t result = MISSING;
-            const uint64_t pass = tagBit(kind, "결과", "PASS", result);
-            if (result == MISSING || _w.items.tags().value(handle, result) != pass) { report.add(item.value->id.view()); }
+            const uint64_t pass = tagBit(kind, RESULT_TAG, PASS_BIT, result);
+            if (result == MISSING || _w.items.tags().value(handle, result) != pass) { add(KIOTTY_SPEC_CONDITION_PASSING_RESULT, item.value->id); }
         }
     }
-    report.section("열린 변경 요청 (R-10)");
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
-        if (item && item.value->kind == ItemKind::CHANGE_REQUEST && isOpenChangeRequest(handle)) { report.add(item.value->id.view()); }
+        if (item && item.value->kind == ItemKind::CHANGE_REQUEST && isOpenChangeRequest(handle)) {
+            add(KIOTTY_SPEC_CONDITION_CLOSED_CHANGE_REQUEST, item.value->id);
+        }
     }
 }
 
-KiottySpecStatus Checker::check(entity::Step step)
+void Checker::add(KiottySpecCondition condition, entity::IdText id)
 {
-    Report report(step);
-    switch (step) {
-    case entity::Step::CHANGE_REQUEST_REPORTED: checkEntrySteps(report); break;
-    case entity::Step::REQUIREMENT_DISCUSSING: checkAcceptanceCriteria(report); break;
-    case entity::Step::DEVELOPMENT_PLAN_DISCUSSING: checkMilestoneCoverage(report); break;
-    case entity::Step::SYSTEM_TEST_PLAN_DISCUSSING:
-        checkOneToOne(report, ItemKind::REQUIREMENT, ItemKind::SYSTEM_TEST_PLAN, "검증 요구사항", true);
-        break;
-    case entity::Step::CODE_INSPECTING: checkOneToOne(report, ItemKind::RULE, ItemKind::CODE_INSPECTION_RESULT, "검사 개발 수칙", false); break;
-    case entity::Step::END_TO_END_TEST_DISCUSSING:
-        checkOneToOne(report, ItemKind::EXTERNAL_INTERFACE, ItemKind::END_TO_END_TEST_PLAN, "검증 외부 인터페이스", false);
-        break;
-    case entity::Step::END_TO_END_TEST_RUN: checkResults(report); break;
-    case entity::Step::EXTERNAL_INTERFACE_DISCUSSING:
-    case entity::Step::DESIGN_DISCUSSING:
-    case entity::Step::UNIT_TEST_PLAN_DISCUSSING:
-    case entity::Step::IMPLEMENTING:
-    case entity::Step::SYSTEM_TEST_RUN: break;
-    }
-    if (!report.failed()) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    return _w.failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, {report.text()});
+    if (_length == _rows.size()) { return; }
+    _rows[_length] = UnmetCondition{id, condition};
+    ++_length;
 }
 
 }

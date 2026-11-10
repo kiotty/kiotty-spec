@@ -27,7 +27,7 @@ public:
     Result<size_t, KiottySpecStatus> prune(KiottySpecActor actor, uint32_t base);
 
 private:
-    KiottySpecStatus requireUser(KiottySpecActor actor, Span<const char> what);
+    KiottySpecStatus requireUser(KiottySpecActor actor);
 
     Workspace& _w;
     Checker& _checker;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "kiotty_spec.h"
-#include "implementation/core/kiotty_failure.h"
+#include "implementation/domain/entity/kiotty_failure.h"
 #include "implementation/core/kiotty_text_view.h"
 #include "implementation/data/repository/kiotty_checkpoint_store.h"
 #include "implementation/data/repository/kiotty_decision_store.h"
@@ -16,7 +16,7 @@ namespace kiotty::spec::implementation {
 // Context 가 소유한 store 와 모델 표를 usecase 에 빌려주는 참조 묶음.
 struct Workspace {
     SpecFile& file;
-    Failure& failure;
+    entity::Failure& failure;
     const ModelCatalog& catalog;
     MetaStore& meta;
     CheckpointStore& checkpoints;
@@ -49,7 +49,7 @@ struct Workspace {
     Result<entity::ItemHandle, KiottySpecStatus> resolve(Span<const char> id)
     {
         const auto found = items.reader().find(id);
-        if (!found) { return Result<entity::ItemHandle, KiottySpecStatus>::failure(failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("없는 항목: "), id})); }
+        if (!found) { return Result<entity::ItemHandle, KiottySpecStatus>::failure(failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_ITEM, id)); }
         return found;
     }
 };

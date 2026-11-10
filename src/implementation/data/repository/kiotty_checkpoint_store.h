@@ -3,7 +3,7 @@
 #include "kiotty_spec.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
-#include "implementation/core/kiotty_failure.h"
+#include "implementation/domain/entity/kiotty_failure.h"
 #include "implementation/data/repository/kiotty_checkpoint_writer.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 
@@ -17,7 +17,7 @@ namespace kiotty::spec::implementation {
 class CheckpointStore
 {
 public:
-    CheckpointStore(Failure& failure, size_t capacity) : _failure(failure), _records(capacity), _exists(capacity, 0) {}
+    CheckpointStore(entity::Failure& failure, size_t capacity) : _failure(failure), _records(capacity), _exists(capacity, 0) {}
 
     void clear();
     // 파일에서 읽은 체크포인트를 넣는다. 같은 sequence 가 두 번이면 CONFLICT
@@ -33,7 +33,7 @@ public:
     CheckpointWriter writer() { return CheckpointWriter(_failure, _records, _exists, _latest); }
 
 private:
-    Failure& _failure;
+    entity::Failure& _failure;
     std::vector<entity::CheckpointRecord> _records;
     std::vector<uint8_t> _exists;
     uint32_t _latest {0};

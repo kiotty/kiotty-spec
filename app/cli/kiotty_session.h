@@ -36,6 +36,8 @@ int fail(Session& session, KiottySpecStatus status);
 int usage(const std::string& message);
 
 KiottySpecText textOf(std::string_view text);
+std::string kindName(KiottySpecItemKind kind);
+std::string stateName(KiottySpecCheckpointState state);
 std::string cell(std::string_view value);
 void printRow(const std::vector<std::string>& cells);
 

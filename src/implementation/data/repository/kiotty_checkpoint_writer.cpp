@@ -17,17 +17,14 @@ Result<uint32_t, KiottySpecStatus> CheckpointWriter::create(entity::Step step, S
     using SequenceResult = Result<uint32_t, KiottySpecStatus>;
     const uint32_t sequence = _latest + 1;
     if (sequence > _records.size()) {
-        return SequenceResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, {literalText("체크포인트 수가 max_checkpoints 에 닿음")}));
+        return SequenceResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_checkpoints")));
     }
     CheckpointRecord record {};
     record.created_at = created_at;
     record.previous = CheckpointHandle{_latest, 0};
     record.step = step;
     record.state = CheckpointState::STARTED;
-    const KiottySpecStatus copied = record.description.assign(description);
-    if (copied != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return SequenceResult::failure(_failure.raise(copied, {literalText("체크포인트 설명은 63 바이트 이하")}));
-    }
+    record.description.assign(description);
     _records[sequence - 1] = record;
     _exists[sequence - 1] = 1;
     _latest = sequence;

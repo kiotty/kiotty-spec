@@ -8,8 +8,29 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 
 namespace kiotty::spec::implementation {
+
+constexpr size_t ACCEPTANCE_CRITERIA_KEYWORD_COUNT = 2;
+
+extern const std::string_view CHANGE_REQUEST_STATE_TAG;
+extern const std::string_view CHANGE_REQUEST_OPEN_BIT;
+extern const std::string_view CHANGE_REQUEST_IN_PROGRESS_BIT;
+extern const std::string_view CHANGE_REQUEST_ENTRY_STEP_TAG;
+extern const std::string_view REQUIREMENT_KIND_TAG;
+extern const std::string_view FUNCTIONAL_REQUIREMENT_BIT;
+extern const std::string_view IMPLEMENTATION_STATE_TAG;
+extern const std::string_view IMPLEMENTED_BIT;
+extern const std::string_view NEEDS_CHANGE_BIT;
+extern const std::string_view RESULT_TAG;
+extern const std::string_view PASS_BIT;
+extern const std::string_view MILESTONE_DESIGN_RELATION;
+extern const std::string_view MILESTONE_UNIT_TEST_RELATION;
+extern const std::string_view SYSTEM_TEST_REQUIREMENT_RELATION;
+extern const std::string_view CODE_INSPECTION_RULE_RELATION;
+extern const std::string_view END_TO_END_TEST_INTERFACE_RELATION;
+extern const std::string_view ACCEPTANCE_CRITERIA_KEYWORDS[ACCEPTANCE_CRITERIA_KEYWORD_COUNT];
 
 // 설계서 v1 3.3 ~ 3.5 의 모델 표. 코드가 정한 표를 load 에서 한 번 적재하며, 런타임에 바뀌지 않는다.
 // Model 이 이 객체의 배열을 가리키므로 복사하지 않는다.

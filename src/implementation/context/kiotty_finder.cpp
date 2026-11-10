@@ -29,7 +29,7 @@ ItemHandle unpackHandle(uint64_t value)
 CursorIdResult Finder::items(uint32_t kind, Span<const TagQuery> queries)
 {
     const auto cursor = _cursors.open(CursorKind::ITEM);
-    if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
+    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
     for (size_t position = 0; position < _w.items.reader().count(); ++position) {
         const ItemHandle handle = _w.items.reader().handleInIdOrder(position);
         const auto item = _w.items.reader().get(handle);
@@ -54,7 +54,7 @@ CursorIdResult Finder::items(uint32_t kind, Span<const TagQuery> queries)
 CursorIdResult Finder::children(ItemHandle parent)
 {
     const auto cursor = _cursors.open(CursorKind::ITEM);
-    if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
+    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
     for (size_t position = 0; position < _w.items.reader().count(); ++position) {
         const ItemHandle handle = _w.items.reader().handleInIdOrder(position);
         const auto item = _w.items.reader().get(handle);
@@ -70,7 +70,7 @@ CursorIdResult Finder::children(ItemHandle parent)
 CursorIdResult Finder::impact(ItemHandle item, uint32_t depth)
 {
     const auto cursor = _cursors.open(CursorKind::ID);
-    if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
+    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
     for (auto& flag : _visited) { flag = 0; }
     size_t head = 0;
     size_t tail = 0;
@@ -102,7 +102,7 @@ CursorIdResult Finder::impact(ItemHandle item, uint32_t depth)
 CursorIdResult Finder::relations(ItemHandle item, KiottySpecDirection direction)
 {
     const auto cursor = _cursors.open(CursorKind::RELATION);
-    if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
+    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
     const bool up = direction == KIOTTY_SPEC_DIRECTION_UPSTREAM || direction == KIOTTY_SPEC_DIRECTION_BOTH;
     const bool down = direction == KIOTTY_SPEC_DIRECTION_DOWNSTREAM || direction == KIOTTY_SPEC_DIRECTION_BOTH;
     for (const RelationRecord& relation : _w.relations.all()) {
@@ -120,7 +120,7 @@ CursorIdResult Finder::relations(ItemHandle item, KiottySpecDirection direction)
 CursorIdResult Finder::relationsByModel(ItemKind kind, uint32_t relation_index)
 {
     const auto cursor = _cursors.open(CursorKind::RELATION);
-    if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
+    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
     // from 의 ID 순서로 담는다 (8.4).
     for (size_t position = 0; position < _w.items.reader().count(); ++position) {
         const ItemHandle from = _w.items.reader().handleInIdOrder(position);
@@ -140,7 +140,7 @@ CursorIdResult Finder::relationsByModel(ItemKind kind, uint32_t relation_index)
 CursorIdResult Finder::tags(ItemHandle item)
 {
     const auto cursor = _cursors.open(CursorKind::TAG);
-    if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
+    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
     for (const TagRecord& tag : _w.items.tags().of(item)) {
         CursorRow row;
         row.first = packHandle(tag.item);

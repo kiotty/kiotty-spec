@@ -30,7 +30,7 @@ Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record
     const KiottySpecStatus unused = checkUnused(record.id);
     if (unused != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(unused); }
     if (_t.id_index.length() == _t.id_index.capacity()) {
-        return HandleResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("항목 수가 max_items 에 닿음")}));
+        return HandleResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items")));
     }
     const auto key = newKey(record.id);
     if (!key) { return HandleResult::failure(key.code); }
@@ -43,7 +43,7 @@ Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record
     version.summary = record.summary;
     KiottySpecStatus status = _t.names.insert(key.value, record.id);
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _t.versions.write(version); }
-    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(_failure.raise(status, {literalText("항목 버전 수가 상한에 닿음. 정리할 것")})); }
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(_failure.raise(status, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items"))); }
     const ItemHandle handle = _t.items.acquire();
     if (!handle.isValid()) { return HandleResult::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL); }
     ItemRecord& stored = *_t.items.get(handle).value;
@@ -58,9 +58,9 @@ Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record
 
 KiottySpecStatus ItemWriter::checkUnused(const IdText& id)
 {
-    if (_t.id_index.find(id)) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("이미 있는 ID: "), id.view()}); }
+    if (_t.id_index.find(id)) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_ID, id.view()); }
     const auto removed = ItemHistory(_t).keyOf(id.view());
-    if (removed) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("지운 항목이 이력에 쓰고 있는 ID (정리 전까지 못 씀): "), id.view()}); }
+    if (removed) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_ID_IN_HISTORY, id.view()); }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
@@ -73,7 +73,7 @@ Result<uint32_t, KiottySpecStatus> ItemWriter::newKey(const IdText& id) const
         const uint32_t key = static_cast<uint32_t>(mixed ^ (mixed >> KEY_SHIFT));
         if (key != entity::NO_KEY && !_t.names.find(key)) { return Result<uint32_t, KiottySpecStatus>::success(key); }
     }
-    return Result<uint32_t, KiottySpecStatus>::failure(_failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("새 항목 키를 만들 수 없음")}));
+    return Result<uint32_t, KiottySpecStatus>::failure(_failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_ID, id.view()));
 }
 
 Result<ItemVersion, KiottySpecStatus> ItemWriter::currentVersion(ItemHandle handle) const
@@ -87,7 +87,7 @@ Result<ItemVersion, KiottySpecStatus> ItemWriter::currentVersion(ItemHandle hand
 KiottySpecStatus ItemWriter::writeVersion(ItemHandle handle, const ItemVersion& version)
 {
     const KiottySpecStatus written = _t.versions.write(version);
-    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(written, {literalText("항목 버전 수가 상한에 닿음. 정리할 것")}); }
+    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items")); }
     _t.items.get(handle).value->checkpoint = CheckpointHandle{version.checkpoint, 0};
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
@@ -115,10 +115,10 @@ KiottySpecStatus ItemWriter::setTag(ItemHandle handle, uint32_t tag, uint64_t va
     const auto stored = _t.items.get(handle);
     if (!stored) { return stored.code; }
     const bool adds = value != 0 && tags().value(handle, tag) == 0;
-    if (adds && _t.tag_count == _t.tags.size()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("태그 수가 max_tags 에 닿음")}); }
+    if (adds && _t.tag_count == _t.tags.size()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_tags")); }
     const TagVersion version {value, _t.keys[handle.index], tag, sequence, value == 0 ? 1u : 0u};
     const KiottySpecStatus written = _t.tag_versions.write(version);
-    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(written, {literalText("태그 버전 수가 상한에 닿음. 정리할 것")}); }
+    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_tags")); }
     stored.value->checkpoint = CheckpointHandle{sequence, 0};
     return applyTag(handle, stored.value->kind, tag, value);
 }
@@ -149,7 +149,7 @@ KiottySpecStatus ItemWriter::writeBody(ItemHandle handle, Span<const char> body,
     auto version = currentVersion(handle);
     if (!version) { return version.code; }
     const KiottySpecStatus stored = _t.bodies.put(version.value.key, body);
-    if (stored != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(stored, {literalText("본문 영역 (max_body_bytes) 이 모자람. 정리할 것")}); }
+    if (stored != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(stored, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_body_bytes")); }
     version.value.checkpoint = sequence;
     version.value.body_hash = body.length() == 0 ? 0 : hash64(body);
     return writeVersion(handle, version.value);

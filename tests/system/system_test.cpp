@@ -37,6 +37,32 @@ KiottySpecText textOf(const std::string& text) { return KiottySpecText{text.data
 bool ok(KiottySpecStatus status) { return status == KIOTTY_SPEC_STATUS_SUCCESS; }
 uint32_t sequenceOf(KiottySpecCheckpointHandle handle) { return static_cast<uint32_t>(handle & 0xFFFFFFFFu); }
 
+KiottySpecIdResult createItem(KiottySpecContext* context, KiottySpecItemKind kind, KiottySpecText id, KiottySpecText title, KiottySpecText summary)
+{
+    KiottySpecItemDraft draft {};
+    draft.id = id;
+    draft.title = title;
+    draft.summary = summary;
+    draft.kind = kind;
+    return KiottySpec_createItem(context, &draft);
+}
+
+KiottySpecDiffSummaryResult summarizeDiff(KiottySpecContext* context, const KiottySpecDiffQuery& query) { return KiottySpec_summarizeDiff(context, &query); }
+KiottySpecCursorResult openItemDiffCursor(KiottySpecContext* context, const KiottySpecDiffQuery& query) { return KiottySpec_openItemDiffCursor(context, &query); }
+KiottySpecCursorResult openRelationDiffCursor(KiottySpecContext* context, const KiottySpecDiffQuery& query)
+{
+    return KiottySpec_openRelationDiffCursor(context, &query);
+}
+
+KiottySpecTagQuery tagQuery(KiottySpecItemKind kind, uint32_t tag_index, uint64_t mask)
+{
+    KiottySpecTagQuery query {};
+    query.mask = mask;
+    query.kind = kind;
+    query.tag_index = tag_index;
+    return query;
+}
+
 std::string readAll(const fs::path& path)
 {
     std::ifstream stream(path, std::ios::binary);
@@ -67,11 +93,20 @@ public:
 
     fs::path file() const { return root / ".kiotty" / "spec.kisp"; }
 
+    KiottySpecError lastError() { return KiottySpec_readLastError(context).value; }
+
+    // "상태/주제/줄/글" 꼴. 실패를 찍을 때 쓴다.
     std::string error()
     {
-        char buffer[4096] {};
-        KiottySpec_readLastError(context, buffer, sizeof(buffer));
-        return buffer;
+        const KiottySpecError detail = lastError();
+        return std::string(KiottySpec_formatStatus(detail.status).value.value) + "/" + std::to_string(static_cast<int>(detail.subject)) + "/" +
+               std::to_string(detail.line) + "/" + detail.text;
+    }
+
+    bool failedWith(KiottySpecSubject subject, const std::string& text)
+    {
+        const KiottySpecError detail = lastError();
+        return detail.subject == subject && text == detail.text;
     }
 
     KiottySpecCheckpointHandle start(KiottySpecStep step) { return KiottySpec_startCheckpoint(context, step, textOf("시험")).value; }
@@ -79,7 +114,7 @@ public:
 
     std::string add(KiottySpecItemKind kind, const std::string& id = "", const std::string& title = "제목", const std::string& summary = "")
     {
-        const KiottySpecIdResult created = KiottySpec_createItem(context, kind, textOf(id), textOf(title), textOf(summary));
+        const KiottySpecIdResult created = createItem(context, kind, textOf(id), textOf(title), textOf(summary));
         return ok(created.code) ? std::string(created.value) : std::string();
     }
 
@@ -90,7 +125,7 @@ public:
     std::string readBody(const std::string& id)
     {
         std::vector<char> buffer(KIOTTY_SPEC_MAX_BODY_LENGTH + 1);
-        KiottySpec_readItemBody(context, textOf(id), buffer.data(), buffer.size());
+        KiottySpec_readItemBody(context, textOf(id), KiottySpecBuffer{buffer.data(), buffer.size()});
         return buffer.data();
     }
 
@@ -234,12 +269,12 @@ void st003(const fs::path& root)
 {
     const fs::path project = root / "my_project";
     Spec spec(project);
-    check(ok(KiottySpec_initProject(spec.context, textOf("")).code), "1 체크포인트 없이 초기화");
+    check(ok(KiottySpec_initializeProject(spec.context, textOf("")).code), "1 체크포인트 없이 초기화");
     const std::string text = readAll(spec.file());
     check(text.find("meta\tO\tproject.name\tmy_project\n") != std::string::npos, "1 이름은 루트 폴더 이름");
     const size_t created = text.find("meta\tO\tproject.created_at\t");
     check(created != std::string::npos && text.compare(created + 26, 2, "0\n") != 0, "1 만든 시각이 기록된다");
-    KiottySpec_initProject(spec.context, textOf("다른 이름"));
+    KiottySpec_initializeProject(spec.context, textOf("다른 이름"));
     check(readAll(spec.file()).find("meta\tO\tproject.name\t다른 이름\n") != std::string::npos, "2 준 이름이 기록된다");
 }
 
@@ -282,7 +317,9 @@ void st004(const fs::path& root)
     }
     writeAll(marked / ".kiotty" / "spec.kisp", readAll(marked / ".kiotty" / "spec.kisp") + "<<<<<<< HEAD\n");
     Spec conflict(marked);
-    check(conflict.opened == KIOTTY_SPEC_STATUS_CONFLICT && conflict.error().find("줄") != std::string::npos, "2 충돌 표시가 남은 파일은 줄 번호와 함께 거부");
+    const KiottySpecError marker = conflict.lastError();
+    check(conflict.opened == KIOTTY_SPEC_STATUS_CONFLICT && marker.subject == KIOTTY_SPEC_SUBJECT_MERGE_MARKER && marker.line > 0,
+          "2 충돌 표시가 남은 파일은 줄 번호와 함께 거부");
 
     const fs::path doubled = root / "doubled";
     std::string text;
@@ -318,7 +355,7 @@ void st005(const fs::path& root)
     first.start(KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING);
     Spec second(root);
     first.add(REQUIREMENT, "REQ-001", "앞");
-    const KiottySpecIdResult late = KiottySpec_createItem(second.context, REQUIREMENT, textOf("REQ-002"), textOf("뒤"), textOf(""));
+    const KiottySpecIdResult late = createItem(second.context, REQUIREMENT, textOf("REQ-002"), textOf("뒤"), textOf(""));
     check(late.code == KIOTTY_SPEC_STATUS_CONFLICT, "1 나중 쓰기는 충돌로 거부");
     check(ok(KiottySpec_findItem(second.context, textOf("REQ-001")).code), "1 거부된 쪽에 앞쪽 변경이 보인다");
     check(!second.add(REQUIREMENT, "REQ-002", "뒤").empty(), "2 다시 하면 성공");
@@ -332,12 +369,13 @@ void st006(const fs::path& root)
     writeAll(root / "tag" / ".kiotty" / "spec.kisp",
              "#kisp 2 model 1\nitem\tO\t0000abcd\tREQ-001\nitem_version\tO\t0000abcd\t1\trequirement\t-\t제목\t\t-\ntag\tO\t0000abcd\t없는 태그\t1\t기능 요구사항\n");
     Spec tag(root / "tag");
-    const std::string reason = tag.error();
-    check(tag.opened == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT && reason.find("줄 4") != std::string::npos && reason.find("없는 태그") != std::string::npos,
+    check(tag.opened == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT && tag.lastError().line == 4 && tag.failedWith(KIOTTY_SPEC_SUBJECT_TAG, "없는 태그"),
           "2 모델에 없는 태그는 줄 번호와 이름으로 거부");
     writeAll(root / "escape" / ".kiotty" / "spec.kisp", "#kisp 2 model 1\nmeta\tO\tproject.name\ta\\qb\n");
     Spec escape(root / "escape");
-    check(escape.opened == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT && escape.error().find("줄 2") != std::string::npos, "3 잘못된 이스케이프는 줄 번호로 거부");
+    check(escape.opened == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT && escape.lastError().line == 2 && escape.lastError().subject == KIOTTY_SPEC_SUBJECT_FILE_LINE,
+          "3 잘못된 이스케이프는 줄 번호로 거부");
+    check(version.lastError().subject == KIOTTY_SPEC_SUBJECT_FILE_FORMAT && version.lastError().line == 1, "4 형식 버전이 다르면 첫 줄의 형식 오류");
 }
 
 // ---------------------------------------------------------------- REQ-007 ~ 013
@@ -361,12 +399,13 @@ void st008(const fs::path& root)
     for (int index = 0; index < 6; ++index) { spec.add(DESIGN); }
     KiottySpec_removeItem(spec.context, textOf("DSN-006"));
     check(spec.add(DESIGN) == "DSN-007", "1 지운 DSN-006 까지 세어 DSN-007");
-    check(KiottySpec_createItem(spec.context, DESIGN, textOf("DSN-006"), textOf("t"), UNCHANGED).code == KIOTTY_SPEC_STATUS_CONFLICT, "2 지운 항목의 ID 거부");
+    check(createItem(spec.context, DESIGN, textOf("DSN-006"), textOf("t"), UNCHANGED).code == KIOTTY_SPEC_STATUS_CONFLICT, "2 지운 항목의 ID 거부");
     // 상태 코드는 요구사항이 정하지 않는다. 거부되고 이유가 ID 형식이면 된다 (16 자는 CAPACITY_EXCEEDED).
-    const bool spaced = !ok(KiottySpec_createItem(spec.context, DESIGN, textOf("DSN 1"), textOf("t"), UNCHANGED).code) && spec.error().find("ID") != std::string::npos;
-    const bool long_id = !ok(KiottySpec_createItem(spec.context, DESIGN, textOf("DSN-123456789012"), textOf("t"), UNCHANGED).code) && spec.error().find("15") != std::string::npos;
+    const bool spaced = !ok(createItem(spec.context, DESIGN, textOf("DSN 1"), textOf("t"), UNCHANGED).code) && spec.failedWith(KIOTTY_SPEC_SUBJECT_ID, "DSN 1");
+    const bool long_id = !ok(createItem(spec.context, DESIGN, textOf("DSN-123456789012"), textOf("t"), UNCHANGED).code) &&
+                         spec.failedWith(KIOTTY_SPEC_SUBJECT_ID, "DSN-123456789012");
     check(spaced && long_id, "3 공백이나 16 자 이상의 ID 는 ID 형식이 잘못되었다는 이유로 거부");
-    check(KiottySpec_createItem(spec.context, DESIGN, textOf(""), textOf(""), UNCHANGED).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "4 빈 제목 거부");
+    check(createItem(spec.context, DESIGN, textOf(""), textOf(""), UNCHANGED).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "4 빈 제목 거부");
 }
 
 void st009(const fs::path& root)
@@ -382,7 +421,7 @@ void st009(const fs::path& root)
     check(KiottySpec_updateItem(spec.context, textOf("REQ-001"), textOf("\xff\xfe"), UNCHANGED).code == KIOTTY_SPEC_STATUS_INVALID_UTF8, "4 UTF-8 이 아닌 제목 거부");
     spec.body("REQ-001", "0123456789");
     char small[4] {};
-    const KiottySpecSizeResult read = KiottySpec_readItemBody(spec.context, textOf("REQ-001"), small, sizeof(small));
+    const KiottySpecSizeResult read = KiottySpec_readItemBody(spec.context, textOf("REQ-001"), KiottySpecBuffer{small, sizeof(small)});
     check(read.code == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED && read.value == 11, "5 작은 버퍼는 필요한 바이트 수를 알려 준다");
     spec.body("REQ-001", "");
     check(spec.readBody("REQ-001").empty(), "6 빈 본문을 쓰면 본문이 없다");
@@ -420,7 +459,7 @@ void st011(const fs::path& root)
     spec.add(DESIGN, "DSN-011");
     KiottySpec_setItemParent(spec.context, textOf("DSN-011"), textOf("DSN-010"));
     const KiottySpecStatus removed = KiottySpec_removeItem(spec.context, textOf("DSN-010")).code;
-    check(removed == KIOTTY_SPEC_STATUS_PRECONDITION && spec.error().find("DSN-011") != std::string::npos, "2 하위가 있으면 하위 ID 와 함께 거부");
+    check(removed == KIOTTY_SPEC_STATUS_PRECONDITION && spec.failedWith(KIOTTY_SPEC_SUBJECT_CHILD, "DSN-011"), "2 하위가 있으면 하위 ID 와 함께 거부");
 }
 
 void st012(const fs::path& root)
@@ -446,7 +485,7 @@ void st013(const fs::path& root)
     spec.start(KIOTTY_SPEC_STEP_DESIGN_DISCUSSING);
     for (int index = 0; index < 3; ++index) { spec.add(DESIGN); }
     spec.setTag("DSN-002", DESIGN, "구현 상태", "변경 필요");
-    const KiottySpecTagQuery query {DESIGN, spec.tag(DESIGN, "구현 상태"), spec.bit(DESIGN, "구현 상태", "변경 필요")};
+    const KiottySpecTagQuery query = tagQuery(DESIGN, spec.tag(DESIGN, "구현 상태"), spec.bit(DESIGN, "구현 상태", "변경 필요"));
     const std::vector<std::string> found = spec.ids(KiottySpec_openItemCursor(spec.context, DESIGN, &query, 1));
     check(found.size() == 1 && found[0] == "DSN-002", "1 구현 상태가 변경 필요인 설계 사항 하나");
     for (int index = 0; index < 100; ++index) { spec.add(REQUIREMENT); }
@@ -553,7 +592,7 @@ void st019(const fs::path& root)
 void st020(const fs::path& root)
 {
     Spec spec(root);
-    check(KiottySpec_createItem(spec.context, REQUIREMENT, textOf(""), textOf("t"), UNCHANGED).code == KIOTTY_SPEC_STATUS_PRECONDITION, "1 체크포인트가 없으면 거부");
+    check(createItem(spec.context, REQUIREMENT, textOf(""), textOf("t"), UNCHANGED).code == KIOTTY_SPEC_STATUS_PRECONDITION, "1 체크포인트가 없으면 거부");
     check(KiottySpec_startCheckpoint(spec.context, static_cast<KiottySpecStep>(13), textOf("")).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "2 단계 13 거부");
     const KiottySpecCheckpointHandle started = spec.start(KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING);
     const bool was_started = KiottySpec_readCheckpoint(spec.context, KIOTTY_SPEC_CHECKPOINT_CURRENT).value.state == KIOTTY_SPEC_CHECKPOINT_STATE_STARTED;
@@ -568,10 +607,25 @@ void st020(const fs::path& root)
     check(versions == 1, "4 한 체크포인트에서 세 번 고쳐도 버전 하나");
 }
 
+// 확정이 COMPLETION 으로 거부되면 어긋난 조건을 "조건:ID " 로 이어 돌려준다.
 std::string completeFailure(Spec& spec)
 {
-    return spec.complete() == KIOTTY_SPEC_STATUS_PRECONDITION ? spec.error() : std::string();
+    const bool refused = spec.complete() == KIOTTY_SPEC_STATUS_PRECONDITION && spec.lastError().subject == KIOTTY_SPEC_SUBJECT_COMPLETION;
+    if (!refused) { return std::string(); }
+    const KiottySpecCursorResult cursor = KiottySpec_openUnmetConditionCursor(spec.context);
+    std::string rows;
+    KiottySpecUnmetConditionPage page {};
+    for (size_t fetched = 0; ok(cursor.code) && fetched < cursor.total; fetched += page.length) {
+        if (!ok(KiottySpec_fetchUnmetConditionPage(spec.context, cursor.value, &page).code) || page.length == 0) { break; }
+        for (size_t index = 0; index < page.length; ++index) {
+            rows += std::to_string(static_cast<int>(page.elements[index].condition)) + ":" + page.elements[index].id + " ";
+        }
+    }
+    KiottySpec_closeCursor(spec.context, cursor.value);
+    return rows;
 }
+
+std::string unmet(KiottySpecCondition condition, const std::string& id) { return std::to_string(static_cast<int>(condition)) + ":" + id + " "; }
 
 void st021(const fs::path& root)
 {
@@ -586,13 +640,15 @@ void st021(const fs::path& root)
         spec.start(KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING);
         spec.add(REQUIREMENT, "REQ-001");
         spec.setTag("REQ-001", REQUIREMENT, "요구사항 종류", "기능 요구사항");
-        check(completeFailure(spec).find("REQ-001") != std::string::npos, "2 인수 조건이 없는 기능 요구사항이 있으면 그 ID 와 함께 거부");
+        check(completeFailure(spec).find(unmet(KIOTTY_SPEC_CONDITION_ACCEPTANCE_CRITERIA, "REQ-001")) != std::string::npos,
+              "2 인수 조건이 없는 기능 요구사항이 있으면 그 ID 와 함께 거부");
     }
     {
         Spec spec(root / "step6");
         spec.start(KIOTTY_SPEC_STEP_DEVELOPMENT_PLAN_DISCUSSING);
         spec.add(DESIGN, "DSN-001");
-        check(completeFailure(spec).find("DSN-001") != std::string::npos, "3 마일스톤에 없는 설계 사항이 있으면 그 ID 와 함께 거부");
+        check(completeFailure(spec).find(unmet(KIOTTY_SPEC_CONDITION_MILESTONE_COVERAGE, "DSN-001")) != std::string::npos,
+              "3 마일스톤에 없는 설계 사항이 있으면 그 ID 와 함께 거부");
     }
     {
         Spec spec(root / "step8");
@@ -602,14 +658,15 @@ void st021(const fs::path& root)
         spec.add(KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST_PLAN, "ST-002");
         spec.link("ST-001", KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST_PLAN, "검증 요구사항", "REQ-001");
         spec.link("ST-002", KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST_PLAN, "검증 요구사항", "REQ-001");
-        check(completeFailure(spec).find("REQ-001") != std::string::npos, "4 시스템 테스트가 둘인 요구사항이 있으면 그 ID 와 함께 거부");
+        check(completeFailure(spec).find(unmet(KIOTTY_SPEC_CONDITION_SYSTEM_TEST_PAIR, "REQ-001")) != std::string::npos,
+              "4 시스템 테스트가 둘인 요구사항이 있으면 그 ID 와 함께 거부");
     }
     {
         Spec spec(root / "step12");
         spec.start(KIOTTY_SPEC_STEP_END_TO_END_TEST_RUN);
         spec.add(KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST_RESULT, "STR-001");
         spec.setTag("STR-001", KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST_RESULT, "결과", "FAIL");
-        check(completeFailure(spec).find("STR-001") != std::string::npos, "5 FAIL 인 결과가 있으면 그 ID 와 함께 거부");
+        check(completeFailure(spec).find(unmet(KIOTTY_SPEC_CONDITION_PASSING_RESULT, "STR-001")) != std::string::npos, "5 FAIL 인 결과가 있으면 그 ID 와 함께 거부");
     }
     {
         Spec spec(root / "step4");
@@ -715,7 +772,7 @@ void st025(const fs::path& root)
     spec.start(KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING);
     spec.add(REQUIREMENT, "REQ-002");
     KiottySpec_updateItem(spec.context, textOf("REQ-001"), textOf("고침"), UNCHANGED);
-    const KiottySpecKindDiff diff = KiottySpec_summarizeDiff(spec.context, range(first)).kinds[REQUIREMENT - 1];
+    const KiottySpecKindDiff diff = summarizeDiff(spec.context, range(first)).kinds[REQUIREMENT - 1];
     check(diff.added == 1 && diff.modified == 1, "1 요구사항 추가 1, 수정 1");
 }
 
@@ -730,12 +787,12 @@ void st026(const fs::path& root)
     spec.add(DESIGN, "DSN-002");
     spec.link("DSN-001", DESIGN, "관련 요구사항", "REQ-001");
     KiottySpec_writeDecision(spec.context, DESIGN, textOf("- 고침"));
-    const KiottySpecKindDiff diff = KiottySpec_summarizeDiff(spec.context, range(first)).kinds[DESIGN - 1];
+    const KiottySpecKindDiff diff = summarizeDiff(spec.context, range(first)).kinds[DESIGN - 1];
     check(diff.added == 2 && diff.relations_added == 1 && diff.decision_changed == 1, "1 설계 사항 추가 2, 관계 추가 1, 결정 기록 바뀜");
-    check(KiottySpec_summarizeDiff(spec.context, KiottySpecDiffQuery{second, first, 0, 0}).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "2 거꾸로 된 구간 거부");
+    check(summarizeDiff(spec.context, KiottySpecDiffQuery{second, first, 0, 0}).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "2 거꾸로 된 구간 거부");
     spec.complete();
     KiottySpec_pruneCheckpoints(spec.context, KIOTTY_SPEC_ACTOR_USER, second);
-    check(KiottySpec_summarizeDiff(spec.context, range(first)).code == KIOTTY_SPEC_STATUS_NOT_FOUND, "3 정리로 지운 체크포인트는 없다는 상태");
+    check(summarizeDiff(spec.context, range(first)).code == KIOTTY_SPEC_STATUS_NOT_FOUND, "3 정리로 지운 체크포인트는 없다는 상태");
 }
 
 void st027(const fs::path& root)
@@ -750,12 +807,12 @@ void st027(const fs::path& root)
     spec.body("DSN-001", "본문");
     KiottySpec_updateItem(spec.context, textOf("DSN-002"), textOf("새 제목"), UNCHANGED);
     KiottySpec_removeRelation(spec.context, textOf("DSN-001"), spec.relation(DESIGN, "관련 요구사항"), textOf("REQ-001"));
-    const KiottySpecCursorResult items = KiottySpec_openItemDiffCursor(spec.context, range(first, kindBit(DESIGN), KIOTTY_SPEC_CHANGED_FIELD_BODY));
+    const KiottySpecCursorResult items = openItemDiffCursor(spec.context, range(first, kindBit(DESIGN), KIOTTY_SPEC_CHANGED_FIELD_BODY));
     KiottySpecItemDiffPage page {};
     KiottySpec_fetchItemDiffPage(spec.context, items.value, &page);
     KiottySpec_closeCursor(spec.context, items.value);
     check(page.length == 1 && std::string(page.elements[0].id) == "DSN-001", "1 본문이 바뀐 설계 사항만");
-    const KiottySpecCursorResult relations = KiottySpec_openRelationDiffCursor(spec.context, range(first));
+    const KiottySpecCursorResult relations = openRelationDiffCursor(spec.context, range(first));
     KiottySpecRelationDiffPage changes {};
     KiottySpec_fetchRelationDiffPage(spec.context, relations.value, &changes);
     KiottySpec_closeCursor(spec.context, relations.value);
@@ -778,10 +835,10 @@ void st028(const fs::path& root)
     check(std::string(KiottySpec_readItemAt(spec.context, textOf("REQ-001"), first).value.title) == "처음", "1 고치기 전 제목");
     check(ok(KiottySpec_readItemAt(spec.context, textOf("REQ-002"), first).code), "2 지운 항목도 그 시점에는 읽힌다");
     char buffer[256] {};
-    check(KiottySpec_readItemBodyAt(spec.context, textOf("REQ-001"), first, buffer, sizeof(buffer)).code == KIOTTY_SPEC_STATUS_NOT_FOUND &&
-              spec.error().find("git") != std::string::npos,
+    check(KiottySpec_readItemBodyAt(spec.context, textOf("REQ-001"), first, KiottySpecBuffer{buffer, sizeof(buffer)}).code == KIOTTY_SPEC_STATUS_NOT_FOUND &&
+              spec.failedWith(KIOTTY_SPEC_SUBJECT_PAST_BODY, "REQ-001"),
           "3 바뀐 본문은 없다는 상태와 git 이력 안내");
-    KiottySpec_readDecisionAt(spec.context, REQUIREMENT, first, buffer, sizeof(buffer));
+    KiottySpec_readDecisionAt(spec.context, REQUIREMENT, first, KiottySpecBuffer{buffer, sizeof(buffer)});
     check(std::string(buffer) == "- 처음 결정", "4 바꾸기 전 결정 기록");
 }
 
@@ -792,20 +849,23 @@ void st029(const fs::path& root)
     spec.add(REQUIREMENT, "REQ-001", "제목", "저장한다");
     spec.start(KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING);
     KiottySpec_updateItem(spec.context, textOf("REQ-001"), UNCHANGED, textOf("모두 저장한다"));
-    const KiottySpecCursorResult cursor =
-        KiottySpec_openTextDiffCursor(spec.context, spec.handle("REQ-001"), KIOTTY_SPEC_TEXT_FIELD_SUMMARY, first, KIOTTY_SPEC_CHECKPOINT_CURRENT);
+    const KiottySpecDiffQuery points = range(first);
+    const KiottySpecCursorResult cursor = KiottySpec_openTextDiffCursor(spec.context, spec.handle("REQ-001"), KIOTTY_SPEC_TEXT_FIELD_SUMMARY, &points);
     std::string added;
     std::string same;
-    for (KiottySpecTextDiffResult piece = KiottySpec_nextTextDiff(spec.context, cursor.value); ok(piece.code) && piece.value.length > 0;
-         piece = KiottySpec_nextTextDiff(spec.context, cursor.value)) {
-        const std::string text(piece.value.text, piece.value.length);
-        if (piece.value.change == KIOTTY_SPEC_TEXT_ADDED) { added += text; }
-        if (piece.value.change == KIOTTY_SPEC_TEXT_UNCHANGED) { same += text; }
+    KiottySpecTextDiffPage page {};
+    for (size_t fetched = 0; ok(cursor.code) && fetched < cursor.total; fetched += page.length) {
+        if (!ok(KiottySpec_fetchTextDiffPage(spec.context, cursor.value, &page).code) || page.length == 0) { break; }
+        for (size_t index = 0; index < page.length; ++index) {
+            const std::string text(page.elements[index].text, page.elements[index].length);
+            if (page.elements[index].change == KIOTTY_SPEC_TEXT_CHANGE_ADDED) { added += text; }
+            if (page.elements[index].change == KIOTTY_SPEC_TEXT_CHANGE_UNCHANGED) { same += text; }
+        }
     }
-    KiottySpec_closeTextDiffCursor(spec.context, cursor.value);
+    KiottySpec_closeCursor(spec.context, cursor.value);
     check(ok(cursor.code) && added == "모두 " && same == "저장한다", "1 더한 조각 \"모두 \" 와 같은 조각 \"저장한다\"");
-    const KiottySpecCursorResult body = KiottySpec_openTextDiffCursor(spec.context, spec.handle("REQ-001"), static_cast<KiottySpecTextField>(KIOTTY_SPEC_CHANGED_FIELD_BODY),
-                                                                      first, KIOTTY_SPEC_CHECKPOINT_CURRENT);
+    const KiottySpecCursorResult body =
+        KiottySpec_openTextDiffCursor(spec.context, spec.handle("REQ-001"), static_cast<KiottySpecTextField>(KIOTTY_SPEC_CHANGED_FIELD_BODY), &points);
     check(body.code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "2 본문의 글자 차이는 거부");
 }
 
@@ -817,7 +877,7 @@ void st030(const fs::path& root)
     spec.start(KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING);
     KiottySpec_writeDecision(spec.context, REQUIREMENT, textOf("- REQ-001 · 결정"));
     char buffer[64] {};
-    KiottySpec_readDecision(spec.context, REQUIREMENT, buffer, sizeof(buffer));
+    KiottySpec_readDecision(spec.context, REQUIREMENT, KiottySpecBuffer{buffer, sizeof(buffer)});
     check(std::string(buffer) == "- REQ-001 · 결정", "1 다시 쓴 내용이 읽힌다");
     check(KiottySpec_writeDecision(spec.context, REQUIREMENT, textOf(std::string(KIOTTY_SPEC_MAX_DECISION_LENGTH + 1, 'a'))).code == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED,
           "2 2048 바이트를 넘으면 거부");
@@ -831,7 +891,8 @@ void st031(const fs::path& root)
         spec.start(KIOTTY_SPEC_STEP_CHANGE_REQUEST_REPORTED);
         spec.add(CHANGE_REQUEST, "CR-001");
         spec.setTag("CR-001", CHANGE_REQUEST, "상태", "열림");
-        check(completeFailure(spec).find("CR-001") != std::string::npos, "1 진입 단계가 없는 열린 변경 요청이 있으면 그 ID 와 함께 거부");
+        check(completeFailure(spec).find(unmet(KIOTTY_SPEC_CONDITION_ENTRY_STEP, "CR-001")) != std::string::npos,
+              "1 진입 단계가 없는 열린 변경 요청이 있으면 그 ID 와 함께 거부");
     }
     {
         Spec spec(root / "entry");

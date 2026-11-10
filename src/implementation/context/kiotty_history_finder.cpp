@@ -25,7 +25,7 @@ uint64_t countWrites(Workspace& workspace, uint32_t sequence)
 CursorIdResult HistoryFinder::checkpoints(uint32_t step)
 {
     const auto cursor = _cursors.open(CursorKind::CHECKPOINT);
-    if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
+    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
     for (uint32_t sequence = 1; sequence <= _w.checkpoints.latest(); ++sequence) {
         const CheckpointRecord* record = _w.checkpoints.at(sequence);
         if (record == nullptr || (step != 0 && static_cast<uint32_t>(record->step) != step)) { continue; }
@@ -40,7 +40,7 @@ CursorIdResult HistoryFinder::checkpoints(uint32_t step)
 CursorIdResult HistoryFinder::stepRuns()
 {
     const auto cursor = _cursors.open(CursorKind::STEP_RUN);
-    if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
+    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
     CursorRow run;
     uint32_t step = 0;
     for (uint32_t sequence = 1; sequence <= _w.checkpoints.latest() + 1; ++sequence) {
@@ -60,6 +60,23 @@ CursorIdResult HistoryFinder::stepRuns()
         run.second = sequence;
         run.third = step | (static_cast<uint64_t>(record->state) << SHIFT);
         ++run.number;
+    }
+    return cursor;
+}
+
+CursorIdResult HistoryFinder::unmetConditions()
+{
+    const CheckpointRecord* record = _w.checkpoints.at(_w.checkpoints.latest());
+    if (record == nullptr) { return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_CHECKPOINT)); }
+    const auto cursor = _cursors.open(CursorKind::UNMET_CONDITION);
+    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
+    for (const UnmetCondition& unmet : _checker.collect(record->step)) {
+        CursorRow row {};
+        row.first = packIdWord(unmet.id, 0);
+        row.second = packIdWord(unmet.id, PACKED_ID_WORD_BYTES);
+        row.third = static_cast<uint64_t>(unmet.condition);
+        const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
+        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return closeWith(_cursors, cursor.value, pushed); }
     }
     return cursor;
 }

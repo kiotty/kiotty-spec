@@ -1,7 +1,7 @@
 #pragma once
 
 #include "kiotty_spec.h"
-#include "implementation/core/kiotty_failure.h"
+#include "implementation/domain/entity/kiotty_failure.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
 #include "implementation/data/repository/kiotty_item_reader.h"
@@ -19,7 +19,7 @@ namespace kiotty::spec::implementation {
 class ItemWriter
 {
 public:
-    ItemWriter(ItemTables& tables, Failure& failure) : _t(tables), _failure(failure) {}
+    ItemWriter(ItemTables& tables, entity::Failure& failure) : _t(tables), _failure(failure) {}
 
     // record.id 가 지운 항목의 것이라도 이미 있으면 CONFLICT
     Result<entity::ItemHandle, KiottySpecStatus> create(const entity::ItemRecord& record, uint32_t sequence);
@@ -43,7 +43,7 @@ private:
     void dropTags(entity::ItemHandle handle);
 
     ItemTables& _t;
-    Failure& _failure;
+    entity::Failure& _failure;
 };
 
 }

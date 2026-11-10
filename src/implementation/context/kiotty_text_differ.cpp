@@ -1,5 +1,6 @@
 #include "implementation/context/kiotty_text_differ.h"
 
+#include "implementation/context/kiotty_cursor_rows.h"
 #include "implementation/context/kiotty_past_reader.h"
 #include "implementation/core/kiotty_text_diff.h"
 #include "implementation/core/kiotty_text_view.h"
@@ -20,28 +21,25 @@ constexpr size_t MAX_SEGMENTS = MAX_DIFF_TEXT_BYTES * 2 + 1;
 
 CursorIdResult TextDiffer::open(entity::ItemHandle item, uint32_t field, DiffRange range)
 {
-    if (field != KIOTTY_SPEC_TEXT_FIELD_TITLE && field != KIOTTY_SPEC_TEXT_FIELD_SUMMARY) {
-        return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("글자 diff 는 제목이나 요약 하나에만 쓴다")}));
-    }
     const auto record = _w.items.reader().get(item);
-    if (!record) { return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_HANDLE, {literalText("항목 핸들이 무효임")})); }
+    if (!record) { return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_HANDLE, KIOTTY_SPEC_SUBJECT_ITEM)); }
     const IdText id = record.value->id;
     const auto before = PastReader(_w).itemAt(id.view(), range.from);
     const auto after = PastReader(_w).itemAt(id.view(), range.to);
-    if (!before && !after) { return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("두 시점 모두 없는 항목: "), id.view()})); }
+    if (!before && !after) { return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_ITEM, id.view())); }
     const bool title = field == KIOTTY_SPEC_TEXT_FIELD_TITLE;
     const Span<const char> before_text = !before ? Span<const char>() : title ? before.value.record.title.view() : before.value.record.summary.view();
     const Span<const char> after_text = !after ? Span<const char>() : title ? after.value.record.title.view() : after.value.record.summary.view();
 
     const auto cursor = _cursors.open(CursorKind::TEXT_DIFF);
-    if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
+    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
     const auto space = _cursors.space(cursor.value, CursorKind::TEXT_DIFF);
     char* bytes = reinterpret_cast<char*>(space.value.rows.data());
     const size_t room = space.value.rows.length() * sizeof(CursorRow);
     const size_t segment_room = room > SEGMENT_OFFSET ? (room - SEGMENT_OFFSET) / sizeof(TextSegment) : 0;
     if (segment_room == 0) {
         _cursors.close(cursor.value);
-        return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, {literalText("max_cursor_rows 가 글자 diff 에 모자람")}));
+        return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, KIOTTY_SPEC_SUBJECT_CURSOR_ROWS, literalText("max_cursor_rows")));
     }
     std::memcpy(bytes, before_text.data(), before_text.length());
     std::memcpy(bytes + TEXT_SLOT_BYTES, after_text.data(), after_text.length());
@@ -51,7 +49,7 @@ CursorIdResult TextDiffer::open(entity::ItemHandle item, uint32_t field, DiffRan
                                 Span<TextSegment>(reinterpret_cast<TextSegment*>(bytes + SEGMENT_OFFSET), segment_room < MAX_SEGMENTS ? segment_room : MAX_SEGMENTS));
     if (!count) {
         _cursors.close(cursor.value);
-        return CursorIdResult::failure(_w.failure.raise(count.code, {literalText("글자 diff 를 담을 공간이 모자람")}));
+        return CursorIdResult::failure(_w.failure.raise(count.code, KIOTTY_SPEC_SUBJECT_CURSOR_ROWS, literalText("max_cursor_rows")));
     }
     space.value.slot->length = count.value;
     space.value.slot->position = 0;
@@ -70,7 +68,7 @@ Result<TextPiece, KiottySpecStatus> TextDiffer::next(CursorId cursor)
     std::memcpy(&segment, bytes + SEGMENT_OFFSET + slot.position * sizeof(TextSegment), sizeof(TextSegment));
     ++slot.position;
     const char* base = bytes + (segment.source == TextSource::AFTER ? TEXT_SLOT_BYTES : 0);
-    return PieceResult::success(TextPiece{base + segment.offset, segment.length, static_cast<uint32_t>(segment.change)});
+    return PieceResult::success(TextPiece{Span<const char>(base + segment.offset, segment.length), static_cast<uint32_t>(segment.change)});
 }
 
 }

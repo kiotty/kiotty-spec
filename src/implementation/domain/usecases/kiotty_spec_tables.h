@@ -1,6 +1,6 @@
 #pragma once
 
-#include "implementation/core/kiotty_failure.h"
+#include "implementation/domain/entity/kiotty_failure.h"
 #include "implementation/data/repository/kiotty_checkpoint_store.h"
 #include "implementation/data/repository/kiotty_decision_store.h"
 #include "implementation/data/repository/kiotty_item_store.h"
@@ -30,7 +30,7 @@ inline constexpr std::string_view BODY_TABLE = "body";
 
 // 파일과 오가는 store 와 모델 표. SpecFile 이 세부 클래스에 빌려준다.
 struct SpecTables {
-    Failure& failure;
+    entity::Failure& failure;
     const ModelCatalog& catalog;
     MetaStore& meta;
     CheckpointStore& checkpoints;

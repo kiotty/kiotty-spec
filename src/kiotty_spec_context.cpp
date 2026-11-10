@@ -9,41 +9,9 @@ namespace impl = kiotty::spec::implementation;
 namespace entity = kiotty::spec::implementation::entity;
 using namespace kiotty::spec::adapter;
 
-extern "C" {
+namespace {
 
-KiottySpecContextResult KiottySpec_createContext(const KiottySpecConfiguration* configuration)
-{
-    if (configuration == nullptr) { return KiottySpecContextResult{KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, nullptr}; }
-    impl::Configuration settings;
-    if (configuration->max_items != 0) { settings.maxItems = configuration->max_items; }
-    if (configuration->max_relations != 0) { settings.maxRelations = configuration->max_relations; }
-    if (configuration->max_tags != 0) { settings.maxTags = configuration->max_tags; }
-    if (configuration->max_checkpoints != 0) { settings.maxCheckpoints = configuration->max_checkpoints; }
-    if (configuration->max_cursors != 0) { settings.maxCursors = configuration->max_cursors; }
-    if (configuration->max_cursor_rows != 0) { settings.maxCursorRows = configuration->max_cursor_rows; }
-    if (configuration->work_buffer_bytes != 0) { settings.workBufferBytes = configuration->work_buffer_bytes; }
-    if (configuration->max_body_bytes != 0) { settings.maxBodyBytes = configuration->max_body_bytes; }
-    // 할당 실패는 process 종료다 (개발수칙 1.1). 소유권은 releaseContext 가 되찾는다.
-    KiottySpecContext* context = std::make_unique<KiottySpecContext>(settings).release();
-    return KiottySpecContextResult{KIOTTY_SPEC_STATUS_SUCCESS, context};
-}
-
-// 실패하면 readLastError 로 이유를 읽는다.
-KiottySpecStatusResult KiottySpec_open(KiottySpecContext* context, KiottySpecText path)
-{
-    if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    return status(context->context.open(spanOf(path)));
-}
-
-void KiottySpec_releaseContext(KiottySpecContext* context) { const std::unique_ptr<KiottySpecContext> owner(context); }
-
-KiottySpecSizeResult KiottySpec_readLastError(KiottySpecContext* context, char* buffer, size_t capacity)
-{
-    if (context == nullptr) { return KiottySpecSizeResult{KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, 0}; }
-    return copyOut(context->context.failure().message(), buffer, capacity);
-}
-
-const char* KiottySpec_statusName(KiottySpecStatus code)
+std::string_view statusText(KiottySpecStatus code)
 {
     switch (code) {
     case KIOTTY_SPEC_STATUS_SUCCESS: return "SUCCESS";
@@ -63,30 +31,79 @@ const char* KiottySpec_statusName(KiottySpecStatus code)
     case KIOTTY_SPEC_STATUS_INVALID_HANDLE: return "INVALID_HANDLE";
     case KIOTTY_SPEC_STATUS_INVALID_UTF8: return "INVALID_UTF8";
     }
-    return "UNKNOWN";
+    return std::string_view();
 }
 
-KiottySpecStatusResult KiottySpec_initProject(KiottySpecContext* context, KiottySpecText project_name)
+}
+
+extern "C" {
+
+KiottySpecContextResult KiottySpec_createContext(const KiottySpecConfiguration* configuration)
+{
+    KiottySpecContextResult result {};
+    if (configuration == nullptr) {
+        result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
+        return result;
+    }
+    const ConfigurationResult settings = parseConfiguration(*configuration);
+    if (!settings) {
+        result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
+        return result;
+    }
+    // 할당 실패는 process 종료다 (개발수칙 1.1). 소유권은 releaseContext 가 되찾는다.
+    result.value = std::make_unique<KiottySpecContext>(settings.value).release();
+    result.code = KIOTTY_SPEC_STATUS_SUCCESS;
+    return result;
+}
+
+KiottySpecStatusResult KiottySpec_open(KiottySpecContext* context, KiottySpecText path)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    return status(context->context.init(spanOf(project_name)));
+    const TextResult parsed = parsePath(context->context, path);
+    if (!parsed) { return status(parsed.code); }
+    return status(context->context.open(parsed.value));
 }
 
-const char* KiottySpec_kindName(KiottySpecItemKind kind)
+void KiottySpec_releaseContext(KiottySpecContext* context) { const std::unique_ptr<KiottySpecContext> owner(context); }
+
+KiottySpecErrorResult KiottySpec_readLastError(KiottySpecContext* context)
 {
-    const std::string_view name = entity::kindName(static_cast<entity::ItemKind>(kind));
-    return name.empty() ? "" : name.data();
+    KiottySpecErrorResult result {};
+    if (context == nullptr) {
+        result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
+        return result;
+    }
+    const entity::FailureDetail& detail = context->context.failure().detail();
+    copyText(result.value.text, detail.text);
+    result.value.line = detail.line;
+    result.value.status = detail.status;
+    result.value.subject = detail.subject;
+    result.code = KIOTTY_SPEC_STATUS_SUCCESS;
+    return result;
 }
+
+KiottySpecStatusResult KiottySpec_initializeProject(KiottySpecContext* context, KiottySpecText project_name)
+{
+    if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    const TextResult parsed = parseProjectName(context->context, project_name);
+    if (!parsed) { return status(parsed.code); }
+    return status(context->context.init(parsed.value));
+}
+
+KiottySpecNameResult KiottySpec_formatStatus(KiottySpecStatus status_code) { return nameResult(statusText(status_code)); }
+
+KiottySpecNameResult KiottySpec_formatKind(KiottySpecItemKind kind) { return nameResult(entity::kindName(static_cast<entity::ItemKind>(kind))); }
 
 KiottySpecItemKind KiottySpec_parseKind(KiottySpecText name)
 {
-    return static_cast<KiottySpecItemKind>(entity::parseKind(impl::viewOf(spanOf(name))));
+    const TextResult parsed = parseText(name, KIOTTY_SPEC_MAX_NAME_LENGTH);
+    if (!parsed) { return static_cast<KiottySpecItemKind>(0); }
+    return static_cast<KiottySpecItemKind>(entity::parseKind(impl::viewOf(parsed.value)));
 }
 
-const char* KiottySpec_checkpointStateName(KiottySpecCheckpointState state)
+KiottySpecNameResult KiottySpec_formatCheckpointState(KiottySpecCheckpointState state)
 {
-    const std::string_view name = entity::stateName(static_cast<entity::CheckpointState>(state));
-    return name.empty() ? "" : name.data();
+    return nameResult(entity::stateName(static_cast<entity::CheckpointState>(state)));
 }
 
 }

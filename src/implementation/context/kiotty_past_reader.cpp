@@ -17,7 +17,7 @@ Result<const ItemVersion*, KiottySpecStatus> PastReader::versionAt(Span<const ch
     const auto key = _w.items.history().keyOf(id);
     const ItemVersion* version = key ? _w.items.tables().versions.latest(key.value, checkpoint) : nullptr;
     if (version == nullptr || version->removed != 0) {
-        return VersionResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("그 시점에 없는 항목: "), id}));
+        return VersionResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_ITEM, id));
     }
     return VersionResult::success(version);
 }
@@ -59,7 +59,7 @@ Result<size_t, KiottySpecStatus> PastReader::bodyAt(Span<const char> id, uint32_
     const ItemVersion* current = _w.items.tables().versions.latest(version.value->key, UINT32_MAX);
     const bool same = current != nullptr && current->removed == 0 && current->body_hash == version.value->body_hash;
     if (!same) {
-        return SizeResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("그 시점의 본문은 지금과 달라 git 이력에만 있음: "), id}));
+        return SizeResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_PAST_BODY, id));
     }
     return copyBody(_w.items.tables().bodies.find(version.value->key), buffer, capacity);
 }

@@ -1,14 +1,12 @@
 #include "implementation/context/kiotty_differ.h"
 
+#include "implementation/context/kiotty_cursor_rows.h"
 #include "implementation/core/kiotty_text_view.h"
-
-#include <cstring>
 
 namespace kiotty::spec::implementation {
 
 namespace {
 
-using entity::IdText;
 using entity::ItemKind;
 
 constexpr uint32_t SHIFT = 32;
@@ -16,24 +14,6 @@ constexpr uint32_t SHIFT = 32;
 constexpr uint32_t MAX_KIND_BIT = 32;
 
 bool inMask(uint32_t mask, uint32_t kind) { return mask == 0 || (kind >= 1 && kind <= MAX_KIND_BIT && (mask & (1u << (kind - 1))) != 0); }
-
-void packId(const IdText& id, uint64_t& first, uint64_t& second)
-{
-    char bytes[16] {};
-    std::memcpy(bytes, id.c_str(), id.length());
-    std::memcpy(&first, bytes, 8);
-    std::memcpy(&second, bytes + 8, 8);
-}
-
-IdText unpackId(uint64_t first, uint64_t second)
-{
-    char bytes[17] {};
-    std::memcpy(bytes, &first, 8);
-    std::memcpy(bytes + 8, &second, 8);
-    IdText id;
-    id.assign(boundedText(bytes, 16));
-    return id;
-}
 
 }
 
@@ -57,7 +37,7 @@ Result<uint32_t, KiottySpecStatus> Differ::point(uint64_t checkpoint)
     using PointResult = Result<uint32_t, KiottySpecStatus>;
     const uint32_t sequence = checkpoint == KIOTTY_SPEC_CHECKPOINT_CURRENT ? _w.checkpoints.latest() : static_cast<uint32_t>(checkpoint & 0xFFFFFFFFu);
     if (_w.checkpoints.at(sequence) == nullptr) {
-        return PointResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("없는 체크포인트 (정리로 지워졌거나 아직 없음)")}));
+        return PointResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
     return PointResult::success(sequence);
 }
@@ -66,14 +46,14 @@ Result<DiffRange, KiottySpecStatus> Differ::range(uint64_t from, uint64_t to)
 {
     using RangeResult = Result<DiffRange, KiottySpecStatus>;
     if (from == KIOTTY_SPEC_CHECKPOINT_CURRENT) {
-        return RangeResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("구간의 시작은 체크포인트여야 함")}));
+        return RangeResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_DIFF_RANGE));
     }
     const auto start = point(from);
     if (!start) { return RangeResult::failure(start.code); }
     const auto end = point(to);
     if (!end) { return RangeResult::failure(end.code); }
     if (start.value >= end.value) {
-        return RangeResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("구간이 거꾸로이거나 비어 있음 (from < to)")}));
+        return RangeResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_DIFF_RANGE));
     }
     return RangeResult::success(DiffRange{start.value, end.value});
 }
@@ -131,17 +111,18 @@ KiottySpecStatus Differ::countDecisions(DiffRange range, uint32_t kind_mask, Kin
 CursorIdResult Differ::items(DiffRange range, uint32_t kind_mask, uint32_t field_mask)
 {
     const auto cursor = _cursors.open(CursorKind::ITEM_DIFF);
-    if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
+    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
     ItemDiffQuery query(_w.items, range, kind_mask, field_mask);
     KiottySpecStatus status = query.open();
     Result<bool, KiottySpecStatus> next = status == KIOTTY_SPEC_STATUS_SUCCESS ? query.next() : Result<bool, KiottySpecStatus>::failure(status);
     for (; next && next.value && status == KIOTTY_SPEC_STATUS_SUCCESS; next = query.next()) {
         const ItemDiffRow& diff = query.current();
         CursorRow row;
-        packId(diff.id, row.first, row.second);
+        row.first = packIdWord(diff.id, 0);
+        row.second = packIdWord(diff.id, PACKED_ID_WORD_BYTES);
         row.third = diff.before | (static_cast<uint64_t>(diff.after) << SHIFT);
         row.fourth = diff.kind | (static_cast<uint64_t>(diff.change) << 8) | (static_cast<uint64_t>(diff.fields) << 16);
-        status = pushRow(cursor.value, row, literalText("바뀐 항목이 max_cursor_rows 를 넘음. Kind 를 좁혀 다시 열 것"));
+        status = pushRow(_cursors, _w.failure, cursor.value, row);
     }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = next.code; }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { return cursor; }
@@ -152,18 +133,20 @@ CursorIdResult Differ::items(DiffRange range, uint32_t kind_mask, uint32_t field
 CursorIdResult Differ::relations(DiffRange range, uint32_t kind_mask)
 {
     const auto cursor = _cursors.open(CursorKind::RELATION_DIFF);
-    if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
+    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
     RelationDiffQuery query(_w.items, _w.relations, range, kind_mask);
     KiottySpecStatus status = query.open();
     Result<bool, KiottySpecStatus> next = status == KIOTTY_SPEC_STATUS_SUCCESS ? query.next() : Result<bool, KiottySpecStatus>::failure(status);
     for (; next && next.value && status == KIOTTY_SPEC_STATUS_SUCCESS; next = query.next()) {
         const RelationDiffRow& diff = query.current();
         CursorRow row;
-        packId(diff.from_id, row.first, row.second);
-        packId(diff.to_id, row.third, row.fourth);
+        row.first = packIdWord(diff.from_id, 0);
+        row.second = packIdWord(diff.from_id, PACKED_ID_WORD_BYTES);
+        row.third = packIdWord(diff.to_id, 0);
+        row.fourth = packIdWord(diff.to_id, PACKED_ID_WORD_BYTES);
         row.number = static_cast<int64_t>(diff.checkpoint | (static_cast<uint64_t>(diff.relation & 0xFFFFu) << 32) |
                                           (static_cast<uint64_t>(diff.model) << 48) | (static_cast<uint64_t>(diff.change) << 56));
-        status = pushRow(cursor.value, row, literalText("바뀐 관계가 max_cursor_rows 를 넘음. Kind 를 좁혀 다시 열 것"));
+        status = pushRow(_cursors, _w.failure, cursor.value, row);
     }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = next.code; }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { return cursor; }
@@ -171,12 +154,5 @@ CursorIdResult Differ::relations(DiffRange range, uint32_t kind_mask)
     return CursorIdResult::failure(status);
 }
 
-// 행이 넘치면 어떻게 좁힐지 남긴다.
-KiottySpecStatus Differ::pushRow(CursorId cursor, const CursorRow& row, Span<const char> overflow)
-{
-    const KiottySpecStatus pushed = _cursors.push(cursor, row);
-    if (pushed == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED) { return _w.failure.raise(pushed, {overflow}); }
-    return pushed;
-}
 
 }

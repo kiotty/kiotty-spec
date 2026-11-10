@@ -14,7 +14,7 @@ const std::vector<std::string> CHECKPOINT_HEADER = {"checkpoint", "step", "state
 
 void printCheckpoint(KiottySpecCheckpointHandle handle, const KiottySpecCheckpoint& checkpoint)
 {
-    printRow({checkpointName(handle), stepName(checkpoint.step), KiottySpec_checkpointStateName(checkpoint.state), cell(checkpoint.description),
+    printRow({checkpointName(handle), stepName(checkpoint.step), stateName(checkpoint.state), cell(checkpoint.description),
               std::to_string(checkpoint.created_at), checkpointName(checkpoint.previous)});
 }
 
@@ -116,7 +116,7 @@ int showDecision(Session& session)
     const auto kind = name == nullptr ? std::nullopt : kindArgument(session, *name);
     if (!kind) { return usage("ks decision show KIND"); }
     std::vector<char> buffer(KIOTTY_SPEC_MAX_DECISION_LENGTH + 1);
-    const KiottySpecSizeResult read = KiottySpec_readDecision(session.context, *kind, buffer.data(), buffer.size());
+    const KiottySpecSizeResult read = KiottySpec_readDecision(session.context, *kind, KiottySpecBuffer{buffer.data(), buffer.size()});
     if (read.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, read.code); }
     std::fwrite(buffer.data(), 1, read.value, stdout);
     if (read.value > 0 && buffer[read.value - 1] != '\n') { std::fputc('\n', stdout); }
@@ -153,7 +153,7 @@ int showModel(Session& session)
         }
         for (uint32_t index = 0; index < model.value.relation_count; ++index) {
             const KiottySpecRelationDefinitionResult definition = KiottySpec_readRelationDefinition(session.context, *kind, index);
-            printRow({"relation", std::to_string(index), definition.value.name, KiottySpec_kindName(definition.value.target_kind),
+            printRow({"relation", std::to_string(index), definition.value.name, kindName(definition.value.target_kind),
                       definition.value.cardinality == KIOTTY_SPEC_CARDINALITY_SINGLE ? "single" : "many"});
         }
         return 0;
@@ -161,7 +161,7 @@ int showModel(Session& session)
     printRow({"kind", "name", "prefix", "step", "tags", "relations"});
     for (uint32_t value = 1; value <= KIOTTY_SPEC_ITEM_KIND_COUNT; ++value) {
         const KiottySpecModelResult model = KiottySpec_readModel(session.context, static_cast<KiottySpecItemKind>(value));
-        printRow({KiottySpec_kindName(model.value.kind), model.value.name, model.value.id_prefix, stepName(model.value.created_in),
+        printRow({kindName(model.value.kind), model.value.name, model.value.id_prefix, stepName(model.value.created_in),
                   std::to_string(model.value.tag_count), std::to_string(model.value.relation_count)});
     }
     return 0;

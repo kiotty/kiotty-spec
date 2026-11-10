@@ -28,6 +28,7 @@ public:
     // step 이 0 이면 모든 단계
     CursorIdResult checkpoints(uint32_t step);
     CursorIdResult stepRuns();
+    CursorIdResult unmetConditions();
     Result<Position, KiottySpecStatus> position();
 
 private:

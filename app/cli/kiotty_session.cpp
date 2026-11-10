@@ -13,7 +13,6 @@ namespace kiotty::cli {
 namespace {
 
 constexpr std::string_view FLAG_NAMES[] = {"tags", "relations", "up", "down", "help"};
-constexpr size_t ERROR_BUFFER_LENGTH = 4096;
 
 bool isFlag(std::string_view name)
 {
@@ -34,6 +33,111 @@ std::vector<std::string> split(std::string_view text, char separator)
         start = end + 1;
     }
     return parts;
+}
+
+std::string textProblem(const std::string& field, KiottySpecStatus status)
+{
+    if (status == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED) { return field + " 이 상한을 넘음"; }
+    if (status == KIOTTY_SPEC_STATUS_INVALID_UTF8) { return field + " 이 UTF-8 이 아님"; }
+    return field + " 이 비었거나 null 바이트가 있음";
+}
+
+std::string withText(const std::string& sentence, const char* text) { return text[0] == '\0' ? sentence : sentence + ": " + text; }
+
+std::string conditionHeading(KiottySpecCondition condition)
+{
+    switch (condition) {
+    case KIOTTY_SPEC_CONDITION_ENTRY_STEP: return "진입 단계가 정해지지 않은 열린 변경 요청";
+    case KIOTTY_SPEC_CONDITION_ACCEPTANCE_CRITERIA: return "인수 조건이 없는 기능 요구사항 (R-4)";
+    case KIOTTY_SPEC_CONDITION_MILESTONE_COVERAGE: return "어떤 마일스톤에도 포함되지 않은 설계 사항 · 유닛 테스트 (R-5)";
+    case KIOTTY_SPEC_CONDITION_SYSTEM_TEST_PAIR: return "시스템 테스트와 1:1 이 아닌 기능 요구사항 (R-3)";
+    case KIOTTY_SPEC_CONDITION_END_TO_END_TEST_PAIR: return "E2E 테스트와 1:1 이 아닌 외부 인터페이스 (R-3)";
+    case KIOTTY_SPEC_CONDITION_CODE_INSPECTION_PAIR: return "코드 검사 결과와 1:1 이 아닌 개발 수칙";
+    case KIOTTY_SPEC_CONDITION_SINGLE_TARGET: return "대상이 하나가 아닌 테스트 · 검사 항목";
+    case KIOTTY_SPEC_CONDITION_PASSING_RESULT: return "PASS 가 아닌 결과 (R-10)";
+    case KIOTTY_SPEC_CONDITION_CLOSED_CHANGE_REQUEST: return "열린 변경 요청 (R-10)";
+    }
+    return std::to_string(static_cast<int>(condition));
+}
+
+// 어긋난 확정 조건을 조건마다 "- 제목: ID ID" 줄로 잇는다.
+std::string unmetConditions(Session& session)
+{
+    const KiottySpecCursorResult cursor = KiottySpec_openUnmetConditionCursor(session.context);
+    if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return std::string(); }
+    std::string text {};
+    bool first = true;
+    KiottySpecCondition current = KIOTTY_SPEC_CONDITION_ENTRY_STEP;
+    KiottySpecUnmetConditionPage page {};
+    while (KiottySpec_fetchUnmetConditionPage(session.context, cursor.value, &page).code == KIOTTY_SPEC_STATUS_SUCCESS && page.length > 0) {
+        for (size_t index = 0; index < page.length; ++index) {
+            const KiottySpecUnmetCondition& unmet = page.elements[index];
+            if (first || unmet.condition != current) { text += "\n- " + conditionHeading(unmet.condition) + ":"; }
+            first = false;
+            current = unmet.condition;
+            text += std::string(" ") + unmet.id;
+        }
+    }
+    KiottySpec_closeCursor(session.context, cursor.value);
+    return text;
+}
+
+std::string completionFailure(Session& session)
+{
+    const KiottySpecCheckpointResult checkpoint = KiottySpec_readCheckpoint(session.context, KIOTTY_SPEC_CHECKPOINT_CURRENT);
+    const std::string step = checkpoint.code == KIOTTY_SPEC_STATUS_SUCCESS ? "Step " + std::to_string(static_cast<int>(checkpoint.value.step)) + " " : "";
+    return step + "확정 조건 미충족" + unmetConditions(session);
+}
+
+// 라이브러리가 돌려준 (상태, 주제, 글, 줄) 을 문장으로 바꾼다 (개발수칙 5.5).
+std::string describeFailure(Session& session, const KiottySpecError& error)
+{
+    const std::string line = error.line > 0 ? "줄 " + std::to_string(error.line) + ": " : "";
+    const KiottySpecStatus status = error.status;
+    switch (error.subject) {
+    case KIOTTY_SPEC_SUBJECT_NONE: return std::string();
+    case KIOTTY_SPEC_SUBJECT_FILE: return line + withText(".kisp 파일이나 디렉토리를 다룰 수 없음", error.text);
+    case KIOTTY_SPEC_SUBJECT_FILE_LINE: return line + withText("잘못된 줄 (열 수, 값, 이스케이프, 표 이름)", error.text);
+    case KIOTTY_SPEC_SUBJECT_MERGE_MARKER: return line + "병합 충돌 표시가 남아 있음";
+    case KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE: return line + withText("같은 기록이 두 줄 (병합을 확인할 것)", error.text);
+    case KIOTTY_SPEC_SUBJECT_FILE_CHANGED: return withText(".kisp 가 연 뒤에 밖에서 바뀜 (git pull, 다른 ks). 다시 열고 쓸 것", error.text);
+    case KIOTTY_SPEC_SUBJECT_FILE_FORMAT: return line + "첫 줄이 이 ks 의 .kisp 머리줄이 아님 (형식이나 모델 버전이 다름)";
+    case KIOTTY_SPEC_SUBJECT_CONFIGURATION: return line + withText("용량 상한에 닿음. 정리하거나 설정을 늘릴 것", error.text);
+    case KIOTTY_SPEC_SUBJECT_MODEL: return "모델 표를 적재할 수 없음";
+    case KIOTTY_SPEC_SUBJECT_KIND: return "알 수 없거나 결정 기록이 없는 Kind";
+    case KIOTTY_SPEC_SUBJECT_ITEM: return error.text[0] == '\0' ? "항목 핸들이 무효임" : withText("없는 항목", error.text);
+    case KIOTTY_SPEC_SUBJECT_ID:
+        if (status == KIOTTY_SPEC_STATUS_CONFLICT) { return withText("이미 있는 ID", error.text); }
+        return withText("ID 는 [A-Za-z0-9] 로 시작하고 [A-Za-z0-9_-] 만 쓰며 15자 이하", error.text);
+    case KIOTTY_SPEC_SUBJECT_ID_IN_HISTORY: return withText("지운 항목이 이력에 쓰고 있는 ID (정리 전까지 못 씀)", error.text);
+    case KIOTTY_SPEC_SUBJECT_TITLE: return textProblem("제목", status);
+    case KIOTTY_SPEC_SUBJECT_SUMMARY: return textProblem("요약", status);
+    case KIOTTY_SPEC_SUBJECT_BODY: return textProblem("본문", status);
+    case KIOTTY_SPEC_SUBJECT_PAST_BODY: return withText("그 시점의 본문은 지금과 달라 git 이력에만 있음", error.text);
+    case KIOTTY_SPEC_SUBJECT_PARENT: return withText("상위 항목이 순환함", error.text);
+    case KIOTTY_SPEC_SUBJECT_CHILD: return withText("하위 항목이 있어 지울 수 없음", error.text);
+    case KIOTTY_SPEC_SUBJECT_TAG: return line + withText("모델에 없는 태그", error.text);
+    case KIOTTY_SPEC_SUBJECT_TAG_VALUE: return line + withText("태그 값이 모델의 태그 정의에 맞지 않음", error.text);
+    case KIOTTY_SPEC_SUBJECT_RELATION:
+        if (status == KIOTTY_SPEC_STATUS_CONFLICT) { return withText("이미 있는 관계", error.text); }
+        if (status == KIOTTY_SPEC_STATUS_NOT_FOUND) { return withText("없는 관계", error.text); }
+        return line + withText("모델의 관계 정의에 없는 관계", error.text);
+    case KIOTTY_SPEC_SUBJECT_DECISION: return textProblem("결정 기록", status);
+    case KIOTTY_SPEC_SUBJECT_CHECKPOINT:
+        if (status == KIOTTY_SPEC_STATUS_CONFIRMED) { return "가장 최근 체크포인트가 DONE 임. 새 체크포인트를 시작할 것"; }
+        if (status == KIOTTY_SPEC_STATUS_PRECONDITION) { return "체크포인트가 없거나 기준 체크포인트가 DONE 이 아님. 먼저 체크포인트를 시작하거나 확정할 것"; }
+        return "없는 체크포인트 (정리로 지워졌거나 아직 없음)";
+    case KIOTTY_SPEC_SUBJECT_DESCRIPTION: return textProblem("체크포인트 설명", status);
+    case KIOTTY_SPEC_SUBJECT_STEP: return "단계는 1 ~ 12";
+    case KIOTTY_SPEC_SUBJECT_ACTOR: return "사용자만 할 수 있음 (R-2)";
+    case KIOTTY_SPEC_SUBJECT_CURSOR: return "커서 수가 max_cursors 에 닿음";
+    case KIOTTY_SPEC_SUBJECT_CURSOR_ROWS: return "결과 행이 max_cursor_rows 를 넘음. 조건을 좁힐 것";
+    case KIOTTY_SPEC_SUBJECT_DIFF_RANGE: return "구간이 거꾸로이거나 비어 있음 (from < to, 시작은 체크포인트)";
+    case KIOTTY_SPEC_SUBJECT_TEXT_FIELD: return "글자 diff 는 제목이나 요약 하나에만 쓴다";
+    case KIOTTY_SPEC_SUBJECT_PROJECT_NAME: return textProblem("프로젝트 이름", status);
+    case KIOTTY_SPEC_SUBJECT_COMPLETION: return completionFailure(session);
+    }
+    return std::string();
 }
 
 }
@@ -87,10 +191,10 @@ Arguments parseArguments(const std::vector<std::string>& tokens, size_t first, c
 
 int fail(Session& session, KiottySpecStatus status)
 {
-    char message[ERROR_BUFFER_LENGTH] {};
-    if (session.context != nullptr) { KiottySpec_readLastError(session.context, message, sizeof(message)); }
-    std::cerr << "error: " << KiottySpec_statusName(status);
-    if (message[0] != '\0') { std::cerr << ": " << message; }
+    std::cerr << "error: " << KiottySpec_formatStatus(status).value.value;
+    const KiottySpecErrorResult last = KiottySpec_readLastError(session.context);
+    const bool described = last.code == KIOTTY_SPEC_STATUS_SUCCESS && last.value.status == status && last.value.subject != KIOTTY_SPEC_SUBJECT_NONE;
+    if (described) { std::cerr << ": " << describeFailure(session, last.value); }
     std::cerr << "\n";
     return 1;
 }
@@ -102,6 +206,10 @@ int usage(const std::string& message)
 }
 
 KiottySpecText textOf(std::string_view text) { return KiottySpecText{text.data(), text.size()}; }
+
+std::string kindName(KiottySpecItemKind kind) { return KiottySpec_formatKind(kind).value.value; }
+
+std::string stateName(KiottySpecCheckpointState state) { return KiottySpec_formatCheckpointState(state).value.value; }
 
 // 설계서 v1 12 #9. 탭은 공백, 줄바꿈은 \n 두 글자
 std::string cell(std::string_view value)
@@ -166,12 +274,12 @@ std::optional<KiottySpecItemKind> kindArgument(Session& session, std::string_vie
     const KiottySpecItemKind kind = KiottySpec_parseKind(textOf(text));
     if (kind != 0) { return kind; }
     std::string names;
-    for (uint32_t value = 1; KiottySpec_kindName(static_cast<KiottySpecItemKind>(value))[0] != '\0'; ++value) {
+    for (uint32_t value = 1; !kindName(static_cast<KiottySpecItemKind>(value)).empty(); ++value) {
         const KiottySpecItemKind candidate = static_cast<KiottySpecItemKind>(value);
         const KiottySpecModelResult model = KiottySpec_readModel(session.context, candidate);
         if (model.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
         if (text == model.value.name) { return candidate; }
-        names += (names.empty() ? "" : ", ") + std::string(KiottySpec_kindName(candidate)) + "(" + model.value.name + ")";
+        names += (names.empty() ? "" : ", ") + kindName(candidate) + "(" + model.value.name + ")";
     }
     std::cerr << "error: 알 수 없는 Kind '" << text << "'. 받는 값: " << names << "\n";
     return std::nullopt;
@@ -195,7 +303,7 @@ std::optional<TagColumn> findTag(Session& session, KiottySpecItemKind kind, std:
         if (column.definition.name == name) { return column; }
         names += (names.empty() ? "" : ", ") + std::string(column.definition.name);
     }
-    std::cerr << "error: " << KiottySpec_kindName(kind) << " 에 그런 태그가 없다 (" << name << "). 있는 것: " << (names.empty() ? "없음" : names) << "\n";
+    std::cerr << "error: " << kindName(kind) << " 에 그런 태그가 없다 (" << name << "). 있는 것: " << (names.empty() ? "없음" : names) << "\n";
     return std::nullopt;
 }
 
@@ -209,7 +317,7 @@ std::optional<uint32_t> findRelation(Session& session, KiottySpecItemKind kind, 
         if (definition.value.name == name) { return index; }
         names += (names.empty() ? "" : ", ") + std::string(definition.value.name);
     }
-    std::cerr << "error: " << KiottySpec_kindName(kind) << " 에 그런 관계가 없다 (" << name << "). 있는 것: " << (names.empty() ? "없음" : names) << "\n";
+    std::cerr << "error: " << kindName(kind) << " 에 그런 관계가 없다 (" << name << "). 있는 것: " << (names.empty() ? "없음" : names) << "\n";
     return std::nullopt;
 }
 

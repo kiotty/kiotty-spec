@@ -68,9 +68,9 @@ size_t ItemStore::collectLatest()
 KiottySpecStatus ItemStore::place(const ItemVersion& version)
 {
     const auto id = _t.names.find(version.key);
-    if (!id) { return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("item 줄이 없는 항목 키")}); }
+    if (!id) { return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_FILE_LINE, literalText("item_version")); }
     const ItemHandle handle = _t.items.acquire();
-    if (!handle.isValid()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("항목 수가 max_items 를 넘음")}); }
+    if (!handle.isValid()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items")); }
     ItemRecord& record = *_t.items.get(handle).value;
     record = ItemRecord{};
     record.checkpoint = CheckpointHandle{version.checkpoint, 0};
@@ -83,7 +83,7 @@ KiottySpecStatus ItemStore::place(const ItemVersion& version)
     _t.parents[handle.index] = version.parent;
     _t.key_index.insert(version.key, handle.index);
     const KiottySpecStatus indexed = _t.id_index.insert(record.id, handle.index);
-    if (indexed != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("같은 ID 를 가진 항목이 둘: "), record.id.view()}); }
+    if (indexed != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE, record.id.view()); }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
@@ -110,7 +110,7 @@ KiottySpecStatus ItemStore::loadTags()
         ItemRecord& record = *_t.items.get(handle).value;
         if (tag.checkpoint > record.checkpoint.sequence) { record.checkpoint = CheckpointHandle{tag.checkpoint, 0}; }
         if (tag.removed != 0 || tag.value == 0) { continue; }
-        if (_t.tag_count == _t.tags.size()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("태그 수가 max_tags 를 넘음")}); }
+        if (_t.tag_count == _t.tags.size()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_tags")); }
         _t.tags[_t.tag_count] = TagRecord{handle, record.kind, tag.tag, tag.value};
         ++_t.tag_count;
     }

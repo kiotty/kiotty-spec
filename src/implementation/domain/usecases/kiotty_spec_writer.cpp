@@ -108,7 +108,7 @@ KispLineEncoder SpecWriter::startLine(std::string_view table, uint32_t removed)
 KiottySpecStatus SpecWriter::emit(KispLineEncoder& line)
 {
     const auto finished = line.finish();
-    if (!finished) { return _t.failure.raise(finished.code, {literalText("한 줄이 줄 버퍼보다 큼")}); }
+    if (!finished) { return _t.failure.raise(finished.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("work_buffer_bytes")); }
     return _file.write(finished.value);
 }
 

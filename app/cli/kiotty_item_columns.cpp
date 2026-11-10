@@ -29,7 +29,7 @@ std::optional<ColumnPlan> planColumns(Session& session, KiottySpecItemKind kind)
                 std::cerr << "error: 태그 조건은 " << KIOTTY_SPEC_MAX_TAG_QUERIES << " 개까지\n";
                 return std::nullopt;
             }
-            plan.queries.push_back(KiottySpecTagQuery{kind, tag->index, *mask});
+            plan.queries.push_back(KiottySpecTagQuery{*mask, kind, tag->index});
         }
         addTag(*tag);
     }
@@ -82,7 +82,7 @@ void printItemHeader(const ColumnPlan* plan)
 
 void printItem(Session& session, const KiottySpecItem& item, const ColumnPlan* plan)
 {
-    std::vector<std::string> row = {item.id, KiottySpec_kindName(item.kind), cell(item.title), cell(item.summary), checkpointName(item.checkpoint),
+    std::vector<std::string> row = {item.id, kindName(item.kind), cell(item.title), cell(item.summary), checkpointName(item.checkpoint),
                                     itemId(session, item.parent)};
     if (plan != nullptr) {
         const KiottySpecItemHandleResult handle = KiottySpec_findItem(session.context, textOf(item.id));

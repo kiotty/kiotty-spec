@@ -91,13 +91,13 @@ using RelationKey = std::pair<std::string, uint32_t>;
 
 int printSummary(Session& session, const KiottySpecDiffQuery& query)
 {
-    const KiottySpecDiffSummaryResult summary = KiottySpec_summarizeDiff(session.context, query);
+    const KiottySpecDiffSummaryResult summary = KiottySpec_summarizeDiff(session.context, &query);
     if (summary.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, summary.code); }
     printRow({"kind", "added", "modified", "removed", "relations_added", "relations_removed", "decision"});
     for (uint32_t index = 0; index < KIOTTY_SPEC_ITEM_KIND_COUNT; ++index) {
         const KiottySpecKindDiff& kind = summary.kinds[index];
         if (kind.added + kind.modified + kind.removed + kind.relations_added + kind.relations_removed + kind.decision_changed == 0) { continue; }
-        printRow({KiottySpec_kindName(static_cast<KiottySpecItemKind>(index + 1)), std::to_string(kind.added), std::to_string(kind.modified),
+        printRow({kindName(static_cast<KiottySpecItemKind>(index + 1)), std::to_string(kind.added), std::to_string(kind.modified),
                   std::to_string(kind.removed), std::to_string(kind.relations_added), std::to_string(kind.relations_removed),
                   kind.decision_changed != 0 ? "changed" : "-"});
     }
@@ -108,22 +108,25 @@ std::string summaryDiff(Session& session, const KiottySpecItemDiff& diff, const 
                         const std::string& before, const std::string& after)
 {
     if (diff.item == KIOTTY_SPEC_INVALID_ITEM_HANDLE) { return quoted(before) + " -> " + quoted(after); }
-    const KiottySpecCursorResult cursor = KiottySpec_openTextDiffCursor(session.context, diff.item, KIOTTY_SPEC_TEXT_FIELD_SUMMARY, range.from, range.to);
+    const KiottySpecDiffQuery points {range.from, range.to, 0, 0};
+    const KiottySpecCursorResult cursor = KiottySpec_openTextDiffCursor(session.context, diff.item, KIOTTY_SPEC_TEXT_FIELD_SUMMARY, &points);
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return quoted(before) + " -> " + quoted(after); }
     std::string text;
-    while (true) {
-        const KiottySpecTextDiffResult piece = KiottySpec_nextTextDiff(session.context, cursor.value);
-        if (piece.code != KIOTTY_SPEC_STATUS_SUCCESS || piece.value.length == 0) { break; }
-        const std::string_view part(piece.value.text, piece.value.length);
-        if (piece.value.change == KIOTTY_SPEC_TEXT_ADDED) {
-            text += painter.added(part);
-        } else if (piece.value.change == KIOTTY_SPEC_TEXT_REMOVED) {
-            text += painter.removed(part);
-        } else {
-            text += plain(part);
+    KiottySpecTextDiffPage page {};
+    while (KiottySpec_fetchTextDiffPage(session.context, cursor.value, &page).code == KIOTTY_SPEC_STATUS_SUCCESS && page.length > 0) {
+        for (size_t index = 0; index < page.length; ++index) {
+            const KiottySpecTextDiff& piece = page.elements[index];
+            const std::string_view part(piece.text, piece.length);
+            if (piece.change == KIOTTY_SPEC_TEXT_CHANGE_ADDED) {
+                text += painter.added(part);
+            } else if (piece.change == KIOTTY_SPEC_TEXT_CHANGE_REMOVED) {
+                text += painter.removed(part);
+            } else {
+                text += plain(part);
+            }
         }
     }
-    KiottySpec_closeTextDiffCursor(session.context, cursor.value);
+    KiottySpec_closeCursor(session.context, cursor.value);
     return text.empty() ? "-" : text;
 }
 
@@ -144,7 +147,7 @@ int runDiff(Session& session)
     const bool groups[3] = {session.args.flag("added"), session.args.flag("removed"), session.args.flag("modified")};
     if (!groups[0] && !groups[1] && !groups[2]) { return usage("--added · --removed · --modified 중 하나 이상"); }
     query.kind_mask = 1u << (*kind - 1);
-    const KiottySpecDiffSummaryResult range = KiottySpec_summarizeDiff(session.context, query);
+    const KiottySpecDiffSummaryResult range = KiottySpec_summarizeDiff(session.context, &query);
     if (range.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, range.code); }
     const Painter painter {!session.args.flag("no-color") && colorTerminal()};
 
@@ -178,7 +181,7 @@ int runDiff(Session& session)
     }
     std::map<RelationKey, std::vector<RelationChange>> changes;
     if (!relations.empty()) {
-        const KiottySpecCursorResult cursor = KiottySpec_openRelationDiffCursor(session.context, query);
+        const KiottySpecCursorResult cursor = KiottySpec_openRelationDiffCursor(session.context, &query);
         if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
         KiottySpecRelationDiffPage page {};
         while (KiottySpec_fetchRelationDiffPage(session.context, cursor.value, &page).code == KIOTTY_SPEC_STATUS_SUCCESS && page.length > 0) {
@@ -191,7 +194,7 @@ int runDiff(Session& session)
     }
 
     std::vector<KiottySpecItemDiff> diffs;
-    const KiottySpecCursorResult cursor = KiottySpec_openItemDiffCursor(session.context, query);
+    const KiottySpecCursorResult cursor = KiottySpec_openItemDiffCursor(session.context, &query);
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
     KiottySpecItemDiffPage page {};
     while (KiottySpec_fetchItemDiffPage(session.context, cursor.value, &page).code == KIOTTY_SPEC_STATUS_SUCCESS && page.length > 0) {
@@ -221,7 +224,7 @@ int runDiff(Session& session)
             const KiottySpecItemResult after = KiottySpec_readItemAt(session.context, textOf(diff.id), range.to);
             const KiottySpecItem& shown = added || diff.change == KIOTTY_SPEC_CHANGE_MODIFIED ? after.value : before.value;
             const KiottySpecCheckpointHandle shown_at = added || diff.change == KIOTTY_SPEC_CHANGE_MODIFIED ? range.to : range.from;
-            std::vector<std::string> row = {diff.id, KiottySpec_kindName(diff.kind)};
+            std::vector<std::string> row = {diff.id, kindName(diff.kind)};
             const bool modified = diff.change == KIOTTY_SPEC_CHANGE_MODIFIED;
             if (session.args.flag("title")) {
                 const bool changed = modified && (diff.changed_fields & KIOTTY_SPEC_CHANGED_FIELD_TITLE) != 0;

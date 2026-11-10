@@ -3,7 +3,7 @@
 #include "kiotty_spec.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
-#include "implementation/core/kiotty_failure.h"
+#include "implementation/domain/entity/kiotty_failure.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 
 #include <cstddef>
@@ -17,7 +17,7 @@ namespace kiotty::spec::implementation {
 class CheckpointWriter
 {
 public:
-    CheckpointWriter(Failure& failure, std::vector<entity::CheckpointRecord>& records, std::vector<uint8_t>& exists, uint32_t& latest)
+    CheckpointWriter(entity::Failure& failure, std::vector<entity::CheckpointRecord>& records, std::vector<uint8_t>& exists, uint32_t& latest)
         : _failure(failure), _records(records), _exists(exists), _latest(latest)
     {
     }
@@ -28,7 +28,7 @@ public:
     Result<size_t, KiottySpecStatus> dropBefore(uint32_t base);
 
 private:
-    Failure& _failure;
+    entity::Failure& _failure;
     std::vector<entity::CheckpointRecord>& _records;
     std::vector<uint8_t>& _exists;
     uint32_t& _latest;

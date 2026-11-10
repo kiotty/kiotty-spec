@@ -47,7 +47,7 @@ int changeRelation(Session& session, bool add)
 int initProject(Session& session)
 {
     const std::string name = session.args.option("name").value_or("");
-    return check(session, KiottySpec_initProject(session.context, textOf(name)).code);
+    return check(session, KiottySpec_initializeProject(session.context, textOf(name)).code);
 }
 
 int addItem(Session& session)
@@ -62,7 +62,12 @@ int addItem(Session& session)
     if (failed) { return 2; }
     const std::string summary = session.args.option("summary").value_or("");
     const std::string given = session.args.option("id").value_or("");
-    const KiottySpecIdResult created = KiottySpec_createItem(session.context, *kind, textOf(given), textOf(*title), textOf(summary));
+    KiottySpecItemDraft draft {};
+    draft.id = textOf(given);
+    draft.title = textOf(*title);
+    draft.summary = textOf(summary);
+    draft.kind = *kind;
+    const KiottySpecIdResult created = KiottySpec_createItem(session.context, &draft);
     if (created.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, created.code); }
     const std::string id = created.value;
     if (const auto parent = session.args.option("parent")) {
@@ -162,7 +167,7 @@ int showBody(Session& session)
     const std::string* id = positional(session, 0);
     if (id == nullptr) { return usage("ks item body ID"); }
     std::vector<char> buffer(KIOTTY_SPEC_MAX_BODY_LENGTH + 1);
-    const KiottySpecSizeResult read = KiottySpec_readItemBody(session.context, textOf(*id), buffer.data(), buffer.size());
+    const KiottySpecSizeResult read = KiottySpec_readItemBody(session.context, textOf(*id), KiottySpecBuffer{buffer.data(), buffer.size()});
     if (read.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, read.code); }
     std::fwrite(buffer.data(), 1, read.value, stdout);
     if (read.value > 0 && buffer[read.value - 1] != '\n') { std::fputc('\n', stdout); }

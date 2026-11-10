@@ -19,9 +19,9 @@ void CheckpointStore::clear()
 KiottySpecStatus CheckpointStore::put(uint32_t sequence, const CheckpointRecord& record)
 {
     if (sequence < 1 || sequence > _records.size()) {
-        return _failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, {literalText("체크포인트 수가 max_checkpoints 를 넘음")});
+        return _failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_checkpoints"));
     }
-    if (_exists[sequence - 1] != 0) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("같은 체크포인트가 두 줄")}); }
+    if (_exists[sequence - 1] != 0) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE); }
     _records[sequence - 1] = record;
     _exists[sequence - 1] = 1;
     if (sequence > _latest) { _latest = sequence; }

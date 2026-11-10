@@ -8,6 +8,24 @@
 
 namespace kiotty::spec::implementation {
 
+const std::string_view CHANGE_REQUEST_STATE_TAG {"상태"};
+const std::string_view CHANGE_REQUEST_OPEN_BIT {"열림"};
+const std::string_view CHANGE_REQUEST_IN_PROGRESS_BIT {"반영 중"};
+const std::string_view CHANGE_REQUEST_ENTRY_STEP_TAG {"진입 단계"};
+const std::string_view REQUIREMENT_KIND_TAG {"요구사항 종류"};
+const std::string_view FUNCTIONAL_REQUIREMENT_BIT {"기능 요구사항"};
+const std::string_view IMPLEMENTATION_STATE_TAG {"구현 상태"};
+const std::string_view IMPLEMENTED_BIT {"구현 완료"};
+const std::string_view NEEDS_CHANGE_BIT {"변경 필요"};
+const std::string_view RESULT_TAG {"결과"};
+const std::string_view PASS_BIT {"PASS"};
+const std::string_view MILESTONE_DESIGN_RELATION {"포함 설계 사항"};
+const std::string_view MILESTONE_UNIT_TEST_RELATION {"포함 유닛 테스트"};
+const std::string_view SYSTEM_TEST_REQUIREMENT_RELATION {"검증 요구사항"};
+const std::string_view CODE_INSPECTION_RULE_RELATION {"검사 개발 수칙"};
+const std::string_view END_TO_END_TEST_INTERFACE_RELATION {"검증 외부 인터페이스"};
+const std::string_view ACCEPTANCE_CRITERIA_KEYWORDS[ACCEPTANCE_CRITERIA_KEYWORD_COUNT] {"인수 조건", "인수조건"};
+
 namespace {
 
 using entity::Cardinality;

@@ -49,7 +49,6 @@ private:
     KiottySpecStatus countItems(DiffRange range, uint32_t kind_mask, uint32_t field_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
     KiottySpecStatus countRelations(DiffRange range, uint32_t kind_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
     KiottySpecStatus countDecisions(DiffRange range, uint32_t kind_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
-    KiottySpecStatus pushRow(CursorId cursor, const CursorRow& row, Span<const char> overflow);
 
     Workspace& _w;
     CursorPool& _cursors;

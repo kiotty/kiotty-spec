@@ -6,11 +6,8 @@ namespace kiotty::spec::implementation {
 
 KiottySpecStatus DecisionStore::write(entity::ItemKind kind, Span<const char> text, uint32_t sequence)
 {
-    if (text.length() > MAX_DECISION_BYTES) {
-        return _failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, {literalText("결정 기록은 2048 바이트 이하 (R-7)")});
-    }
     const auto slot = _versions.slot(static_cast<uint32_t>(kind), sequence);
-    if (!slot) { return _failure.raise(slot.code, {literalText("결정 기록 버전 수가 상한에 닿음. 정리할 것")}); }
+    if (!slot) { return _failure.raise(slot.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_decision_versions")); }
     slot.value->kind = kind;
     slot.value->removed = 0;
     return slot.value->text.assign(text);

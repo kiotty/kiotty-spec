@@ -14,8 +14,7 @@
 namespace kiotty::spec::implementation {
 
 struct TextPiece {
-    const char* text {nullptr};
-    size_t length {0};
+    Span<const char> text {};
     uint32_t change {0};
 };
 

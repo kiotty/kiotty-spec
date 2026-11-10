@@ -1,7 +1,7 @@
 #pragma once
 
 #include "kiotty_spec.h"
-#include "implementation/core/kiotty_failure.h"
+#include "implementation/domain/entity/kiotty_failure.h"
 #include "implementation/core/kiotty_span.h"
 #include "implementation/data/repository/kiotty_item_history.h"
 #include "implementation/data/repository/kiotty_item_reader.h"
@@ -18,7 +18,7 @@ namespace kiotty::spec::implementation {
 class ItemStore
 {
 public:
-    ItemStore(Failure& failure, const ItemCapacity& capacity) : _failure(failure), _t(capacity) {}
+    ItemStore(entity::Failure& failure, const ItemCapacity& capacity) : _failure(failure), _t(capacity) {}
 
     // 버전 표를 비운다. 파일을 적재하기 전에 부른다.
     void clear();
@@ -37,7 +37,7 @@ private:
     void linkParents();
     KiottySpecStatus loadTags();
 
-    Failure& _failure;
+    entity::Failure& _failure;
     ItemTables _t;
 };
 

@@ -23,8 +23,7 @@ Result<RelationRecord, KiottySpecStatus> RelationEditor::relationOf(Span<const c
     const ItemKind to_kind = _w.items.reader().get(to.value).value->kind;
     const KiottySpecStatus allowed = _w.catalog.checkRelation(from_kind, relation, to_kind);
     if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return RelationResult::failure(
-            _w.failure.raise(allowed, {literalText("모델의 관계 정의에 없는 관계: "), from_id, literalText(" -> "), to_id}));
+        return RelationResult::failure(_w.failure.raise(allowed, KIOTTY_SPEC_SUBJECT_RELATION, from_id));
     }
     return RelationResult::success(RelationRecord{from.value, to.value, from_kind, relation});
 }
@@ -33,7 +32,7 @@ KiottySpecStatus RelationEditor::add(Span<const char> from_id, uint32_t relation
 {
     const auto record = relationOf(from_id, relation, to_id);
     if (!record) { return record.code; }
-    if (_w.relations.contains(record.value)) { return _w.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("이미 있는 관계")}); }
+    if (_w.relations.contains(record.value)) { return _w.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_RELATION, from_id); }
     WriteScope scope(_w, _lifecycle);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }
@@ -44,7 +43,7 @@ KiottySpecStatus RelationEditor::remove(Span<const char> from_id, uint32_t relat
 {
     const auto record = relationOf(from_id, relation, to_id);
     if (!record) { return record.code; }
-    if (!_w.relations.contains(record.value)) { return _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("없는 관계")}); }
+    if (!_w.relations.contains(record.value)) { return _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_RELATION, from_id); }
     WriteScope scope(_w, _lifecycle);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }

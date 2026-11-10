@@ -14,7 +14,7 @@ CursorId encode(Handle handle)
 
 }
 
-CursorPool::CursorPool(size_t maxCursors, size_t maxRows) : _slots(maxCursors), _rows(maxCursors * maxRows), _maxRows(maxRows) {}
+CursorPool::CursorPool(size_t max_cursors, size_t max_rows, size_t total_rows) : _slots(max_cursors), _rows(total_rows), _maxRows(max_rows) {}
 
 Handle CursorPool::decode(CursorId cursor)
 {
