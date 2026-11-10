@@ -3,9 +3,12 @@
 #include "kiotty_spec.h"
 #include "implementation/context/kiotty_diff_range.h"
 #include "implementation/core/kiotty_result.h"
-#include "implementation/data/datasource/kiotty_storage.h"
+#include "implementation/core/kiotty_span.h"
+#include "implementation/data/repository/kiotty_item_store.h"
+#include "implementation/data/repository/kiotty_relation_store.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 
+#include <cstddef>
 #include <cstdint>
 
 namespace kiotty::spec::implementation {
@@ -24,8 +27,8 @@ struct RelationDiffRow {
 class RelationDiffQuery
 {
 public:
-    RelationDiffQuery(Storage& storage, DiffRange range, uint32_t kind_mask)
-        : _storage(storage), _range(range), _kind_mask(kind_mask)
+    RelationDiffQuery(ItemStore& items, RelationStore& relations, DiffRange range, uint32_t kind_mask)
+        : _items(items), _relations(relations), _range(range), _kind_mask(kind_mask)
     {
     }
 
@@ -34,13 +37,15 @@ public:
     const RelationDiffRow& current() const { return _current; }
 
 private:
-    // 이 행이 diff 이면 _current 에 담고 true
-    bool decode(const Row& row);
+    // first 에서 시작하는 관계가 diff 이면 _current 에 담고 true
+    bool decode(uint32_t first);
 
-    Storage& _storage;
+    ItemStore& _items;
+    RelationStore& _relations;
     DiffRange _range;
     uint32_t _kind_mask;
-    Statement _statement;
+    Span<const uint32_t> _firsts;
+    size_t _position {0};
     RelationDiffRow _current {};
 };
 

@@ -1,7 +1,0 @@
-{"created_at":1793803840,"description":"definition.md·src/ 분석: 요구사항 27개(기능 20·품","previous":0,"sequence":1,"state":"running","step":2}
-{"created_at":1793804423,"description":"피드백 반영: 기능 요구사항을 Use-case 9 개 + 하","previous":1,"sequence":2,"state":"running","step":2}
-{"created_at":1793805625,"description":"한 사람 관리 전제로 REQ-036·REQ-017 수정, 여러 사","previous":2,"sequence":3,"state":"done","step":2}
-{"created_at":1793845893,"description":"공개 헤더 kiotty_spec.h 등록(FILE-001), 기능 그룹별 ","previous":3,"sequence":4,"state":"running","step":3}
-{"created_at":1793849306,"description":"피드백 반영: UI-001~019 를 개념 묶음으로, 하위에","previous":4,"sequence":5,"state":"running","step":3}
-{"created_at":1793858720,"description":"Step 3 라운드 3: 하위 함수 제목 5개 잘림 수정 (UI","previous":5,"sequence":6,"state":"done","step":3}
-{"created_at":1793859174,"description":"Step 4 라운드 1: 설계 44개 (디렉토리 6, 메모리 정","previous":6,"sequence":7,"state":"running","step":4}

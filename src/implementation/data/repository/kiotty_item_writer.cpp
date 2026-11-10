@@ -1,76 +1,27 @@
 #include "implementation/data/repository/kiotty_item_writer.h"
 
 #include "implementation/core/kiotty_decimal.h"
-#include "implementation/core/kiotty_fixed_string.h"
+#include "implementation/core/kiotty_number.h"
+#include "implementation/core/kiotty_text.h"
 #include "implementation/core/kiotty_text_view.h"
+#include "implementation/data/repository/kiotty_item_history.h"
 
 namespace kiotty::spec::implementation {
 
 namespace {
 
 using entity::CheckpointHandle;
+using entity::IdText;
 using entity::ItemHandle;
 using entity::ItemKind;
 using entity::ItemRecord;
+using entity::ItemVersion;
 using entity::TagRecord;
+using entity::TagVersion;
 
-constexpr size_t MAX_TAG_TEXT_LENGTH = 8191;
-using TagText = FixedString<MAX_TAG_TEXT_LENGTH>;
+constexpr uint32_t MAX_KEY_ATTEMPTS = 64;
+constexpr uint32_t KEY_SHIFT = 32;
 
-constexpr char WRITE_SQL[] =
-    "INSERT OR REPLACE INTO item_version (item_key, checkpoint, kind, parent_key, title, summary, body, tags, removed) "
-    "VALUES (?1, ?2, ?3, ?4, ?5, ?6, COALESCE(?7, (SELECT body FROM item_version WHERE item_key = ?1 AND checkpoint <= ?2 "
-    "ORDER BY checkpoint DESC LIMIT 1), ''), ?8, ?9)";
-
-constexpr char ID_USED_SQL[] = "SELECT key FROM item WHERE id = ?1";
-constexpr char INSERT_ID_SQL[] = "INSERT INTO item (id) VALUES (?1) RETURNING key";
-constexpr char RENAME_SQL[] = "UPDATE item SET id = ?2 WHERE key = ?1";
-
-KiottySpecStatus appendPair(TagText& text, uint32_t tag, uint64_t value)
-{
-    KiottySpecStatus status = text.append(text.length() > 1 ? literalText(",[") : literalText("["));
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = appendDecimal(text, tag); }
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = text.append(literalText(",")); }
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = appendDecimal(text, value); }
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = text.append(literalText("]")); }
-    return status;
-}
-
-}
-
-KiottySpecStatus ItemWriter::writeVersion(int64_t key, const ItemRecord& record, TagEdit edit, const Span<const char>* body, bool removed, uint32_t sequence)
-{
-    TagText tags;
-    tags.assign(literalText("["));
-    if (!removed) {
-        const auto found = reader().find(record.id.view());
-        const Span<const TagRecord> current = found ? this->tags().of(found.value) : Span<const TagRecord>();
-        bool written = !edit.apply;
-        for (const TagRecord& tag : current) {
-            if (!written && edit.tag <= tag.tag) {
-                if (edit.value != 0) { appendPair(tags, edit.tag, edit.value); }
-                written = true;
-                if (edit.tag == tag.tag) { continue; }
-            }
-            appendPair(tags, tag.tag, tag.value);
-        }
-        if (!written && edit.value != 0) { appendPair(tags, edit.tag, edit.value); }
-    }
-    if (tags.append(literalText("]")) != KIOTTY_SPEC_STATUS_SUCCESS) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-
-    auto query = _storage.prepare(literalText(WRITE_SQL));
-    if (!query) { return query.code; }
-    query.value.bind(1, key);
-    query.value.bind(2, static_cast<int64_t>(sequence));
-    query.value.bind(3, spanOf(entity::kindName(record.kind)));
-    const int64_t parent = record.parent.isValid() ? reader().key(record.parent) : 0;
-    if (parent != 0) { query.value.bind(4, parent); } else { query.value.bind(4, nullptr); }
-    query.value.bind(5, record.title.view());
-    query.value.bind(6, record.summary.view());
-    if (body != nullptr) { query.value.bind(7, *body); } else { query.value.bind(7, nullptr); }
-    query.value.bind(8, tags.view());
-    query.value.bind(9, static_cast<int64_t>(removed ? 1 : 0));
-    return _storage.check(query.value.execute());
 }
 
 Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record, uint32_t sequence)
@@ -78,136 +29,172 @@ Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record
     using HandleResult = Result<ItemHandle, KiottySpecStatus>;
     const KiottySpecStatus unused = checkUnused(record.id);
     if (unused != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(unused); }
-    if (_id_index.length() == _id_index.capacity()) {
-        return HandleResult::failure(_storage.reject(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("항목 수가 max_items 에 닿음")}));
+    if (_t.id_index.length() == _t.id_index.capacity()) {
+        return HandleResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("항목 수가 max_items 에 닿음")}));
     }
-    auto insert = _storage.prepare(literalText(INSERT_ID_SQL));
-    if (!insert) { return HandleResult::failure(insert.code); }
-    insert.value.bind(1, record.id.view());
-    const auto inserted = insert.value.step();
-    if (!inserted || !inserted.value) { return HandleResult::failure(_storage.check(inserted.code)); }
-    const int64_t key = insert.value.row().integer(0);
-    const Span<const char> empty(literalText(""));
-    const KiottySpecStatus written = writeVersion(key, record, TagEdit{false, 0, 0}, &empty, false, sequence);
-    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(written); }
-    const ItemHandle handle = _items.acquire();
+    const auto key = newKey(record.id);
+    if (!key) { return HandleResult::failure(key.code); }
+    ItemVersion version {};
+    version.key = key.value;
+    version.checkpoint = sequence;
+    version.parent = reader().key(record.parent);
+    version.kind = record.kind;
+    version.title = record.title;
+    version.summary = record.summary;
+    KiottySpecStatus status = _t.names.insert(key.value, record.id);
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _t.versions.write(version); }
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(_failure.raise(status, {literalText("항목 버전 수가 상한에 닿음. 정리할 것")})); }
+    const ItemHandle handle = _t.items.acquire();
     if (!handle.isValid()) { return HandleResult::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL); }
-    ItemRecord& stored = *_items.get(handle).value;
+    ItemRecord& stored = *_t.items.get(handle).value;
     stored = record;
     stored.checkpoint = CheckpointHandle{sequence, 0};
-    _keys[handle.index] = key;
-    _id_index.insert(stored.id, handle.index);
+    _t.keys[handle.index] = key.value;
+    _t.parents[handle.index] = version.parent;
+    _t.id_index.insert(stored.id, handle.index);
+    _t.key_index.insert(key.value, handle.index);
     return HandleResult::success(handle);
 }
 
-KiottySpecStatus ItemWriter::checkUnused(const entity::IdText& id)
+KiottySpecStatus ItemWriter::checkUnused(const IdText& id)
 {
-    auto query = _storage.prepare(literalText(ID_USED_SQL));
-    if (!query) { return query.code; }
-    query.value.bind(1, id.view());
-    const auto stepped = query.value.step();
-    if (!stepped) { return _storage.check(stepped.code); }
-    if (!stepped.value) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    if (_id_index.find(id)) { return _storage.reject(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("이미 있는 ID: "), id.view()}); }
-    return _storage.reject(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("지운 항목이 이력에 쓰고 있는 ID (정리 전까지 못 씀): "), id.view()});
+    if (_t.id_index.find(id)) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("이미 있는 ID: "), id.view()}); }
+    const auto removed = ItemHistory(_t).keyOf(id.view());
+    if (removed) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("지운 항목이 이력에 쓰고 있는 ID (정리 전까지 못 씀): "), id.view()}); }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-KiottySpecStatus ItemWriter::rename(ItemHandle handle, const entity::IdText& id)
+// 두 브랜치가 따로 만들어도 겹치지 않도록 ID · 시각 · 시도 횟수로 섞는다.
+Result<uint32_t, KiottySpecStatus> ItemWriter::newKey(const IdText& id) const
 {
-    const auto stored = _items.get(handle);
-    if (!stored) { return stored.code; }
-    const KiottySpecStatus unused = checkUnused(id);
-    if (unused != KIOTTY_SPEC_STATUS_SUCCESS) { return unused; }
-    auto query = _storage.prepare(literalText(RENAME_SQL));
-    if (!query) { return query.code; }
-    query.value.bind(1, _keys[handle.index]);
-    query.value.bind(2, id.view());
-    const KiottySpecStatus written = _storage.check(query.value.execute());
-    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
-    _id_index.erase(stored.value->id);
-    stored.value->id = id;
-    return _id_index.insert(id, handle.index);
+    const uint64_t moment = static_cast<uint64_t>(nowEpochSeconds()) ^ (static_cast<uint64_t>(_t.names.length()) << KEY_SHIFT);
+    for (uint32_t attempt = 0; attempt < MAX_KEY_ATTEMPTS; ++attempt) {
+        const uint64_t mixed = mix64(hash64(id.view(), moment + attempt));
+        const uint32_t key = static_cast<uint32_t>(mixed ^ (mixed >> KEY_SHIFT));
+        if (key != entity::NO_KEY && !_t.names.find(key)) { return Result<uint32_t, KiottySpecStatus>::success(key); }
+    }
+    return Result<uint32_t, KiottySpecStatus>::failure(_failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("새 항목 키를 만들 수 없음")}));
+}
+
+Result<ItemVersion, KiottySpecStatus> ItemWriter::currentVersion(ItemHandle handle) const
+{
+    if (!_t.items.get(handle)) { return Result<ItemVersion, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_HANDLE); }
+    const ItemVersion* version = _t.versions.latest(_t.keys[handle.index], UINT32_MAX);
+    if (version == nullptr) { return Result<ItemVersion, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
+    return Result<ItemVersion, KiottySpecStatus>::success(*version);
+}
+
+KiottySpecStatus ItemWriter::writeVersion(ItemHandle handle, const ItemVersion& version)
+{
+    const KiottySpecStatus written = _t.versions.write(version);
+    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(written, {literalText("항목 버전 수가 상한에 닿음. 정리할 것")}); }
+    _t.items.get(handle).value->checkpoint = CheckpointHandle{version.checkpoint, 0};
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 KiottySpecStatus ItemWriter::update(ItemHandle handle, const ItemRecord& record, uint32_t sequence)
 {
-    const auto stored = _items.get(handle);
-    if (!stored) { return stored.code; }
-    ItemRecord next = *stored.value;
-    next.title = record.title;
-    next.summary = record.summary;
-    next.parent = record.parent;
-    const KiottySpecStatus written = writeVersion(_keys[handle.index], next, TagEdit{false, 0, 0}, nullptr, false, sequence);
+    auto version = currentVersion(handle);
+    if (!version) { return version.code; }
+    version.value.checkpoint = sequence;
+    version.value.title = record.title;
+    version.value.summary = record.summary;
+    version.value.parent = reader().key(record.parent);
+    const KiottySpecStatus written = writeVersion(handle, version.value);
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
-    next.checkpoint = CheckpointHandle{sequence, 0};
-    *stored.value = next;
-    return KIOTTY_SPEC_STATUS_SUCCESS;
-}
-
-KiottySpecStatus ItemWriter::applyTag(ItemHandle handle, ItemKind kind, uint32_t tag, uint64_t value)
-{
-    const size_t position = tags().position(handle.index, tag);
-    const bool exists = position < _tag_count && _tags[position].item.index == handle.index && _tags[position].tag == tag;
-    if (exists && value != 0) {
-        _tags[position].value = value;
-        return KIOTTY_SPEC_STATUS_SUCCESS;
-    }
-    if (exists) {
-        for (size_t index = position + 1; index < _tag_count; ++index) { _tags[index - 1] = _tags[index]; }
-        --_tag_count;
-        return KIOTTY_SPEC_STATUS_SUCCESS;
-    }
-    if (value == 0) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    if (_tag_count == _tags.size()) { return KIOTTY_SPEC_STATUS_POOL_IS_FULL; }
-    for (size_t index = _tag_count; index > position; --index) { _tags[index] = _tags[index - 1]; }
-    _tags[position] = TagRecord{handle, kind, tag, value};
-    ++_tag_count;
+    ItemRecord& stored = *_t.items.get(handle).value;
+    stored.title = record.title;
+    stored.summary = record.summary;
+    stored.parent = record.parent;
+    _t.parents[handle.index] = version.value.parent;
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 KiottySpecStatus ItemWriter::setTag(ItemHandle handle, uint32_t tag, uint64_t value, uint32_t sequence)
 {
-    const auto stored = _items.get(handle);
+    const auto stored = _t.items.get(handle);
     if (!stored) { return stored.code; }
     const bool adds = value != 0 && tags().value(handle, tag) == 0;
-    if (adds && _tag_count == _tags.size()) {
-        return _storage.reject(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("태그 수가 max_tags 에 닿음")});
-    }
-    const KiottySpecStatus written = writeVersion(_keys[handle.index], *stored.value, TagEdit{true, tag, value}, nullptr, false, sequence);
-    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
+    if (adds && _t.tag_count == _t.tags.size()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("태그 수가 max_tags 에 닿음")}); }
+    const TagVersion version {value, _t.keys[handle.index], tag, sequence, value == 0 ? 1u : 0u};
+    const KiottySpecStatus written = _t.tag_versions.write(version);
+    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(written, {literalText("태그 버전 수가 상한에 닿음. 정리할 것")}); }
     stored.value->checkpoint = CheckpointHandle{sequence, 0};
     return applyTag(handle, stored.value->kind, tag, value);
 }
 
+KiottySpecStatus ItemWriter::applyTag(ItemHandle handle, ItemKind kind, uint32_t tag, uint64_t value)
+{
+    const size_t position = tags().position(handle.index, tag);
+    const bool exists = position < _t.tag_count && _t.tags[position].item.index == handle.index && _t.tags[position].tag == tag;
+    if (exists && value != 0) {
+        _t.tags[position].value = value;
+        return KIOTTY_SPEC_STATUS_SUCCESS;
+    }
+    if (exists) {
+        for (size_t index = position + 1; index < _t.tag_count; ++index) { _t.tags[index - 1] = _t.tags[index]; }
+        --_t.tag_count;
+        return KIOTTY_SPEC_STATUS_SUCCESS;
+    }
+    if (value == 0) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    for (size_t index = _t.tag_count; index > position; --index) { _t.tags[index] = _t.tags[index - 1]; }
+    _t.tags[position] = TagRecord{handle, kind, tag, value};
+    ++_t.tag_count;
+    return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+// 본문 파일을 먼저 쓰고, 본문 해시를 바꾼 버전을 쓴다. 빈 본문은 파일을 지운다.
 KiottySpecStatus ItemWriter::writeBody(ItemHandle handle, Span<const char> body, uint32_t sequence)
 {
-    const auto stored = _items.get(handle);
-    if (!stored) { return stored.code; }
-    const KiottySpecStatus written = writeVersion(_keys[handle.index], *stored.value, TagEdit{false, 0, 0}, &body, false, sequence);
-    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
-    stored.value->checkpoint = CheckpointHandle{sequence, 0};
-    return KIOTTY_SPEC_STATUS_SUCCESS;
+    auto version = currentVersion(handle);
+    if (!version) { return version.code; }
+    const SystemPathResult path = bodyPath(_t.body_directory.view(), version.value.key);
+    if (!path) { return _failure.raise(path.code, {literalText("본문 경로가 너무 김")}); }
+    const KiottySpecStatus stored = body.length() == 0 ? removeFile(path.value.view()) : writeWholeFile(path.value.view(), body);
+    if (stored != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("본문 파일을 쓸 수 없음: "), path.value.view()}); }
+    version.value.checkpoint = sequence;
+    version.value.body_hash = body.length() == 0 ? 0 : hash64(body);
+    return writeVersion(handle, version.value);
 }
 
 void ItemWriter::dropTags(ItemHandle handle)
 {
     size_t kept = 0;
-    for (size_t index = 0; index < _tag_count; ++index) {
-        if (_tags[index].item.index == handle.index) { continue; }
-        _tags[kept++] = _tags[index];
+    for (size_t index = 0; index < _t.tag_count; ++index) {
+        if (_t.tags[index].item.index == handle.index) { continue; }
+        _t.tags[kept] = _t.tags[index];
+        ++kept;
     }
-    _tag_count = kept;
+    _t.tag_count = kept;
 }
 
 KiottySpecStatus ItemWriter::remove(ItemHandle handle, uint32_t sequence)
 {
-    const auto stored = _items.get(handle);
-    if (!stored) { return stored.code; }
-    const KiottySpecStatus written = writeVersion(_keys[handle.index], *stored.value, TagEdit{false, 0, 0}, nullptr, true, sequence);
+    auto version = currentVersion(handle);
+    if (!version) { return version.code; }
+    version.value.checkpoint = sequence;
+    version.value.removed = 1;
+    const KiottySpecStatus written = writeVersion(handle, version.value);
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
     dropTags(handle);
-    _id_index.erase(stored.value->id);
-    return _items.release(handle);
+    _t.id_index.erase(_t.items.get(handle).value->id);
+    _t.key_index.erase(version.value.key);
+    _t.keys[handle.index] = entity::NO_KEY;
+    return _t.items.release(handle);
+}
+
+KiottySpecStatus ItemWriter::rename(ItemHandle handle, const IdText& id)
+{
+    const auto stored = _t.items.get(handle);
+    if (!stored) { return stored.code; }
+    const KiottySpecStatus unused = checkUnused(id);
+    if (unused != KIOTTY_SPEC_STATUS_SUCCESS) { return unused; }
+    const uint32_t key = _t.keys[handle.index];
+    _t.names.erase(key);
+    _t.names.insert(key, id);
+    _t.id_index.erase(stored.value->id);
+    stored.value->id = id;
+    return _t.id_index.insert(id, handle.index);
 }
 
 }

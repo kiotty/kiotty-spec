@@ -13,10 +13,6 @@ using entity::ItemKind;
 
 constexpr uint32_t SHIFT = 32;
 
-constexpr char DECISION_DIFF_SQL[] =
-    "SELECT k.kind, (SELECT MAX(checkpoint) FROM decision_version d WHERE d.kind = k.kind AND d.checkpoint <= ?1), "
-    "(SELECT MAX(checkpoint) FROM decision_version d WHERE d.kind = k.kind AND d.checkpoint <= ?2) FROM (SELECT DISTINCT kind FROM decision_version) k";
-
 constexpr uint32_t MAX_KIND_BIT = 32;
 
 bool inMask(uint32_t mask, uint32_t kind) { return mask == 0 || (kind >= 1 && kind <= MAX_KIND_BIT && (mask & (1u << (kind - 1))) != 0); }
@@ -93,7 +89,7 @@ KiottySpecStatus Differ::summarize(DiffRange range, uint32_t kind_mask, uint32_t
 
 KiottySpecStatus Differ::countItems(DiffRange range, uint32_t kind_mask, uint32_t field_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT])
 {
-    ItemDiffQuery query(_w.storage, range, kind_mask, field_mask);
+    ItemDiffQuery query(_w.items, range, kind_mask, field_mask);
     const KiottySpecStatus opened = query.open();
     if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return opened; }
     Result<bool, KiottySpecStatus> next = query.next();
@@ -109,7 +105,7 @@ KiottySpecStatus Differ::countItems(DiffRange range, uint32_t kind_mask, uint32_
 
 KiottySpecStatus Differ::countRelations(DiffRange range, uint32_t kind_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT])
 {
-    RelationDiffQuery query(_w.storage, range, kind_mask);
+    RelationDiffQuery query(_w.items, _w.relations, range, kind_mask);
     const KiottySpecStatus opened = query.open();
     if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return opened; }
     Result<bool, KiottySpecStatus> next = query.next();
@@ -120,27 +116,23 @@ KiottySpecStatus Differ::countRelations(DiffRange range, uint32_t kind_mask, Kin
     return next.code;
 }
 
+// 두 시점에 보이는 결정 기록 버전이 다르면 바뀐 것이다.
 KiottySpecStatus Differ::countDecisions(DiffRange range, uint32_t kind_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT])
 {
-    auto query = _w.storage.prepare(literalText(DECISION_DIFF_SQL));
-    if (!query) { return query.code; }
-    query.value.bind(1, static_cast<int64_t>(range.from));
-    query.value.bind(2, static_cast<int64_t>(range.to));
-    Result<bool, KiottySpecStatus> stepped = query.value.step();
-    for (; stepped && stepped.value; stepped = query.value.step()) {
-        const Row row = query.value.row();
-        const uint32_t kind = entity::parseKind(viewOf(row.text(0)));
-        const bool changed = row.isNull(1) != row.isNull(2) || (!row.isNull(1) && row.integer(1) != row.integer(2));
-        if (kind != 0 && inMask(kind_mask, kind) && changed) { counts[kind - 1].decision_changed = 1; }
+    for (uint32_t kind = 1; kind <= entity::ITEM_KIND_COUNT; ++kind) {
+        const entity::DecisionVersion* before = _w.decisions.versions().latest(kind, range.from);
+        const entity::DecisionVersion* after = _w.decisions.versions().latest(kind, range.to);
+        const bool changed = before != after;
+        if (inMask(kind_mask, kind) && changed) { counts[kind - 1].decision_changed = 1; }
     }
-    return stepped ? KIOTTY_SPEC_STATUS_SUCCESS : _w.storage.check(stepped.code);
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 CursorIdResult Differ::items(DiffRange range, uint32_t kind_mask, uint32_t field_mask)
 {
     const auto cursor = _cursors.open(CursorKind::ITEM_DIFF);
     if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
-    ItemDiffQuery query(_w.storage, range, kind_mask, field_mask);
+    ItemDiffQuery query(_w.items, range, kind_mask, field_mask);
     KiottySpecStatus status = query.open();
     Result<bool, KiottySpecStatus> next = status == KIOTTY_SPEC_STATUS_SUCCESS ? query.next() : Result<bool, KiottySpecStatus>::failure(status);
     for (; next && next.value && status == KIOTTY_SPEC_STATUS_SUCCESS; next = query.next()) {
@@ -161,7 +153,7 @@ CursorIdResult Differ::relations(DiffRange range, uint32_t kind_mask)
 {
     const auto cursor = _cursors.open(CursorKind::RELATION_DIFF);
     if (!cursor) { return CursorIdResult::failure(_w.failure.raise(cursor.code, {literalText("커서 수가 max_cursors 에 닿음")})); }
-    RelationDiffQuery query(_w.storage, range, kind_mask);
+    RelationDiffQuery query(_w.items, _w.relations, range, kind_mask);
     KiottySpecStatus status = query.open();
     Result<bool, KiottySpecStatus> next = status == KIOTTY_SPEC_STATUS_SUCCESS ? query.next() : Result<bool, KiottySpecStatus>::failure(status);
     for (; next && next.value && status == KIOTTY_SPEC_STATUS_SUCCESS; next = query.next()) {

@@ -9,7 +9,6 @@ namespace kiotty::cli {
 
 namespace {
 
-constexpr size_t REPORT_LENGTH = 64 * 1024;
 constexpr uint32_t DEFAULT_HISTORY_DEPTH = 3;
 const std::vector<std::string> CHECKPOINT_HEADER = {"checkpoint", "step", "state", "description", "created_at", "previous"};
 
@@ -165,24 +164,6 @@ int showModel(Session& session)
         printRow({KiottySpec_kindName(model.value.kind), model.value.name, model.value.id_prefix, stepName(model.value.created_in),
                   std::to_string(model.value.tag_count), std::to_string(model.value.relation_count)});
     }
-    return 0;
-}
-
-int exportJsonl(Session& session)
-{
-    const std::string directory = session.args.positional.size() > 1 ? session.args.positional[1] : std::string();
-    if (session.args.positional.empty() || session.args.positional[0] != "jsonl") { return usage("ks export jsonl [DIR]"); }
-    return check(session, KiottySpec_exportJsonl(session.context, textOf(directory)).code);
-}
-
-int importJsonl(Session& session)
-{
-    const std::string directory = session.args.positional.size() > 1 ? session.args.positional[1] : std::string();
-    if (session.args.positional.empty() || session.args.positional[0] != "jsonl") { return usage("ks import jsonl [DIR]"); }
-    std::vector<char> report(REPORT_LENGTH);
-    const KiottySpecSizeResult imported = KiottySpec_importJsonl(session.context, textOf(directory), report.data(), report.size());
-    if (imported.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, imported.code); }
-    if (imported.value > 0) { std::fputs(report.data(), stderr); }
     return 0;
 }
 

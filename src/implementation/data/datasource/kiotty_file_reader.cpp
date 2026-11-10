@@ -41,7 +41,7 @@ Result<bool, KiottySpecStatus> FileReader::next()
         _end += static_cast<size_t>(count);
     }
     size_t last = scan;
-    while (last > _start && (_buffer[last - 1] == '\r' || _buffer[last - 1] == ' ')) { --last; }
+    if (last > _start && _buffer[last - 1] == '\r') { --last; }
     _line = Span<const char>(_buffer.data() + _start, last - _start);
     _start = scan < _end ? scan + 1 : _end;
     return LineResult::success(true);

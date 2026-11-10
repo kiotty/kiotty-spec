@@ -11,21 +11,6 @@ if(MSVC)
     string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-include(FetchContent)
-
-# ---------------------------------------------------------------------------
-# 외부 의존성: SQLite(amalgamation)
-# 자체 CMake 를 쓰지 않고 소스만 받아 아래에서 직접 타깃을 만든다.
-# ---------------------------------------------------------------------------
-FetchContent_Declare(sqlite3
-    URL https://www.sqlite.org/2025/sqlite-amalgamation-3500400.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
-FetchContent_MakeAvailable(sqlite3)
-
-add_library(kiotty_sqlite3 STATIC ${sqlite3_SOURCE_DIR}/sqlite3.c)
-target_include_directories(kiotty_sqlite3 PUBLIC ${sqlite3_SOURCE_DIR})
-target_compile_definitions(kiotty_sqlite3 PRIVATE SQLITE_THREADSAFE=1 SQLITE_OMIT_LOAD_EXTENSION SQLITE_DQS=0)
-
 # ---------------------------------------------------------------------------
 # 공통 컴파일 옵션
 # ---------------------------------------------------------------------------
@@ -62,7 +47,6 @@ add_library(kiotty_spec STATIC
 target_include_directories(kiotty_spec
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(kiotty_spec PRIVATE kiotty_sqlite3)
 kiotty_warnings(kiotty_spec)
 kiotty_no_exceptions(kiotty_spec)
 
@@ -78,7 +62,7 @@ kiotty_no_exceptions(ks)
 # ---------------------------------------------------------------------------
 # core 단위 테스트: 개발수칙 0.1 에 따라 C++17 로 빌드한다.
 # ---------------------------------------------------------------------------
-add_executable(kiotty_core_test tests/core/core_test.cpp src/implementation/core/kiotty_text_diff.cpp src/implementation/core/kiotty_json_reader.cpp)
+add_executable(kiotty_core_test tests/core/core_test.cpp src/implementation/core/kiotty_text_diff.cpp)
 target_include_directories(kiotty_core_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src/implementation/core)
 set_target_properties(kiotty_core_test PROPERTIES
     CXX_STANDARD 17
@@ -89,10 +73,8 @@ kiotty_no_exceptions(kiotty_core_test)
 
 add_executable(kiotty_datasource_test
     tests/datasource/datasource_test.cpp
-    src/implementation/data/datasource/kiotty_db_connection.cpp
-    src/implementation/data/datasource/kiotty_statement.cpp
-    src/implementation/data/datasource/kiotty_row.cpp
-    src/implementation/data/datasource/kiotty_savepoint.cpp
+    src/implementation/data/datasource/kiotty_kisp_file.cpp
+    src/implementation/data/datasource/kiotty_kisp_line.cpp
     src/implementation/data/datasource/kiotty_file_system.cpp
     src/implementation/data/datasource/kiotty_system_path.cpp
     src/implementation/data/datasource/backend/kiotty_platform_windows.cpp
@@ -100,7 +82,6 @@ add_executable(kiotty_datasource_test
     src/implementation/data/datasource/kiotty_file_reader.cpp
     src/implementation/data/datasource/kiotty_file_writer.cpp)
 target_include_directories(kiotty_datasource_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(kiotty_datasource_test PRIVATE kiotty_sqlite3)
 kiotty_warnings(kiotty_datasource_test)
 kiotty_no_exceptions(kiotty_datasource_test)
 
@@ -115,7 +96,6 @@ add_executable(kiotty_model_test
     tests/model/model_test.cpp
     src/implementation/domain/entity/kiotty_item_id.cpp
     src/implementation/domain/entity/kiotty_kind.cpp
-    src/implementation/domain/entity/kiotty_tag_pairs.cpp
     src/implementation/domain/usecases/kiotty_model_catalog.cpp
     src/implementation/domain/usecases/kiotty_model_finder.cpp)
 target_include_directories(kiotty_model_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)

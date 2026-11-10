@@ -12,6 +12,14 @@ using entity::CheckpointState;
 
 constexpr uint32_t SHIFT = 32;
 
+// 이 체크포인트에 묶인 버전 수 (항목 · 태그 · 관계 · 결정 기록)
+uint64_t countWrites(Workspace& workspace, uint32_t sequence)
+{
+    const ItemTables& items = workspace.items.tables();
+    return items.versions.countAt(sequence) + items.tag_versions.countAt(sequence) + workspace.relations.versions().countAt(sequence) +
+           workspace.decisions.versions().countAt(sequence);
+}
+
 }
 
 CursorIdResult HistoryFinder::checkpoints(uint32_t step)
@@ -69,11 +77,7 @@ Result<Position, KiottySpecStatus> HistoryFinder::position()
     position.current = latest;
     position.step = static_cast<uint32_t>(record->step);
     position.state = static_cast<uint32_t>(record->state);
-    if (record->state == CheckpointState::RUNNING) {
-        const auto writes = _w.checkpoints.countWrites(latest);
-        if (!writes) { return Result<Position, KiottySpecStatus>::failure(writes.code); }
-        position.pending_writes = writes.value;
-    }
+    if (record->state == CheckpointState::RUNNING) { position.pending_writes = countWrites(_w, latest); }
     if (record->state != CheckpointState::DONE) {
         position.next_step = position.step;
     } else if (record->step == entity::Step::CHANGE_REQUEST_REPORTED) {

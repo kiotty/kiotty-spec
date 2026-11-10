@@ -5,7 +5,7 @@ namespace kiotty::cli {
 const std::vector<CommandEntry>& commands()
 {
     static const std::vector<CommandEntry> table = {
-        {"init", "", "[--name N] [--hooks]", "프로젝트 메타 · .gitignore 를 쓰고 git 훅을 설치", initProject},
+        {"init", "", "[--name N]", "프로젝트 이름과 만든 시각을 쓴다", initProject},
         {"item", "add", "KIND --title T [--id ID] [--summary S] [--parent ID] [--body T|--body-file F] [--tag 이름=값]...",
          "항목을 만들고 ID 를 찍는다. --id 가 없으면 발급한다. 이미 있는 ID 는 거부한다", addItem},
         {"item", "rename", "ID 새ID", "ID 만 바꾼다 (관계 · 이력은 그대로 따라온다)", renameItem},
@@ -34,8 +34,6 @@ const std::vector<CommandEntry>& commands()
         {"diff", "", "FROM TO [--kind K (--added|--removed|--modified)... [--title] [--summary] [--tag 이름]... [--tags] [--relation 이름]... [--relations] [--no-color]]",
          "체크포인트 사이 비교. --kind 가 없으면 Kind 별 요약 (5.4)", runDiff},
         {"model", "", "[KIND]", "Kind 목록, 또는 Kind 의 태그 · 관계 정의", showModel},
-        {"export", "", "jsonl [DIR]", "DB 를 jsonl 로 (기본 .kiotty/spec)", exportJsonl},
-        {"import", "", "jsonl [DIR]", "jsonl 로 DB 를 다시 만든다. 옛 형식은 변환한다", importJsonl},
     };
     return table;
 }

@@ -2,7 +2,6 @@
 
 #include "implementation/core/kiotty_text.h"
 #include "implementation/core/kiotty_text_view.h"
-#include "implementation/data/datasource/kiotty_savepoint.h"
 
 namespace kiotty::spec::implementation {
 
@@ -22,6 +21,8 @@ KiottySpecStatus Lifecycle::requireUser(KiottySpecActor actor, Span<const char> 
 
 SequenceResult Lifecycle::beginWrite()
 {
+    const KiottySpecStatus fresh = _w.refresh();
+    if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(fresh); }
     const uint32_t latest = _w.checkpoints.latest();
     const CheckpointRecord* record = _w.checkpoints.at(latest);
     if (record == nullptr) {
@@ -43,26 +44,33 @@ SequenceResult Lifecycle::start(entity::Step step, Span<const char> description)
     if (!entity::isValidStep(static_cast<uint32_t>(step))) {
         return SequenceResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("단계는 1 ~ 12")}));
     }
-    return _w.checkpoints.writer().create(step, description, nowEpochSeconds());
+    const KiottySpecStatus fresh = _w.refresh();
+    if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(fresh); }
+    const auto created = _w.checkpoints.writer().create(step, description, nowEpochSeconds());
+    const KiottySpecStatus finished = _w.finish(created.code);
+    if (finished != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(finished); }
+    return created;
 }
 
 KiottySpecStatus Lifecycle::resume()
 {
     const auto sequence = beginWrite();
-    return sequence.code;
+    return _w.finish(sequence.code);
 }
 
 KiottySpecStatus Lifecycle::complete(KiottySpecActor actor)
 {
     const KiottySpecStatus allowed = requireUser(actor, literalText("체크포인트 완료"));
     if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) { return allowed; }
+    const KiottySpecStatus fresh = _w.refresh();
+    if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return fresh; }
     const uint32_t latest = _w.checkpoints.latest();
     const CheckpointRecord* record = _w.checkpoints.at(latest);
     if (record == nullptr) { return _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("체크포인트가 없음")}); }
     if (record->state == CheckpointState::DONE) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     const KiottySpecStatus checked = _checker.check(record->step);
     if (checked != KIOTTY_SPEC_STATUS_SUCCESS) { return checked; }
-    return _w.checkpoints.writer().setState(latest, CheckpointState::DONE);
+    return _w.finish(_w.checkpoints.writer().setState(latest, CheckpointState::DONE));
 }
 
 Result<size_t, KiottySpecStatus> Lifecycle::prune(KiottySpecActor actor, uint32_t base)
@@ -70,20 +78,19 @@ Result<size_t, KiottySpecStatus> Lifecycle::prune(KiottySpecActor actor, uint32_
     using CountResult = Result<size_t, KiottySpecStatus>;
     const KiottySpecStatus allowed = requireUser(actor, literalText("체크포인트 정리"));
     if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(allowed); }
+    const KiottySpecStatus fresh = _w.refresh();
+    if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(fresh); }
     const CheckpointRecord* record = _w.checkpoints.at(base);
     if (record == nullptr) { return CountResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("기준 체크포인트가 없음")})); }
     if (record->state != CheckpointState::DONE) {
         return CountResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, {literalText("기준 체크포인트는 DONE 이어야 함")}));
     }
-    Savepoint savepoint(_w.storage.connection());
-    const KiottySpecStatus begun = _w.storage.check(savepoint.begin());
-    if (begun != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(begun); }
-    const KiottySpecStatus pruned = pruneVersions(_w.storage, base);
-    if (pruned != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(pruned); }
     const auto dropped = _w.checkpoints.writer().dropBefore(base);
-    if (!dropped) { return dropped; }
-    const KiottySpecStatus committed = _w.storage.check(savepoint.commit());
-    if (committed != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(committed); }
+    _w.items.history().prune(base);
+    _w.relations.versions().prune(base);
+    _w.decisions.versions().prune(base);
+    const KiottySpecStatus finished = _w.finish(dropped.code);
+    if (finished != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(finished); }
     const KiottySpecStatus reloaded = _w.reload();
     if (reloaded != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(reloaded); }
     return dropped;

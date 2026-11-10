@@ -59,6 +59,24 @@ Result<size_t, KiottySpecStatus> readFile(Span<const char> path, Span<char> buff
     return SizeResult::success(length);
 }
 
+Result<size_t, KiottySpecStatus> fileLength(Span<const char> path)
+{
+    using SizeResult = Result<size_t, KiottySpecStatus>;
+    constexpr size_t CHUNK_BYTES = 512;
+    const int descriptor = platform::openFile(path, platform::OpenMode::READ);
+    if (descriptor < 0) { return SizeResult::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
+    char chunk[CHUNK_BYTES] {};
+    size_t length = 0;
+    int count = platform::readSome(descriptor, chunk, CHUNK_BYTES);
+    while (count > 0) {
+        length += static_cast<size_t>(count);
+        count = platform::readSome(descriptor, chunk, CHUNK_BYTES);
+    }
+    platform::closeFile(descriptor);
+    if (count < 0) { return SizeResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT); }
+    return SizeResult::success(length);
+}
+
 KiottySpecStatus writeWholeFile(Span<const char> path, Span<const char> content)
 {
     const Span<const char> parent = parentOf(path);

@@ -55,7 +55,7 @@ inline bool isValidKind(uint32_t value) { return value >= 1 && value <= ITEM_KIN
 inline bool isValidStep(uint32_t value) { return value >= 1 && value <= STEP_COUNT; }
 inline size_t kindIndex(ItemKind kind) { return static_cast<size_t>(kind) - 1; }
 
-// jsonl 과 ks 가 쓰는 영문 이름 ("design"). 모르는 값이면 빈 문자열, 모르는 이름이면 0.
+// .kisp 와 ks 가 쓰는 영문 이름 ("design"). 모르는 값이면 빈 문자열, 모르는 이름이면 0.
 std::string_view kindName(ItemKind kind);
 uint32_t parseKind(std::string_view name);
 std::string_view stateName(CheckpointState state);

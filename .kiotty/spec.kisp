@@ -1,0 +1,1210 @@
+#kisp 1 model 1
+TABLE	meta	O/X	key	value
+meta	O	project.created_at	1793803689
+meta	O	project.name	kiotty-spec
+TABLE	checkpoint	O/X	sequence	previous	step	state	created_at	description
+checkpoint	O	1	-	2	running	1793803840	definition.md·src/ 분석: 요구사항 27개(기능 20·품
+checkpoint	O	2	1	2	running	1793804423	피드백 반영: 기능 요구사항을 Use-case 9 개 + 하
+checkpoint	O	3	2	2	done	1793805625	한 사람 관리 전제로 REQ-036·REQ-017 수정, 여러 사
+checkpoint	O	4	3	3	running	1793845893	공개 헤더 kiotty_spec.h 등록(FILE-001), 기능 그룹별 
+checkpoint	O	5	4	3	running	1793849306	피드백 반영: UI-001~019 를 개념 묶음으로, 하위에
+checkpoint	O	6	5	3	done	1793858720	Step 3 라운드 3: 하위 함수 제목 5개 잘림 수정 (UI
+checkpoint	O	7	6	4	running	1793859174	Step 4 라운드 1: 설계 44개 (디렉토리 6, 메모리 정
+TABLE	item	O/X	key	id
+item	O	0005e3ff	DSN-036
+item	O	01ce7d33	RULE-006
+item	O	02791c5f	UI-120
+item	O	02911105	UI-072
+item	O	03d76c7c	UI-003
+item	O	07084734	UI-073
+item	O	07e94fa4	UI-040
+item	O	08ab8872	UI-059
+item	O	09342f57	DSN-016
+item	O	0961e43d	RULE-004
+item	O	0af9a2b3	UI-032
+item	O	0ba10bc3	UI-065
+item	O	0c7ab770	REQ-032
+item	O	0d3bd7b4	DSN-034
+item	O	0d67d663	UI-087
+item	O	0ec0c309	UI-106
+item	O	0fcd7b5f	RULE-011
+item	O	1059a1c8	UI-039
+item	O	13a6e2ed	UI-001
+item	O	14e0621f	DSN-028
+item	O	15852ee9	DSN-031
+item	O	167c4fdc	REQ-019
+item	O	16c120c1	DSN-025
+item	O	1705d76a	UI-037
+item	O	1806b17a	UI-008
+item	O	1b8d6866	REQ-022
+item	O	1df74afa	REQ-005
+item	O	1dfa5fcf	UI-045
+item	O	1ed6f364	REQ-017
+item	O	21c5e2ba	UI-091
+item	O	2202fb80	UI-117
+item	O	2356c0c5	REQ-016
+item	O	25b9dacf	REQ-014
+item	O	26006076	UI-006
+item	O	26e85bdf	UI-102
+item	O	26f66a3b	UI-043
+item	O	26fcf249	DSN-043
+item	O	29014c2e	UI-010
+item	O	2af1c005	UI-026
+item	O	2b26a619	UI-099
+item	O	2bba3776	UI-098
+item	O	2bf42354	REQ-030
+item	O	2f1107b3	UI-097
+item	O	2ff66b9d	DSN-007
+item	O	30d29eda	REQ-001
+item	O	3280a187	UI-068
+item	O	3329cccc	DSN-015
+item	O	340e0112	UI-046
+item	O	34cb6c64	DSN-033
+item	O	3595eff9	UI-004
+item	O	360d9e4c	UI-055
+item	O	3770c54f	UI-022
+item	O	3775f9e7	UI-071
+item	O	37a9cd50	UI-028
+item	O	37b898f4	UI-126
+item	O	37c775d3	UI-020
+item	O	3dca66c8	UI-109
+item	O	3f39657b	REQ-023
+item	O	3fff4db3	UI-114
+item	O	4063cd11	REQ-037
+item	O	40db7df2	REQ-025
+item	O	41d06f7e	UI-041
+item	O	4247eb52	UI-033
+item	O	425038e4	UI-067
+item	O	42964b75	REQ-013
+item	O	4384951a	UI-057
+item	O	43a5b50c	UI-019
+item	O	45451f97	UI-031
+item	O	46b481d0	UI-012
+item	O	46c654ba	UI-090
+item	O	46ed6c51	UI-077
+item	O	470160d1	UI-011
+item	O	47b24721	DSN-038
+item	O	4b0d2f18	UI-060
+item	O	4b4547e7	DSN-019
+item	O	4b557e2e	REQ-028
+item	O	4d7cffdf	UI-069
+item	O	4dfb2a94	UI-108
+item	O	4f810c4f	DSN-035
+item	O	50f1da45	RULE-002
+item	O	53309a13	UI-061
+item	O	53aab71d	RULE-005
+item	O	53f3ecd2	DSN-037
+item	O	53fcee50	DSN-010
+item	O	5451c8bd	DSN-013
+item	O	54f0c0ae	REQ-009
+item	O	55e67de0	UI-062
+item	O	5630fd14	REQ-002
+item	O	59214f58	DSN-011
+item	O	5aa207d2	DSN-042
+item	O	5b0992ad	UI-047
+item	O	5b0ffc39	UI-093
+item	O	5e543b7d	UI-082
+item	O	5ef1b4d9	REQ-018
+item	O	60b5232b	UI-050
+item	O	61b29604	REQ-003
+item	O	629008a4	UI-088
+item	O	636f4575	UI-029
+item	O	6394af8c	DSN-018
+item	O	64ff70f5	UI-042
+item	O	68a2a8eb	UI-092
+item	O	68ffedd2	UI-078
+item	O	6a04f93c	REQ-035
+item	O	6ae1e3ee	REQ-006
+item	O	6b15726e	REQ-034
+item	O	6b7f5ad5	DSN-001
+item	O	6dffbaff	UI-056
+item	O	6eb744d7	UI-053
+item	O	710d9746	REQ-036
+item	O	734f2faf	UI-048
+item	O	75a997cc	REQ-024
+item	O	7642fa61	UI-115
+item	O	785737c2	DSN-029
+item	O	7b5137c8	UI-113
+item	O	7dc07e21	UI-124
+item	O	801c70b4	REQ-029
+item	O	80df06c2	RULE-001
+item	O	8113729e	UI-038
+item	O	81a9295f	REQ-033
+item	O	826fd29e	UI-116
+item	O	83c0a718	UI-104
+item	O	83c70f32	DSN-006
+item	O	84724f6b	UI-086
+item	O	85360662	UI-021
+item	O	856dcc2e	REQ-011
+item	O	8612bafa	REQ-021
+item	O	8666e9e5	UI-030
+item	O	878217d5	UI-125
+item	O	88bfa822	UI-007
+item	O	8a5b382e	UI-013
+item	O	8ad72b03	UI-074
+item	O	8b9dc077	UI-096
+item	O	8bf56894	DSN-044
+item	O	8d389a2c	UI-081
+item	O	8daa90d2	DSN-023
+item	O	8ef8bb99	RULE-003
+item	O	8f5235a6	UI-034
+item	O	8fb791cf	DSN-021
+item	O	9168813f	UI-075
+item	O	92b2d708	REQ-010
+item	O	935396f9	REQ-007
+item	O	93fbc33b	UI-083
+item	O	9496a4e9	DSN-024
+item	O	9829161f	UI-084
+item	O	9896a5bd	REQ-008
+item	O	99913fa0	UI-051
+item	O	99ae0b94	DSN-041
+item	O	9a2595ca	DSN-039
+item	O	9c9aa9f4	UI-049
+item	O	9e003773	REQ-020
+item	O	9e6f4f55	UI-015
+item	O	9effb23d	REQ-031
+item	O	9fa595ca	UI-107
+item	O	a00f7f5a	UI-095
+item	O	a2648eac	DSN-040
+item	O	a2bb8623	UI-044
+item	O	a2f7240b	RULE-008
+item	O	a8b5d73e	UI-101
+item	O	a9783a45	UI-017
+item	O	aa14a4b7	UI-052
+item	O	ab7475cf	DSN-014
+item	O	ae056bc9	DSN-004
+item	O	af5383a5	UI-100
+item	O	b1e3a463	UI-094
+item	O	b4016cb7	UI-063
+item	O	b4333951	UI-103
+item	O	b75cd759	UI-005
+item	O	b8f54123	DSN-020
+item	O	baafb6dd	RULE-010
+item	O	bb0a0d0d	UI-110
+item	O	bff0120a	DSN-022
+item	O	c07f029a	DSN-030
+item	O	c0e52e11	UI-035
+item	O	c29eeffc	UI-070
+item	O	c3aacc5e	REQ-027
+item	O	c4688e6e	UI-024
+item	O	c4d160e4	UI-018
+item	O	c8870ef9	UI-002
+item	O	c94573b8	UI-119
+item	O	cca5d5e7	UI-123
+item	O	cd080d8c	UI-036
+item	O	cd79aff8	UI-105
+item	O	cdb0ff14	UI-014
+item	O	cfc7c974	UI-079
+item	O	d20e9a3e	DSN-032
+item	O	d4165e3e	UI-009
+item	O	d573c01b	UI-076
+item	O	d6af8843	DSN-017
+item	O	d9052c6b	DSN-002
+item	O	d915220c	REQ-026
+item	O	de2bfdc9	UI-058
+item	O	df3e653f	UI-089
+item	O	e316031e	REQ-004
+item	O	e3538d50	UI-064
+item	O	e51e7f6b	UT-001
+item	O	e96b30a7	UI-027
+item	O	e9fafbf0	UI-085
+item	O	eb3dbdb8	UI-080
+item	O	eb7eb460	UI-122
+item	O	ebe4a3d6	UI-016
+item	O	ec58da00	RULE-009
+item	O	ec91953e	RULE-007
+item	O	ee48a095	DSN-027
+item	O	ef00bc7f	DSN-026
+item	O	f1b22557	DSN-003
+item	O	f208d1f7	DSN-005
+item	O	f20e6c8c	DSN-012
+item	O	f379d81c	DSN-008
+item	O	f3dc42c3	UI-111
+item	O	f55c48b9	UI-066
+item	O	f567eb49	UI-025
+item	O	f59c2142	UI-121
+item	O	f5d61935	REQ-015
+item	O	f9ea7860	UI-023
+item	O	fbdb73c5	DSN-009
+item	O	fca7d6c4	REQ-012
+item	O	fcc47146	UI-054
+item	O	fda770b6	UI-118
+item	O	ffc10b30	UI-112
+TABLE	item_version	O/X	key	checkpoint	kind	parent	title	summary	body
+item_version	O	0005e3ff	7	design	-	항목 쓰기와 PENDING 버전		633dece43b44231c
+item_version	O	01ce7d33	1	rule	-	실패는 core::Error 로, C 경계에서만 상태 코드로		8ec2d3fcd7034134
+item_version	O	02791c5f	5	external_interface	a9783a45	KiottySpec_Context_rules — 코드 작성 전 항상 읽을 개발 규칙만		d62ade489c988785
+item_version	O	02911105	5	external_interface	1806b17a	KiottySpec_Item_searchBegin — 제목·본문 전문 검색		d735bdbb6cda28b3
+item_version	O	03d76c7c	4	external_interface	-	프로젝트 DB 열기·초기화·정책·스키마		2134cd5d5dc2f14d
+item_version	O	03d76c7c	5	external_interface	-	프로젝트 DB 열기·초기화·정책·스키마		00cc4b812c7ffc5d
+item_version	O	07084734	5	external_interface	1806b17a	KiottySpec_Item_template — 종류별 본문 틀		f6392e647c02a8b0
+item_version	O	07e94fa4	5	external_interface	03d76c7c	KiottySpec_getPolicy — 정책 조회		7cd77225458d7bab
+item_version	O	08ab8872	5	external_interface	26006076	KiottySpec_Context_pending — 열린 변경 요청, 실패 결과, 변경 필요 항목, 미확정 체크포인트 등 지금 	KiottySpec_Context_pending — 열린 변경 요청, 실패 결과, 변경 필요 항목, 미확정 체크포인트 등 지금 할 일	468a4e8093ce772d
+item_version	O	09342f57	7	design	f1b22557	base::Meta — 메타데이터·정책·ID 발급·쓰기 순번		5cd086cf77f89ecf
+item_version	O	0961e43d	1	rule	-	이름 규칙		9c828c51a8a89345
+item_version	O	0af9a2b3	5	external_interface	c8870ef9	KiottySpec_Cursor_getMilestoneEntry — index 번째 마일스톤 포함 항목		e3cac1ec158e9afb
+item_version	O	0ba10bc3	5	external_interface	1806b17a	KiottySpec_Item_getAt — 특정 체크포인트 시점의 버전 조회		6cb9a8d80da61bbb
+item_version	O	0c7ab770	2	requirement	-	개발 계획대로 구현을 진행한다		dfb2e3664ba1bbbf
+item_version	O	0d3bd7b4	7	design	f208d1f7	CLI output — JSON·Markdown 출력과 해제		96a9331b099f6016
+item_version	O	0d67d663	5	external_interface	470160d1	KiottySpec_Link_remove — 링크 제거		6e13192ac3ec2370
+item_version	O	0ec0c309	5	external_interface	9e6f4f55	KiottySpec_Result_listBegin — 대상의 결과 이력		ff4ec24cb0fb8ff5
+item_version	O	0fcd7b5f	1	rule	-	테스트는 CTest, 임시 프로젝트 디렉토리에서		fcf66b0c1cbeeb4a
+item_version	O	1059a1c8	5	external_interface	03d76c7c	KiottySpec_setPolicy — 정책 설정		8866dbb15e8d5c5a
+item_version	O	13a6e2ed	4	external_interface	-	상태 코드·오류·열거 이름 (공통 규약)		d845a9ddd31cf5a5
+item_version	O	13a6e2ed	5	external_interface	-	상태 코드·오류·열거 이름 (공통 규약)		317f1c6df9dadfd6
+item_version	O	14e0621f	7	design	f1b22557	base::Exchange — 문서·jsonl·Markdown·읽기 전용 질의		fb7e9457350e87b2
+item_version	O	15852ee9	7	design	f208d1f7	CLI main — 명령 찾기·루트·actor·종료 코드		2ce8cc8f353f5448
+item_version	O	167c4fdc	1	requirement	-	CLI ks		0bcb655ad7abf74c
+item_version	O	167c4fdc	2	requirement	4b557e2e	어느 폴더에서든 같은 프로젝트를 다룬다		5d1e57e208e870b3
+item_version	O	16c120c1	7	design	f1b22557	base::Checker — 불일치 검사와 단계별 확정 조건		9f8d01ea4957f7ea
+item_version	O	1705d76a	5	external_interface	03d76c7c	KiottySpec_close — DB 를 닫는다		4efad961750c69c0
+item_version	O	1806b17a	4	external_interface	-	항목 — 기록·조회·계층·본문 틀		a4c21b8367f74755
+item_version	O	1806b17a	5	external_interface	-	항목 — 기록·조회·계층·본문 틀		b84a98f582c83c6e
+item_version	O	1b8d6866	1	requirement	-	메모리 소유권이 명확함		8c4d9683a40b38a5
+item_version	O	1b8d6866	2	requirement	-	메모리 소유권이 명확함		8c4d9683a40b38a5
+item_version	O	1df74afa	1	requirement	-	링크 관리		5e4ba56e414588c6
+item_version	O	1df74afa	2	requirement	2bf42354	항목을 정해진 관계로 연결한다		474631e1802832b4
+item_version	O	1dfa5fcf	5	external_interface	3595eff9	KiottySpec_Transaction_rollback — 트랜잭션 롤백		e3faf37ea970bacd
+item_version	O	1ed6f364	1	requirement	-	jsonl 내보내기·가져오기		b3a6f5a21800562c
+item_version	O	1ed6f364	2	requirement	710d9746	기록을 git 으로 공유하고 합친다		e5b7a814a8752ffa
+item_version	O	1ed6f364	3	requirement	710d9746	기록을 git 에 보관하고 되살린다		4ccae72328ce7b9d
+item_version	O	21c5e2ba	5	external_interface	470160d1	KiottySpec_Link_matrix — 두 종류 간 추적 매트릭스 CSV		ef8b0db9297239b2
+item_version	O	2202fb80	5	external_interface	a9783a45	KiottySpec_Context_forItem — 항목과 상·하류 연결 항목, 관련 결정 줄		1f13cb1430cbc657
+item_version	O	2356c0c5	1	requirement	-	정리 (Compaction)		61c9ddd4c05dceeb
+item_version	O	2356c0c5	2	requirement	6a04f93c	오래된 기록을 정리한다		f1f1d7962fd29b7d
+item_version	O	25b9dacf	1	requirement	-	파일 추적		4815196f117e3cff
+item_version	O	25b9dacf	2	requirement	0c7ab770	인터페이스 파일과 소스 파일을 추적한다		c0447477188f815f
+item_version	O	26006076	4	external_interface	-	현재 위치·지나온 단계·지금 할 일		b966eadbec270107
+item_version	O	26006076	5	external_interface	-	현재 위치·지나온 단계·지금 할 일		7bb72c63f3a83bda
+item_version	O	26e85bdf	5	external_interface	cdb0ff14	KiottySpec_Decision_rewrite — 결정 기록을 통째로 다시 쓴다		ce37820a6e0f2fc3
+item_version	O	26f66a3b	5	external_interface	3595eff9	KiottySpec_Transaction_start — 여러 쓰기를 원자적으로 묶기 시작		348cca19d54a213d
+item_version	O	26fcf249	7	design	-	RELEASE 선언과 기록 정리		bb8167cca19842a1
+item_version	O	29014c2e	4	external_interface	-	파일 — 인터페이스 파일·소스 파일 등록과 변경 감지		238e94bd97c3a3ed
+item_version	O	29014c2e	5	external_interface	-	파일 — 인터페이스 파일·소스 파일 등록과 변경 감지		2a0d28f76f04b752
+item_version	O	2af1c005	5	external_interface	c8870ef9	KiottySpec_Cursor_getItem — index 번째 항목		181f278bb93ddb76
+item_version	O	2b26a619	5	external_interface	8a5b382e	KiottySpec_ChangeRequest_openCount — 열린 변경 요청 수		9755d5d47f3528cc
+item_version	O	2bba3776	5	external_interface	8a5b382e	KiottySpec_ChangeRequest_listBegin — 상태별 변경 요청		ebcbd7295a0cbd53
+item_version	O	2bf42354	2	requirement	-	사양 항목을 기록하고 연결한다		0eea41dd7dd7d657
+item_version	O	2f1107b3	5	external_interface	8a5b382e	KiottySpec_ChangeRequest_setEntryStep — 영향 분석 뒤 진입 단계를 정정한다		59d67b0f08e1d16a
+item_version	O	2ff66b9d	7	design	-	메모리 정책 — C 경계의 소유권과 해제		bc8622008aea2c21
+item_version	O	30d29eda	1	requirement	-	프로젝트 초기화		0afe6557f8f12ab4
+item_version	O	30d29eda	2	requirement	4b557e2e	프로젝트를 초기화한다		31372a35d6df0822
+item_version	O	3280a187	5	external_interface	1806b17a	KiottySpec_Item_remove — 현재 체크포인트에서 항목을 제거한다		959783195d55e40e
+item_version	O	3329cccc	7	design	f1b22557	base::schema — DB 스키마와 버전 테이블 목록		74af38106f813724
+item_version	O	340e0112	5	external_interface	b75cd759	KiottySpec_Checkpoint_create — 라운드를 마치고 현재 작업 내용을 새 체크포인트로 찍는다		1e3e6f823a613a06
+item_version	O	34cb6c64	7	design	f208d1f7	CLI commands — 명령 표와 도움말		f09a92e054c19dc5
+item_version	O	3595eff9	4	external_interface	-	트랜잭션 — 여러 쓰기를 원자적으로		5a75a2c44e217753
+item_version	O	3595eff9	5	external_interface	-	트랜잭션 — 여러 쓰기를 원자적으로		f1214754bcf09050
+item_version	O	360d9e4c	5	external_interface	26006076	KiottySpec_Checkpoint_position — 지금 어느 체크포인트·단계에 있고 다음에 무엇을 할지		53219f8935b14278
+item_version	O	3770c54f	5	external_interface	13a6e2ed	KiottySpec_enumName — 열거값의 이름		7e8d5578947bb29f
+item_version	O	3775f9e7	5	external_interface	1806b17a	KiottySpec_Item_childrenBegin — 하위 항목 열거		42940eabb3b771d6
+item_version	O	37a9cd50	5	external_interface	c8870ef9	KiottySpec_Cursor_getFile — index 번째 파일		1459e89458090ee6
+item_version	O	37b898f4	5	external_interface	43a5b50c	KiottySpec_Query_readonly — 읽기 전용 SQL		2b4197dc1ecf2c4d
+item_version	O	37c775d3	5	external_interface	13a6e2ed	KiottySpec_free — 단일 레코드·문자열 해제		31350b8515975272
+item_version	O	3dca66c8	5	external_interface	9e6f4f55	KiottySpec_Result_suspectsBegin — 실패한 테스트에서 검증한다 → 구현한다 링크를 따라 원인 후보 설	KiottySpec_Result_suspectsBegin — 실패한 테스트에서 검증한다 → 구현한다 링크를 따라 원인 후보 설계 항목·소스 파일	5c426748187a72db
+item_version	O	3f39657b	1	requirement	-	쓰기의 원자성		e8dd31105a673d8c
+item_version	O	3f39657b	2	requirement	-	쓰기의 원자성		e8dd31105a673d8c
+item_version	O	3fff4db3	5	external_interface	ebe4a3d6	KiottySpec_Check_orphanTestsBegin — 검증 대상이 사라진 테스트		d3e8c13c0ecebb5b
+item_version	O	4063cd11	2	requirement	2bf42354	항목이 왜 있고 어디에 쓰이는지 따라간다		4bc1c53de4c13714
+item_version	O	40db7df2	1	requirement	-	AI 맥락 크기 제어		d53a255dd0e398ef
+item_version	O	40db7df2	2	requirement	-	AI 맥락 크기 제어		d53a255dd0e398ef
+item_version	O	41d06f7e	5	external_interface	03d76c7c	KiottySpec_Schema_version — 스키마 버전		f140bda8207f7c5d
+item_version	O	4247eb52	5	external_interface	c8870ef9	KiottySpec_Cursor_getStepRun — index 번째 단계 구간		abf05e0d376f618f
+item_version	O	425038e4	5	external_interface	1806b17a	KiottySpec_Item_setParent — 상위 항목과 순서를 바꾼다		4f717ba4a528f7d9
+item_version	O	42964b75	1	requirement	-	추적과 영향 분석		eaa99be36187ae88
+item_version	O	42964b75	2	requirement	6b15726e	변경의 영향 범위를 안다		ec287e43b42627a3
+item_version	O	4384951a	5	external_interface	26006076	KiottySpec_Context_whereAmI — 현재 위치, 지나온 단계, 다음 할 일, 마지막 라운드에서 바뀐 것을 한 	KiottySpec_Context_whereAmI — 현재 위치, 지나온 단계, 다음 할 일, 마지막 라운드에서 바뀐 것을 한 페이지로	a7a10a56662508de
+item_version	O	43a5b50c	4	external_interface	-	직접 질의 — 읽기 전용 SQL		151e03b45ca2bd59
+item_version	O	43a5b50c	5	external_interface	-	직접 질의 — 읽기 전용 SQL		e373883daeb90fd1
+item_version	O	45451f97	5	external_interface	c8870ef9	KiottySpec_Cursor_getResult — index 번째 결과		5fcaf17c514caac6
+item_version	O	46b481d0	4	external_interface	-	영향 범위 — 바뀐 것과 닿는 것		cd3456c8270aa370
+item_version	O	46b481d0	5	external_interface	-	영향 범위 — 바뀐 것과 닿는 것		075557b491ca1412
+item_version	O	46c654ba	5	external_interface	470160d1	KiottySpec_Link_downstreamBegin — 코드 방향으로 연결된 항목·파일 ID		d51ef850998d9d64
+item_version	O	46ed6c51	5	external_interface	d4165e3e	KiottySpec_Milestone_next — 미구현·변경 필요 항목이 남은 첫 마일스톤		a507111f7da8a7cb
+item_version	O	470160d1	4	external_interface	-	링크 — 연결과 추적		dbfb3485badce8a3
+item_version	O	470160d1	5	external_interface	-	링크 — 연결과 추적		23ee9090d0586f2b
+item_version	O	47b24721	7	design	-	재개: 현재 위치와 단계 입력 받기		5b4360f3ec273b39
+item_version	O	4b0d2f18	5	external_interface	88bfa822	KiottySpec_Checkpoint_releaseCheck — 지금 RELEASE 할 수 있는지와 그 이유		e1a8f4dea272a6ec
+item_version	O	4b4547e7	7	design	f1b22557	base::FileStore — 파일 등록과 해시 추적		27211edd597e4ed7
+item_version	O	4b557e2e	2	requirement	-	프로젝트를 Kiotty-Spec 으로 관리하기 시작한다		e56b585f4ddb1636
+item_version	O	4d7cffdf	5	external_interface	1806b17a	KiottySpec_Item_exists — 현재 뷰에 존재하는지		9e7da5e60b9967c1
+item_version	O	4dfb2a94	5	external_interface	9e6f4f55	KiottySpec_Result_summary — 종류별 통과·실패·미실행 집계		c7b71c1dadbd2fde
+item_version	O	4f810c4f	7	design	-	C 함수 호출 한 번 (경계 → Project → Store)		f1a654e39e7553c3
+item_version	O	50f1da45	1	rule	-	여러 모듈에 걸친 규칙은 Project 가 맡음		b0b3be91e8e3fefe
+item_version	O	53309a13	5	external_interface	88bfa822	KiottySpec_Checkpoint_release — RELEASE 체크포인트를 만들고 확정한다		823a8e52a9070ebf
+item_version	O	53aab71d	1	rule	-	definition.md 가 용어와 규칙의 원천		dc6fb2b37ad9c50b
+item_version	O	53f3ecd2	7	design	-	라운드 마무리: 체크포인트 찍기와 확정		32eed8f2f562e824
+item_version	O	53fcee50	7	design	ae056bc9	core::names — 열거값 이름·라벨·체크포인트 이름		a4f238b958e72ec6
+item_version	O	5451c8bd	7	design	ae056bc9	core::markdown — md4c 기반 Markdown 절 분석		8aedcc328631050e
+item_version	O	54f0c0ae	1	requirement	-	불일치 검사		3cc1202c345798ed
+item_version	O	54f0c0ae	2	requirement	81a9295f	확정 전에 불일치를 찾는다		f9b2d6ca28865c0e
+item_version	O	55e67de0	5	external_interface	88bfa822	KiottySpec_Checkpoint_prune — 기준 체크포인트 이전 기록을 모두 지운다		6fca0f1a9ec0954f
+item_version	O	5630fd14	1	requirement	-	체크포인트 생성		f957f712af0a29bf
+item_version	O	5630fd14	2	requirement	801c70b4	라운드를 마치고 체크포인트를 찍는다		de60e0de9be678fd
+item_version	O	59214f58	7	design	ae056bc9	core::records — 문자열을 소유하는 내부 레코드		10cbec064fb864fe
+item_version	O	5aa207d2	7	design	-	마일스톤 구현 상태 계산		f617be1e95813fe1
+item_version	O	5b0992ad	5	external_interface	b75cd759	KiottySpec_Checkpoint_confirm — 체크포인트를 확정한다		b90c1d883029e758
+item_version	O	5b0ffc39	5	external_interface	46b481d0	KiottySpec_Link_scopeOf — 수정이 의존한다 링크로 다른 모듈에 닿는지 판정하고 닿는 모듈을 돌려준	KiottySpec_Link_scopeOf — 수정이 의존한다 링크로 다른 모듈에 닿는지 판정하고 닿는 모듈을 돌려준다	828c9fa377d18443
+item_version	O	5e543b7d	5	external_interface	29014c2e	KiottySpec_File_rescan — 해시를 다시 계산해 기록하고 바뀌었는지 알려준다		2eb1af1f4fe8e039
+item_version	O	5ef1b4d9	1	requirement	-	Markdown 문서 내보내기·가져오기		de2b01ae3222eba7
+item_version	O	5ef1b4d9	2	requirement	710d9746	사람이 읽는 문서로 뽑고 가져온다		d174da6449ebe4d6
+item_version	O	60b5232b	5	external_interface	b75cd759	KiottySpec_Checkpoint_lastConfirmed — 마지막 확정 체크포인트		2a6626a396039a8b
+item_version	O	61b29604	1	requirement	-	체크포인트 확정		a39f0cbabf4a8919
+item_version	O	61b29604	2	requirement	801c70b4	사용자가 체크포인트를 확정한다		42c5992b21ab39d6
+item_version	O	629008a4	5	external_interface	470160d1	KiottySpec_Link_listBegin — 항목·파일에 걸린 링크		ab61e8613be67afe
+item_version	O	636f4575	5	external_interface	c8870ef9	KiottySpec_Cursor_getCheckpoint — index 번째 체크포인트		2f6ae1212d3e7c34
+item_version	O	6394af8c	7	design	f1b22557	base::ItemStore — 항목 버전 기록·조회·계층		2dca91efafb076ea
+item_version	O	64ff70f5	5	external_interface	03d76c7c	KiottySpec_Schema_migrate — 스키마를 현재 라이브러리 버전으로 올린다		a200f6438d7e2c8b
+item_version	O	68a2a8eb	5	external_interface	46b481d0	KiottySpec_Link_impactBegin — 체크포인트 이후 바뀐 항목과 링크된 영향 항목		9bfadd10e1f81a55
+item_version	O	68ffedd2	5	external_interface	d4165e3e	KiottySpec_Milestone_progress — 전체 포함 항목 수와 상태별 집계		736b33a3b2764f26
+item_version	O	6a04f93c	2	requirement	-	최초 개발을 끝내고 기록을 정리한다		57fec54ea0024d37
+item_version	O	6ae1e3ee	1	requirement	-	결정 기록		bf6416b548c89a35
+item_version	O	6ae1e3ee	2	requirement	2bf42354	왜 그렇게 정했는지 남긴다 (결정 기록)		992bb657b73523e6
+item_version	O	6b15726e	2	requirement	-	피드백과 이슈를 흐름에 다시 태운다		2185c123018264ec
+item_version	O	6b7f5ad5	7	design	-	저장소 디렉토리 구조와 빌드 타깃		f56f75772a409477
+item_version	O	6dffbaff	5	external_interface	26006076	KiottySpec_Checkpoint_journeyBegin — 지금까지 밟아온 단계를 연속 구간으로 묶은 이력		a5010d04bd4c3638
+item_version	O	6eb744d7	5	external_interface	b75cd759	KiottySpec_Checkpoint_diff — 두 체크포인트 간 추가·수정·삭제를 Markdown 으로		289b4fdc2ad2c4ef
+item_version	O	710d9746	2	requirement	-	기록을 팀과 공유하고 문서로 본다		ab233d0a0179c7fd
+item_version	O	710d9746	3	requirement	-	기록을 git 으로 보관하고 문서로 본다		c99b23947a426994
+item_version	O	734f2faf	5	external_interface	b75cd759	KiottySpec_Checkpoint_get — 체크포인트 하나 조회		b2348275a19efc0f
+item_version	O	75a997cc	1	requirement	-	jsonl 이 결정적이고 diff 하기 좋음		ddd8c59cd8adfe2a
+item_version	O	75a997cc	2	requirement	-	jsonl 이 결정적이고 diff 하기 좋음		ddd8c59cd8adfe2a
+item_version	O	7642fa61	5	external_interface	ebe4a3d6	KiottySpec_Check_all — 위 검사와 마일스톤 포함, 결정 기록 검사를 모두 돌려 Markdown 보고서로		7f15c99d7e8397ec
+item_version	O	785737c2	7	design	f1b22557	base::Project — 열린 프로젝트와 모듈 간 규칙		2061112dcf82396a
+item_version	O	7b5137c8	5	external_interface	ebe4a3d6	KiottySpec_Check_unlinkedBegin — 링크가 하나도 없는 항목		d2affe02ac26edb4
+item_version	O	7dc07e21	5	external_interface	c4d160e4	KiottySpec_Import_jsonl — jsonl 로 DB 를 재생성하거나 병합한다		e7d4890d4c4e6e72
+item_version	O	801c70b4	2	requirement	-	단계를 따라 사양을 쌓고 확정한다		3f67abcb0be653e2
+item_version	O	80df06c2	1	rule	-	계층: C 인터페이스 → 경계 → base → core		48402bd5b3b2bf7e
+item_version	O	8113729e	5	external_interface	03d76c7c	KiottySpec_init — 프로젝트 메타데이터를 만들고 선택적으로 pre-commit/post-merge 훅을 설치한다		f1ffabd1fbb1f948
+item_version	O	81a9295f	2	requirement	-	테스트와 코드 검사로 사양이 지켜지는지 확인한다		1edcd13187e598d9
+item_version	O	826fd29e	5	external_interface	a9783a45	KiottySpec_Context_forStep — definition		881d54db500b7a25
+item_version	O	826fd29e	6	external_interface	a9783a45	KiottySpec_Context_forStep — 단계별 Kiotty-Spec 입력 묶음		881d54db500b7a25
+item_version	O	83c0a718	5	external_interface	9e6f4f55	KiottySpec_Result_record — 테스트 또는		0a0d5664fba25672
+item_version	O	83c0a718	6	external_interface	9e6f4f55	KiottySpec_Result_record — 테스트 또는 코드 검사 결과 기록		0a0d5664fba25672
+item_version	O	83c70f32	7	design	6b7f5ad5	.kiotty/ — 프로젝트별 기록 저장소		fddebfed84862b7e
+item_version	O	84724f6b	5	external_interface	470160d1	KiottySpec_Link_add — "from 은 to 를 ~한다" 링크		532b2971ed348ebc
+item_version	O	85360662	5	external_interface	13a6e2ed	KiottySpec_strerror — 상태 코드 설명		2e744b55b6714a72
+item_version	O	856dcc2e	1	requirement	-	현재 위치와 지나온 단계		185fc790472b80eb
+item_version	O	856dcc2e	2	requirement	9effb23d	지금 어디에 있고 다음에 무엇을 할지 안다		442d821156d6171a
+item_version	O	8612bafa	1	requirement	-	C 경계에서 예외가 새지 않음		5c127e7220eaa3ad
+item_version	O	8612bafa	2	requirement	-	C 경계에서 예외가 새지 않음		5c127e7220eaa3ad
+item_version	O	8666e9e5	5	external_interface	c8870ef9	KiottySpec_Cursor_getChangeRequest — index 번째 변경 요청		44e45346a062abfb
+item_version	O	878217d5	5	external_interface	c4d160e4	KiottySpec_Import_markdown — 정해진 틀의 Markdown 을 항목으로 가져온다		24543254fa913657
+item_version	O	88bfa822	4	external_interface	-	RELEASE 선언과 정리(Compaction)		603840edd593689e
+item_version	O	88bfa822	5	external_interface	-	RELEASE 선언과 정리(Compaction)		016fa1534760f2ad
+item_version	O	8a5b382e	4	external_interface	-	변경 요청 — 피드백·이슈 접수와 상태		0a867439c7631a5e
+item_version	O	8a5b382e	5	external_interface	-	변경 요청 — 피드백·이슈 접수와 상태		d05606fc84f746b7
+item_version	O	8ad72b03	5	external_interface	d4165e3e	KiottySpec_Milestone_setEntryState — 포함 항목의 상태를 기록한다		087611522197d407
+item_version	O	8b9dc077	5	external_interface	8a5b382e	KiottySpec_ChangeRequest_setState — 상태 변경		3ce43694006dfa10
+item_version	O	8bf56894	7	design	-	CLI 명령 한 번의 실행		e4b0497ada781ca1
+item_version	O	8d389a2c	5	external_interface	29014c2e	KiottySpec_File_byPath — 경로로 조회		652aa188042dd5b3
+item_version	O	8daa90d2	7	design	f1b22557	base::DecisionStore — 결정 기록 다시 쓰기와 검사		317f47f4c3705ac2
+item_version	O	8ef8bb99	1	rule	-	CLI 는 공개 C 헤더만 사용		f8797c9759f9363f
+item_version	O	8f5235a6	5	external_interface	c8870ef9	KiottySpec_Cursor_getId — index 번째 원소의 ID		9e2b9678bdbe5c15
+item_version	O	8fb791cf	7	design	f1b22557	base::MilestoneService — 마일스톤 포함 항목 상태		8cbb8a34f8c42037
+item_version	O	9168813f	5	external_interface	d4165e3e	KiottySpec_Milestone_entriesBegin — 포함 항목과 계산된 상태		62a16a3bf963b66a
+item_version	O	92b2d708	1	requirement	-	변경 요청		23da42dfb1e16c73
+item_version	O	92b2d708	2	requirement	6b15726e	변경 요청을 접수하고 관리한다		0a29e6f7bcdebc5e
+item_version	O	935396f9	1	requirement	-	마일스톤 구현 상태		a23424feed7e04c6
+item_version	O	935396f9	2	requirement	0c7ab770	마일스톤별 구현 상태를 기록한다		b58ffcee16d3bb0c
+item_version	O	93fbc33b	5	external_interface	29014c2e	KiottySpec_File_listBegin — 역할별 파일 열거		244d7f7dc80f5b13
+item_version	O	9496a4e9	7	design	f1b22557	base::ResultStore — 테스트·코드 검사 결과		859c67858e924432
+item_version	O	9829161f	5	external_interface	29014c2e	KiottySpec_File_changedSinceBegin — 체크포인트 이후 해시가 바뀐 파일		9226b0e2b89b3603
+item_version	O	9896a5bd	1	requirement	-	결과 기록		40aa1a639617779c
+item_version	O	9896a5bd	2	requirement	81a9295f	테스트·검사 결과를 남긴다		2af9d787832619ea
+item_version	O	99913fa0	5	external_interface	b75cd759	KiottySpec_Checkpoint_listBegin — 체크포인트 목록		a2dc04728e02c8d9
+item_version	O	99ae0b94	7	design	-	변경 요청으로 흐름 되돌리기		02347d4f1c315d00
+item_version	O	9a2595ca	7	design	-	git 보관: pre-commit 내보내기와 post-merge 되살리기		18cb2fe8f7fcda62
+item_version	O	9c9aa9f4	5	external_interface	b75cd759	KiottySpec_Checkpoint_current — 가장 최근 체크포인트		e68e49a8aab04f5a
+item_version	O	9e003773	1	requirement	-	원시 질의와 스키마 관리		be510a0dcd35e464
+item_version	O	9e003773	2	requirement	9effb23d	준비되지 않은 질문을 직접 던진다		38f85e5bf8db8cb4
+item_version	O	9e6f4f55	4	external_interface	-	결과 — 테스트 실행과 코드 검사		178d67ab9083829f
+item_version	O	9e6f4f55	5	external_interface	-	결과 — 테스트 실행과 코드 검사		8be35574b28f0c0e
+item_version	O	9effb23d	2	requirement	-	AI 가 기억 없이도 이어서 일한다		534c332328ffa7d3
+item_version	O	9fa595ca	5	external_interface	9e6f4f55	KiottySpec_Result_failedBegin — 마지막 결과가 FAIL 인 테스트 또는 개발 규칙		14cd7415b1db1a52
+item_version	O	a00f7f5a	5	external_interface	8a5b382e	KiottySpec_ChangeRequest_get — 변경 요청 하나 조회		1565e9f2eb54b02e
+item_version	O	a2648eac	7	design	-	실패 원인 추적과 수정 범위 판정		7804a1209332a391
+item_version	O	a2bb8623	5	external_interface	3595eff9	KiottySpec_Transaction_commit — 트랜잭션 커밋		698670da709e2627
+item_version	O	a2f7240b	1	rule	-	문자열·경로·소유권		335c0f9ae055224a
+item_version	O	a8b5d73e	5	external_interface	cdb0ff14	KiottySpec_Decision_getAt — 특정 체크포인트 시점의 결정 기록		ef0a65207ed15208
+item_version	O	a9783a45	4	external_interface	-	맥락 — 단계·항목·마일스톤·변경 요청 입력 묶음		dfbf5aa79fd4d219
+item_version	O	a9783a45	5	external_interface	-	맥락 — 단계·항목·마일스톤·변경 요청 입력 묶음		c86967718f054634
+item_version	O	aa14a4b7	5	external_interface	b75cd759	KiottySpec_Checkpoint_changedItemsBegin — 두 체크포인트 사이에 바뀐 항목		16568e28b57e298f
+item_version	O	ab7475cf	7	design	ae056bc9	core::cursor — 커서와 단일 레코드 포장		d23858669fd08350
+item_version	O	ae056bc9	7	design	6b7f5ad5	src/implementation/core — 공용 기반 모듈		399ea82850edf219
+item_version	O	af5383a5	5	external_interface	cdb0ff14	KiottySpec_Decision_get — 현재 결정 기록 본문		ee912ff8d973389a
+item_version	O	b1e3a463	5	external_interface	8a5b382e	KiottySpec_ChangeRequest_create — 변경 요청을 열고 진입 단계를 기록한다		507e9d288e526eab
+item_version	O	b4016cb7	5	external_interface	1806b17a	KiottySpec_Item_create — 항목을 만들고 ID 를 발급한다		7e245a70fecce323
+item_version	O	b4333951	5	external_interface	cdb0ff14	KiottySpec_Decision_check — 사라진 항목을 가리키는 줄, 길이 초과 줄을 보고		8399b7a37af125d0
+item_version	O	b75cd759	4	external_interface	-	체크포인트 — 라운드 찍기·확정·비교		f0d32321d5a47f1a
+item_version	O	b75cd759	5	external_interface	-	체크포인트 — 라운드 찍기·확정·비교		97314754abdacc2f
+item_version	O	b8f54123	7	design	f1b22557	base::LinkStore — 링크 검증·추적·영향 범위		b002cc322921d847
+item_version	O	baafb6dd	1	rule	-	경고 수준		b9120d52eb803be5
+item_version	O	bb0a0d0d	5	external_interface	ebe4a3d6	KiottySpec_Check_requirementsWithoutCriteriaBegin — 인수 조건 절이 없는 기능 요구사항		6ef7964fc6321221
+item_version	O	bff0120a	7	design	f1b22557	base::ChangeRequestStore — 변경 요청 접수와 상태		924095107bfa0393
+item_version	O	c07f029a	7	design	d9052c6b	C 경계 — 공개 C 함수 구현		b3da2f6c88e77915
+item_version	O	c0e52e11	5	external_interface	c8870ef9	KiottySpec_Cursor_end — 커서와 원소 메모리를 모두 정리한다		002897941f9736fe
+item_version	O	c29eeffc	5	external_interface	1806b17a	KiottySpec_Item_listBegin — 필터로 항목 열거		3c25a2fdedda588c
+item_version	O	c3aacc5e	1	requirement	-	저장 형식과 문자 인코딩		a96f7b7de9cba535
+item_version	O	c3aacc5e	2	requirement	-	저장 형식과 문자 인코딩		a96f7b7de9cba535
+item_version	O	c4688e6e	5	external_interface	13a6e2ed	KiottySpec_lastError — 이 스레드에서 마지막으로 실패한 호출의 상세 메시지		0f55b6f7e5fc7e61
+item_version	O	c4d160e4	4	external_interface	-	내보내기·가져오기 — git 보관과 문서		8175d53ca5158f80
+item_version	O	c4d160e4	5	external_interface	-	내보내기·가져오기 — git 보관과 문서		6b4728f536dd408b
+item_version	O	c8870ef9	4	external_interface	-	커서 — 목록 결과 읽기		c568ef72237447ae
+item_version	O	c8870ef9	5	external_interface	-	커서 — 목록 결과 읽기		db459ae0305b72cb
+item_version	O	c94573b8	5	external_interface	a9783a45	KiottySpec_Context_forChangeRequest — 변경 요청의 영향 항목과 진입 단계 판단 근거		ed9445475e8480bc
+item_version	O	cca5d5e7	5	external_interface	c4d160e4	KiottySpec_Export_jsonl — DB 를 테이블별 jsonl		9588aaf8c6cd7ee5
+item_version	O	cca5d5e7	6	external_interface	c4d160e4	KiottySpec_Export_jsonl — DB 를 테이블별 jsonl 로 내보내기		9588aaf8c6cd7ee5
+item_version	O	cd080d8c	5	external_interface	03d76c7c	KiottySpec_open — 프로젝트 루트의		680268f26a6c3511
+item_version	O	cd080d8c	6	external_interface	03d76c7c	KiottySpec_open — 프로젝트 루트의 .kiotty/spec.db 를 연다 (없으면 생성)		680268f26a6c3511
+item_version	O	cd79aff8	5	external_interface	9e6f4f55	KiottySpec_Result_last — 대상의 마지막 결과		dc3a6bc02cbbd086
+item_version	O	cdb0ff14	4	external_interface	-	결정 기록 — 종류당 하나, 매 라운드 다시 쓰기		2c705fa7f95d3b60
+item_version	O	cdb0ff14	5	external_interface	-	결정 기록 — 종류당 하나, 매 라운드 다시 쓰기		6aa1fa5b73cc4b6a
+item_version	O	cfc7c974	5	external_interface	29014c2e	KiottySpec_File_register — 파일을 등록하고 해시를 기록한다		4f9bb706cd64fd1d
+item_version	O	d20e9a3e	7	design	f208d1f7	CLI Arguments — 위치 인자·옵션·본문 입력		26f51a13fdd5df32
+item_version	O	d4165e3e	4	external_interface	-	마일스톤 — 포함 항목 구현 상태		a6bdf55a7a7fbd0c
+item_version	O	d4165e3e	5	external_interface	-	마일스톤 — 포함 항목 구현 상태		1f53b92842a523e3
+item_version	O	d573c01b	5	external_interface	d4165e3e	KiottySpec_Milestone_uncoveredBegin — 어떤 마일스톤에도 포함되지 않은 설계 항목·유닛 테스트		8945cd5e0aabd1c3
+item_version	O	d6af8843	7	design	f1b22557	base::CheckpointStore — 체크포인트 찍기·조회·정리		318e221d811bfc5f
+item_version	O	d9052c6b	7	design	6b7f5ad5	src/ — C 경계 (kiotty_spec.cpp)		b86929f2c4629452
+item_version	O	d915220c	1	requirement	-	빌드 환경과 외부 의존성		eb05104643a17b36
+item_version	O	d915220c	2	requirement	-	빌드 환경과 외부 의존성		eb05104643a17b36
+item_version	O	de2bfdc9	5	external_interface	26006076	KiottySpec_Context_status — 현재 단계, 마지막 확정 체크포인트, 마일스톤 진행률, 테스트 집계를 한 	KiottySpec_Context_status — 현재 단계, 마지막 확정 체크포인트, 마일스톤 진행률, 테스트 집계를 한 화면으로	93b887dfb5a07dfc
+item_version	O	df3e653f	5	external_interface	470160d1	KiottySpec_Link_upstreamBegin — 요구사항 방향으로 깊이 제한 내 연결된 항목·파일 ID		21d04f96c86f2f23
+item_version	O	e316031e	1	requirement	-	항목 관리		e56398edb9b2e23b
+item_version	O	e316031e	2	requirement	2bf42354	단계 산출물을 항목으로 기록한다		f983f8aed0f48de0
+item_version	O	e3538d50	5	external_interface	1806b17a	KiottySpec_Item_get — 현재 버전 조회		6933ffbb893cc19a
+item_version	O	e51e7f6b	7	unit_test_plan	-	MilestoneService: 구현 완료 뒤 설계가 다시 쓰이면 변경 필요		2fd243c6c310eab6
+item_version	O	e96b30a7	5	external_interface	c8870ef9	KiottySpec_Cursor_getLink — index 번째 링크		18fed5fef7386cf1
+item_version	O	e9fafbf0	5	external_interface	29014c2e	KiottySpec_File_scanGuiDraft — html 의 data-ks-id 를 읽어 DB 에 없는 ID		d50b87c9703509e6
+item_version	O	e9fafbf0	6	external_interface	29014c2e	KiottySpec_File_scanGuiDraft — GUI 초안 html 과 기록의 뷰 불일치 보고		d50b87c9703509e6
+item_version	O	eb3dbdb8	5	external_interface	29014c2e	KiottySpec_File_get — 파일 하나 조회		3df3f110f19224f2
+item_version	O	eb7eb460	5	external_interface	c4d160e4	KiottySpec_Export_traceReport — 전체 추적 매트릭스와 불일치 보고서		309401f3280d4b27
+item_version	O	ebe4a3d6	4	external_interface	-	불일치 검사		db3c66439cca604e
+item_version	O	ebe4a3d6	5	external_interface	-	불일치 검사		24e41e2b4cf2f706
+item_version	O	ec58da00	1	rule	-	외부 의존성은 정해진 셋만		533e8131f0083ee9
+item_version	O	ec91953e	1	rule	-	여러 문장 쓰기는 Savepoint 로		c7dd9fa3227f8456
+item_version	O	ee48a095	7	design	f1b22557	base::Journey — 현재 위치와 지나온 단계		c5fe62c6979050ec
+item_version	O	ef00bc7f	7	design	f1b22557	base::ContextBuilder — AI 맥락 묶기		a20383e071c5b715
+item_version	O	f1b22557	7	design	6b7f5ad5	src/implementation/base — 사양 모델 모듈		eef67ab39c8a152b
+item_version	O	f208d1f7	7	design	6b7f5ad5	app/cli — ks 실행 파일		ddc7f2392bcdaef0
+item_version	O	f20e6c8c	7	design	ae056bc9	core::Database — SQLite 연결·문장·Savepoint		52d0d068435ef068
+item_version	O	f379d81c	7	design	ae056bc9	core::Error — 내부 실패의 단일 표현		a5a83e986930570c
+item_version	O	f3dc42c3	5	external_interface	ebe4a3d6	KiottySpec_Check_systemTestOneToOne — 시스템 테스트가 없거나 둘 이상인 기능 요구사항		d98e3adaa5d5e459
+item_version	O	f55c48b9	5	external_interface	1806b17a	KiottySpec_Item_update — 제목·본문을 바꾼다		0dbf90adb0986952
+item_version	O	f567eb49	5	external_interface	c8870ef9	KiottySpec_Cursor_count — 원소 개수		dce154ff37e74905
+item_version	O	f59c2142	5	external_interface	c4d160e4	KiottySpec_Export_markdown — 종류별 문서		9096bf803b21d43a
+item_version	O	f5d61935	1	requirement	-	RELEASE		d8695643f1dbd650
+item_version	O	f5d61935	2	requirement	6a04f93c	RELEASE 를 선언한다		47c511d69aaa45b7
+item_version	O	f9ea7860	5	external_interface	13a6e2ed	KiottySpec_enumParse — 이름을 열거값으로		ccba57d42cd0de5f
+item_version	O	fbdb73c5	7	design	ae056bc9	core::text — UTF-8 문자열·경로·파일·해시 도구		2628c4c7f0d6fb10
+item_version	O	fca7d6c4	1	requirement	-	단계별 맥락 제공		50a74e746d1f4f93
+item_version	O	fca7d6c4	2	requirement	9effb23d	단계에 필요한 입력을 한 번에 받는다		785e2e407413ce87
+item_version	O	fcc47146	5	external_interface	b75cd759	KiottySpec_Checkpoint_confirmCheck — 이 단계를 지금 확정할 수 있는지와 그 이유		1e83f5412d2ea5c9
+item_version	O	fda770b6	5	external_interface	a9783a45	KiottySpec_Context_forMilestone — 마일스톤 구현에 필요한 설계·유닛 테스트·규칙·결정 줄·소스 파	KiottySpec_Context_forMilestone — 마일스톤 구현에 필요한 설계·유닛 테스트·규칙·결정 줄·소스 파일	bbc765b7128ad684
+item_version	O	ffc10b30	5	external_interface	ebe4a3d6	KiottySpec_Check_e2eTestOneToOne — E2E 테스트가 없거나 둘 이상인 외부 인터페이스 항목		7c918f19fa8caed0
+TABLE	tag	O/X	key	tag	checkpoint	value
+tag	O	0005e3ff	설계 종류	7	동작 흐름
+tag	O	01ce7d33	수칙 종류	1	코딩 제약
+tag	O	02791c5f	인터페이스 종류	5	C 함수
+tag	O	02911105	인터페이스 종류	5	C 함수
+tag	O	03d76c7c	인터페이스 종류	4	C 함수
+tag	O	07084734	인터페이스 종류	5	C 함수
+tag	O	07e94fa4	인터페이스 종류	5	C 함수
+tag	O	08ab8872	인터페이스 종류	5	C 함수
+tag	O	09342f57	설계 종류	7	모듈
+tag	O	0961e43d	수칙 종류	1	컨벤션
+tag	O	0af9a2b3	인터페이스 종류	5	C 함수
+tag	O	0ba10bc3	인터페이스 종류	5	C 함수
+tag	O	0c7ab770	요구사항 종류	2	기능 요구사항
+tag	O	0d3bd7b4	설계 종류	7	모듈
+tag	O	0d67d663	인터페이스 종류	5	C 함수
+tag	O	0ec0c309	인터페이스 종류	5	C 함수
+tag	O	0fcd7b5f	수칙 종류	1	테스트
+tag	O	1059a1c8	인터페이스 종류	5	C 함수
+tag	O	13a6e2ed	인터페이스 종류	4	C 함수
+tag	O	14e0621f	설계 종류	7	모듈
+tag	O	15852ee9	설계 종류	7	모듈
+tag	O	167c4fdc	요구사항 종류	1	기능 요구사항
+tag	O	16c120c1	설계 종류	7	모듈
+tag	O	1705d76a	인터페이스 종류	5	C 함수
+tag	O	1806b17a	인터페이스 종류	4	C 함수
+tag	O	1b8d6866	요구사항 종류	1	품질 요구사항
+tag	O	1df74afa	요구사항 종류	1	기능 요구사항
+tag	O	1dfa5fcf	인터페이스 종류	5	C 함수
+tag	O	1ed6f364	요구사항 종류	1	기능 요구사항
+tag	O	21c5e2ba	인터페이스 종류	5	C 함수
+tag	O	2202fb80	인터페이스 종류	5	C 함수
+tag	O	2356c0c5	요구사항 종류	1	기능 요구사항
+tag	O	25b9dacf	요구사항 종류	1	기능 요구사항
+tag	O	26006076	인터페이스 종류	4	C 함수
+tag	O	26e85bdf	인터페이스 종류	5	C 함수
+tag	O	26f66a3b	인터페이스 종류	5	C 함수
+tag	O	26fcf249	설계 종류	7	동작 흐름
+tag	O	29014c2e	인터페이스 종류	4	C 함수
+tag	O	2af1c005	인터페이스 종류	5	C 함수
+tag	O	2b26a619	인터페이스 종류	5	C 함수
+tag	O	2bba3776	인터페이스 종류	5	C 함수
+tag	O	2bf42354	요구사항 종류	2	기능 요구사항
+tag	O	2f1107b3	인터페이스 종류	5	C 함수
+tag	O	2ff66b9d	설계 종류	7	메모리 정책
+tag	O	30d29eda	요구사항 종류	1	기능 요구사항
+tag	O	3280a187	인터페이스 종류	5	C 함수
+tag	O	3329cccc	설계 종류	7	모듈
+tag	O	340e0112	인터페이스 종류	5	C 함수
+tag	O	34cb6c64	설계 종류	7	모듈
+tag	O	3595eff9	인터페이스 종류	4	C 함수
+tag	O	360d9e4c	인터페이스 종류	5	C 함수
+tag	O	3770c54f	인터페이스 종류	5	C 함수
+tag	O	3775f9e7	인터페이스 종류	5	C 함수
+tag	O	37a9cd50	인터페이스 종류	5	C 함수
+tag	O	37b898f4	인터페이스 종류	5	C 함수
+tag	O	37c775d3	인터페이스 종류	5	C 함수
+tag	O	3dca66c8	인터페이스 종류	5	C 함수
+tag	O	3f39657b	요구사항 종류	1	품질 요구사항
+tag	O	3fff4db3	인터페이스 종류	5	C 함수
+tag	O	4063cd11	요구사항 종류	2	기능 요구사항
+tag	O	40db7df2	요구사항 종류	1	품질 요구사항
+tag	O	41d06f7e	인터페이스 종류	5	C 함수
+tag	O	4247eb52	인터페이스 종류	5	C 함수
+tag	O	425038e4	인터페이스 종류	5	C 함수
+tag	O	42964b75	요구사항 종류	1	기능 요구사항
+tag	O	4384951a	인터페이스 종류	5	C 함수
+tag	O	43a5b50c	인터페이스 종류	4	C 함수
+tag	O	45451f97	인터페이스 종류	5	C 함수
+tag	O	46b481d0	인터페이스 종류	4	C 함수
+tag	O	46c654ba	인터페이스 종류	5	C 함수
+tag	O	46ed6c51	인터페이스 종류	5	C 함수
+tag	O	470160d1	인터페이스 종류	4	C 함수
+tag	O	47b24721	설계 종류	7	동작 흐름
+tag	O	4b0d2f18	인터페이스 종류	5	C 함수
+tag	O	4b4547e7	설계 종류	7	모듈
+tag	O	4b557e2e	요구사항 종류	2	기능 요구사항
+tag	O	4d7cffdf	인터페이스 종류	5	C 함수
+tag	O	4dfb2a94	인터페이스 종류	5	C 함수
+tag	O	4f810c4f	설계 종류	7	동작 흐름
+tag	O	50f1da45	수칙 종류	1	아키텍처
+tag	O	53309a13	인터페이스 종류	5	C 함수
+tag	O	53aab71d	수칙 종류	1	컨벤션
+tag	O	53f3ecd2	설계 종류	7	동작 흐름
+tag	O	53fcee50	설계 종류	7	모듈
+tag	O	5451c8bd	설계 종류	7	모듈
+tag	O	54f0c0ae	요구사항 종류	1	기능 요구사항
+tag	O	55e67de0	인터페이스 종류	5	C 함수
+tag	O	5630fd14	요구사항 종류	1	기능 요구사항
+tag	O	59214f58	설계 종류	7	모듈
+tag	O	5aa207d2	설계 종류	7	동작 흐름
+tag	O	5b0992ad	인터페이스 종류	5	C 함수
+tag	O	5b0ffc39	인터페이스 종류	5	C 함수
+tag	O	5e543b7d	인터페이스 종류	5	C 함수
+tag	O	5ef1b4d9	요구사항 종류	1	기능 요구사항
+tag	O	60b5232b	인터페이스 종류	5	C 함수
+tag	O	61b29604	요구사항 종류	1	기능 요구사항
+tag	O	629008a4	인터페이스 종류	5	C 함수
+tag	O	636f4575	인터페이스 종류	5	C 함수
+tag	O	6394af8c	설계 종류	7	모듈
+tag	O	64ff70f5	인터페이스 종류	5	C 함수
+tag	O	68a2a8eb	인터페이스 종류	5	C 함수
+tag	O	68ffedd2	인터페이스 종류	5	C 함수
+tag	O	6a04f93c	요구사항 종류	2	기능 요구사항
+tag	O	6ae1e3ee	요구사항 종류	1	기능 요구사항
+tag	O	6b15726e	요구사항 종류	2	기능 요구사항
+tag	O	6b7f5ad5	설계 종류	7	디렉토리
+tag	O	6dffbaff	인터페이스 종류	5	C 함수
+tag	O	6eb744d7	인터페이스 종류	5	C 함수
+tag	O	710d9746	요구사항 종류	2	기능 요구사항
+tag	O	734f2faf	인터페이스 종류	5	C 함수
+tag	O	75a997cc	요구사항 종류	1	품질 요구사항
+tag	O	7642fa61	인터페이스 종류	5	C 함수
+tag	O	785737c2	설계 종류	7	모듈
+tag	O	7b5137c8	인터페이스 종류	5	C 함수
+tag	O	7dc07e21	인터페이스 종류	5	C 함수
+tag	O	801c70b4	요구사항 종류	2	기능 요구사항
+tag	O	80df06c2	수칙 종류	1	아키텍처
+tag	O	8113729e	인터페이스 종류	5	C 함수
+tag	O	81a9295f	요구사항 종류	2	기능 요구사항
+tag	O	826fd29e	인터페이스 종류	5	C 함수
+tag	O	83c0a718	인터페이스 종류	5	C 함수
+tag	O	83c70f32	설계 종류	7	디렉토리
+tag	O	84724f6b	인터페이스 종류	5	C 함수
+tag	O	85360662	인터페이스 종류	5	C 함수
+tag	O	856dcc2e	요구사항 종류	1	기능 요구사항
+tag	O	8612bafa	요구사항 종류	1	품질 요구사항
+tag	O	8666e9e5	인터페이스 종류	5	C 함수
+tag	O	878217d5	인터페이스 종류	5	C 함수
+tag	O	88bfa822	인터페이스 종류	4	C 함수
+tag	O	8a5b382e	인터페이스 종류	4	C 함수
+tag	O	8ad72b03	인터페이스 종류	5	C 함수
+tag	O	8b9dc077	인터페이스 종류	5	C 함수
+tag	O	8bf56894	설계 종류	7	동작 흐름
+tag	O	8d389a2c	인터페이스 종류	5	C 함수
+tag	O	8daa90d2	설계 종류	7	모듈
+tag	O	8ef8bb99	수칙 종류	1	아키텍처
+tag	O	8f5235a6	인터페이스 종류	5	C 함수
+tag	O	8fb791cf	설계 종류	7	모듈
+tag	O	9168813f	인터페이스 종류	5	C 함수
+tag	O	92b2d708	요구사항 종류	1	기능 요구사항
+tag	O	935396f9	요구사항 종류	1	기능 요구사항
+tag	O	93fbc33b	인터페이스 종류	5	C 함수
+tag	O	9496a4e9	설계 종류	7	모듈
+tag	O	9829161f	인터페이스 종류	5	C 함수
+tag	O	9896a5bd	요구사항 종류	1	기능 요구사항
+tag	O	99913fa0	인터페이스 종류	5	C 함수
+tag	O	99ae0b94	설계 종류	7	동작 흐름
+tag	O	9a2595ca	설계 종류	7	동작 흐름
+tag	O	9c9aa9f4	인터페이스 종류	5	C 함수
+tag	O	9e003773	요구사항 종류	1	기능 요구사항
+tag	O	9e6f4f55	인터페이스 종류	4	C 함수
+tag	O	9effb23d	요구사항 종류	2	기능 요구사항
+tag	O	9fa595ca	인터페이스 종류	5	C 함수
+tag	O	a00f7f5a	인터페이스 종류	5	C 함수
+tag	O	a2648eac	설계 종류	7	동작 흐름
+tag	O	a2bb8623	인터페이스 종류	5	C 함수
+tag	O	a2f7240b	수칙 종류	1	코딩 제약
+tag	O	a8b5d73e	인터페이스 종류	5	C 함수
+tag	O	a9783a45	인터페이스 종류	4	C 함수
+tag	O	aa14a4b7	인터페이스 종류	5	C 함수
+tag	O	ab7475cf	설계 종류	7	모듈
+tag	O	ae056bc9	설계 종류	7	디렉토리
+tag	O	af5383a5	인터페이스 종류	5	C 함수
+tag	O	b1e3a463	인터페이스 종류	5	C 함수
+tag	O	b4016cb7	인터페이스 종류	5	C 함수
+tag	O	b4333951	인터페이스 종류	5	C 함수
+tag	O	b75cd759	인터페이스 종류	4	C 함수
+tag	O	b8f54123	설계 종류	7	모듈
+tag	O	baafb6dd	수칙 종류	1	코딩 제약
+tag	O	bb0a0d0d	인터페이스 종류	5	C 함수
+tag	O	bff0120a	설계 종류	7	모듈
+tag	O	c07f029a	설계 종류	7	모듈
+tag	O	c0e52e11	인터페이스 종류	5	C 함수
+tag	O	c29eeffc	인터페이스 종류	5	C 함수
+tag	O	c3aacc5e	요구사항 종류	1	환경 요구사항
+tag	O	c4688e6e	인터페이스 종류	5	C 함수
+tag	O	c4d160e4	인터페이스 종류	4	C 함수
+tag	O	c8870ef9	인터페이스 종류	4	C 함수
+tag	O	c94573b8	인터페이스 종류	5	C 함수
+tag	O	cca5d5e7	인터페이스 종류	5	C 함수
+tag	O	cd080d8c	인터페이스 종류	5	C 함수
+tag	O	cd79aff8	인터페이스 종류	5	C 함수
+tag	O	cdb0ff14	인터페이스 종류	4	C 함수
+tag	O	cfc7c974	인터페이스 종류	5	C 함수
+tag	O	d20e9a3e	설계 종류	7	모듈
+tag	O	d4165e3e	인터페이스 종류	4	C 함수
+tag	O	d573c01b	인터페이스 종류	5	C 함수
+tag	O	d6af8843	설계 종류	7	모듈
+tag	O	d9052c6b	설계 종류	7	디렉토리
+tag	O	d915220c	요구사항 종류	1	환경 요구사항
+tag	O	de2bfdc9	인터페이스 종류	5	C 함수
+tag	O	df3e653f	인터페이스 종류	5	C 함수
+tag	O	e316031e	요구사항 종류	1	기능 요구사항
+tag	O	e3538d50	인터페이스 종류	5	C 함수
+tag	O	e96b30a7	인터페이스 종류	5	C 함수
+tag	O	e9fafbf0	인터페이스 종류	5	C 함수
+tag	O	eb3dbdb8	인터페이스 종류	5	C 함수
+tag	O	eb7eb460	인터페이스 종류	5	C 함수
+tag	O	ebe4a3d6	인터페이스 종류	4	C 함수
+tag	O	ec58da00	수칙 종류	1	의존성
+tag	O	ec91953e	수칙 종류	1	코딩 제약
+tag	O	ee48a095	설계 종류	7	모듈
+tag	O	ef00bc7f	설계 종류	7	모듈
+tag	O	f1b22557	설계 종류	7	디렉토리
+tag	O	f208d1f7	설계 종류	7	디렉토리
+tag	O	f20e6c8c	설계 종류	7	모듈
+tag	O	f379d81c	설계 종류	7	모듈
+tag	O	f3dc42c3	인터페이스 종류	5	C 함수
+tag	O	f55c48b9	인터페이스 종류	5	C 함수
+tag	O	f567eb49	인터페이스 종류	5	C 함수
+tag	O	f59c2142	인터페이스 종류	5	C 함수
+tag	O	f5d61935	요구사항 종류	1	기능 요구사항
+tag	O	f9ea7860	인터페이스 종류	5	C 함수
+tag	O	fbdb73c5	설계 종류	7	모듈
+tag	O	fca7d6c4	요구사항 종류	1	기능 요구사항
+tag	O	fcc47146	인터페이스 종류	5	C 함수
+tag	O	fda770b6	인터페이스 종류	5	C 함수
+tag	O	ffc10b30	인터페이스 종류	5	C 함수
+TABLE	relation	O/X	from	model	relation	to	checkpoint
+relation	O	0005e3ff	design	관련 요구사항	801c70b4	7
+relation	O	0005e3ff	design	관련 요구사항	e316031e	7
+relation	O	02791c5f	external_interface	관련 요구사항	fca7d6c4	5
+relation	O	02911105	external_interface	관련 요구사항	e316031e	5
+relation	O	03d76c7c	external_interface	관련 요구사항	167c4fdc	4
+relation	O	03d76c7c	external_interface	관련 요구사항	30d29eda	4
+relation	O	03d76c7c	external_interface	관련 요구사항	6ae1e3ee	4
+relation	O	03d76c7c	external_interface	관련 요구사항	9e003773	4
+relation	O	07084734	external_interface	관련 요구사항	e316031e	5
+relation	O	07e94fa4	external_interface	관련 요구사항	6ae1e3ee	5
+relation	O	08ab8872	external_interface	관련 요구사항	fca7d6c4	5
+relation	O	09342f57	design	관련 요구사항	30d29eda	7
+relation	O	09342f57	design	관련 요구사항	6ae1e3ee	7
+relation	O	09342f57	design	관련 외부 인터페이스	07e94fa4	7
+relation	O	09342f57	design	관련 외부 인터페이스	1059a1c8	7
+relation	O	09342f57	design	의존 설계 사항	f20e6c8c	7
+relation	O	09342f57	design	의존 설계 사항	f379d81c	7
+relation	O	09342f57	design	의존 설계 사항	fbdb73c5	7
+relation	O	0af9a2b3	external_interface	관련 요구사항	167c4fdc	5
+relation	O	0ba10bc3	external_interface	관련 요구사항	e316031e	5
+relation	O	0d3bd7b4	design	관련 요구사항	1b8d6866	7
+relation	O	0d3bd7b4	design	관련 요구사항	9e003773	7
+relation	O	0d3bd7b4	design	의존 설계 사항	c07f029a	7
+relation	O	0d67d663	external_interface	관련 요구사항	1df74afa	5
+relation	O	0ec0c309	external_interface	관련 요구사항	9896a5bd	5
+relation	O	1059a1c8	external_interface	관련 요구사항	6ae1e3ee	5
+relation	O	13a6e2ed	external_interface	관련 요구사항	167c4fdc	4
+relation	O	14e0621f	design	관련 요구사항	1ed6f364	7
+relation	O	14e0621f	design	관련 요구사항	5ef1b4d9	7
+relation	O	14e0621f	design	관련 요구사항	75a997cc	7
+relation	O	14e0621f	design	관련 요구사항	9e003773	7
+relation	O	14e0621f	design	관련 외부 인터페이스	37b898f4	7
+relation	O	14e0621f	design	관련 외부 인터페이스	7dc07e21	7
+relation	O	14e0621f	design	관련 외부 인터페이스	878217d5	7
+relation	O	14e0621f	design	관련 외부 인터페이스	cca5d5e7	7
+relation	O	14e0621f	design	관련 외부 인터페이스	eb7eb460	7
+relation	O	14e0621f	design	관련 외부 인터페이스	f59c2142	7
+relation	O	14e0621f	design	의존 설계 사항	16c120c1	7
+relation	O	14e0621f	design	의존 설계 사항	3329cccc	7
+relation	O	14e0621f	design	의존 설계 사항	5451c8bd	7
+relation	O	14e0621f	design	의존 설계 사항	ef00bc7f	7
+relation	O	14e0621f	design	의존 설계 사항	f20e6c8c	7
+relation	O	14e0621f	design	의존 설계 사항	f379d81c	7
+relation	O	14e0621f	design	의존 설계 사항	fbdb73c5	7
+relation	O	15852ee9	design	관련 요구사항	167c4fdc	7
+relation	O	15852ee9	design	관련 요구사항	c3aacc5e	7
+relation	O	15852ee9	design	의존 설계 사항	0d3bd7b4	7
+relation	O	15852ee9	design	의존 설계 사항	34cb6c64	7
+relation	O	15852ee9	design	의존 설계 사항	c07f029a	7
+relation	O	15852ee9	design	의존 설계 사항	d20e9a3e	7
+relation	O	16c120c1	design	관련 요구사항	54f0c0ae	7
+relation	O	16c120c1	design	관련 요구사항	61b29604	7
+relation	O	16c120c1	design	관련 요구사항	f5d61935	7
+relation	O	16c120c1	design	관련 외부 인터페이스	3fff4db3	7
+relation	O	16c120c1	design	관련 외부 인터페이스	4b0d2f18	7
+relation	O	16c120c1	design	관련 외부 인터페이스	7642fa61	7
+relation	O	16c120c1	design	관련 외부 인터페이스	7b5137c8	7
+relation	O	16c120c1	design	관련 외부 인터페이스	bb0a0d0d	7
+relation	O	16c120c1	design	관련 외부 인터페이스	f3dc42c3	7
+relation	O	16c120c1	design	관련 외부 인터페이스	fcc47146	7
+relation	O	16c120c1	design	관련 외부 인터페이스	ffc10b30	7
+relation	O	16c120c1	design	의존 설계 사항	5451c8bd	7
+relation	O	16c120c1	design	의존 설계 사항	6394af8c	7
+relation	O	16c120c1	design	의존 설계 사항	8daa90d2	7
+relation	O	16c120c1	design	의존 설계 사항	8fb791cf	7
+relation	O	16c120c1	design	의존 설계 사항	9496a4e9	7
+relation	O	16c120c1	design	의존 설계 사항	b8f54123	7
+relation	O	16c120c1	design	의존 설계 사항	bff0120a	7
+relation	O	1705d76a	external_interface	관련 요구사항	167c4fdc	5
+relation	O	1806b17a	external_interface	관련 요구사항	e316031e	4
+relation	O	1dfa5fcf	external_interface	관련 요구사항	1df74afa	5
+relation	O	1dfa5fcf	external_interface	관련 요구사항	e316031e	5
+relation	O	21c5e2ba	external_interface	관련 요구사항	4063cd11	5
+relation	O	2202fb80	external_interface	관련 요구사항	4063cd11	5
+relation	O	26006076	external_interface	관련 요구사항	856dcc2e	4
+relation	O	26006076	external_interface	관련 요구사항	fca7d6c4	4
+relation	O	26e85bdf	external_interface	관련 요구사항	6ae1e3ee	5
+relation	O	26f66a3b	external_interface	관련 요구사항	1df74afa	5
+relation	O	26f66a3b	external_interface	관련 요구사항	e316031e	5
+relation	O	26fcf249	design	관련 요구사항	2356c0c5	7
+relation	O	26fcf249	design	관련 요구사항	f5d61935	7
+relation	O	29014c2e	external_interface	관련 요구사항	25b9dacf	4
+relation	O	2af1c005	external_interface	관련 요구사항	167c4fdc	5
+relation	O	2af1c005	external_interface	관련 요구사항	e316031e	5
+relation	O	2b26a619	external_interface	관련 요구사항	92b2d708	5
+relation	O	2bba3776	external_interface	관련 요구사항	92b2d708	5
+relation	O	2f1107b3	external_interface	관련 요구사항	92b2d708	5
+relation	O	2ff66b9d	design	관련 요구사항	1b8d6866	7
+relation	O	2ff66b9d	design	관련 요구사항	8612bafa	7
+relation	O	2ff66b9d	design	관련 외부 인터페이스	13a6e2ed	7
+relation	O	2ff66b9d	design	관련 외부 인터페이스	c8870ef9	7
+relation	O	3280a187	external_interface	관련 요구사항	e316031e	5
+relation	O	3329cccc	design	관련 요구사항	75a997cc	7
+relation	O	3329cccc	design	관련 요구사항	c3aacc5e	7
+relation	O	3329cccc	design	관련 외부 인터페이스	41d06f7e	7
+relation	O	3329cccc	design	관련 외부 인터페이스	64ff70f5	7
+relation	O	3329cccc	design	관련 외부 인터페이스	cd080d8c	7
+relation	O	3329cccc	design	의존 설계 사항	f20e6c8c	7
+relation	O	3329cccc	design	의존 설계 사항	f379d81c	7
+relation	O	340e0112	external_interface	관련 요구사항	5630fd14	5
+relation	O	34cb6c64	design	관련 요구사항	856dcc2e	7
+relation	O	34cb6c64	design	관련 요구사항	9e003773	7
+relation	O	34cb6c64	design	관련 요구사항	fca7d6c4	7
+relation	O	34cb6c64	design	의존 설계 사항	0d3bd7b4	7
+relation	O	34cb6c64	design	의존 설계 사항	c07f029a	7
+relation	O	34cb6c64	design	의존 설계 사항	d20e9a3e	7
+relation	O	3595eff9	external_interface	관련 요구사항	1df74afa	4
+relation	O	3595eff9	external_interface	관련 요구사항	e316031e	4
+relation	O	360d9e4c	external_interface	관련 요구사항	856dcc2e	5
+relation	O	3770c54f	external_interface	관련 요구사항	167c4fdc	5
+relation	O	3775f9e7	external_interface	관련 요구사항	e316031e	5
+relation	O	37a9cd50	external_interface	관련 요구사항	167c4fdc	5
+relation	O	37b898f4	external_interface	관련 요구사항	9e003773	5
+relation	O	37c775d3	external_interface	관련 요구사항	167c4fdc	5
+relation	O	3dca66c8	external_interface	관련 요구사항	9896a5bd	5
+relation	O	3fff4db3	external_interface	관련 요구사항	54f0c0ae	5
+relation	O	41d06f7e	external_interface	관련 요구사항	9e003773	5
+relation	O	4247eb52	external_interface	관련 요구사항	167c4fdc	5
+relation	O	425038e4	external_interface	관련 요구사항	e316031e	5
+relation	O	4384951a	external_interface	관련 요구사항	856dcc2e	5
+relation	O	43a5b50c	external_interface	관련 요구사항	9e003773	4
+relation	O	45451f97	external_interface	관련 요구사항	167c4fdc	5
+relation	O	46b481d0	external_interface	관련 요구사항	42964b75	4
+relation	O	46c654ba	external_interface	관련 요구사항	4063cd11	5
+relation	O	46ed6c51	external_interface	관련 요구사항	935396f9	5
+relation	O	470160d1	external_interface	관련 요구사항	1df74afa	4
+relation	O	470160d1	external_interface	관련 요구사항	4063cd11	4
+relation	O	47b24721	design	관련 요구사항	40db7df2	7
+relation	O	47b24721	design	관련 요구사항	856dcc2e	7
+relation	O	47b24721	design	관련 요구사항	fca7d6c4	7
+relation	O	4b0d2f18	external_interface	관련 요구사항	f5d61935	5
+relation	O	4b4547e7	design	관련 요구사항	25b9dacf	7
+relation	O	4b4547e7	design	관련 외부 인터페이스	5e543b7d	7
+relation	O	4b4547e7	design	관련 외부 인터페이스	8d389a2c	7
+relation	O	4b4547e7	design	관련 외부 인터페이스	93fbc33b	7
+relation	O	4b4547e7	design	관련 외부 인터페이스	9829161f	7
+relation	O	4b4547e7	design	관련 외부 인터페이스	cfc7c974	7
+relation	O	4b4547e7	design	관련 외부 인터페이스	eb3dbdb8	7
+relation	O	4b4547e7	design	의존 설계 사항	09342f57	7
+relation	O	4b4547e7	design	의존 설계 사항	53fcee50	7
+relation	O	4b4547e7	design	의존 설계 사항	59214f58	7
+relation	O	4b4547e7	design	의존 설계 사항	f20e6c8c	7
+relation	O	4b4547e7	design	의존 설계 사항	f379d81c	7
+relation	O	4b4547e7	design	의존 설계 사항	fbdb73c5	7
+relation	O	4d7cffdf	external_interface	관련 요구사항	e316031e	5
+relation	O	4dfb2a94	external_interface	관련 요구사항	9896a5bd	5
+relation	O	4f810c4f	design	관련 요구사항	3f39657b	7
+relation	O	4f810c4f	design	관련 요구사항	8612bafa	7
+relation	O	53309a13	external_interface	관련 요구사항	f5d61935	5
+relation	O	53f3ecd2	design	관련 요구사항	5630fd14	7
+relation	O	53f3ecd2	design	관련 요구사항	61b29604	7
+relation	O	53fcee50	design	관련 요구사항	c3aacc5e	7
+relation	O	53fcee50	design	관련 외부 인터페이스	3770c54f	7
+relation	O	53fcee50	design	관련 외부 인터페이스	85360662	7
+relation	O	53fcee50	design	관련 외부 인터페이스	f9ea7860	7
+relation	O	53fcee50	design	의존 설계 사항	f379d81c	7
+relation	O	5451c8bd	design	관련 요구사항	5ef1b4d9	7
+relation	O	5451c8bd	design	의존 설계 사항	fbdb73c5	7
+relation	O	55e67de0	external_interface	관련 요구사항	2356c0c5	5
+relation	O	59214f58	design	관련 요구사항	1b8d6866	7
+relation	O	5aa207d2	design	관련 요구사항	0c7ab770	7
+relation	O	5aa207d2	design	관련 요구사항	935396f9	7
+relation	O	5b0992ad	external_interface	관련 요구사항	61b29604	5
+relation	O	5b0ffc39	external_interface	관련 요구사항	42964b75	5
+relation	O	5e543b7d	external_interface	관련 요구사항	25b9dacf	5
+relation	O	60b5232b	external_interface	관련 요구사항	61b29604	5
+relation	O	629008a4	external_interface	관련 요구사항	1df74afa	5
+relation	O	629008a4	external_interface	관련 요구사항	4063cd11	5
+relation	O	636f4575	external_interface	관련 요구사항	167c4fdc	5
+relation	O	6394af8c	design	관련 요구사항	e316031e	7
+relation	O	6394af8c	design	관련 외부 인터페이스	02911105	7
+relation	O	6394af8c	design	관련 외부 인터페이스	07084734	7
+relation	O	6394af8c	design	관련 외부 인터페이스	0ba10bc3	7
+relation	O	6394af8c	design	관련 외부 인터페이스	3775f9e7	7
+relation	O	6394af8c	design	관련 외부 인터페이스	425038e4	7
+relation	O	6394af8c	design	관련 외부 인터페이스	4d7cffdf	7
+relation	O	6394af8c	design	관련 외부 인터페이스	5b0ffc39	7
+relation	O	6394af8c	design	관련 외부 인터페이스	6eb744d7	7
+relation	O	6394af8c	design	관련 외부 인터페이스	aa14a4b7	7
+relation	O	6394af8c	design	관련 외부 인터페이스	b4016cb7	7
+relation	O	6394af8c	design	관련 외부 인터페이스	c29eeffc	7
+relation	O	6394af8c	design	관련 외부 인터페이스	e3538d50	7
+relation	O	6394af8c	design	관련 외부 인터페이스	f55c48b9	7
+relation	O	6394af8c	design	의존 설계 사항	09342f57	7
+relation	O	6394af8c	design	의존 설계 사항	53fcee50	7
+relation	O	6394af8c	design	의존 설계 사항	59214f58	7
+relation	O	6394af8c	design	의존 설계 사항	f20e6c8c	7
+relation	O	6394af8c	design	의존 설계 사항	f379d81c	7
+relation	O	6394af8c	design	의존 설계 사항	fbdb73c5	7
+relation	O	64ff70f5	external_interface	관련 요구사항	30d29eda	5
+relation	O	68a2a8eb	external_interface	관련 요구사항	42964b75	5
+relation	O	68ffedd2	external_interface	관련 요구사항	935396f9	5
+relation	O	6b7f5ad5	design	관련 요구사항	d915220c	7
+relation	O	6dffbaff	external_interface	관련 요구사항	856dcc2e	5
+relation	O	6eb744d7	external_interface	관련 요구사항	5630fd14	5
+relation	O	734f2faf	external_interface	관련 요구사항	5630fd14	5
+relation	O	7642fa61	external_interface	관련 요구사항	54f0c0ae	5
+relation	O	785737c2	design	관련 요구사항	2356c0c5	7
+relation	O	785737c2	design	관련 요구사항	30d29eda	7
+relation	O	785737c2	design	관련 요구사항	3f39657b	7
+relation	O	785737c2	design	관련 요구사항	61b29604	7
+relation	O	785737c2	design	관련 요구사항	f5d61935	7
+relation	O	785737c2	design	관련 외부 인터페이스	1705d76a	7
+relation	O	785737c2	design	관련 외부 인터페이스	1dfa5fcf	7
+relation	O	785737c2	design	관련 외부 인터페이스	26f66a3b	7
+relation	O	785737c2	design	관련 외부 인터페이스	3280a187	7
+relation	O	785737c2	design	관련 외부 인터페이스	53309a13	7
+relation	O	785737c2	design	관련 외부 인터페이스	55e67de0	7
+relation	O	785737c2	design	관련 외부 인터페이스	5b0992ad	7
+relation	O	785737c2	design	관련 외부 인터페이스	8113729e	7
+relation	O	785737c2	design	관련 외부 인터페이스	a2bb8623	7
+relation	O	785737c2	design	관련 외부 인터페이스	cd080d8c	7
+relation	O	785737c2	design	의존 설계 사항	09342f57	7
+relation	O	785737c2	design	의존 설계 사항	14e0621f	7
+relation	O	785737c2	design	의존 설계 사항	16c120c1	7
+relation	O	785737c2	design	의존 설계 사항	3329cccc	7
+relation	O	785737c2	design	의존 설계 사항	4b4547e7	7
+relation	O	785737c2	design	의존 설계 사항	6394af8c	7
+relation	O	785737c2	design	의존 설계 사항	8daa90d2	7
+relation	O	785737c2	design	의존 설계 사항	8fb791cf	7
+relation	O	785737c2	design	의존 설계 사항	9496a4e9	7
+relation	O	785737c2	design	의존 설계 사항	b8f54123	7
+relation	O	785737c2	design	의존 설계 사항	bff0120a	7
+relation	O	785737c2	design	의존 설계 사항	d6af8843	7
+relation	O	785737c2	design	의존 설계 사항	ee48a095	7
+relation	O	785737c2	design	의존 설계 사항	ef00bc7f	7
+relation	O	785737c2	design	의존 설계 사항	f20e6c8c	7
+relation	O	785737c2	design	의존 설계 사항	f379d81c	7
+relation	O	785737c2	design	의존 설계 사항	fbdb73c5	7
+relation	O	7b5137c8	external_interface	관련 요구사항	54f0c0ae	5
+relation	O	7dc07e21	external_interface	관련 요구사항	1ed6f364	5
+relation	O	8113729e	external_interface	관련 요구사항	30d29eda	5
+relation	O	826fd29e	external_interface	관련 요구사항	fca7d6c4	5
+relation	O	83c0a718	external_interface	관련 요구사항	9896a5bd	5
+relation	O	83c70f32	design	관련 요구사항	1ed6f364	7
+relation	O	83c70f32	design	관련 요구사항	c3aacc5e	7
+relation	O	84724f6b	external_interface	관련 요구사항	1df74afa	5
+relation	O	85360662	external_interface	관련 요구사항	167c4fdc	5
+relation	O	8666e9e5	external_interface	관련 요구사항	167c4fdc	5
+relation	O	878217d5	external_interface	관련 요구사항	5ef1b4d9	5
+relation	O	88bfa822	external_interface	관련 요구사항	2356c0c5	4
+relation	O	88bfa822	external_interface	관련 요구사항	f5d61935	4
+relation	O	8a5b382e	external_interface	관련 요구사항	92b2d708	4
+relation	O	8ad72b03	external_interface	관련 요구사항	935396f9	5
+relation	O	8b9dc077	external_interface	관련 요구사항	92b2d708	5
+relation	O	8bf56894	design	관련 요구사항	167c4fdc	7
+relation	O	8bf56894	design	관련 요구사항	8612bafa	7
+relation	O	8bf56894	design	관련 요구사항	9e003773	7
+relation	O	8d389a2c	external_interface	관련 요구사항	25b9dacf	5
+relation	O	8daa90d2	design	관련 요구사항	6ae1e3ee	7
+relation	O	8daa90d2	design	관련 외부 인터페이스	26e85bdf	7
+relation	O	8daa90d2	design	관련 외부 인터페이스	6eb744d7	7
+relation	O	8daa90d2	design	관련 외부 인터페이스	a8b5d73e	7
+relation	O	8daa90d2	design	관련 외부 인터페이스	af5383a5	7
+relation	O	8daa90d2	design	관련 외부 인터페이스	b4333951	7
+relation	O	8daa90d2	design	의존 설계 사항	09342f57	7
+relation	O	8daa90d2	design	의존 설계 사항	6394af8c	7
+relation	O	8daa90d2	design	의존 설계 사항	f20e6c8c	7
+relation	O	8daa90d2	design	의존 설계 사항	f379d81c	7
+relation	O	8daa90d2	design	의존 설계 사항	fbdb73c5	7
+relation	O	8f5235a6	external_interface	관련 요구사항	167c4fdc	5
+relation	O	8fb791cf	design	관련 요구사항	935396f9	7
+relation	O	8fb791cf	design	관련 외부 인터페이스	46ed6c51	7
+relation	O	8fb791cf	design	관련 외부 인터페이스	68ffedd2	7
+relation	O	8fb791cf	design	관련 외부 인터페이스	8ad72b03	7
+relation	O	8fb791cf	design	관련 외부 인터페이스	9168813f	7
+relation	O	8fb791cf	design	관련 외부 인터페이스	d573c01b	7
+relation	O	8fb791cf	design	의존 설계 사항	09342f57	7
+relation	O	8fb791cf	design	의존 설계 사항	59214f58	7
+relation	O	8fb791cf	design	의존 설계 사항	6394af8c	7
+relation	O	8fb791cf	design	의존 설계 사항	b8f54123	7
+relation	O	8fb791cf	design	의존 설계 사항	f20e6c8c	7
+relation	O	8fb791cf	design	의존 설계 사항	f379d81c	7
+relation	O	9168813f	external_interface	관련 요구사항	935396f9	5
+relation	O	93fbc33b	external_interface	관련 요구사항	25b9dacf	5
+relation	O	9496a4e9	design	관련 요구사항	9896a5bd	7
+relation	O	9496a4e9	design	관련 외부 인터페이스	0ec0c309	7
+relation	O	9496a4e9	design	관련 외부 인터페이스	4dfb2a94	7
+relation	O	9496a4e9	design	관련 외부 인터페이스	83c0a718	7
+relation	O	9496a4e9	design	관련 외부 인터페이스	9fa595ca	7
+relation	O	9496a4e9	design	관련 외부 인터페이스	cd79aff8	7
+relation	O	9496a4e9	design	의존 설계 사항	59214f58	7
+relation	O	9496a4e9	design	의존 설계 사항	6394af8c	7
+relation	O	9496a4e9	design	의존 설계 사항	f20e6c8c	7
+relation	O	9496a4e9	design	의존 설계 사항	f379d81c	7
+relation	O	9496a4e9	design	의존 설계 사항	fbdb73c5	7
+relation	O	9829161f	external_interface	관련 요구사항	25b9dacf	5
+relation	O	99913fa0	external_interface	관련 요구사항	5630fd14	5
+relation	O	99ae0b94	design	관련 요구사항	42964b75	7
+relation	O	99ae0b94	design	관련 요구사항	6b15726e	7
+relation	O	99ae0b94	design	관련 요구사항	92b2d708	7
+relation	O	9a2595ca	design	관련 요구사항	1ed6f364	7
+relation	O	9a2595ca	design	관련 요구사항	75a997cc	7
+relation	O	9c9aa9f4	external_interface	관련 요구사항	5630fd14	5
+relation	O	9e6f4f55	external_interface	관련 요구사항	9896a5bd	4
+relation	O	9fa595ca	external_interface	관련 요구사항	9896a5bd	5
+relation	O	a00f7f5a	external_interface	관련 요구사항	92b2d708	5
+relation	O	a2648eac	design	관련 요구사항	42964b75	7
+relation	O	a2648eac	design	관련 요구사항	9896a5bd	7
+relation	O	a2bb8623	external_interface	관련 요구사항	1df74afa	5
+relation	O	a2bb8623	external_interface	관련 요구사항	e316031e	5
+relation	O	a8b5d73e	external_interface	관련 요구사항	6ae1e3ee	5
+relation	O	a9783a45	external_interface	관련 요구사항	4063cd11	4
+relation	O	a9783a45	external_interface	관련 요구사항	fca7d6c4	4
+relation	O	aa14a4b7	external_interface	관련 요구사항	5630fd14	5
+relation	O	ab7475cf	design	관련 요구사항	1b8d6866	7
+relation	O	ab7475cf	design	관련 외부 인터페이스	0af9a2b3	7
+relation	O	ab7475cf	design	관련 외부 인터페이스	2af1c005	7
+relation	O	ab7475cf	design	관련 외부 인터페이스	37a9cd50	7
+relation	O	ab7475cf	design	관련 외부 인터페이스	37c775d3	7
+relation	O	ab7475cf	design	관련 외부 인터페이스	4247eb52	7
+relation	O	ab7475cf	design	관련 외부 인터페이스	45451f97	7
+relation	O	ab7475cf	design	관련 외부 인터페이스	636f4575	7
+relation	O	ab7475cf	design	관련 외부 인터페이스	8666e9e5	7
+relation	O	ab7475cf	design	관련 외부 인터페이스	8f5235a6	7
+relation	O	ab7475cf	design	관련 외부 인터페이스	c0e52e11	7
+relation	O	ab7475cf	design	관련 외부 인터페이스	e96b30a7	7
+relation	O	ab7475cf	design	관련 외부 인터페이스	f567eb49	7
+relation	O	ab7475cf	design	의존 설계 사항	53fcee50	7
+relation	O	ab7475cf	design	의존 설계 사항	59214f58	7
+relation	O	ae056bc9	design	관련 요구사항	d915220c	7
+relation	O	af5383a5	external_interface	관련 요구사항	6ae1e3ee	5
+relation	O	b1e3a463	external_interface	관련 요구사항	92b2d708	5
+relation	O	b4016cb7	external_interface	관련 요구사항	e316031e	5
+relation	O	b4333951	external_interface	관련 요구사항	6ae1e3ee	5
+relation	O	b75cd759	external_interface	관련 요구사항	5630fd14	4
+relation	O	b75cd759	external_interface	관련 요구사항	61b29604	4
+relation	O	b8f54123	design	관련 요구사항	1df74afa	7
+relation	O	b8f54123	design	관련 요구사항	4063cd11	7
+relation	O	b8f54123	design	관련 요구사항	42964b75	7
+relation	O	b8f54123	design	관련 외부 인터페이스	0d67d663	7
+relation	O	b8f54123	design	관련 외부 인터페이스	21c5e2ba	7
+relation	O	b8f54123	design	관련 외부 인터페이스	3dca66c8	7
+relation	O	b8f54123	design	관련 외부 인터페이스	46c654ba	7
+relation	O	b8f54123	design	관련 외부 인터페이스	5b0ffc39	7
+relation	O	b8f54123	design	관련 외부 인터페이스	629008a4	7
+relation	O	b8f54123	design	관련 외부 인터페이스	68a2a8eb	7
+relation	O	b8f54123	design	관련 외부 인터페이스	6eb744d7	7
+relation	O	b8f54123	design	관련 외부 인터페이스	84724f6b	7
+relation	O	b8f54123	design	관련 외부 인터페이스	df3e653f	7
+relation	O	b8f54123	design	관련 외부 인터페이스	e9fafbf0	7
+relation	O	b8f54123	design	의존 설계 사항	4b4547e7	7
+relation	O	b8f54123	design	의존 설계 사항	59214f58	7
+relation	O	b8f54123	design	의존 설계 사항	6394af8c	7
+relation	O	b8f54123	design	의존 설계 사항	f20e6c8c	7
+relation	O	b8f54123	design	의존 설계 사항	f379d81c	7
+relation	O	b8f54123	design	의존 설계 사항	fbdb73c5	7
+relation	O	bb0a0d0d	external_interface	관련 요구사항	54f0c0ae	5
+relation	O	bff0120a	design	관련 요구사항	92b2d708	7
+relation	O	bff0120a	design	관련 외부 인터페이스	2b26a619	7
+relation	O	bff0120a	design	관련 외부 인터페이스	2bba3776	7
+relation	O	bff0120a	design	관련 외부 인터페이스	2f1107b3	7
+relation	O	bff0120a	design	관련 외부 인터페이스	8b9dc077	7
+relation	O	bff0120a	design	관련 외부 인터페이스	a00f7f5a	7
+relation	O	bff0120a	design	관련 외부 인터페이스	b1e3a463	7
+relation	O	bff0120a	design	의존 설계 사항	09342f57	7
+relation	O	bff0120a	design	의존 설계 사항	53fcee50	7
+relation	O	bff0120a	design	의존 설계 사항	59214f58	7
+relation	O	bff0120a	design	의존 설계 사항	f20e6c8c	7
+relation	O	bff0120a	design	의존 설계 사항	f379d81c	7
+relation	O	bff0120a	design	의존 설계 사항	fbdb73c5	7
+relation	O	c07f029a	design	관련 요구사항	1b8d6866	7
+relation	O	c07f029a	design	관련 요구사항	8612bafa	7
+relation	O	c07f029a	design	관련 외부 인터페이스	03d76c7c	7
+relation	O	c07f029a	design	관련 외부 인터페이스	13a6e2ed	7
+relation	O	c07f029a	design	관련 외부 인터페이스	1806b17a	7
+relation	O	c07f029a	design	관련 외부 인터페이스	26006076	7
+relation	O	c07f029a	design	관련 외부 인터페이스	29014c2e	7
+relation	O	c07f029a	design	관련 외부 인터페이스	3595eff9	7
+relation	O	c07f029a	design	관련 외부 인터페이스	43a5b50c	7
+relation	O	c07f029a	design	관련 외부 인터페이스	46b481d0	7
+relation	O	c07f029a	design	관련 외부 인터페이스	470160d1	7
+relation	O	c07f029a	design	관련 외부 인터페이스	6eb744d7	7
+relation	O	c07f029a	design	관련 외부 인터페이스	88bfa822	7
+relation	O	c07f029a	design	관련 외부 인터페이스	8a5b382e	7
+relation	O	c07f029a	design	관련 외부 인터페이스	9e6f4f55	7
+relation	O	c07f029a	design	관련 외부 인터페이스	a9783a45	7
+relation	O	c07f029a	design	관련 외부 인터페이스	b75cd759	7
+relation	O	c07f029a	design	관련 외부 인터페이스	c4688e6e	7
+relation	O	c07f029a	design	관련 외부 인터페이스	c4d160e4	7
+relation	O	c07f029a	design	관련 외부 인터페이스	c8870ef9	7
+relation	O	c07f029a	design	관련 외부 인터페이스	cdb0ff14	7
+relation	O	c07f029a	design	관련 외부 인터페이스	d4165e3e	7
+relation	O	c07f029a	design	관련 외부 인터페이스	ebe4a3d6	7
+relation	O	c07f029a	design	의존 설계 사항	3329cccc	7
+relation	O	c07f029a	design	의존 설계 사항	53fcee50	7
+relation	O	c07f029a	design	의존 설계 사항	785737c2	7
+relation	O	c07f029a	design	의존 설계 사항	ab7475cf	7
+relation	O	c07f029a	design	의존 설계 사항	f379d81c	7
+relation	O	c07f029a	design	의존 설계 사항	fbdb73c5	7
+relation	O	c0e52e11	external_interface	관련 요구사항	167c4fdc	5
+relation	O	c29eeffc	external_interface	관련 요구사항	e316031e	5
+relation	O	c4688e6e	external_interface	관련 요구사항	167c4fdc	5
+relation	O	c4d160e4	external_interface	관련 요구사항	1ed6f364	4
+relation	O	c4d160e4	external_interface	관련 요구사항	4063cd11	4
+relation	O	c4d160e4	external_interface	관련 요구사항	5ef1b4d9	4
+relation	O	c8870ef9	external_interface	관련 요구사항	167c4fdc	4
+relation	O	c8870ef9	external_interface	관련 요구사항	e316031e	4
+relation	O	c94573b8	external_interface	관련 요구사항	fca7d6c4	5
+relation	O	cca5d5e7	external_interface	관련 요구사항	1ed6f364	5
+relation	O	cd080d8c	external_interface	관련 요구사항	167c4fdc	5
+relation	O	cd080d8c	external_interface	관련 요구사항	30d29eda	5
+relation	O	cd79aff8	external_interface	관련 요구사항	9896a5bd	5
+relation	O	cdb0ff14	external_interface	관련 요구사항	6ae1e3ee	4
+relation	O	cfc7c974	external_interface	관련 요구사항	25b9dacf	5
+relation	O	d20e9a3e	design	관련 요구사항	e316031e	7
+relation	O	d4165e3e	external_interface	관련 요구사항	935396f9	4
+relation	O	d573c01b	external_interface	관련 요구사항	935396f9	5
+relation	O	d6af8843	design	관련 요구사항	2356c0c5	7
+relation	O	d6af8843	design	관련 요구사항	5630fd14	7
+relation	O	d6af8843	design	관련 요구사항	61b29604	7
+relation	O	d6af8843	design	관련 외부 인터페이스	340e0112	7
+relation	O	d6af8843	design	관련 외부 인터페이스	60b5232b	7
+relation	O	d6af8843	design	관련 외부 인터페이스	734f2faf	7
+relation	O	d6af8843	design	관련 외부 인터페이스	99913fa0	7
+relation	O	d6af8843	design	관련 외부 인터페이스	9c9aa9f4	7
+relation	O	d6af8843	design	의존 설계 사항	3329cccc	7
+relation	O	d6af8843	design	의존 설계 사항	53fcee50	7
+relation	O	d6af8843	design	의존 설계 사항	59214f58	7
+relation	O	d6af8843	design	의존 설계 사항	f20e6c8c	7
+relation	O	d6af8843	design	의존 설계 사항	f379d81c	7
+relation	O	d6af8843	design	의존 설계 사항	fbdb73c5	7
+relation	O	d9052c6b	design	관련 요구사항	8612bafa	7
+relation	O	de2bfdc9	external_interface	관련 요구사항	856dcc2e	5
+relation	O	df3e653f	external_interface	관련 요구사항	4063cd11	5
+relation	O	e3538d50	external_interface	관련 요구사항	e316031e	5
+relation	O	e51e7f6b	unit_test_plan	검증 설계 사항	8fb791cf	7
+relation	O	e96b30a7	external_interface	관련 요구사항	167c4fdc	5
+relation	O	e9fafbf0	external_interface	관련 요구사항	25b9dacf	5
+relation	O	eb3dbdb8	external_interface	관련 요구사항	25b9dacf	5
+relation	O	eb7eb460	external_interface	관련 요구사항	4063cd11	5
+relation	O	eb7eb460	external_interface	관련 요구사항	5ef1b4d9	5
+relation	O	ebe4a3d6	external_interface	관련 요구사항	54f0c0ae	4
+relation	O	ee48a095	design	관련 요구사항	856dcc2e	7
+relation	O	ee48a095	design	관련 외부 인터페이스	360d9e4c	7
+relation	O	ee48a095	design	관련 외부 인터페이스	4384951a	7
+relation	O	ee48a095	design	관련 외부 인터페이스	6dffbaff	7
+relation	O	ee48a095	design	의존 설계 사항	09342f57	7
+relation	O	ee48a095	design	의존 설계 사항	53fcee50	7
+relation	O	ee48a095	design	의존 설계 사항	59214f58	7
+relation	O	ee48a095	design	의존 설계 사항	ef00bc7f	7
+relation	O	ef00bc7f	design	관련 요구사항	40db7df2	7
+relation	O	ef00bc7f	design	관련 요구사항	fca7d6c4	7
+relation	O	ef00bc7f	design	관련 외부 인터페이스	02791c5f	7
+relation	O	ef00bc7f	design	관련 외부 인터페이스	08ab8872	7
+relation	O	ef00bc7f	design	관련 외부 인터페이스	2202fb80	7
+relation	O	ef00bc7f	design	관련 외부 인터페이스	826fd29e	7
+relation	O	ef00bc7f	design	관련 외부 인터페이스	c94573b8	7
+relation	O	ef00bc7f	design	관련 외부 인터페이스	de2bfdc9	7
+relation	O	ef00bc7f	design	관련 외부 인터페이스	fda770b6	7
+relation	O	ef00bc7f	design	의존 설계 사항	16c120c1	7
+relation	O	ef00bc7f	design	의존 설계 사항	4b4547e7	7
+relation	O	ef00bc7f	design	의존 설계 사항	6394af8c	7
+relation	O	ef00bc7f	design	의존 설계 사항	8daa90d2	7
+relation	O	ef00bc7f	design	의존 설계 사항	8fb791cf	7
+relation	O	ef00bc7f	design	의존 설계 사항	9496a4e9	7
+relation	O	ef00bc7f	design	의존 설계 사항	b8f54123	7
+relation	O	ef00bc7f	design	의존 설계 사항	bff0120a	7
+relation	O	ef00bc7f	design	의존 설계 사항	d6af8843	7
+relation	O	ef00bc7f	design	의존 설계 사항	f379d81c	7
+relation	O	ef00bc7f	design	의존 설계 사항	fbdb73c5	7
+relation	O	f1b22557	design	관련 요구사항	2bf42354	7
+relation	O	f208d1f7	design	관련 요구사항	9effb23d	7
+relation	O	f20e6c8c	design	관련 요구사항	3f39657b	7
+relation	O	f20e6c8c	design	관련 요구사항	c3aacc5e	7
+relation	O	f20e6c8c	design	의존 설계 사항	f379d81c	7
+relation	O	f379d81c	design	관련 요구사항	8612bafa	7
+relation	O	f3dc42c3	external_interface	관련 요구사항	54f0c0ae	5
+relation	O	f55c48b9	external_interface	관련 요구사항	e316031e	5
+relation	O	f567eb49	external_interface	관련 요구사항	167c4fdc	5
+relation	O	f59c2142	external_interface	관련 요구사항	5ef1b4d9	5
+relation	O	f9ea7860	external_interface	관련 요구사항	167c4fdc	5
+relation	O	fbdb73c5	design	관련 요구사항	c3aacc5e	7
+relation	O	fbdb73c5	design	의존 설계 사항	f379d81c	7
+relation	O	fcc47146	external_interface	관련 요구사항	61b29604	5
+relation	O	fda770b6	external_interface	관련 요구사항	fca7d6c4	5
+relation	O	ffc10b30	external_interface	관련 요구사항	54f0c0ae	5
+TABLE	decision	O/X	kind	checkpoint	text
+decision	O	requirement	1	- REQ-004 · ID 형식 : 항목·파일·CR 은 3 자리, 체크포인트는 4 자리 (구현 기준) [기각: definition.md 예시 MS-02 — 다른 항목과 어긋남, 261104_01 #1]\n- REQ-007 · 변경 필요 판정 : 전역 쓰기 순번(wseq) 비교로 정의 (cp_from 비교보다 같은 체크포인트 안 수정도 잡음, R-6 보다 엄격)\n- REQ-017 · 병합 충돌 정책 : 미정. 헤더는 "뒤 체크포인트를 택" 인데 구현은 기존 행 유지 후 보고 — 사용자 결정 필요\n- REQ-003 · 확정 조건 단계 : Step 1·2(R-4), 6(R-5), 8·10(R-3) 만 조건 있음, Step 3·4·5·7·9 는 조건 없음 (구현 기준)\n- REQ-012 · 맥락 범위 : 영향 항목이 있으면 그것만 묶는 동작은 요구사항에 포함 (definition.md 변경 요청 흐름)\n- REQ-021 · 오류 경로 : 메모리 부족도 상태 코드로 (현재 Db 로 보고됨)\n- REQ-026 · 대상 플랫폼 : Windows MSVC 를 1 차, GCC·Clang 은 컴파일 보장까지 (CI 없음)\n
+decision	O	requirement	2	- REQ-028 · 구조 : 기능 요구사항을 Use-case 9 개(상위) + 하위로 나눔 (요구사항만 읽고 기능을 알 수 있게) [기각: 코드 모듈별 나열 — 사용 목적이 안 보임]\n- REQ-028 · 문체 : 사용자·AI 가 관찰하는 동작으로 씀, 명령·함수·상태 코드 이름은 쓰지 않음 (그것은 Step 3 외부 인터페이스 몫)\n- REQ-002 · ID 보존 : 기존 REQ-001 ~ 020 은 번호를 유지하고 하위로 옮김 (이력·결정 줄 보존) [기각: 새로 매긴 번호]\n- REQ-013 · 분리 : 추적(위·아래 따라가기, 추적표)은 REQ-037 로 떼고 REQ-013 은 변경 영향 범위만\n- REQ-020 · 범위 : 기록 구조 버전 올리기는 REQ-001 로 옮기고 REQ-020 은 직접 질의만\n- REQ-004 · ID 형식 : 항목·파일·CR 은 3 자리, 체크포인트는 4 자리 (구현 기준) [기각: 정의서 예시 MS-02 — 261104_01 #1]\n- REQ-007 · 변경 필요 판정 : 같은 라운드 안 수정도 "변경 필요" 로 봄 (구현 기준, 정의서 R-6 의 cp_from 비교보다 엄격)\n- REQ-017 · 병합 충돌 정책 : 미정. 헤더는 "뒤 체크포인트를 택" 인데 구현은 기존 것 유지 후 보고 — 사용자 결정 필요\n- REQ-017 · 브랜치 간 번호 : 미정. 두 브랜치가 각자 REQ-005 를 만들면 같은 번호 충돌 — 사용자 결정 필요\n- REQ-003 · 확정 조건 단계 : Step 1·2, 6, 8·10 만 조건 있음, 나머지 단계는 조건 없음 (구현 기준)\n- REQ-012 · 맥락 범위 : 변경 요청으로 돌아온 단계는 바뀐 것과 연결된 것 위주로 묶음 (정의서 변경 요청 흐름)\n- REQ-021 · 오류 경로 : 메모리 부족도 상태로 보고 (지금은 DB 오류와 같은 상태)\n- REQ-026 · 대상 플랫폼 : Windows MSVC 를 1 차, GCC·Clang 은 컴파일 보장까지 (CI 없음)\n
+decision	O	requirement	3	- REQ-028 · 구조 : 기능 요구사항을 Use-case 9 개(상위) + 하위로 나눔 (요구사항만 읽고 기능을 알 수 있게) [기각: 코드 모듈별 나열 — 사용 목적이 안 보임]\n- REQ-028 · 문체 : 사용자·AI 가 관찰하는 동작으로 씀, 명령·함수·상태 코드 이름은 쓰지 않음 (그것은 Step 3 외부 인터페이스 몫)\n- REQ-002 · ID 보존 : 기존 REQ-001 ~ 020 은 번호를 유지하고 하위로 옮김 (이력·결정 줄 보존) [기각: 새로 매긴 번호]\n- REQ-013 · 분리 : 추적(위·아래 따라가기, 추적표)은 REQ-037 로 떼고 REQ-013 은 변경 영향 범위만\n- REQ-020 · 범위 : 기록 구조 버전 올리기는 REQ-001 로 옮기고 REQ-020 은 직접 질의만\n- REQ-004 · ID 형식 : 항목·파일·CR 은 3 자리, 체크포인트는 4 자리 (구현 기준) [기각: 정의서 예시 MS-02 — 261104_01 #1]\n- REQ-007 · 변경 필요 판정 : 같은 라운드 안 수정도 "변경 필요" 로 봄 (구현 기준, 정의서 R-6 의 cp_from 비교보다 엄격)\n- REQ-003 · 확정 조건 단계 : Step 1·2, 6, 8·10 만 조건 있음, 나머지 단계는 조건 없음 (구현 기준)\n- REQ-012 · 맥락 범위 : 변경 요청으로 돌아온 단계는 바뀐 것과 연결된 것 위주로 묶음 (정의서 변경 요청 흐름)\n- REQ-021 · 오류 경로 : 메모리 부족도 상태로 보고 (지금은 DB 오류와 같은 상태)\n- REQ-026 · 대상 플랫폼 : Windows MSVC 를 1 차, GCC·Clang 은 컴파일 보장까지 (CI 없음)\n- REQ-036 · 관리 주체 : 한 프로젝트의 기록은 한 사람이 관리 (병합 시 번호·체크포인트·카운터 충돌) [기각: 여러 사람 병합 — 261104_02_backlog.md 로 보류]\n- REQ-017 · 병합 : 서로 다른 기록 합치기는 요구하지 않음, 다시 만들기만 (REQ-036 전제)\n
+decision	O	rule	1	- RULE-001 · 계층 : 현재 코드 구조(경계·base·core)를 규칙으로 고정 (구조 자체가 이미 일관됨)\n- RULE-002 · 횡단 규칙 위치 : Project 가 R-2·R-10·정리를 맡는 현 구조를 따름 [기각: 각 모듈에 actor 전달 — 권한 검사 분산]\n- RULE-005 · 규칙 번호 표기 : 오류 메시지에 (R-n) 을 적는 현 관례를 규칙으로 (AI 가 근거로 바로 이동)\n- RULE-007 · Savepoint : 여러 문장 쓰기에 한정 [기각: 모든 쓰기 — 단일 문장은 SQLite 가 이미 원자적]\n- RULE-010 · 경고 : 경고 0 유지만, /WX 는 강제하지 않음 (외부 의존성 업데이트 때 빌드가 깨지지 않게)\n- RULE-011 · 테스트 : 코드에 근거 없는 새 규칙. 저장소에 테스트가 없어 Step 5 이전에 방식을 정해 둠\n
+decision	O	external_interface	4	- UI-001 · 범위 : 외부 인터페이스는 공개 C 헤더 include/kiotty_spec.h 하나, GUI 뷰는 없음 (ks 는 GUI 가 없는 라이브러리·CLI)\n- UI-001 · CLI : ks 명령은 별도 항목으로 두지 않음, C 함수와 1:1 (RULE-003) 이라 E2E 는 ks 로 C 항목을 구동 [기각: CLI 명령별 항목 — 정의서 분류에 없음, 중복]\n- UI-001 · 단위 : 헤더 기능 그룹(절)마다 항목 하나, 함수 107 개를 19 개에 빠짐없이 배정 [기각: 함수마다 항목 — E2E 1:1(R-3) 로 107 개, 과함]\n- UI-001 · 공통 타입 : 열거형·레코드 구조체는 그것을 쓰는 그룹 항목에 둠, Status·Actor 만 공통 항목 [기각: 타입 전용 항목 — 만족시킬 요구사항이 없음]\n- UI-006 · 분리 : 위치·이력·지금 할 일(Checkpoint_position·journey, Context_whereAmI·status·pending)은 체크포인트(UI-005)에서 떼어 REQ-011 에 대응\n- UI-012 · 분리 : 영향 범위(Link_impact·scopeOf)는 링크(UI-011)에서 떼어 REQ-013 에 대응, 추적은 UI-011 이 REQ-037 에 대응\n- UI-004 · 연결 : 트랜잭션은 품질 REQ-023 을 위한 것이나 링크는 기능 요구사항만 허용 (R-11) 이라 REQ-004·005 에 연결, 본문에 REQ-023 명시\n- UI-001 · 품질 요구사항 : REQ-021 ~ 025 는 링크 대신 각 항목의 사후조건·소유권 절에 적음 (인터페이스는 기능 요구사항만 만족시킴)\n- UI-018 · 병합 : Import_jsonl merge 는 같은 ID 를 기존 행 유지 후 보고 (구현 기준), 헤더 주석 "뒤 체크포인트를 택함" 과 다름 — 261104_02 #4\n- UI-001 · 헤더 수정 : 이번 라운드는 헤더(FILE-001)를 등록만 하고 고치지 않음 (R-9, 사용자 요청 없음), 어긋남은 본문에 구현 기준으로 적음\n
+decision	O	external_interface	5	- UI-001 · 범위 : 외부 인터페이스는 공개 C 헤더 include/kiotty_spec.h 하나, GUI 뷰는 없음 (ks 는 GUI 가 없는 라이브러리·CLI)\n- UI-001 · CLI : ks 명령은 별도 항목으로 두지 않음, C 함수와 1:1 (RULE-003) 이라 E2E 는 ks 로 C 항목을 구동 [기각: CLI 명령별 항목 — 정의서 분류에 없음, 중복]\n- UI-001 · 단위 : 헤더 기능 그룹마다 개념 묶음 19 개(UI-001~019), 그 하위에 함수마다 항목 107 개(UI-020~126) (사용자 피드백) [기각: 묶음만 — 함수와 ID 가 대응 안 됨]\n- UI-001 · 묶음 본문 : 타입·묶음 공통 규약은 묶음에, 함수별 사전·사후조건·에러·소유권은 하위에 [기각: 함수마다 타입 반복 — 중복]\n- UI-001 · E2E 1:1 : R-3 검사가 묶음도 대상이라 E2E 는 126 개, 묶음 E2E 는 그 개념의 시나리오 테스트로 쓴다 (사용자 선택) [기각: R-3 을 하위만으로 바꾸는 CR]\n- UI-001 · 연결 : 요구사항 satisfies 는 함수마다 걸고, 묶음은 하위 함수 요구사항의 합으로 유지, FILE-001 은 126 개 모두 implements\n- UI-001 · 품질 요구사항 : REQ-021 ~ 025 는 링크 대신 사후조건·소유권 절에 적음 (인터페이스는 기능 요구사항만 만족시킴, R-11)\n- UI-004 · 연결 : 트랜잭션은 품질 REQ-023 을 위한 것이나 링크는 기능만 허용이라 REQ-004·005 에 연결, 본문에 REQ-023 명시\n- UI-006 · 분리 : 위치·이력·지금 할 일은 체크포인트(UI-005)에서 떼어 REQ-011·012 에 대응\n- UI-012 · 분리 : 영향 범위(Link_impact·scopeOf)는 링크(UI-011)에서 떼어 REQ-013 에 대응, 추적은 UI-011 이 REQ-037 에 대응\n- UI-124 · 병합 : Import_jsonl merge 는 같은 ID 를 기존 행 유지 후 보고 (구현 기준), 헤더 주석 "뒤 체크포인트를 택함" 과 다름 — 261104_02 #4\n- UI-001 · 헤더 수정 : 헤더(FILE-001)는 등록만 하고 고치지 않음 (R-9, 사용자 요청 없음), 주석과 구현이 다른 곳은 본문에
+decision	O	design	7	- DSN-001 · 출처 : 설계는 기존 src/·app/cli 구조를 그대로 기록 (이미 구현된 코드가 사실의 원천) [기각: 새 구조 제안 — 근거 요구 없음]\n- DSN-001 · 계층 : 디렉토리 항목을 상위로, 그 아래 모듈을 하위로 둠 (UI 묶음처럼 읽기 쉬움)\n- DSN-008 · 모듈 단위 : 헤더 하나(클래스 또는 함수 모음) = 모듈 하나, 27 개 [기각: 계층당 하나 — 유닛 테스트·영향 범위가 너무 굵음]\n- DSN-008 · 본문 출처 : 인터페이스·멤버는 헤더 원문, 의존 모듈은 #include 에서 뽑음 (코드와 어긋나지 않게)\n- DSN-011 · 레코드 : core::records 를 독립 모듈로 둠 (모든 Store 가 의존, 소유권 규칙 REQ-022 의 근거)\n- DSN-030 · 경계 : src/kiotty_spec.cpp 를 모듈 하나로, UI 묶음 19 개를 모두 만족시킴 (모든 공개 함수의 입구)\n- DSN-030 · UI 링크 : 함수별 담당 모듈은 경계 코드가 부르는 Project 멤버로 판정해 하위 함수 UI 에 연결\n- DSN-030 · Checkpoint_diff : 경계가 item·link·decision 을 조합하므로 경계와 세 모듈 모두 UI-053 을 만족시킴\n- DSN-031 · CLI : CLI 모듈은 UI 를 만족시키지 않고 요구사항만 (CLI 는 C 인터페이스의 사용자, Step 3 결정)\n- DSN-031 · CLI 의존 : CLI 모듈은 공개 헤더를 통해 DSN-030 에 의존한다고 기록 (영향 범위 계산에 포함)\n- DSN-007 · 메모리 정책 : pack 한 덩어리 → free, 커서 상자 → Cursor_end 를 한 표로 (UI-001·002 의 소유권 근거)\n- DSN-035 · 흐름 선정 : 여러 모듈에 걸치고 요구사항 시나리오에 대응하는 10 개만 [기각: 함수별 흐름 — 모듈 본문과 중복]\n- DSN-036 · 버전 : 라운드당 항목별 PENDING 버전 하나에 덮어쓰고, 찍을 때 번호를 붙임 (현재 구현 그대로)\n- DSN-039 · git 훅 : 실제 설치되는 훅은 pre-commit, post-merge, post-checkout 셋 (project.cpp 기준으로 기록)\n- DSN-028 · 병합 : Import_jsonl(merge) 의 동작 불

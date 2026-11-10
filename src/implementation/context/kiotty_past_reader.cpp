@@ -1,120 +1,72 @@
 #include "implementation/context/kiotty_past_reader.h"
 
 #include "implementation/core/kiotty_text_view.h"
-#include "implementation/domain/entity/kiotty_tag_pairs.h"
-
-#include <cstring>
-#include <string_view>
 
 namespace kiotty::spec::implementation {
 
 namespace {
 
-using entity::ItemKind;
-
-constexpr char ITEM_AT_SQL[] =
-    "SELECT v.checkpoint, v.kind, p.id, v.title, v.summary, v.tags, v.removed FROM item_version v JOIN item i ON i.key = v.item_key "
-    "LEFT JOIN item p ON p.key = v.parent_key WHERE i.id = ?1 AND v.checkpoint <= ?2 ORDER BY v.checkpoint DESC LIMIT 1";
-
-constexpr char BODY_AT_SQL[] =
-    "SELECT v.body, v.removed FROM item_version v JOIN item i ON i.key = v.item_key WHERE i.id = ?1 AND v.checkpoint <= ?2 "
-    "ORDER BY v.checkpoint DESC LIMIT 1";
-
-constexpr char DECISION_AT_SQL[] =
-    "SELECT description FROM decision_version WHERE kind = ?1 AND checkpoint <= ?2 ORDER BY checkpoint DESC LIMIT 1";
-
-KiottySpecStatus copyOut(Span<const char> text, char* buffer, size_t capacity, size_t& written)
-{
-    written = text.length();
-    if (buffer == nullptr || capacity <= text.length()) {
-        written = text.length() + 1;
-        return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED;
-    }
-    std::memcpy(buffer, text.data(), text.length());
-    buffer[text.length()] = '\0';
-    return KIOTTY_SPEC_STATUS_SUCCESS;
-}
+using entity::ItemVersion;
 
 }
 
-Result<ItemVersion, KiottySpecStatus> PastReader::itemAt(Span<const char> id, uint32_t checkpoint)
+// 지운 항목도 ID 로 찾는다. 그 시점에 없거나 지워져 있으면 NOT_FOUND
+Result<const ItemVersion*, KiottySpecStatus> PastReader::versionAt(Span<const char> id, uint32_t checkpoint)
 {
-    using VersionResult = Result<ItemVersion, KiottySpecStatus>;
-    auto query = _w.storage.prepare(literalText(ITEM_AT_SQL));
-    if (!query) { return VersionResult::failure(query.code); }
-    query.value.bind(1, id);
-    query.value.bind(2, static_cast<int64_t>(checkpoint));
-    const auto stepped = query.value.step();
-    if (!stepped) { return VersionResult::failure(_w.storage.check(stepped.code)); }
-    if (!stepped.value || query.value.row().integer(6) != 0) {
+    using VersionResult = Result<const ItemVersion*, KiottySpecStatus>;
+    const auto key = _w.items.history().keyOf(id);
+    const ItemVersion* version = key ? _w.items.tables().versions.latest(key.value, checkpoint) : nullptr;
+    if (version == nullptr || version->removed != 0) {
         return VersionResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("그 시점에 없는 항목: "), id}));
-    }
-    const Row row = query.value.row();
-    ItemVersion version;
-    version.record.checkpoint = entity::CheckpointHandle{static_cast<uint32_t>(row.integer(0)), 0};
-    version.record.kind = static_cast<ItemKind>(entity::parseKind(viewOf(row.text(1))));
-    version.record.parent = entity::INVALID_ITEM_HANDLE;
-    version.record.id.assign(id);
-    version.record.title.assign(row.text(3));
-    version.record.summary.assign(row.text(4));
-    if (!row.isNull(2)) {
-        version.parent_id.assign(row.text(2));
-        const auto parent = _w.items.reader().find(row.text(2));
-        if (parent) { version.record.parent = parent.value; }
     }
     return VersionResult::success(version);
 }
 
-Result<uint64_t, KiottySpecStatus> PastReader::tagAt(Span<const char> id, uint32_t tag, uint32_t checkpoint)
+Result<ItemVersionView, KiottySpecStatus> PastReader::itemAt(Span<const char> id, uint32_t checkpoint)
 {
-    using TagResult = Result<uint64_t, KiottySpecStatus>;
-    auto query = _w.storage.prepare(literalText(ITEM_AT_SQL));
-    if (!query) { return TagResult::failure(query.code); }
-    query.value.bind(1, id);
-    query.value.bind(2, static_cast<int64_t>(checkpoint));
-    const auto stepped = query.value.step();
-    if (!stepped) { return TagResult::failure(_w.storage.check(stepped.code)); }
-    if (!stepped.value || query.value.row().integer(6) != 0) {
-        return TagResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("그 시점에 없는 항목: "), id}));
-    }
-    // "[[1,4],[2,1]]" 에서 tag 의 값을 찾는다. 형식이 어긋나면 값이 없는 것으로 본다.
-    entity::TagPairs pairs(query.value.row().text(5));
-    Result<bool, KiottySpecStatus> next = pairs.next();
-    while (next && next.value && pairs.current().tag != tag) { next = pairs.next(); }
-    if (next && next.value) { return TagResult::success(pairs.current().value); }
-    return TagResult::success(0);
+    using ViewResult = Result<ItemVersionView, KiottySpecStatus>;
+    const auto version = versionAt(id, checkpoint);
+    if (!version) { return ViewResult::failure(version.code); }
+    const ItemVersion& found = *version.value;
+    ItemVersionView view;
+    view.record.checkpoint = entity::CheckpointHandle{_w.items.history().lastWriteAt(found.key, checkpoint), 0};
+    view.record.kind = found.kind;
+    view.record.parent = entity::INVALID_ITEM_HANDLE;
+    view.record.id.assign(id);
+    view.record.title = found.title;
+    view.record.summary = found.summary;
+    const auto parent_id = _w.items.history().idOf(found.parent);
+    if (!parent_id) { return ViewResult::success(view); }
+    view.parent_id = parent_id.value;
+    const auto parent = _w.items.reader().findKey(found.parent);
+    if (parent) { view.record.parent = parent.value; }
+    return ViewResult::success(view);
 }
 
+Result<uint64_t, KiottySpecStatus> PastReader::tagAt(Span<const char> id, uint32_t tag, uint32_t checkpoint)
+{
+    const auto version = versionAt(id, checkpoint);
+    if (!version) { return Result<uint64_t, KiottySpecStatus>::failure(version.code); }
+    return Result<uint64_t, KiottySpecStatus>::success(_w.items.history().tagAt(version.value->key, tag, checkpoint));
+}
+
+// 본문은 현재 것만 파일에 있다. 그 시점의 본문 해시가 지금과 같을 때만 돌려준다. 과거 본문은 git 이력에 있다.
 Result<size_t, KiottySpecStatus> PastReader::bodyAt(Span<const char> id, uint32_t checkpoint, char* buffer, size_t capacity)
 {
     using SizeResult = Result<size_t, KiottySpecStatus>;
-    auto query = _w.storage.prepare(literalText(BODY_AT_SQL));
-    if (!query) { return SizeResult::failure(query.code); }
-    query.value.bind(1, id);
-    query.value.bind(2, static_cast<int64_t>(checkpoint));
-    const auto stepped = query.value.step();
-    if (!stepped) { return SizeResult::failure(_w.storage.check(stepped.code)); }
-    if (!stepped.value || query.value.row().integer(1) != 0) {
-        return SizeResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("그 시점에 없는 항목: "), id}));
+    const auto version = versionAt(id, checkpoint);
+    if (!version) { return SizeResult::failure(version.code); }
+    const ItemVersion* current = _w.items.tables().versions.latest(version.value->key, UINT32_MAX);
+    const bool same = current != nullptr && current->removed == 0 && current->body_hash == version.value->body_hash;
+    if (!same) {
+        return SizeResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("그 시점의 본문은 지금과 달라 git 이력에만 있음: "), id}));
     }
-    size_t written = 0;
-    const KiottySpecStatus copied = copyOut(query.value.row().text(0), buffer, capacity, written);
-    return SizeResult{copied, written};
+    return readBodyFile(_w.items.tables().body_directory.view(), version.value->key, buffer, capacity);
 }
 
-Result<size_t, KiottySpecStatus> PastReader::decisionAt(ItemKind kind, uint32_t checkpoint, char* buffer, size_t capacity)
+Result<size_t, KiottySpecStatus> PastReader::decisionAt(entity::ItemKind kind, uint32_t checkpoint, char* buffer, size_t capacity)
 {
-    using SizeResult = Result<size_t, KiottySpecStatus>;
-    auto query = _w.storage.prepare(literalText(DECISION_AT_SQL));
-    if (!query) { return SizeResult::failure(query.code); }
-    query.value.bind(1, spanOf(entity::kindName(kind)));
-    query.value.bind(2, static_cast<int64_t>(checkpoint));
-    const auto stepped = query.value.step();
-    if (!stepped) { return SizeResult::failure(_w.storage.check(stepped.code)); }
-    const Span<const char> text = stepped.value ? query.value.row().text(0) : Span<const char>();
-    size_t written = 0;
-    const KiottySpecStatus copied = copyOut(text, buffer, capacity, written);
-    return SizeResult{copied, written};
+    return _w.decisions.read(kind, checkpoint, buffer, capacity);
 }
 
 }

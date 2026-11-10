@@ -3,9 +3,11 @@
 #include "kiotty_spec.h"
 #include "implementation/context/kiotty_diff_range.h"
 #include "implementation/core/kiotty_result.h"
-#include "implementation/data/datasource/kiotty_storage.h"
+#include "implementation/core/kiotty_span.h"
+#include "implementation/data/repository/kiotty_item_store.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 
+#include <cstddef>
 #include <cstdint>
 
 namespace kiotty::spec::implementation {
@@ -24,8 +26,8 @@ struct ItemDiffRow {
 class ItemDiffQuery
 {
 public:
-    ItemDiffQuery(Storage& storage, DiffRange range, uint32_t kind_mask, uint32_t field_mask)
-        : _storage(storage), _range(range), _kind_mask(kind_mask), _field_mask(field_mask)
+    ItemDiffQuery(ItemStore& items, DiffRange range, uint32_t kind_mask, uint32_t field_mask)
+        : _items(items), _range(range), _kind_mask(kind_mask), _field_mask(field_mask)
     {
     }
 
@@ -34,14 +36,16 @@ public:
     const ItemDiffRow& current() const { return _current; }
 
 private:
-    // 이 행이 diff 이면 _current 에 담고 true
-    bool decode(const Row& row);
+    // 이 key 가 diff 이면 _current 에 담고 true
+    bool decode(uint32_t key);
+    uint32_t changedFields(uint32_t key, const entity::ItemVersion& before, const entity::ItemVersion& after) const;
 
-    Storage& _storage;
+    ItemStore& _items;
     DiffRange _range;
     uint32_t _kind_mask;
     uint32_t _field_mask;
-    Statement _statement;
+    Span<const uint32_t> _keys;
+    size_t _position {0};
     ItemDiffRow _current {};
 };
 

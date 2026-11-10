@@ -1,7 +1,6 @@
 #include "implementation/data/repository/kiotty_item_store.h"
 
 #include "implementation/core/kiotty_text_view.h"
-#include "implementation/domain/entity/kiotty_tag_pairs.h"
 
 #include <algorithm>
 
@@ -11,15 +10,10 @@ namespace {
 
 using entity::CheckpointHandle;
 using entity::ItemHandle;
-using entity::ItemKind;
 using entity::ItemRecord;
+using entity::ItemVersion;
 using entity::TagRecord;
-
-constexpr char LOAD_SQL[] =
-    "SELECT i.id, v.checkpoint, v.kind, p.id, v.title, v.summary, v.tags, i.key FROM item_version v "
-    "JOIN (SELECT item_key, MAX(checkpoint) AS latest FROM item_version GROUP BY item_key) m "
-    "ON v.item_key = m.item_key AND v.checkpoint = m.latest JOIN item i ON i.key = v.item_key "
-    "LEFT JOIN item p ON p.key = v.parent_key WHERE v.removed = 0 ORDER BY i.id";
+using entity::TagVersion;
 
 bool lessTag(const TagRecord& left, const TagRecord& right)
 {
@@ -29,77 +23,98 @@ bool lessTag(const TagRecord& left, const TagRecord& right)
 
 }
 
-ItemStore::ItemStore(Storage& storage, size_t max_items, size_t max_tags)
-    : _storage(storage), _items(max_items), _id_index(max_items), _keys(max_items), _tags(max_tags)
+void ItemStore::clear()
 {
+    _t.names.clear();
+    _t.versions.clear();
+    _t.tag_versions.clear();
 }
 
-KiottySpecStatus ItemStore::load()
+KiottySpecStatus ItemStore::rebuild()
 {
-    _items.releaseAll();
-    _id_index.clear();
-    _tag_count = 0;
-    auto query = _storage.prepare(literalText(LOAD_SQL));
-    if (!query) { return query.code; }
-    Result<bool, KiottySpecStatus> stepped = query.value.step();
-    while (stepped && stepped.value) {
-        const KiottySpecStatus loaded = loadRow(query.value.row());
-        if (loaded != KIOTTY_SPEC_STATUS_SUCCESS) { return loaded; }
-        stepped = query.value.step();
+    _t.items.releaseAll();
+    _t.id_index.clear();
+    _t.key_index.clear();
+    _t.tag_count = 0;
+    const size_t count = collectLatest();
+    const Span<const ItemVersion> versions = _t.versions.all();
+    for (size_t position = 0; position < count; ++position) {
+        const KiottySpecStatus placed = place(versions[_t.order[position]]);
+        if (placed != KIOTTY_SPEC_STATUS_SUCCESS) { return placed; }
     }
-    if (!stepped) { return _storage.check(stepped.code); }
-    std::sort(_tags.begin(), _tags.begin() + static_cast<std::ptrdiff_t>(_tag_count), lessTag);
-    return linkParents();
+    linkParents();
+    return loadTags();
 }
 
-KiottySpecStatus ItemStore::loadRow(const Row& row)
+// 지워지지 않은 key 마다 마지막 버전의 index 를 ID 순으로 order 에 모은다. 풀 index 가 ID 순서를 따르게 한다.
+size_t ItemStore::collectLatest()
 {
-    ItemRecord record {};
-    record.checkpoint = CheckpointHandle{static_cast<uint32_t>(row.integer(1)), 0};
+    const Span<const ItemVersion> versions = _t.versions.all();
+    size_t count = 0;
+    for (size_t index = 0; index < versions.length(); ++index) {
+        const bool last = index + 1 == versions.length() || versions[index + 1].key != versions[index].key;
+        if (!last || versions[index].removed != 0) { continue; }
+        _t.order[count] = static_cast<uint32_t>(index);
+        ++count;
+    }
+    const ItemTables& tables = _t;
+    std::sort(_t.order.begin(), _t.order.begin() + static_cast<std::ptrdiff_t>(count), [&tables, versions](uint32_t left, uint32_t right) {
+        return tables.names.find(versions[left].key).value < tables.names.find(versions[right].key).value;
+    });
+    return count;
+}
+
+KiottySpecStatus ItemStore::place(const ItemVersion& version)
+{
+    const auto id = _t.names.find(version.key);
+    if (!id) { return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("item 줄이 없는 항목 키")}); }
+    const ItemHandle handle = _t.items.acquire();
+    if (!handle.isValid()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("항목 수가 max_items 를 넘음")}); }
+    ItemRecord& record = *_t.items.get(handle).value;
+    record = ItemRecord{};
+    record.checkpoint = CheckpointHandle{version.checkpoint, 0};
     record.parent = entity::INVALID_ITEM_HANDLE;
-    const uint32_t kind = entity::parseKind(viewOf(row.text(2)));
-    if (kind == 0) { return _storage.reject(KIOTTY_SPEC_STATUS_DATABASE, {literalText("알 수 없는 Kind: "), row.text(2)}); }
-    record.kind = static_cast<ItemKind>(kind);
-    const bool fits = record.id.assign(row.text(0)) == KIOTTY_SPEC_STATUS_SUCCESS && record.title.assign(row.text(4)) == KIOTTY_SPEC_STATUS_SUCCESS &&
-                      record.summary.assign(row.text(5)) == KIOTTY_SPEC_STATUS_SUCCESS;
-    if (!fits) { return _storage.reject(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, {literalText("항목 필드가 상한을 넘음: "), row.text(0)}); }
-    const ItemHandle handle = _items.acquire();
-    if (!handle.isValid()) { return _storage.reject(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("항목 수가 max_items 를 넘음")}); }
-    *_items.get(handle).value = record;
-    _keys[handle.index] = row.integer(7);
-    const KiottySpecStatus indexed = _id_index.insert(record.id, handle.index);
-    if (indexed != KIOTTY_SPEC_STATUS_SUCCESS) { return _storage.reject(indexed, {literalText("ID 색인에 넣을 수 없음: "), row.text(0)}); }
-    return loadTags(handle, record.kind, row.text(0), row.text(6));
-}
-
-// 값이 0 인 태그는 레코드를 두지 않는다.
-KiottySpecStatus ItemStore::loadTags(ItemHandle handle, ItemKind kind, Span<const char> id, Span<const char> text)
-{
-    entity::TagPairs pairs(text);
-    Result<bool, KiottySpecStatus> next = pairs.next();
-    while (next && next.value) {
-        const entity::TagPair pair = pairs.current();
-        if (pair.value != 0 && _tag_count == _tags.size()) { return _storage.reject(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("태그 수가 max_tags 를 넘음")}); }
-        if (pair.value != 0) { _tags[_tag_count++] = TagRecord{handle, kind, pair.tag, pair.value}; }
-        next = pairs.next();
-    }
-    if (!next) { return _storage.reject(KIOTTY_SPEC_STATUS_DATABASE, {literalText("태그 형식이 잘못됨: "), id}); }
+    record.kind = version.kind;
+    record.id = id.value;
+    record.title = version.title;
+    record.summary = version.summary;
+    _t.keys[handle.index] = version.key;
+    _t.parents[handle.index] = version.parent;
+    _t.key_index.insert(version.key, handle.index);
+    const KiottySpecStatus indexed = _t.id_index.insert(record.id, handle.index);
+    if (indexed != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("같은 ID 를 가진 항목이 둘: "), record.id.view()}); }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-// 상위 항목은 모두 적재한 뒤에 핸들로 바꾼다.
-KiottySpecStatus ItemStore::linkParents()
+void ItemStore::linkParents()
 {
-    auto parents = _storage.prepare(literalText(LOAD_SQL));
-    if (!parents) { return parents.code; }
-    Result<bool, KiottySpecStatus> stepped = parents.value.step();
-    for (; stepped && stepped.value; stepped = parents.value.step()) {
-        const Row row = parents.value.row();
-        const auto child = row.isNull(3) ? Result<ItemHandle, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND) : reader().find(row.text(0));
-        const auto parent = child ? reader().find(row.text(3)) : child;
-        if (child && parent) { _items.get(child.value).value->parent = parent.value; }
+    for (size_t index = 0; index < _t.items.capacity(); ++index) {
+        const ItemHandle handle = _t.items.handleAt(index);
+        if (!handle.isValid() || _t.parents[index] == entity::NO_KEY) { continue; }
+        const auto parent = _t.key_index.find(_t.parents[index]);
+        if (parent) { _t.items.get(handle).value->parent = _t.items.handleAt(parent.value); }
     }
-    return stepped ? KIOTTY_SPEC_STATUS_SUCCESS : _storage.check(stepped.code);
+}
+
+// key 마다 태그의 마지막 버전을 풀에 넣고, 항목의 체크포인트를 태그에 쓴 체크포인트까지 올린다.
+KiottySpecStatus ItemStore::loadTags()
+{
+    const Span<const TagVersion> versions = _t.tag_versions.all();
+    for (size_t index = 0; index < versions.length(); ++index) {
+        const TagVersion& tag = versions[index];
+        const bool last = index + 1 == versions.length() || !(versions[index + 1].identity() == tag.identity());
+        const auto position = last ? _t.key_index.find(tag.key) : Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
+        if (!position) { continue; }
+        const ItemHandle handle = _t.items.handleAt(position.value);
+        ItemRecord& record = *_t.items.get(handle).value;
+        if (tag.checkpoint > record.checkpoint.sequence) { record.checkpoint = CheckpointHandle{tag.checkpoint, 0}; }
+        if (tag.removed != 0 || tag.value == 0) { continue; }
+        if (_t.tag_count == _t.tags.size()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("태그 수가 max_tags 를 넘음")}); }
+        _t.tags[_t.tag_count] = TagRecord{handle, record.kind, tag.tag, tag.value};
+        ++_t.tag_count;
+    }
+    std::sort(_t.tags.begin(), _t.tags.begin() + static_cast<std::ptrdiff_t>(_t.tag_count), lessTag);
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 }

@@ -10,15 +10,7 @@ namespace {
 
 using entity::ItemHandle;
 using entity::RelationRecord;
-
-constexpr char LOAD_SQL[] =
-    "SELECT f.id, v.model, v.relation, t.id FROM relation_version v "
-    "JOIN (SELECT from_key, relation, to_key, MAX(checkpoint) AS latest FROM relation_version GROUP BY from_key, relation, to_key) m "
-    "ON v.from_key = m.from_key AND v.relation = m.relation AND v.to_key = m.to_key AND v.checkpoint = m.latest "
-    "JOIN item f ON f.key = v.from_key JOIN item t ON t.key = v.to_key WHERE v.removed = 0";
-
-constexpr char WRITE_SQL[] =
-    "INSERT OR REPLACE INTO relation_version (from_key, model, relation, to_key, checkpoint, removed) VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
+using entity::RelationVersion;
 
 bool lessRelation(const RelationRecord& left, const RelationRecord& right)
 {
@@ -34,25 +26,47 @@ bool sameRelation(const RelationRecord& left, const RelationRecord& right)
 
 }
 
-KiottySpecStatus RelationStore::load()
+KiottySpecStatus RelationStore::rebuild()
 {
     _length = 0;
-    auto query = _storage.prepare(literalText(LOAD_SQL));
-    if (!query) { return query.code; }
-    while (true) {
-        const auto stepped = query.value.step();
-        if (!stepped) { return _storage.check(stepped.code); }
-        if (!stepped.value) { break; }
-        const Row row = query.value.row();
-        const auto from = _items.reader().find(row.text(0));
-        const auto to = _items.reader().find(row.text(3));
+    const Span<const RelationVersion> versions = _versions.all();
+    for (size_t index = 0; index < versions.length(); ++index) {
+        const RelationVersion& version = versions[index];
+        const bool last = index + 1 == versions.length() || !(versions[index + 1].identity() == version.identity());
+        if (!last || version.removed != 0) { continue; }
+        const auto from = _items.reader().findKey(version.from);
+        const auto to = _items.reader().findKey(version.to);
         if (!from || !to) { continue; }
-        if (_length == _records.size()) { return _storage.reject(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("관계 수가 max_relations 를 넘음")}); }
-        const uint32_t model = entity::parseKind(viewOf(row.text(1)));
-        _records[_length++] = RelationRecord{from.value, to.value, static_cast<entity::ItemKind>(model), static_cast<uint32_t>(row.integer(2))};
+        if (_length == _records.size()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("관계 수가 max_relations 를 넘음")}); }
+        _records[_length] = RelationRecord{from.value, to.value, version.model, version.relation};
+        ++_length;
     }
     std::sort(_records.begin(), _records.begin() + static_cast<std::ptrdiff_t>(_length), lessRelation);
     return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+Span<const uint32_t> RelationStore::relationsInDiffOrder()
+{
+    const Span<const RelationVersion> versions = _versions.all();
+    size_t count = 0;
+    for (size_t index = 0; index < versions.length(); ++index) {
+        const bool first = index == 0 || !(versions[index - 1].identity() == versions[index].identity());
+        if (!first) { continue; }
+        _order[count] = static_cast<uint32_t>(index);
+        ++count;
+    }
+    const ItemTables& tables = _items.tables();
+    std::sort(_order.begin(), _order.begin() + static_cast<std::ptrdiff_t>(count), [&tables, versions](uint32_t left, uint32_t right) {
+        const RelationVersion& a = versions[left];
+        const RelationVersion& b = versions[right];
+        if (a.model != b.model) { return static_cast<uint32_t>(a.model) < static_cast<uint32_t>(b.model); }
+        const auto a_from = tables.names.find(a.from).value;
+        const auto b_from = tables.names.find(b.from).value;
+        if (!(a_from == b_from)) { return a_from < b_from; }
+        if (a.relation != b.relation) { return a.relation < b.relation; }
+        return tables.names.find(a.to).value < tables.names.find(b.to).value;
+    });
+    return Span<const uint32_t>(_order.data(), count);
 }
 
 size_t RelationStore::lowerBound(const RelationRecord& relation) const
@@ -72,30 +86,23 @@ bool RelationStore::contains(const RelationRecord& relation) const
     return position < _length && sameRelation(_records[position], relation);
 }
 
-KiottySpecStatus RelationStore::writeVersion(const RelationRecord& relation, bool removed, uint32_t sequence)
+KiottySpecStatus RelationStore::writeVersion(const RelationRecord& relation, uint32_t removed, uint32_t sequence)
 {
-    const int64_t from = _items.reader().key(relation.from);
-    const int64_t to = _items.reader().key(relation.to);
-    if (from == 0 || to == 0) { return KIOTTY_SPEC_STATUS_INVALID_HANDLE; }
-    auto query = _storage.prepare(literalText(WRITE_SQL));
-    if (!query) { return query.code; }
-    query.value.bind(1, from);
-    query.value.bind(2, spanOf(entity::kindName(relation.model)));
-    query.value.bind(3, static_cast<int64_t>(relation.relation));
-    query.value.bind(4, to);
-    query.value.bind(5, static_cast<int64_t>(sequence));
-    query.value.bind(6, static_cast<int64_t>(removed ? 1 : 0));
-    return _storage.check(query.value.execute());
+    const uint32_t from = _items.reader().key(relation.from);
+    const uint32_t to = _items.reader().key(relation.to);
+    if (from == entity::NO_KEY || to == entity::NO_KEY) { return KIOTTY_SPEC_STATUS_INVALID_HANDLE; }
+    const RelationVersion version {from, relation.relation, to, sequence, removed, relation.model};
+    const KiottySpecStatus written = _versions.write(version);
+    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(written, {literalText("관계 버전 수가 상한에 닿음. 정리할 것")}); }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 KiottySpecStatus RelationStore::add(const RelationRecord& relation, uint32_t sequence)
 {
     const size_t position = lowerBound(relation);
-    if (position < _length && sameRelation(_records[position], relation)) {
-        return _storage.reject(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("이미 있는 관계")});
-    }
-    if (_length == _records.size()) { return _storage.reject(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("관계 수가 max_relations 에 닿음")}); }
-    const KiottySpecStatus written = writeVersion(relation, false, sequence);
+    if (position < _length && sameRelation(_records[position], relation)) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("이미 있는 관계")}); }
+    if (_length == _records.size()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("관계 수가 max_relations 에 닿음")}); }
+    const KiottySpecStatus written = writeVersion(relation, 0, sequence);
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
     for (size_t index = _length; index > position; --index) { _records[index] = _records[index - 1]; }
     _records[position] = relation;
@@ -106,10 +113,8 @@ KiottySpecStatus RelationStore::add(const RelationRecord& relation, uint32_t seq
 KiottySpecStatus RelationStore::remove(const RelationRecord& relation, uint32_t sequence)
 {
     const size_t position = lowerBound(relation);
-    if (position == _length || !sameRelation(_records[position], relation)) {
-        return _storage.reject(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("없는 관계")});
-    }
-    const KiottySpecStatus written = writeVersion(_records[position], true, sequence);
+    if (position == _length || !sameRelation(_records[position], relation)) { return _failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("없는 관계")}); }
+    const KiottySpecStatus written = writeVersion(_records[position], 1, sequence);
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
     for (size_t index = position + 1; index < _length; ++index) { _records[index - 1] = _records[index]; }
     --_length;
@@ -122,15 +127,12 @@ KiottySpecStatus RelationStore::removeAllOf(ItemHandle item, uint32_t sequence)
     for (size_t index = 0; index < _length; ++index) {
         const RelationRecord relation = _records[index];
         if (relation.from.index != item.index && relation.to.index != item.index) {
-            _records[kept++] = relation;
+            _records[kept] = relation;
+            ++kept;
             continue;
         }
-        const KiottySpecStatus written = writeVersion(relation, true, sequence);
-        if (written != KIOTTY_SPEC_STATUS_SUCCESS) {
-            for (size_t rest = index; rest < _length; ++rest) { _records[kept++] = _records[rest]; }
-            _length = kept;
-            return written;
-        }
+        const KiottySpecStatus written = writeVersion(relation, 1, sequence);
+        if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
     }
     _length = kept;
     return KIOTTY_SPEC_STATUS_SUCCESS;

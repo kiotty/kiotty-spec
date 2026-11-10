@@ -1,34 +1,34 @@
 #pragma once
 
 #include "kiotty_spec.h"
+#include "implementation/core/kiotty_fixed_map.h"
 #include "implementation/core/kiotty_fixed_string.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
-#include "implementation/data/datasource/kiotty_storage.h"
-#include "implementation/domain/entity/kiotty_item_records.h"
 
 #include <cstddef>
-#include <cstdint>
 
 namespace kiotty::spec::implementation {
 
+constexpr size_t MAX_META_KEY_LENGTH = 63;
 constexpr size_t MAX_META_VALUE_LENGTH = 255;
+constexpr size_t MAX_META_ENTRIES = 32;
+using MetaKey = FixedString<MAX_META_KEY_LENGTH>;
 using MetaValue = FixedString<MAX_META_VALUE_LENGTH>;
 
-// meta 와 id_counter 테이블. 항목 ID 는 "<접두어>-<세 자리 이상 번호>" 로 만든다.
+// 프로젝트 meta (project.name, project.created_at)
 class MetaStore
 {
 public:
-    explicit MetaStore(Storage& storage) : _storage(storage) {}
+    MetaStore() : _entries(MAX_META_ENTRIES) {}
 
+    void clear() { _entries.clear(); }
     KiottySpecStatus set(Span<const char> key, Span<const char> value);
-    Result<MetaValue, KiottySpecStatus> get(Span<const char> key);
-    Result<entity::IdText, KiottySpecStatus> nextId(Span<const char> prefix);
-    // 가져온 ID 보다 카운터가 작으면 올린다.
-    KiottySpecStatus observeId(Span<const char> id);
+    Result<MetaValue, KiottySpecStatus> get(Span<const char> key) const;
+    const FixedMap<MetaKey, MetaValue>& all() const { return _entries; }
 
 private:
-    Storage& _storage;
+    FixedMap<MetaKey, MetaValue> _entries;
 };
 
 }

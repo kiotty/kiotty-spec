@@ -47,7 +47,7 @@ int changeRelation(Session& session, bool add)
 int initProject(Session& session)
 {
     const std::string name = session.args.option("name").value_or("");
-    return check(session, KiottySpec_initProject(session.context, textOf(name), session.args.flag("hooks")).code);
+    return check(session, KiottySpec_initProject(session.context, textOf(name)).code);
 }
 
 int addItem(Session& session)

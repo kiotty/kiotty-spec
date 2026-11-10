@@ -90,7 +90,7 @@ KiottySpecSizeResult KiottySpec_readDecision(KiottySpecContext* context, KiottyS
     if (context == nullptr || !isKind(kind) || !entity::hasDecision(static_cast<entity::ItemKind>(kind))) {
         return KiottySpecSizeResult{KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, 0};
     }
-    const auto read = context->context.workspace().decisions.read(static_cast<entity::ItemKind>(kind), buffer, capacity);
+    const auto read = context->context.workspace().decisions.read(static_cast<entity::ItemKind>(kind), UINT32_MAX, buffer, capacity);
     return KiottySpecSizeResult{read.code, read.value};
 }
 

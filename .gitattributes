@@ -1,0 +1,2 @@
+# .kisp 와 본문은 줄 단위로 병합하되 줄 끝은 LF 로 둔다 (docs/plan/261110_kisp_v1.md).
+.kiotty/** text eol=lf

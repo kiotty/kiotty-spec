@@ -3,7 +3,6 @@
 #include "implementation/core/kiotty_text_view.h"
 #include "implementation/core/kiotty_utf8.h"
 #include "implementation/domain/entity/kiotty_item_id.h"
-#include "implementation/data/datasource/kiotty_savepoint.h"
 #include "implementation/domain/usecases/kiotty_write_scope.h"
 
 namespace kiotty::spec::implementation {
@@ -68,7 +67,7 @@ Result<IdText, KiottySpecStatus> Editor::createItem(ItemKind kind, Span<const ch
     return created;
 }
 
-// 주어진 ID 나 새로 발급한 ID 로 항목을 만든다. 주어진 ID 는 번호 카운터를 그 너머로 올려 발급과 겹치지 않게 한다.
+// 주어진 ID 나 새로 발급한 ID 로 항목을 만든다. 발급 번호는 있는 ID (지운 항목 포함) 의 가장 큰 번호 다음이다.
 Result<IdText, KiottySpecStatus> Editor::insertItem(ItemKind kind, Span<const char> given, Span<const char> title, Span<const char> summary,
                                                    uint32_t sequence)
 {
@@ -78,10 +77,8 @@ Result<IdText, KiottySpecStatus> Editor::insertItem(ItemKind kind, Span<const ch
         IdText text;
         text.assign(given);
         id = IdResult::success(text);
-        const KiottySpecStatus observed = _w.meta.observeId(given);
-        if (observed != KIOTTY_SPEC_STATUS_SUCCESS) { return IdResult::failure(observed); }
     } else {
-        id = _w.meta.nextId(_w.catalog.model(kind).id_prefix.view());
+        id = _w.items.history().nextId(_w.catalog.model(kind).id_prefix.view());
     }
     if (!id) { return IdResult::failure(id.code); }
     ItemRecord record {};
@@ -97,21 +94,15 @@ Result<IdText, KiottySpecStatus> Editor::insertItem(ItemKind kind, Span<const ch
 
 KiottySpecStatus Editor::renameItem(Span<const char> id, Span<const char> new_id)
 {
+    const KiottySpecStatus fresh = _w.refresh();
+    if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return fresh; }
     const auto item = _w.resolve(id);
     if (!item) { return item.code; }
     const KiottySpecStatus valid = checkId(new_id);
     if (valid != KIOTTY_SPEC_STATUS_SUCCESS) { return valid; }
     IdText next;
     next.assign(new_id);
-    Savepoint savepoint(_w.storage.connection());
-    KiottySpecStatus status = _w.storage.check(savepoint.begin());
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _w.meta.observeId(new_id); }
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _w.items.writer().rename(item.value, next); }
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _w.storage.check(savepoint.commit()); }
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
-    savepoint.rollback();
-    _w.reload();
-    return status;
+    return _w.finish(_w.items.writer().rename(item.value, next));
 }
 
 KiottySpecStatus Editor::updateItem(Span<const char> id, Span<const char> title, Span<const char> summary)

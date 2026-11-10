@@ -1,57 +1,62 @@
 #include "implementation/data/repository/kiotty_item_reader.h"
 
-#include "implementation/core/kiotty_text_view.h"
+#include "implementation/data/repository/kiotty_item_history.h"
 
 namespace kiotty::spec::implementation {
-
-namespace {
-
-constexpr char BODY_SQL[] =
-    "SELECT body FROM item_version WHERE item_key = ?1 AND removed = 0 ORDER BY checkpoint DESC LIMIT 1";
-
-}
 
 using entity::IdText;
 using entity::ItemHandle;
 using entity::ItemRecord;
 
+Result<size_t, KiottySpecStatus> readBodyFile(Span<const char> directory, uint32_t key, char* buffer, size_t capacity)
+{
+    using SizeResult = Result<size_t, KiottySpecStatus>;
+    const SystemPathResult path = bodyPath(directory, key);
+    if (!path) { return SizeResult::failure(path.code); }
+    const auto length = fileLength(path.value.view());
+    const size_t size = length ? length.value : 0;
+    if (buffer == nullptr || capacity <= size) { return SizeResult{KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, size + 1}; }
+    buffer[0] = '\0';
+    if (!length) { return SizeResult::success(0); }
+    const auto read = readFile(path.value.view(), Span<char>(buffer, capacity - 1));
+    if (!read) { return SizeResult::failure(read.code); }
+    buffer[read.value] = '\0';
+    return SizeResult::success(read.value);
+}
+
 Result<ItemHandle, KiottySpecStatus> ItemReader::find(Span<const char> id) const
 {
     IdText key;
     if (key.assign(id) != KIOTTY_SPEC_STATUS_SUCCESS) { return Result<ItemHandle, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
-    const auto index = _id_index.find(key);
+    const auto index = _t.id_index.find(key);
     if (!index) { return Result<ItemHandle, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
-    return Result<ItemHandle, KiottySpecStatus>::success(_items.handleAt(index.value));
+    return Result<ItemHandle, KiottySpecStatus>::success(_t.items.handleAt(index.value));
 }
 
-int64_t ItemReader::key(ItemHandle handle) const
+Result<ItemHandle, KiottySpecStatus> ItemReader::findKey(uint32_t key) const
 {
-    if (!_items.get(handle)) { return 0; }
-    return _keys[handle.index];
+    const auto index = _t.key_index.find(key);
+    if (!index) { return Result<ItemHandle, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
+    return Result<ItemHandle, KiottySpecStatus>::success(_t.items.handleAt(index.value));
 }
 
 Result<const ItemRecord*, KiottySpecStatus> ItemReader::get(ItemHandle handle) const
 {
-    const auto record = _items.get(handle);
+    const auto record = _t.items.get(handle);
     if (!record) { return Result<const ItemRecord*, KiottySpecStatus>::failure(record.code); }
     return Result<const ItemRecord*, KiottySpecStatus>::success(record.value);
 }
 
+uint32_t ItemReader::key(ItemHandle handle) const
+{
+    if (!_t.items.get(handle)) { return entity::NO_KEY; }
+    return _t.keys[handle.index];
+}
+
 Result<size_t, KiottySpecStatus> ItemReader::readBody(ItemHandle handle, char* buffer, size_t capacity) const
 {
-    using SizeResult = Result<size_t, KiottySpecStatus>;
-    const auto stored = _items.get(handle);
-    if (!stored) { return SizeResult::failure(stored.code); }
-    auto query = _storage.prepare(literalText(BODY_SQL));
-    if (!query) { return SizeResult::failure(query.code); }
-    query.value.bind(1, _keys[handle.index]);
-    const auto stepped = query.value.step();
-    if (!stepped) { return SizeResult::failure(_storage.check(stepped.code)); }
-    const Span<const char> body = stepped.value ? query.value.row().text(0) : Span<const char>();
-    if (buffer == nullptr || capacity <= body.length()) { return SizeResult{KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, body.length() + 1}; }
-    for (size_t index = 0; index < body.length(); ++index) { buffer[index] = body[index]; }
-    buffer[body.length()] = '\0';
-    return SizeResult::success(body.length());
+    if (!_t.items.get(handle)) { return Result<size_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_HANDLE); }
+    return readBodyFile(_t.body_directory.view(), _t.keys[handle.index], buffer, capacity);
 }
 
 }

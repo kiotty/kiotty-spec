@@ -2,9 +2,8 @@
 #include "kiotty_fixed_map.h"
 #include "kiotty_fixed_string.h"
 #include "kiotty_fixed_vector.h"
-#include "kiotty_json_reader.h"
-#include "kiotty_json_writer.h"
 #include "kiotty_lazy_pool.h"
+#include "kiotty_number.h"
 #include "kiotty_result.h"
 #include "kiotty_search.h"
 #include "kiotty_span.h"
@@ -12,6 +11,7 @@
 #include "kiotty_text_buffer.h"
 #include "kiotty_text_diff.h"
 #include "kiotty_utf8.h"
+#include "kiotty_version_table.h"
 
 #include <cstdio>
 #include <cstring>
@@ -276,95 +276,80 @@ bool sameText(core::Span<const char> left, const char* right)
     return left.length() == std::strlen(right) && std::memcmp(left.data(), right, left.length()) == 0;
 }
 
-bool testJsonWriterString()
+struct Probe {
+    using Identity = uint32_t;
+    uint32_t id;
+    uint32_t checkpoint;
+    uint32_t removed;
+    uint32_t value;
+    Identity identity() const { return id; }
+};
+
+bool testVersionTableLatest()
 {
-    core::TextBuffer text(256);
-    bool ok = expectTrue(core::appendJsonString(text, textOf("a\"b\\c\n\t/\x01\x7f")) == KIOTTY_SPEC_STATUS_SUCCESS, "escape string");
-    ok = expectTrue(sameText(text.view(), "\"a\\\"b\\\\c\\n\\t/\\u0001\x7f\""), "escaped text") && ok;
-    text.clear();
-    core::appendJsonString(text, textOf("\xED\x95\x9C" "x\xFF" "y\xE0\x80"));
-    ok = expectTrue(sameText(text.view(), "\"\xED\x95\x9C" "x\xEF\xBF\xBD" "y\xEF\xBF\xBD\xEF\xBF\xBD\""), "invalid utf8 is replaced per byte") && ok;
+    core::VersionTable<Probe> table(8);
+    table.append(Probe{2, 5, 0, 25});
+    table.append(Probe{1, 3, 0, 13});
+    table.append(Probe{1, 1, 0, 11});
+    table.append(Probe{2, 2, 0, 22});
+    table.sort();
+    bool ok = expectTrue(table.latest(1, 2)->value == 11 && table.latest(1, 3)->value == 13 && table.latest(1, 99)->value == 13, "latest at checkpoint");
+    ok = expectTrue(table.latest(2, 1) == nullptr && table.latest(3, UINT32_MAX) == nullptr, "nothing before first version") && ok;
+    ok = expectTrue(table.latest(2, UINT32_MAX)->value == 25, "latest overall") && ok;
+    ok = expectTrue(!table.findDuplicate(), "no duplicate") && ok;
+    table.append(Probe{1, 3, 0, 99});
+    table.sort();
+    ok = expectTrue(static_cast<bool>(table.findDuplicate()), "same identity and checkpoint twice") && ok;
     return ok;
 }
 
-bool testJsonWriterNumbers()
+bool testVersionTableWrite()
 {
-    core::TextBuffer text(64);
-    core::appendJsonInteger(text, -42);
-    text.append(textOf(","));
-    core::appendJsonInteger(text, std::numeric_limits<int64_t>::min());
-    text.append(textOf(","));
-    core::appendJsonReal(text, 1.0);
-    text.append(textOf(","));
-    core::appendJsonReal(text, 0.5);
-    return expectTrue(sameText(text.view(), "-42,-9223372036854775808,1.0,0.5"), "numbers");
-}
-
-bool testJsonReaderFields()
-{
-    char scratch[64] {};
-    const core::Span<char> area(scratch, sizeof(scratch));
-    core::JsonReader reader(textOf(" {\"a\":1, \"b\":\"x\\u00e9\\ud83d\\ude00\\n\",\"c\":null,\"d\":[ [1, 4] ],\"e\":true,\"f\":-2.5,\"g\":18446744073709551615} "));
-    core::JsonField field;
-    bool ok = true;
-    auto next = reader.next(field, area);
-    ok = expectTrue(next.value && sameText(field.key, "a") && field.type == core::JsonType::INTEGER && field.integer == 1, "integer field") && ok;
-    next = reader.next(field, area);
-    ok = expectTrue(next.value && field.type == core::JsonType::TEXT && sameText(field.text, "x\xC3\xA9\xF0\x9F\x98\x80\n"), "escaped text field") && ok;
-    next = reader.next(field, area);
-    ok = expectTrue(next.value && field.type == core::JsonType::NULL_VALUE, "null field") && ok;
-    next = reader.next(field, area);
-    ok = expectTrue(next.value && field.type == core::JsonType::COMPOSITE && sameText(field.text, "[[1,4]]"), "array is compacted") && ok;
-    next = reader.next(field, area);
-    ok = expectTrue(next.value && field.type == core::JsonType::BOOLEAN && field.boolean, "boolean field") && ok;
-    next = reader.next(field, area);
-    ok = expectTrue(next.value && field.type == core::JsonType::REAL && field.real == -2.5, "real field") && ok;
-    next = reader.next(field, area);
-    ok = expectTrue(next.value && field.type == core::JsonType::UNSIGNED && field.natural == std::numeric_limits<uint64_t>::max(), "unsigned field") && ok;
-    next = reader.next(field, area);
-    ok = expectTrue(next && !next.value, "end of object") && ok;
+    core::VersionTable<Probe> table(3);
+    bool ok = expectTrue(table.write(Probe{1, 1, 0, 11}) == KIOTTY_SPEC_STATUS_SUCCESS, "write first");
+    table.write(Probe{1, 1, 0, 12});
+    ok = expectTrue(table.all().length() == 1 && table.latest(1, 1)->value == 12, "same checkpoint replaces") && ok;
+    table.write(Probe{0, 4, 0, 4});
+    table.write(Probe{1, 2, 0, 21});
+    ok = expectTrue(table.all()[0].id == 0 && table.all()[2].checkpoint == 2, "insert keeps order") && ok;
+    ok = expectTrue(table.write(Probe{5, 1, 0, 0}) == KIOTTY_SPEC_STATUS_POOL_IS_FULL, "full table") && ok;
+    ok = expectTrue(table.countAt(2) == 1 && table.countAt(1) == 1, "count at checkpoint") && ok;
     return ok;
 }
 
-bool testJsonReaderFindSkipsOtherValues()
+bool testVersionTablePrune()
 {
-    // 찾는 키 앞의 긴 값은 작은 scratch 에 풀지 않고 건너뛴다.
-    char scratch[4] {};
-    core::JsonReader reader(textOf("{\"body\":\"long text \\\" here\",\"list\":[\"]\"],\"id\":\"A1\"}"));
-    core::JsonField field;
-    const auto found = reader.find(textOf("id"), field, core::Span<char>(scratch, sizeof(scratch)));
-    bool ok = expectTrue(found && found.value && sameText(field.text, "A1"), "find skips long values");
-    const auto missing = reader.find(textOf("nope"), field, core::Span<char>(scratch, sizeof(scratch)));
-    ok = expectTrue(missing && !missing.value, "missing key") && ok;
-    const auto small = reader.find(textOf("body"), field, core::Span<char>(scratch, sizeof(scratch)));
-    ok = expectTrue(small.code == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "wanted value larger than scratch") && ok;
+    core::VersionTable<Probe> table(8);
+    table.write(Probe{1, 1, 0, 11});
+    table.write(Probe{1, 3, 0, 13});
+    table.write(Probe{1, 5, 0, 15});
+    table.write(Probe{2, 2, 0, 22});
+    table.write(Probe{2, 3, 1, 0});
+    table.write(Probe{3, 4, 0, 34});
+    table.prune(4);
+    const auto all = table.all();
+    bool ok = expectTrue(all.length() == 3, "prune keeps one version per identity before base");
+    ok = expectTrue(all[0].id == 1 && all[0].checkpoint == 4 && all[0].value == 13, "older version moves to base") && ok;
+    ok = expectTrue(all[1].id == 1 && all[1].checkpoint == 5, "newer version stays") && ok;
+    ok = expectTrue(all[2].id == 3 && all[2].checkpoint == 4, "removed identity is gone") && ok;
+    table.retain([](const Probe& probe) { return probe.id != 1; });
+    ok = expectTrue(table.all().length() == 1, "retain drops records") && ok;
     return ok;
 }
 
-bool testJsonReaderRejects()
+bool testNumbers()
 {
-    char scratch[16] {};
-    const core::Span<char> area(scratch, sizeof(scratch));
-    const char* const broken[] = {"[1]", "{\"a\":1,}", "{\"a\" 1}", "{\"a\":01}", "{\"a\":\"x}", "{\"a\":1} x", "{\"a\":\"\\q\"}", "{\"a\":\"\\udc00\"}", "{\"a\":tru}"};
-    bool ok = true;
-    for (const char* line : broken) {
-        core::JsonReader reader(textOf(line));
-        core::JsonField field;
-        bool failed = false;
-        for (int guard = 0; guard < 4; ++guard) {
-            const auto next = reader.next(field, area);
-            if (!next) {
-                failed = true;
-                break;
-            }
-            if (!next.value) { break; }
-        }
-        ok = expectTrue(failed, line) && ok;
-    }
-    core::JsonReader empty(textOf("{ }"));
-    core::JsonField field;
-    const auto none = empty.next(field, area);
-    ok = expectTrue(none && !none.value, "empty object") && ok;
+    bool ok = expectTrue(core::parseDecimal(textOf("0"), 10).value == 0 && core::parseDecimal(textOf("4096"), 5000).value == 4096, "decimal");
+    const char* const bad_decimals[] = {"", "-1", "1a", "5001", " 1"};
+    for (const char* text : bad_decimals) { ok = expectTrue(!core::parseDecimal(textOf(text), 5000), text) && ok; }
+    ok = expectTrue(!core::parseDecimal(textOf("18446744073709551616"), UINT64_MAX), "decimal overflow") && ok;
+    ok = expectTrue(core::parseHex(textOf("0a1b2c3d"), 8).value == 0x0a1b2c3du, "hex") && ok;
+    const char* const bad_hexes[] = {"", "0A1B2C3D", "0a1b2c3", "0a1b2c3d4", "0a1b2c3g"};
+    for (const char* text : bad_hexes) { ok = expectTrue(!core::parseHex(textOf(text), 8), text) && ok; }
+    core::FixedString<16> hex;
+    core::appendHex(hex, 0x0a1b2c3du, 8);
+    ok = expectTrue(sameText(hex.view(), "0a1b2c3d"), "append hex") && ok;
+    ok = expectTrue(core::hash64(textOf("a")) != core::hash64(textOf("b")), "hash differs") && ok;
     return ok;
 }
 
@@ -416,11 +401,10 @@ int main()
         {"utf8 valid", testUtf8Valid},
         {"utf8 invalid", testUtf8Invalid},
         {"text diff", testTextDiff},
-        {"json writer string", testJsonWriterString},
-        {"json writer numbers", testJsonWriterNumbers},
-        {"json reader fields", testJsonReaderFields},
-        {"json reader find skips", testJsonReaderFindSkipsOtherValues},
-        {"json reader rejects", testJsonReaderRejects},
+        {"version table latest", testVersionTableLatest},
+        {"version table write", testVersionTableWrite},
+        {"version table prune", testVersionTablePrune},
+        {"numbers", testNumbers},
         {"span text", testSpanText},
         {"search", testSearch},
     };

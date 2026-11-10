@@ -1,5 +1,2 @@
 build/
-.kiotty/spec.kisp
-.kiotty/spec.kisp-wal
-.kiotty/spec.kisp-shm
-.kiotty/spec.kisp.v1
+*.kisp.tmp

@@ -12,7 +12,7 @@ namespace kiotty::cli {
 
 namespace {
 
-constexpr std::string_view FLAG_NAMES[] = {"hooks", "tags", "relations", "up", "down", "help"};
+constexpr std::string_view FLAG_NAMES[] = {"tags", "relations", "up", "down", "help"};
 constexpr size_t ERROR_BUFFER_LENGTH = 4096;
 
 bool isFlag(std::string_view name)

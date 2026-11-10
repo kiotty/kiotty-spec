@@ -1,4 +1,4 @@
-// C 인터페이스: 컨텍스트 · 이름 · jsonl 교환. 입력을 Span 으로, 내부 레코드를 C 구조체로 바꾸는 일만 한다.
+// C 인터페이스: 컨텍스트 · 이름. 입력을 Span 으로, 내부 레코드를 C 구조체로 바꾸는 일만 한다.
 
 #include "kiotty_spec_adapter.h"
 
@@ -65,10 +65,10 @@ const char* KiottySpec_statusName(KiottySpecStatus code)
     return "UNKNOWN";
 }
 
-KiottySpecStatusResult KiottySpec_initProject(KiottySpecContext* context, KiottySpecText project_name, bool install_git_hooks)
+KiottySpecStatusResult KiottySpec_initProject(KiottySpecContext* context, KiottySpecText project_name)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    return status(context->context.init(spanOf(project_name), install_git_hooks));
+    return status(context->context.init(spanOf(project_name)));
 }
 
 const char* KiottySpec_kindName(KiottySpecItemKind kind)
@@ -86,32 +86,6 @@ const char* KiottySpec_checkpointStateName(KiottySpecCheckpointState state)
 {
     const std::string_view name = entity::stateName(static_cast<entity::CheckpointState>(state));
     return name.empty() ? "" : name.data();
-}
-
-KiottySpecStatusResult KiottySpec_exportJsonl(KiottySpecContext* context, KiottySpecText directory)
-{
-    if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    if (directory.length > 0) { return status(context->context.exchange().exportJsonl(spanOf(directory))); }
-    const auto fallback = context->context.jsonlDirectory();
-    if (!fallback) { return status(fallback.code); }
-    return status(context->context.exchange().exportJsonl(fallback.value.view()));
-}
-
-KiottySpecSizeResult KiottySpec_importJsonl(KiottySpecContext* context, KiottySpecText directory, char* report, size_t capacity)
-{
-    if (context == nullptr) { return KiottySpecSizeResult{KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, 0}; }
-    // 보고는 호출자 버퍼에 바로 쓴다. 버퍼가 없으면 버린다.
-    char discard[1] {};
-    const impl::Span<char> area = report != nullptr && capacity > 0 ? impl::Span<char>(report, capacity) : impl::Span<char>(discard, 1);
-    impl::Result<size_t, KiottySpecStatus> imported = impl::Result<size_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
-    if (directory.length > 0) {
-        imported = context->context.exchange().importJsonl(spanOf(directory), area);
-    } else {
-        const auto fallback = context->context.jsonlDirectory();
-        if (!fallback) { return KiottySpecSizeResult{fallback.code, 0}; }
-        imported = context->context.exchange().importJsonl(fallback.value.view(), area);
-    }
-    return KiottySpecSizeResult{imported.code, imported ? imported.value : 0};
 }
 
 }

@@ -4,6 +4,7 @@
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
+#include "implementation/domain/entity/kiotty_version_records.h"
 #include "implementation/domain/usecases/kiotty_workspace.h"
 
 #include <cstddef>
@@ -12,7 +13,7 @@
 namespace kiotty::spec::implementation {
 
 // 그 시점의 항목 버전 (설계서 v1 5.4 readItemAt)
-struct ItemVersion {
+struct ItemVersionView {
     entity::ItemRecord record {};
     entity::IdText parent_id;
 };
@@ -23,12 +24,14 @@ class PastReader
 public:
     explicit PastReader(Workspace& workspace) : _w(workspace) {}
 
-    Result<ItemVersion, KiottySpecStatus> itemAt(Span<const char> id, uint32_t checkpoint);
+    Result<ItemVersionView, KiottySpecStatus> itemAt(Span<const char> id, uint32_t checkpoint);
     Result<uint64_t, KiottySpecStatus> tagAt(Span<const char> id, uint32_t tag, uint32_t checkpoint);
     Result<size_t, KiottySpecStatus> bodyAt(Span<const char> id, uint32_t checkpoint, char* buffer, size_t capacity);
     Result<size_t, KiottySpecStatus> decisionAt(entity::ItemKind kind, uint32_t checkpoint, char* buffer, size_t capacity);
 
 private:
+    Result<const entity::ItemVersion*, KiottySpecStatus> versionAt(Span<const char> id, uint32_t checkpoint);
+
     Workspace& _w;
 };
 

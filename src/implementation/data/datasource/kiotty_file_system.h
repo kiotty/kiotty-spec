@@ -25,6 +25,8 @@ Span<const char> fileNameOf(Span<const char> path);
 Span<const char> parentOf(Span<const char> path);
 
 KiottySpecStatus createDirectories(Span<const char> path);
+// 파일의 바이트 수. 없으면 NOT_FOUND
+Result<size_t, KiottySpecStatus> fileLength(Span<const char> path);
 // 파일 내용을 buffer 에 읽는다. 없으면 NOT_FOUND, buffer 보다 크면 CAPACITY_EXCEEDED
 Result<size_t, KiottySpecStatus> readFile(Span<const char> path, Span<char> buffer);
 KiottySpecStatus writeWholeFile(Span<const char> path, Span<const char> content);
@@ -40,6 +42,7 @@ void closeDescriptor(int descriptor);
 bool isFile(Span<const char> path);
 // 없는 파일이면 성공으로 본다.
 KiottySpecStatus removeFile(Span<const char> path);
+// to 가 있으면 바꾼다. 같은 디렉토리 안에서는 원자적이다.
 KiottySpecStatus renameFile(Span<const char> from, Span<const char> to);
 
 }

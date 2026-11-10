@@ -241,14 +241,16 @@ typedef struct KiottySpecConfiguration {
 /* 컨텍스트. 힙 할당은 createContext 안에서만 한다. */
 KIOTTY_SPEC_API KiottySpecContextResult KiottySpec_createContext(const KiottySpecConfiguration *configuration);
 KIOTTY_SPEC_API void                    KiottySpec_releaseContext(KiottySpecContext *context);
-/* .kisp 파일을 연다. 없으면 디렉토리와 함께 만든다. 컨텍스트 하나는 파일 하나만 연다. 닫기는 releaseContext.
-   프로젝트 루트는 파일이 든 디렉토리의 상위다 (<루트>/.kiotty/spec.kisp). jsonl 기본 디렉토리는 확장자를 뺀 이름이다 (.kiotty/spec). */
+/* .kisp 파일을 연다. 없으면 디렉토리와 함께 빈 파일을 만든다. 컨텍스트 하나는 파일 하나만 연다. 닫기는 releaseContext.
+   .kisp 는 사람이 읽고 git 이 병합하는 텍스트이며 쓰기마다 전부 다시 쓴다. 본문은 확장자를 뺀 이름의 디렉토리에 둔다
+   (.kiotty/spec.kisp → .kiotty/spec/<key>.md). 연 뒤에 파일이 밖에서 바뀌면 다음 쓰기는 CONFLICT 이고 다시 읽는다. */
 KIOTTY_SPEC_API KiottySpecStatusResult  KiottySpec_open(KiottySpecContext *context, KiottySpecText path);
 KIOTTY_SPEC_API KiottySpecSizeResult    KiottySpec_readLastError(KiottySpecContext *context, char *buffer, size_t capacity);
 KIOTTY_SPEC_API const char             *KiottySpec_statusName(KiottySpecStatus status);
-KIOTTY_SPEC_API KiottySpecStatusResult  KiottySpec_initProject(KiottySpecContext *context, KiottySpecText project_name, bool install_git_hooks);
+/* project_name 길이가 0 이면 프로젝트 루트(.kiotty 의 상위) 디렉토리 이름 */
+KIOTTY_SPEC_API KiottySpecStatusResult  KiottySpec_initProject(KiottySpecContext *context, KiottySpecText project_name);
 
-/* 이름 표. Kind 이름은 jsonl 과 ks 가 쓰는 영문 snake_case 다 ("design"). 모르는 이름이면 0. 한글 이름은 readModel 의 name */
+/* 이름 표. Kind 이름은 .kisp 와 ks 가 쓰는 영문 snake_case 다 ("design"). 모르는 이름이면 0. 한글 이름은 readModel 의 name */
 KIOTTY_SPEC_API const char             *KiottySpec_kindName(KiottySpecItemKind kind);
 KIOTTY_SPEC_API KiottySpecItemKind      KiottySpec_parseKind(KiottySpecText name);
 KIOTTY_SPEC_API const char             *KiottySpec_checkpointStateName(KiottySpecCheckpointState state);
@@ -416,6 +418,7 @@ KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_fetchRelationDiffPage(Kiot
  * handle 은 지금 풀에 있으면 그 핸들, 없으면 INVALID. parent 는 지금 풀에 있는 상위 항목이면 그 핸들 */
 KIOTTY_SPEC_API KiottySpecItemResult       KiottySpec_readItemAt(KiottySpecContext *context, KiottySpecText id, KiottySpecCheckpointHandle checkpoint);
 KIOTTY_SPEC_API KiottySpecTagResult        KiottySpec_readItemTagAt(KiottySpecContext *context, KiottySpecText id, uint32_t tag, KiottySpecCheckpointHandle checkpoint);
+/* 본문은 현재 것만 파일에 있다. 그 시점의 본문이 지금과 같을 때만 읽고, 다르면 NOT_FOUND (과거 본문은 git 이력에 있다) */
 KIOTTY_SPEC_API KiottySpecSizeResult       KiottySpec_readItemBodyAt(KiottySpecContext *context, KiottySpecText id, KiottySpecCheckpointHandle checkpoint, char *buffer, size_t capacity);
 KIOTTY_SPEC_API KiottySpecSizeResult       KiottySpec_readDecisionAt(KiottySpecContext *context, KiottySpecItemKind kind, KiottySpecCheckpointHandle checkpoint, char *buffer, size_t capacity);
 /* 제목 · 요약의 글자 diff. total 은 조각 수. 본문(BODY)이나 비트 둘 이상은 INVALID_ARGUMENT */
@@ -423,11 +426,6 @@ KIOTTY_SPEC_API KiottySpecCursorResult     KiottySpec_openTextDiffCursor(KiottyS
                                                                          KiottySpecCheckpointHandle from, KiottySpecCheckpointHandle to);
 KIOTTY_SPEC_API KiottySpecTextDiffResult   KiottySpec_nextTextDiff(KiottySpecContext *context, KiottySpecCursor cursor);
 KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_closeTextDiffCursor(KiottySpecContext *context, KiottySpecCursor cursor);
-
-/* 교환. directory 길이가 0 이면 .kiotty/spec. 가져오기는 DB 내용을 jsonl 로 바꾼다.
- * 옛 형식(정의서 v0)의 jsonl 은 변환해서 가져오며, 잘라 내거나 건너뛴 것을 report 에 적는다. 값은 그런 항목 수 */
-KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_exportJsonl(KiottySpecContext *context, KiottySpecText directory);
-KIOTTY_SPEC_API KiottySpecSizeResult       KiottySpec_importJsonl(KiottySpecContext *context, KiottySpecText directory, char *report, size_t capacity);
 
 #ifdef __cplusplus
 }

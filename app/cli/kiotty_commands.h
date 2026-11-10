@@ -62,7 +62,5 @@ int showHistory(Session& session);
 int showDecision(Session& session);
 int setDecision(Session& session);
 int showModel(Session& session);
-int exportJsonl(Session& session);
-int importJsonl(Session& session);
 
 }

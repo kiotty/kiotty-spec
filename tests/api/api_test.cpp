@@ -5,6 +5,8 @@
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <functional>
 #include <string>
 #include <system_error>
@@ -97,21 +99,53 @@ bool testComplete(KiottySpecContext* context)
     return passed;
 }
 
-bool testRoundTrip(KiottySpecContext* context)
+std::string readAll(const std::string& path)
 {
-    const std::string first = g_root + "/out1";
-    const std::string second = g_root + "/out2";
-    bool passed = expectTrue(ok(KiottySpec_exportJsonl(context, textOf(first.c_str())).code), "export");
-    char report[256] {};
-    passed = expectTrue(ok(KiottySpec_importJsonl(context, textOf(first.c_str()), report, sizeof(report)).code), "import") && passed;
-    passed = expectTrue(ok(KiottySpec_exportJsonl(context, textOf(second.c_str())).code), "export again") && passed;
-    for (const char* name : {"item_version.jsonl", "relation_version.jsonl", "checkpoint.jsonl"}) {
-        std::error_code error;
-        const auto left = std::filesystem::file_size(first + "/" + name, error);
-        const auto right = std::filesystem::file_size(second + "/" + name, error);
-        passed = expectTrue(!error && left == right && left > 0, name) && passed;
-    }
-    passed = expectTrue(ok(KiottySpec_findItem(context, textOf("REQ-001")).code), "item after import") && passed;
+    std::ifstream stream(path, std::ios::binary);
+    std::ostringstream content;
+    content << stream.rdbuf();
+    return content.str();
+}
+
+// 다른 컨텍스트로 다시 열어도 같은 내용이고, 바꾸지 않고 다시 써도 파일이 바이트 그대로다.
+bool testReopen(KiottySpecContext* context)
+{
+    const std::string path = g_root + "/.kiotty/spec.kisp";
+    const std::string before = readAll(path);
+    bool passed = expectTrue(before.rfind("#kisp 1 model 1\n", 0) == 0, "file starts with header");
+    KiottySpecConfiguration configuration {};
+    const KiottySpecContextResult other = openContext(configuration, g_root);
+    passed = expectTrue(ok(other.code), "reopen") && passed;
+    const KiottySpecItemResult item = KiottySpec_readItem(other.value, textOf("REQ-001"));
+    passed = expectTrue(ok(item.code) && std::strcmp(item.value.title, "저장") == 0, "item after reopen") && passed;
+    char body[64] {};
+    const KiottySpecSizeResult read = KiottySpec_readItemBody(other.value, textOf("REQ-001"), body, sizeof(body));
+    passed = expectTrue(ok(read.code), "body after reopen") && passed;
+    passed = expectTrue(ok(KiottySpec_startCheckpoint(other.value, KIOTTY_SPEC_STEP_DESIGN_DISCUSSING, textOf("다시 열기")).code), "start in other") && passed;
+    passed = expectTrue(ok(KiottySpec_resumeCheckpoint(other.value).code), "resume in other") && passed;
+    KiottySpec_releaseContext(other.value);
+    const std::string running = readAll(path);
+    passed = expectTrue(running != before, "checkpoint written") && passed;
+    const KiottySpecContextResult third = openContext(configuration, g_root);
+    passed = expectTrue(ok(KiottySpec_resumeCheckpoint(third.value).code), "resume running checkpoint") && passed;
+    passed = expectTrue(readAll(path) == running, "rewrite without change keeps bytes") && passed;
+    KiottySpec_releaseContext(third.value);
+    passed = expectTrue(ok(KiottySpec_findItem(context, textOf("REQ-001")).code), "first context still works") && passed;
+    return passed;
+}
+
+// 연 뒤에 파일이 밖에서 바뀌면 쓰기를 CONFLICT 로 거부하고 다시 읽는다.
+bool testOutsideChange(KiottySpecContext* context)
+{
+    KiottySpecConfiguration configuration {};
+    const KiottySpecContextResult other = openContext(configuration, g_root);
+    bool passed = expectTrue(ok(KiottySpec_updateItem(other.value, textOf("REQ-001"), textOf("다른 곳에서"), KiottySpecText{nullptr, 0}).code), "write from other");
+    KiottySpec_releaseContext(other.value);
+    const KiottySpecStatusResult stale = KiottySpec_updateItem(context, textOf("REQ-001"), textOf("늦은 쓰기"), KiottySpecText{nullptr, 0});
+    passed = expectTrue(stale.code == KIOTTY_SPEC_STATUS_CONFLICT, "stale write rejected") && passed;
+    const KiottySpecItemResult item = KiottySpec_readItem(context, textOf("REQ-001"));
+    passed = expectTrue(ok(item.code) && std::strcmp(item.value.title, "다른 곳에서") == 0, "reloaded after conflict") && passed;
+    passed = expectTrue(ok(KiottySpec_updateItem(context, textOf("REQ-001"), textOf("저장"), KiottySpecText{nullptr, 0}).code), "write after reload") && passed;
     return passed;
 }
 
@@ -323,7 +357,8 @@ int main()
         {"writes need checkpoint", testWritesNeedCheckpoint},
         {"items tags relations", testItemsTagsRelations},
         {"complete", testComplete},
-        {"round trip", testRoundTrip},
+        {"reopen", testReopen},
+        {"outside change", testOutsideChange},
         {"diff", testDiff},
         {"given id and rename", testGivenIdAndRename},
     };

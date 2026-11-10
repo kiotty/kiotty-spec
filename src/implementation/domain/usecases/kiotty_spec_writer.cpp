@@ -1,0 +1,224 @@
+#include "implementation/domain/usecases/kiotty_spec_writer.h"
+
+#include "implementation/core/kiotty_decimal.h"
+#include "implementation/core/kiotty_fixed_string.h"
+#include "implementation/core/kiotty_number.h"
+#include "implementation/core/kiotty_text_view.h"
+
+#include <string_view>
+
+namespace kiotty::spec::implementation {
+
+namespace {
+
+using entity::CheckpointRecord;
+using entity::DecisionVersion;
+using entity::ItemKind;
+using entity::ItemVersion;
+using entity::RelationVersion;
+using entity::TagVersion;
+
+constexpr std::string_view META_HEADER = "TABLE\tmeta\tO/X\tkey\tvalue\n";
+constexpr std::string_view CHECKPOINT_HEADER = "TABLE\tcheckpoint\tO/X\tsequence\tprevious\tstep\tstate\tcreated_at\tdescription\n";
+constexpr std::string_view ITEM_HEADER = "TABLE\titem\tO/X\tkey\tid\n";
+constexpr std::string_view ITEM_VERSION_HEADER = "TABLE\titem_version\tO/X\tkey\tcheckpoint\tkind\tparent\ttitle\tsummary\tbody\n";
+constexpr std::string_view TAG_HEADER = "TABLE\ttag\tO/X\tkey\ttag\tcheckpoint\tvalue\n";
+constexpr std::string_view RELATION_HEADER = "TABLE\trelation\tO/X\tfrom\tmodel\trelation\tto\tcheckpoint\n";
+constexpr std::string_view DECISION_HEADER = "TABLE\tdecision\tO/X\tkind\tcheckpoint\ttext\n";
+
+constexpr size_t KEY_DIGITS = 8;
+constexpr size_t HASH_DIGITS = 16;
+constexpr size_t MAX_NUMBER_DIGITS = 20;
+using NumberText = FixedString<MAX_NUMBER_DIGITS>;
+
+void addDecimal(KispLineEncoder& line, uint64_t number)
+{
+    NumberText text;
+    appendDecimal(text, number);
+    line.add(text.view());
+}
+
+void addKey(KispLineEncoder& line, uint32_t key)
+{
+    if (key == entity::NO_KEY) {
+        line.add(spanOf(NONE_MARKER));
+        return;
+    }
+    NumberText text;
+    appendHex(text, key, KEY_DIGITS);
+    line.add(text.view());
+}
+
+void addHash(KispLineEncoder& line, uint64_t hash)
+{
+    if (hash == 0) {
+        line.add(spanOf(NONE_MARKER));
+        return;
+    }
+    NumberText text;
+    appendHex(text, hash, HASH_DIGITS);
+    line.add(text.view());
+}
+
+// 켠 비트의 이름을 쉼표로 잇는다. 값이 0 이면 "-"
+void addTagValue(KispLineEncoder& line, const entity::TagDefinition& definition, uint64_t value)
+{
+    if (value == 0) {
+        line.add(spanOf(NONE_MARKER));
+        return;
+    }
+    line.add(Span<const char>());
+    bool first = true;
+    for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
+        if ((value & (uint64_t{1} << bit)) == 0) { continue; }
+        if (!first) { line.extend(literalText(",")); }
+        line.extend(definition.bit_names[bit].view());
+        first = false;
+    }
+}
+
+}
+
+KiottySpecStatus SpecWriter::write()
+{
+    KiottySpecStatus status = _file.write(spanOf(KISP_HEADER));
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _file.write(literalText("\n")); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = writeMeta(); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = writeCheckpoints(); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = writeItems(); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = writeItemVersions(); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = writeTags(); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = writeRelations(); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = writeDecisions(); }
+    return status;
+}
+
+KiottySpecStatus SpecWriter::writeHeader(std::string_view columns) { return _file.write(spanOf(columns)); }
+
+KispLineEncoder SpecWriter::startLine(std::string_view table, uint32_t removed)
+{
+    KispLineEncoder line(_area);
+    line.add(spanOf(table));
+    line.add(spanOf(removed != 0 ? REMOVED_MARKER : LIVE_MARKER));
+    return line;
+}
+
+KiottySpecStatus SpecWriter::emit(KispLineEncoder& line)
+{
+    const auto finished = line.finish();
+    if (!finished) { return _t.failure.raise(finished.code, {literalText("한 줄이 줄 버퍼보다 큼")}); }
+    return _file.write(finished.value);
+}
+
+KiottySpecStatus SpecWriter::writeMeta()
+{
+    KiottySpecStatus status = writeHeader(META_HEADER);
+    const auto& entries = _t.meta.all();
+    for (size_t index = 0; index < entries.length() && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
+        KispLineEncoder line = startLine(META_TABLE, 0);
+        line.add(entries.keyAt(index).view());
+        line.add(entries.valueAt(index).view());
+        status = emit(line);
+    }
+    return status;
+}
+
+KiottySpecStatus SpecWriter::writeCheckpoints()
+{
+    KiottySpecStatus status = writeHeader(CHECKPOINT_HEADER);
+    for (uint32_t sequence = 1; sequence <= _t.checkpoints.latest() && status == KIOTTY_SPEC_STATUS_SUCCESS; ++sequence) {
+        const CheckpointRecord* record = _t.checkpoints.at(sequence);
+        if (record == nullptr) { continue; }
+        KispLineEncoder line = startLine(CHECKPOINT_TABLE, 0);
+        addDecimal(line, sequence);
+        if (record->previous.isValid()) { addDecimal(line, record->previous.sequence); } else { line.add(spanOf(NONE_MARKER)); }
+        addDecimal(line, static_cast<uint64_t>(record->step));
+        line.add(spanOf(entity::stateName(record->state)));
+        addDecimal(line, record->created_at > 0 ? static_cast<uint64_t>(record->created_at) : 0);
+        line.add(record->description.view());
+        status = emit(line);
+    }
+    return status;
+}
+
+KiottySpecStatus SpecWriter::writeItems()
+{
+    KiottySpecStatus status = writeHeader(ITEM_HEADER);
+    const auto& names = _t.items.tables().names;
+    for (size_t index = 0; index < names.length() && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
+        KispLineEncoder line = startLine(ITEM_TABLE, 0);
+        addKey(line, names.keyAt(index));
+        line.add(names.valueAt(index).view());
+        status = emit(line);
+    }
+    return status;
+}
+
+KiottySpecStatus SpecWriter::writeItemVersions()
+{
+    KiottySpecStatus status = writeHeader(ITEM_VERSION_HEADER);
+    for (const ItemVersion& version : _t.items.tables().versions.all()) {
+        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
+        KispLineEncoder line = startLine(ITEM_VERSION_TABLE, version.removed);
+        addKey(line, version.key);
+        addDecimal(line, version.checkpoint);
+        line.add(spanOf(entity::kindName(version.kind)));
+        addKey(line, version.parent);
+        line.add(version.title.view());
+        line.add(version.summary.view());
+        addHash(line, version.body_hash);
+        status = emit(line);
+    }
+    return status;
+}
+
+KiottySpecStatus SpecWriter::writeTags()
+{
+    KiottySpecStatus status = writeHeader(TAG_HEADER);
+    const ItemTables& tables = _t.items.tables();
+    for (const TagVersion& version : tables.tag_versions.all()) {
+        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
+        const ItemVersion* item = tables.versions.latest(version.key, UINT32_MAX);
+        if (item == nullptr) { continue; }
+        const entity::TagDefinition& definition = _t.catalog.model(item->kind).tags[version.tag];
+        KispLineEncoder line = startLine(TAG_TABLE, version.removed);
+        addKey(line, version.key);
+        line.add(definition.name.view());
+        addDecimal(line, version.checkpoint);
+        addTagValue(line, definition, version.removed != 0 ? 0 : version.value);
+        status = emit(line);
+    }
+    return status;
+}
+
+KiottySpecStatus SpecWriter::writeRelations()
+{
+    KiottySpecStatus status = writeHeader(RELATION_HEADER);
+    for (const RelationVersion& version : _t.relations.versions().all()) {
+        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
+        KispLineEncoder line = startLine(RELATION_TABLE, version.removed);
+        addKey(line, version.from);
+        line.add(spanOf(entity::kindName(version.model)));
+        line.add(_t.catalog.model(version.model).relations[version.relation].name.view());
+        addKey(line, version.to);
+        addDecimal(line, version.checkpoint);
+        status = emit(line);
+    }
+    return status;
+}
+
+KiottySpecStatus SpecWriter::writeDecisions()
+{
+    KiottySpecStatus status = writeHeader(DECISION_HEADER);
+    for (const DecisionVersion& version : _t.decisions.versions().all()) {
+        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
+        KispLineEncoder line = startLine(DECISION_TABLE, 0);
+        line.add(spanOf(entity::kindName(version.kind)));
+        addDecimal(line, version.checkpoint);
+        line.add(version.text.view());
+        status = emit(line);
+    }
+    return status;
+}
+
+}

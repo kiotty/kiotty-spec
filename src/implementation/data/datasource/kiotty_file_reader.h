@@ -9,7 +9,7 @@
 namespace kiotty::spec::implementation {
 
 // 파일을 줄 단위로 읽는다. 줄은 남이 준 buffer 에 담기며, 한 줄이 buffer 보다 길면 CAPACITY_EXCEEDED.
-// 줄 끝의 '\r' 과 공백은 뺀다. 빈 줄도 돌려준다.
+// 줄 끝의 '\r' 은 뺀다. 공백은 내용이므로 남긴다. 빈 줄도 돌려준다.
 class FileReader
 {
 public:

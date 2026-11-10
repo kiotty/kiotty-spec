@@ -41,20 +41,8 @@ std::string findRoot(const Arguments& args)
     return pathToUtf8(current);
 }
 
-// <루트>/.kiotty/spec.kisp. 예전 이름 spec.db 만 있으면 새 이름으로 옮긴다.
-std::string databasePath(const std::string& root)
-{
-    const std::filesystem::path directory = std::filesystem::u8path(root) / ".kiotty";
-    const std::filesystem::path database = directory / "spec.kisp";
-    std::error_code error;
-    if (!std::filesystem::exists(database, error) && std::filesystem::exists(directory / "spec.db", error)) {
-        for (const char* suffix : {"", "-wal", "-shm"}) {
-            const std::filesystem::path old = directory / (std::string("spec.db") + suffix);
-            if (std::filesystem::exists(old, error)) { std::filesystem::rename(old, directory / (std::string("spec.kisp") + suffix), error); }
-        }
-    }
-    return pathToUtf8(database);
-}
+// <루트>/.kiotty/spec.kisp
+std::string databasePath(const std::string& root) { return pathToUtf8(std::filesystem::u8path(root) / ".kiotty" / "spec.kisp"); }
 
 KiottySpecActor findActor(const Arguments& args)
 {

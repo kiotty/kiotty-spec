@@ -155,7 +155,8 @@ KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
     const WidePathResult source = widen(from);
     const WidePathResult target = widen(to);
     if (!source || !target) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-    return _wrename(source.value.text, target.value.text) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+    const BOOL moved = MoveFileExW(source.value.text, target.value.text, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+    return moved != 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 }
 
 }
