@@ -6,24 +6,33 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# MSVC 기본 플래그의 /EHsc 를 빼고 타깃마다 kiotty_no_exceptions 로 정한다.
+option(KIOTTY_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
+option(KIOTTY_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
+
 if(MSVC)
     string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-# ---------------------------------------------------------------------------
-# 공통 컴파일 옵션
-# ---------------------------------------------------------------------------
 function(kiotty_warnings target)
     if(MSVC)
-        # enum switch 에서 빠진 멤버는 에러 (개발수칙 2.8)
-        target_compile_options(${target} PRIVATE /W4 /utf-8 /permissive- /Zc:__cplusplus /we4062)
+        target_compile_options(${target} PRIVATE /W4 /utf-8 /permissive- /Zc:__cplusplus /we4062 /w14365 /w14388 /w14018 /sdl /GS /GR-)
+        if(KIOTTY_WARNINGS_AS_ERRORS)
+            target_compile_options(${target} PRIVATE /WX)
+        endif()
     else()
-        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Werror=switch)
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wsign-compare -Wshadow -Wswitch -Werror=switch
+            -fno-rtti -fstack-protector-strong)
+        target_compile_definitions(${target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:_FORTIFY_SOURCE=2>)
+        if(KIOTTY_WARNINGS_AS_ERRORS)
+            target_compile_options(${target} PRIVATE -Werror)
+        endif()
+        if(KIOTTY_SANITIZE)
+            target_compile_options(${target} PRIVATE -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)
+            target_link_options(${target} PRIVATE -fsanitize=address -fsanitize=undefined)
+        endif()
     endif()
 endfunction()
 
-# 예외 없이 빌드한다 (개발수칙 5.1).
 function(kiotty_no_exceptions target)
     if(MSVC)
         target_compile_options(${target} PRIVATE /EHs-c-)
