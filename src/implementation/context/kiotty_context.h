@@ -44,9 +44,12 @@ public:
     Context(const Context&) = delete;
     Context& operator=(const Context&) = delete;
 
-    // 프로젝트 루트를 열고 DB 의 현재 버전을 풀에 적재한다. 옛 스키마 DB 는 spec.db.v1 로 옮기고 빈 DB 를 만든다.
-    KiottySpecStatus open(Span<const char> root);
+    // .kisp 파일을 열고 (없으면 디렉토리와 함께 만든다) DB 의 현재 버전을 풀에 적재한다.
+    // 스키마 1 DB 는 <파일>.v1 로 옮기고 빈 DB 를 만든다. 스키마 2 는 그 자리에서 3 으로 바꾼다.
+    // 프로젝트 루트는 파일이 든 디렉토리의 상위로 본다 (<루트>/.kiotty/spec.kisp). init 과 git 훅이 쓴다.
+    KiottySpecStatus open(Span<const char> database);
     KiottySpecStatus init(Span<const char> name, bool install_hooks);
+    // DB 파일 옆에 확장자를 뺀 이름의 디렉토리 (.kiotty/spec.kisp → .kiotty/spec)
     SystemPathResult jsonlDirectory();
     bool movedLegacyDatabase() const { return _moved_legacy; }
 
@@ -69,6 +72,7 @@ private:
     KiottySpecStatus installHooks();
     SystemPathResult under(Span<const char> base, Span<const char> part);
 
+    SystemPath _database;
     SystemPath _root;
     bool _opened {false};
     bool _moved_legacy {false};

@@ -7,7 +7,7 @@ namespace kiotty::spec::implementation {
 namespace {
 
 constexpr char BODY_SQL[] =
-    "SELECT body FROM item_version WHERE item_id = ?1 AND removed = 0 ORDER BY checkpoint DESC LIMIT 1";
+    "SELECT body FROM item_version WHERE item_key = ?1 AND removed = 0 ORDER BY checkpoint DESC LIMIT 1";
 
 }
 
@@ -24,6 +24,12 @@ Result<ItemHandle, KiottySpecStatus> ItemReader::find(Span<const char> id) const
     return Result<ItemHandle, KiottySpecStatus>::success(_items.handleAt(index.value));
 }
 
+int64_t ItemReader::key(ItemHandle handle) const
+{
+    if (!_items.get(handle)) { return 0; }
+    return _keys[handle.index];
+}
+
 Result<const ItemRecord*, KiottySpecStatus> ItemReader::get(ItemHandle handle) const
 {
     const auto record = _items.get(handle);
@@ -38,7 +44,7 @@ Result<size_t, KiottySpecStatus> ItemReader::readBody(ItemHandle handle, char* b
     if (!stored) { return SizeResult::failure(stored.code); }
     auto query = _storage.prepare(literalText(BODY_SQL));
     if (!query) { return SizeResult::failure(query.code); }
-    query.value.bind(1, stored.value->id.view());
+    query.value.bind(1, _keys[handle.index]);
     const auto stepped = query.value.step();
     if (!stepped) { return SizeResult::failure(_storage.check(stepped.code)); }
     const Span<const char> body = stepped.value ? query.value.row().text(0) : Span<const char>();

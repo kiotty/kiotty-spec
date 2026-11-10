@@ -11,21 +11,22 @@ namespace {
 constexpr uint32_t MAX_KIND_BIT = 32;
 
 constexpr char DIFF_SQL[] =
-    "WITH f AS (SELECT v.from_id, v.model, v.relation, v.to_id, v.checkpoint, v.removed FROM relation_version v "
-    "JOIN (SELECT from_id, relation, to_id, MAX(checkpoint) AS c FROM relation_version WHERE checkpoint <= ?1 GROUP "
-    "BY from_id, relation, to_id) m ON v.from_id = m.from_id AND v.relation = m.relation AND v.to_id = m.to_id AND "
-    "v.checkpoint = m.c), t AS (SELECT v.from_id, v.model, v.relation, v.to_id, v.checkpoint, v.removed FROM "
-    "relation_version v JOIN (SELECT from_id, relation, to_id, MAX(checkpoint) AS c FROM relation_version WHERE "
-    "checkpoint <= ?2 GROUP BY from_id, relation, to_id) m ON v.from_id = m.from_id AND v.relation = m.relation AND "
-    "v.to_id = m.to_id AND v.checkpoint = m.c), k AS (SELECT from_id, relation, to_id FROM f UNION SELECT from_id, "
-    "relation, to_id FROM t) SELECT k.from_id, k.relation, k.to_id, COALESCE(t.model, f.model), f.removed, "
-    "t.removed, t.checkpoint FROM k LEFT JOIN f ON f.from_id = k.from_id AND f.relation = k.relation AND f.to_id = "
-    "k.to_id LEFT JOIN t ON t.from_id = k.from_id AND t.relation = k.relation AND t.to_id = k.to_id ORDER BY CASE "
+    "WITH f AS (SELECT v.from_key, v.model, v.relation, v.to_key, v.checkpoint, v.removed FROM relation_version v "
+    "JOIN (SELECT from_key, relation, to_key, MAX(checkpoint) AS c FROM relation_version WHERE checkpoint <= ?1 GROUP "
+    "BY from_key, relation, to_key) m ON v.from_key = m.from_key AND v.relation = m.relation AND v.to_key = m.to_key AND "
+    "v.checkpoint = m.c), t AS (SELECT v.from_key, v.model, v.relation, v.to_key, v.checkpoint, v.removed FROM "
+    "relation_version v JOIN (SELECT from_key, relation, to_key, MAX(checkpoint) AS c FROM relation_version WHERE "
+    "checkpoint <= ?2 GROUP BY from_key, relation, to_key) m ON v.from_key = m.from_key AND v.relation = m.relation AND "
+    "v.to_key = m.to_key AND v.checkpoint = m.c), k AS (SELECT from_key, relation, to_key FROM f UNION SELECT from_key, "
+    "relation, to_key FROM t) SELECT fi.id, k.relation, ti.id, COALESCE(t.model, f.model), f.removed, "
+    "t.removed, t.checkpoint FROM k JOIN item fi ON fi.key = k.from_key JOIN item ti ON ti.key = k.to_key "
+    "LEFT JOIN f ON f.from_key = k.from_key AND f.relation = k.relation AND f.to_key = "
+    "k.to_key LEFT JOIN t ON t.from_key = k.from_key AND t.relation = k.relation AND t.to_key = k.to_key ORDER BY CASE "
     "COALESCE(t.model, f.model) WHEN 'change_request' THEN 1 WHEN 'requirement' THEN 2 WHEN 'rule' THEN 3 WHEN "
     "'external_interface' THEN 4 WHEN 'design' THEN 5 WHEN 'unit_test_plan' THEN 6 WHEN 'milestone' THEN 7 WHEN "
     "'unit_test_result' THEN 8 WHEN 'system_test_plan' THEN 9 WHEN 'system_test_result' THEN 10 WHEN "
     "'code_inspection_result' THEN 11 WHEN 'e2e_test_plan' THEN 12 WHEN 'e2e_test_result' THEN 13 ELSE 14 END, "
-    "k.from_id, k.relation, k.to_id";
+    "fi.id, k.relation, ti.id";
 
 bool inMask(uint32_t mask, uint32_t kind) { return mask == 0 || (kind >= 1 && kind <= MAX_KIND_BIT && (mask & (1u << (kind - 1))) != 0); }
 

@@ -12,19 +12,20 @@ namespace {
 constexpr uint32_t MAX_KIND_BIT = 32;
 
 constexpr char DIFF_SQL[] =
-    "WITH f AS (SELECT v.item_id, v.checkpoint, v.kind, v.parent_id, v.title, v.summary, v.body, v.tags, v.removed "
-    "FROM item_version v JOIN (SELECT item_id, MAX(checkpoint) AS c FROM item_version WHERE checkpoint <= ?1 GROUP "
-    "BY item_id) m ON v.item_id = m.item_id AND v.checkpoint = m.c), t AS (SELECT v.item_id, v.checkpoint, v.kind, "
-    "v.parent_id, v.title, v.summary, v.body, v.tags, v.removed FROM item_version v JOIN (SELECT item_id, "
-    "MAX(checkpoint) AS c FROM item_version WHERE checkpoint <= ?2 GROUP BY item_id) m ON v.item_id = m.item_id AND "
-    "v.checkpoint = m.c), k AS (SELECT item_id FROM f UNION SELECT item_id FROM t) SELECT k.item_id, f.checkpoint, "
+    "WITH f AS (SELECT v.item_key, v.checkpoint, v.kind, v.parent_key, v.title, v.summary, v.body, v.tags, v.removed "
+    "FROM item_version v JOIN (SELECT item_key, MAX(checkpoint) AS c FROM item_version WHERE checkpoint <= ?1 GROUP "
+    "BY item_key) m ON v.item_key = m.item_key AND v.checkpoint = m.c), t AS (SELECT v.item_key, v.checkpoint, v.kind, "
+    "v.parent_key, v.title, v.summary, v.body, v.tags, v.removed FROM item_version v JOIN (SELECT item_key, "
+    "MAX(checkpoint) AS c FROM item_version WHERE checkpoint <= ?2 GROUP BY item_key) m ON v.item_key = m.item_key AND "
+    "v.checkpoint = m.c), k AS (SELECT item_key FROM f UNION SELECT item_key FROM t) SELECT i.id, f.checkpoint, "
     "f.removed, t.checkpoint, t.removed, COALESCE(t.kind, f.kind), f.title IS NOT t.title, f.summary IS NOT "
-    "t.summary, f.parent_id IS NOT t.parent_id, f.tags IS NOT t.tags, f.body IS NOT t.body FROM k LEFT JOIN f ON "
-    "f.item_id = k.item_id LEFT JOIN t ON t.item_id = k.item_id ORDER BY CASE COALESCE(t.kind, f.kind) WHEN "
+    "t.summary, f.parent_key IS NOT t.parent_key, f.tags IS NOT t.tags, f.body IS NOT t.body FROM k JOIN item i ON "
+    "i.key = k.item_key LEFT JOIN f ON f.item_key = k.item_key LEFT JOIN t ON t.item_key = k.item_key "
+    "ORDER BY CASE COALESCE(t.kind, f.kind) WHEN "
     "'change_request' THEN 1 WHEN 'requirement' THEN 2 WHEN 'rule' THEN 3 WHEN 'external_interface' THEN 4 WHEN "
     "'design' THEN 5 WHEN 'unit_test_plan' THEN 6 WHEN 'milestone' THEN 7 WHEN 'unit_test_result' THEN 8 WHEN "
     "'system_test_plan' THEN 9 WHEN 'system_test_result' THEN 10 WHEN 'code_inspection_result' THEN 11 WHEN "
-    "'e2e_test_plan' THEN 12 WHEN 'e2e_test_result' THEN 13 ELSE 14 END, k.item_id";
+    "'e2e_test_plan' THEN 12 WHEN 'e2e_test_result' THEN 13 ELSE 14 END, i.id";
 
 bool inMask(uint32_t mask, uint32_t kind) { return mask == 0 || (kind >= 1 && kind <= MAX_KIND_BIT && (mask & (1u << (kind - 1))) != 0); }
 

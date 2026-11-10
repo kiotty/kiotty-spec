@@ -21,6 +21,8 @@ namespace {
 // 정의서 v0 에만 있던 파일. 내보낼 때 지운다. link_version 이 있으면 옛 형식으로 본다.
 constexpr std::string_view LEGACY_FILES[] = {"link_version", "file_version", "milestone_state", "change_request", "result"};
 constexpr std::string_view LEGACY_MARKER = "link_version";
+// 스키마 3 부터 있는 파일. 없으면 버전 행이 ID 로 항목을 가리키는 옛 형식이다.
+constexpr std::string_view ITEM_KEY_MARKER = "item";
 constexpr size_t MAX_COLUMNS = 32;
 // 작업 버퍼에서 ID · Kind 같은 짧은 값에 주는 칸
 constexpr size_t SHORT_AREA_BYTES = 1024;
@@ -232,12 +234,15 @@ Result<size_t, KiottySpecStatus> Exchange::importJsonl(Span<const char> director
     {
         Savepoint savepoint(_w.storage.connection());
         status = _w.storage.check(savepoint.begin());
-        if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = recreate(_w.storage); }
+        const SystemPathResult marker = jsonlPath(directory, ITEM_KEY_MARKER);
+        const bool keyed = marker && isFile(marker.value.view());
+        if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = keyed ? recreate(_w.storage) : recreateWithIdKeys(_w.storage); }
         if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
             const CountResult imported = importAll(directory, report);
             status = imported.code;
             notes = imported ? imported.value : 0;
         }
+        if (status == KIOTTY_SPEC_STATUS_SUCCESS && !keyed) { status = migrateItemKeys(_w.storage); }
         if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _w.storage.check(savepoint.commit()); }
     }
     const KiottySpecStatus reloaded = _w.reload();
@@ -263,7 +268,10 @@ Result<size_t, KiottySpecStatus> Exchange::importAll(Span<const char> directory,
 
 KiottySpecStatus Exchange::importCurrent(Span<const char> directory, const ImportAreas& areas)
 {
+    const SystemPathResult marker = jsonlPath(directory, ITEM_KEY_MARKER);
+    const bool keyed = marker && isFile(marker.value.view());
     for (const OrderedTable& table : orderedTables()) {
+        if (!keyed && table.name == ITEM_KEY_MARKER) { continue; }
         const KiottySpecStatus status = importTable(directory, table, areas);
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
     }

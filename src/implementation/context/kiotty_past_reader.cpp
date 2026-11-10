@@ -13,11 +13,12 @@ namespace {
 using entity::ItemKind;
 
 constexpr char ITEM_AT_SQL[] =
-    "SELECT checkpoint, kind, parent_id, title, summary, tags, removed FROM item_version WHERE item_id = ?1 AND checkpoint <= ?2 "
-    "ORDER BY checkpoint DESC LIMIT 1";
+    "SELECT v.checkpoint, v.kind, p.id, v.title, v.summary, v.tags, v.removed FROM item_version v JOIN item i ON i.key = v.item_key "
+    "LEFT JOIN item p ON p.key = v.parent_key WHERE i.id = ?1 AND v.checkpoint <= ?2 ORDER BY v.checkpoint DESC LIMIT 1";
 
 constexpr char BODY_AT_SQL[] =
-    "SELECT body, removed FROM item_version WHERE item_id = ?1 AND checkpoint <= ?2 ORDER BY checkpoint DESC LIMIT 1";
+    "SELECT v.body, v.removed FROM item_version v JOIN item i ON i.key = v.item_key WHERE i.id = ?1 AND v.checkpoint <= ?2 "
+    "ORDER BY v.checkpoint DESC LIMIT 1";
 
 constexpr char DECISION_AT_SQL[] =
     "SELECT description FROM decision_version WHERE kind = ?1 AND checkpoint <= ?2 ORDER BY checkpoint DESC LIMIT 1";

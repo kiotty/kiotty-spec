@@ -139,8 +139,8 @@ int runDiff(Session& session)
     const auto kind_name = session.args.option("kind");
     if (!kind_name) { return printSummary(session, query); }
 
-    const auto kind = kindArgument(*kind_name);
-    if (!kind) { return usage("알 수 없는 Kind: " + *kind_name + ". `ks model` 참고"); }
+    const auto kind = kindArgument(session, *kind_name);
+    if (!kind) { return 2; }
     const bool groups[3] = {session.args.flag("added"), session.args.flag("removed"), session.args.flag("modified")};
     if (!groups[0] && !groups[1] && !groups[2]) { return usage("--added · --removed · --modified 중 하나 이상"); }
     query.kind_mask = 1u << (*kind - 1);

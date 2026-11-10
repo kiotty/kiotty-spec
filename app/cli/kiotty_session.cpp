@@ -161,11 +161,20 @@ std::optional<std::string> readFileText(const std::string& path)
     return content.str();
 }
 
-std::optional<KiottySpecItemKind> kindArgument(std::string_view text)
+std::optional<KiottySpecItemKind> kindArgument(Session& session, std::string_view text)
 {
     const KiottySpecItemKind kind = KiottySpec_parseKind(textOf(text));
-    if (kind == 0) { return std::nullopt; }
-    return kind;
+    if (kind != 0) { return kind; }
+    std::string names;
+    for (uint32_t value = 1; KiottySpec_kindName(static_cast<KiottySpecItemKind>(value))[0] != '\0'; ++value) {
+        const KiottySpecItemKind candidate = static_cast<KiottySpecItemKind>(value);
+        const KiottySpecModelResult model = KiottySpec_readModel(session.context, candidate);
+        if (model.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
+        if (text == model.value.name) { return candidate; }
+        names += (names.empty() ? "" : ", ") + std::string(KiottySpec_kindName(candidate)) + "(" + model.value.name + ")";
+    }
+    std::cerr << "error: 알 수 없는 Kind '" << text << "'. 받는 값: " << names << "\n";
+    return std::nullopt;
 }
 
 std::string itemId(Session& session, KiottySpecItemHandle handle)

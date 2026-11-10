@@ -42,7 +42,8 @@ void printRow(const std::vector<std::string>& cells);
 std::string checkpointName(KiottySpecCheckpointHandle handle);
 std::optional<KiottySpecCheckpointHandle> parseCheckpoint(std::string_view text);
 std::optional<std::string> readFileText(const std::string& path);
-std::optional<KiottySpecItemKind> kindArgument(std::string_view text);
+// 영문 이름 (design) 이나 한글 모델 이름 (설계 사항). 모르면 받는 값을 stderr 에 찍고 nullopt
+std::optional<KiottySpecItemKind> kindArgument(Session& session, std::string_view text);
 std::string itemId(Session& session, KiottySpecItemHandle handle);
 
 // 모델 메타데이터에서 태그 · 관계 이름을 index 로 바꾼다 (설계서 v1 8.4).

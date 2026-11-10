@@ -17,6 +17,7 @@
 namespace kiotty::spec::implementation {
 
 // 항목 풀 + 태그 풀 + ID 색인 (설계서 v1 10.1). 본문은 풀에 두지 않고 DB 에서만 읽는다 (3.7).
+// _keys 는 풀 index 마다 DB 의 item.key 다. 버전 행과 관계 행은 ID 가 아니라 이 key 로 항목을 가리킨다.
 // 멤버를 소유하고, 기능은 세부 클래스에 나눠 맡긴다 (개발수칙 4.19). 세부 클래스는 부른 자리에서 쓰고 버린다.
 class ItemStore
 {
@@ -26,9 +27,9 @@ public:
     // DB 의 현재 버전을 풀에 다시 적재한다. 이전 핸들은 모두 무효가 된다.
     KiottySpecStatus load();
 
-    ItemReader reader() { return ItemReader(_storage, _items, _id_index); }
+    ItemReader reader() { return ItemReader(_storage, _items, _id_index, _keys); }
     ItemTags tags() const { return ItemTags(Span<const entity::TagRecord>(_tags.data(), _tag_count)); }
-    ItemWriter writer() { return ItemWriter(_storage, _items, _id_index, _tags, _tag_count); }
+    ItemWriter writer() { return ItemWriter(_storage, _items, _id_index, _keys, _tags, _tag_count); }
 
 private:
     KiottySpecStatus loadRow(const Row& row);
@@ -38,6 +39,7 @@ private:
     Storage& _storage;
     LazyPool<entity::ItemRecord> _items;
     FixedMap<entity::IdText, uint32_t> _id_index;
+    std::vector<int64_t> _keys;
     std::vector<entity::TagRecord> _tags;
     size_t _tag_count {0};
 };

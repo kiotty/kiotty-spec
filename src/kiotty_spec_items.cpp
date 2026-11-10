@@ -8,17 +8,23 @@ using namespace kiotty::spec::adapter;
 
 extern "C" {
 
-KiottySpecIdResult KiottySpec_createItem(KiottySpecContext* context, KiottySpecItemKind kind, KiottySpecText title, KiottySpecText summary)
+KiottySpecIdResult KiottySpec_createItem(KiottySpecContext* context, KiottySpecItemKind kind, KiottySpecText id, KiottySpecText title, KiottySpecText summary)
 {
     KiottySpecIdResult result {};
     if (context == nullptr) {
         result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
         return result;
     }
-    const auto created = context->context.editor().createItem(static_cast<entity::ItemKind>(kind), spanOf(title), spanOf(summary));
+    const auto created = context->context.editor().createItem(static_cast<entity::ItemKind>(kind), spanOf(id), spanOf(title), spanOf(summary));
     result.code = created.code;
     if (created) { copyText(result.value, created.value); }
     return result;
+}
+
+KiottySpecStatusResult KiottySpec_renameItem(KiottySpecContext* context, KiottySpecText id, KiottySpecText new_id)
+{
+    if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    return status(context->context.editor().renameItem(spanOf(id), spanOf(new_id)));
 }
 
 KiottySpecItemResult KiottySpec_readItemByHandle(KiottySpecContext* context, KiottySpecItemHandle item)

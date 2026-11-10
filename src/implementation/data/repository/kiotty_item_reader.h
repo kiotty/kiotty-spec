@@ -9,6 +9,8 @@
 #include "implementation/domain/entity/kiotty_item_records.h"
 
 #include <cstddef>
+#include <cstdint>
+#include <vector>
 
 namespace kiotty::spec::implementation {
 
@@ -16,14 +18,17 @@ namespace kiotty::spec::implementation {
 class ItemReader
 {
 public:
-    ItemReader(Storage& storage, LazyPool<entity::ItemRecord>& items, const FixedMap<entity::IdText, uint32_t>& id_index)
-        : _storage(storage), _items(items), _id_index(id_index)
+    ItemReader(Storage& storage, LazyPool<entity::ItemRecord>& items, const FixedMap<entity::IdText, uint32_t>& id_index,
+               const std::vector<int64_t>& keys)
+        : _storage(storage), _items(items), _id_index(id_index), _keys(keys)
     {
     }
 
     Result<entity::ItemHandle, KiottySpecStatus> find(Span<const char> id) const;
     Result<const entity::ItemRecord*, KiottySpecStatus> get(entity::ItemHandle handle) const;
     entity::ItemHandle handleAt(size_t index) const { return _items.handleAt(index); }
+    // DB 의 item.key. 핸들이 무효이면 0
+    int64_t key(entity::ItemHandle handle) const;
     size_t capacity() const { return _items.capacity(); }
     // ID 순서로 훑을 때 쓴다.
     size_t count() const { return _id_index.length(); }
@@ -36,6 +41,7 @@ private:
     Storage& _storage;
     LazyPool<entity::ItemRecord>& _items;
     const FixedMap<entity::IdText, uint32_t>& _id_index;
+    const std::vector<int64_t>& _keys;
 };
 
 }

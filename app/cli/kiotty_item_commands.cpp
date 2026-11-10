@@ -55,13 +55,14 @@ int addItem(Session& session)
     const std::string* kind_name = positional(session, 0);
     const auto title = session.args.option("title");
     if (kind_name == nullptr || !title) { return usage("ks item add KIND --title T"); }
-    const auto kind = kindArgument(*kind_name);
-    if (!kind) { return usage("알 수 없는 Kind: " + *kind_name + ". `ks model` 참고"); }
+    const auto kind = kindArgument(session, *kind_name);
+    if (!kind) { return 2; }
     bool failed = false;
     const auto body = bodyOption(session, "body", "body-file", failed);
     if (failed) { return 2; }
     const std::string summary = session.args.option("summary").value_or("");
-    const KiottySpecIdResult created = KiottySpec_createItem(session.context, *kind, textOf(*title), textOf(summary));
+    const std::string given = session.args.option("id").value_or("");
+    const KiottySpecIdResult created = KiottySpec_createItem(session.context, *kind, textOf(given), textOf(*title), textOf(summary));
     if (created.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, created.code); }
     const std::string id = created.value;
     if (const auto parent = session.args.option("parent")) {
@@ -120,12 +121,20 @@ int showItem(Session& session)
     return 0;
 }
 
+int renameItem(Session& session)
+{
+    const std::string* id = positional(session, 0);
+    const std::string* next = positional(session, 1);
+    if (id == nullptr || next == nullptr) { return usage("ks item rename ID 새ID"); }
+    return check(session, KiottySpec_renameItem(session.context, textOf(*id), textOf(*next)).code);
+}
+
 int listItems(Session& session)
 {
     KiottySpecItemKind kind = static_cast<KiottySpecItemKind>(0);
     if (const auto name = session.args.option("kind")) {
-        const auto parsed = kindArgument(*name);
-        if (!parsed) { return usage("알 수 없는 Kind: " + *name + ". `ks model` 참고"); }
+        const auto parsed = kindArgument(session, *name);
+        if (!parsed) { return 2; }
         kind = *parsed;
     }
     const bool wants_columns = !session.args.all("tag").empty() || !session.args.all("relation").empty() || session.args.flag("tags") ||

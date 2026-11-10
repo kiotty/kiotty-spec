@@ -1,6 +1,8 @@
 #include "kiotty_commands.h"
 
+#include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 
 namespace kiotty::cli {
@@ -8,6 +10,7 @@ namespace kiotty::cli {
 namespace {
 
 constexpr size_t REPORT_LENGTH = 64 * 1024;
+constexpr uint32_t DEFAULT_HISTORY_DEPTH = 3;
 const std::vector<std::string> CHECKPOINT_HEADER = {"checkpoint", "step", "state", "description", "created_at", "previous"};
 
 void printCheckpoint(KiottySpecCheckpointHandle handle, const KiottySpecCheckpoint& checkpoint)
@@ -80,34 +83,38 @@ int showPosition(Session& session)
 {
     const KiottySpecPositionResult position = KiottySpec_readPosition(session.context);
     if (position.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, position.code); }
-    const KiottySpecPosition& value = position.value;
-    printRow({"checkpoint", "step", "state", "pending_writes", "open_change_requests", "next_step"});
-    printRow({checkpointName(value.current), stepName(value.step), value.state == 0 ? "-" : KiottySpec_checkpointStateName(value.state),
-              std::to_string(value.pending_writes), std::to_string(value.open_change_requests), stepName(value.next_step)});
+    printRow({"step"});
+    printRow({stepName(position.value.step)});
     return 0;
 }
 
-int showJourney(Session& session)
+// 현재 체크포인트부터 previous 를 따라 depth 개. all 이면 처음까지
+int showHistory(Session& session)
 {
-    const KiottySpecCursorResult cursor = KiottySpec_openStepRunCursor(session.context);
-    if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
-    printRow({"step", "first", "last", "count", "state"});
-    KiottySpecStepRunPage page {};
-    while (KiottySpec_fetchStepRunPage(session.context, cursor.value, &page).code == KIOTTY_SPEC_STATUS_SUCCESS && page.length > 0) {
-        for (size_t index = 0; index < page.length; ++index) {
-            const KiottySpecStepRun& run = page.elements[index];
-            printRow({stepName(run.step), checkpointName(run.first), checkpointName(run.last), std::to_string(run.count),
-                      KiottySpec_checkpointStateName(run.state)});
-        }
+    uint32_t depth = DEFAULT_HISTORY_DEPTH;
+    if (const auto text = session.args.option("depth")) {
+        char* end = nullptr;
+        const unsigned long value = *text == "all" ? 0 : std::strtoul(text->c_str(), &end, 10);
+        if (*text != "all" && (value == 0 || end == nullptr || *end != '\0')) { return usage("--depth 는 1 이상의 수나 all"); }
+        depth = *text == "all" ? UINT32_MAX : static_cast<uint32_t>(value);
     }
-    KiottySpec_closeCursor(session.context, cursor.value);
+    printRow(CHECKPOINT_HEADER);
+    KiottySpecCheckpointHandle handle = KIOTTY_SPEC_CHECKPOINT_CURRENT;
+    for (uint32_t count = 0; count < depth; ++count) {
+        const KiottySpecCheckpointResult checkpoint = KiottySpec_readCheckpoint(session.context, handle);
+        if (checkpoint.code == KIOTTY_SPEC_STATUS_NOT_FOUND) { break; }
+        if (checkpoint.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, checkpoint.code); }
+        printCheckpoint(checkpoint.handle, checkpoint.value);
+        if (checkpoint.value.previous == 0) { break; }
+        handle = checkpoint.value.previous;
+    }
     return 0;
 }
 
 int showDecision(Session& session)
 {
     const std::string* name = positional(session, 0);
-    const auto kind = name == nullptr ? std::nullopt : kindArgument(*name);
+    const auto kind = name == nullptr ? std::nullopt : kindArgument(session, *name);
     if (!kind) { return usage("ks decision show KIND"); }
     std::vector<char> buffer(KIOTTY_SPEC_MAX_DECISION_LENGTH + 1);
     const KiottySpecSizeResult read = KiottySpec_readDecision(session.context, *kind, buffer.data(), buffer.size());
@@ -120,7 +127,7 @@ int showDecision(Session& session)
 int setDecision(Session& session)
 {
     const std::string* name = positional(session, 0);
-    const auto kind = name == nullptr ? std::nullopt : kindArgument(*name);
+    const auto kind = name == nullptr ? std::nullopt : kindArgument(session, *name);
     bool failed = false;
     const auto text = bodyOption(session, "text", "file", failed);
     if (failed) { return 2; }
@@ -131,8 +138,8 @@ int setDecision(Session& session)
 int showModel(Session& session)
 {
     if (const std::string* name = positional(session, 0)) {
-        const auto kind = kindArgument(*name);
-        if (!kind) { return usage("알 수 없는 Kind: " + *name); }
+        const auto kind = kindArgument(session, *name);
+        if (!kind) { return 2; }
         const KiottySpecModelResult model = KiottySpec_readModel(session.context, *kind);
         printRow({"type", "index", "name", "values", "cardinality"});
         for (uint32_t index = 0; index < model.value.tag_count; ++index) {

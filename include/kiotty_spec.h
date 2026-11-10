@@ -229,7 +229,6 @@ typedef struct KiottySpecContextResult          { KiottySpecStatus code; KiottyS
 
 /* 0 인 용량은 기본값을 쓴다. */
 typedef struct KiottySpecConfiguration {
-    KiottySpecText project_root;
     size_t         max_items;
     size_t         max_relations;
     size_t         max_tags;
@@ -242,17 +241,23 @@ typedef struct KiottySpecConfiguration {
 /* 컨텍스트. 힙 할당은 createContext 안에서만 한다. */
 KIOTTY_SPEC_API KiottySpecContextResult KiottySpec_createContext(const KiottySpecConfiguration *configuration);
 KIOTTY_SPEC_API void                    KiottySpec_releaseContext(KiottySpecContext *context);
+/* .kisp 파일을 연다. 없으면 디렉토리와 함께 만든다. 컨텍스트 하나는 파일 하나만 연다. 닫기는 releaseContext.
+   프로젝트 루트는 파일이 든 디렉토리의 상위다 (<루트>/.kiotty/spec.kisp). jsonl 기본 디렉토리는 확장자를 뺀 이름이다 (.kiotty/spec). */
+KIOTTY_SPEC_API KiottySpecStatusResult  KiottySpec_open(KiottySpecContext *context, KiottySpecText path);
 KIOTTY_SPEC_API KiottySpecSizeResult    KiottySpec_readLastError(KiottySpecContext *context, char *buffer, size_t capacity);
 KIOTTY_SPEC_API const char             *KiottySpec_statusName(KiottySpecStatus status);
 KIOTTY_SPEC_API KiottySpecStatusResult  KiottySpec_initProject(KiottySpecContext *context, KiottySpecText project_name, bool install_git_hooks);
 
-/* 이름 표. Kind 이름은 jsonl 과 ks 가 쓰는 영문 snake_case 다 ("design"). 모르는 이름이면 0 */
+/* 이름 표. Kind 이름은 jsonl 과 ks 가 쓰는 영문 snake_case 다 ("design"). 모르는 이름이면 0. 한글 이름은 readModel 의 name */
 KIOTTY_SPEC_API const char             *KiottySpec_kindName(KiottySpecItemKind kind);
 KIOTTY_SPEC_API KiottySpecItemKind      KiottySpec_parseKind(KiottySpecText name);
 KIOTTY_SPEC_API const char             *KiottySpec_checkpointStateName(KiottySpecCheckpointState state);
 
 /* 항목 */
-KIOTTY_SPEC_API KiottySpecIdResult         KiottySpec_createItem(KiottySpecContext *context, KiottySpecItemKind kind, KiottySpecText title, KiottySpecText summary);
+/* id 길이가 0 이면 Kind 접두어로 다음 번호를 발급한다 (DSN-007). 이미 있는 ID 는 지운 항목의 것이라도 CONFLICT 다. */
+KIOTTY_SPEC_API KiottySpecIdResult         KiottySpec_createItem(KiottySpecContext *context, KiottySpecItemKind kind, KiottySpecText id, KiottySpecText title, KiottySpecText summary);
+/* ID 만 바꾼다. 다른 기록은 ID 가 아니라 내부 키로 항목을 가리키므로 함께 고칠 것이 없다. 체크포인트에 묶이지 않고 지난 시점도 새 ID 로 보인다. */
+KIOTTY_SPEC_API KiottySpecStatusResult     KiottySpec_renameItem(KiottySpecContext *context, KiottySpecText id, KiottySpecText new_id);
 KIOTTY_SPEC_API KiottySpecItemResult       KiottySpec_readItem(KiottySpecContext *context, KiottySpecText id);
 KIOTTY_SPEC_API KiottySpecItemResult       KiottySpec_readItemByHandle(KiottySpecContext *context, KiottySpecItemHandle item);
 KIOTTY_SPEC_API KiottySpecItemHandleResult KiottySpec_findItem(KiottySpecContext *context, KiottySpecText id);

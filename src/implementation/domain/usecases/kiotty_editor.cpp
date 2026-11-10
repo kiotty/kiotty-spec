@@ -3,6 +3,7 @@
 #include "implementation/core/kiotty_text_view.h"
 #include "implementation/core/kiotty_utf8.h"
 #include "implementation/domain/entity/kiotty_item_id.h"
+#include "implementation/data/datasource/kiotty_savepoint.h"
 #include "implementation/domain/usecases/kiotty_write_scope.h"
 
 namespace kiotty::spec::implementation {
@@ -40,7 +41,14 @@ KiottySpecStatus Editor::markNeedsChange(ItemHandle item, uint32_t sequence)
     return _w.items.writer().setTag(item, state.value, uint64_t{1} << changed.value, sequence);
 }
 
-Result<IdText, KiottySpecStatus> Editor::createItem(ItemKind kind, Span<const char> title, Span<const char> summary)
+KiottySpecStatus Editor::checkId(Span<const char> id)
+{
+    const KiottySpecStatus valid = entity::validateItemId(id);
+    if (valid == KIOTTY_SPEC_STATUS_SUCCESS) { return valid; }
+    return _w.failure.raise(valid, {literalText("ID 는 [A-Za-z0-9] 로 시작하고 [A-Za-z0-9_-] 만 쓰며 15자 이하: "), id});
+}
+
+Result<IdText, KiottySpecStatus> Editor::createItem(ItemKind kind, Span<const char> id, Span<const char> title, Span<const char> summary)
 {
     using IdResult = Result<IdText, KiottySpecStatus>;
     if (!entity::isValidKind(static_cast<uint32_t>(kind))) {
@@ -49,21 +57,32 @@ Result<IdText, KiottySpecStatus> Editor::createItem(ItemKind kind, Span<const ch
     if (title.length() == 0) { return IdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("제목이 비어 있음")})); }
     KiottySpecStatus status = checkText(title, entity::MAX_TITLE_LENGTH, "제목");
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = checkText(summary, entity::MAX_SUMMARY_LENGTH, "요약"); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS && id.length() > 0) { status = checkId(id); }
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return IdResult::failure(status); }
     WriteScope scope(_w, _lifecycle);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return IdResult::failure(scope.finish(sequence.code)); }
-    const IdResult created = insertItem(kind, title, summary, sequence.value);
+    const IdResult created = insertItem(kind, id, title, summary, sequence.value);
     status = scope.finish(created.code);
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return IdResult::failure(status); }
     return created;
 }
 
-// 새 ID 를 받아 항목을 만든다.
-Result<IdText, KiottySpecStatus> Editor::insertItem(ItemKind kind, Span<const char> title, Span<const char> summary, uint32_t sequence)
+// 주어진 ID 나 새로 발급한 ID 로 항목을 만든다. 주어진 ID 는 번호 카운터를 그 너머로 올려 발급과 겹치지 않게 한다.
+Result<IdText, KiottySpecStatus> Editor::insertItem(ItemKind kind, Span<const char> given, Span<const char> title, Span<const char> summary,
+                                                   uint32_t sequence)
 {
     using IdResult = Result<IdText, KiottySpecStatus>;
-    const auto id = _w.meta.nextId(_w.catalog.model(kind).id_prefix.view());
+    Result<IdText, KiottySpecStatus> id = IdResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
+    if (given.length() > 0) {
+        IdText text;
+        text.assign(given);
+        id = IdResult::success(text);
+        const KiottySpecStatus observed = _w.meta.observeId(given);
+        if (observed != KIOTTY_SPEC_STATUS_SUCCESS) { return IdResult::failure(observed); }
+    } else {
+        id = _w.meta.nextId(_w.catalog.model(kind).id_prefix.view());
+    }
     if (!id) { return IdResult::failure(id.code); }
     ItemRecord record {};
     record.parent = entity::INVALID_ITEM_HANDLE;
@@ -74,6 +93,25 @@ Result<IdText, KiottySpecStatus> Editor::insertItem(ItemKind kind, Span<const ch
     const auto handle = _w.items.writer().create(record, sequence);
     if (!handle) { return IdResult::failure(handle.code); }
     return IdResult::success(id.value);
+}
+
+KiottySpecStatus Editor::renameItem(Span<const char> id, Span<const char> new_id)
+{
+    const auto item = _w.resolve(id);
+    if (!item) { return item.code; }
+    const KiottySpecStatus valid = checkId(new_id);
+    if (valid != KIOTTY_SPEC_STATUS_SUCCESS) { return valid; }
+    IdText next;
+    next.assign(new_id);
+    Savepoint savepoint(_w.storage.connection());
+    KiottySpecStatus status = _w.storage.check(savepoint.begin());
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _w.meta.observeId(new_id); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _w.items.writer().rename(item.value, next); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _w.storage.check(savepoint.commit()); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+    savepoint.rollback();
+    _w.reload();
+    return status;
 }
 
 KiottySpecStatus Editor::updateItem(Span<const char> id, Span<const char> title, Span<const char> summary)

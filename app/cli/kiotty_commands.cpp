@@ -6,7 +6,9 @@ const std::vector<CommandEntry>& commands()
 {
     static const std::vector<CommandEntry> table = {
         {"init", "", "[--name N] [--hooks]", "프로젝트 메타 · .gitignore 를 쓰고 git 훅을 설치", initProject},
-        {"item", "add", "KIND --title T [--summary S] [--parent ID] [--body T|--body-file F] [--tag 이름=값]...", "항목을 만들고 ID 를 찍는다", addItem},
+        {"item", "add", "KIND --title T [--id ID] [--summary S] [--parent ID] [--body T|--body-file F] [--tag 이름=값]...",
+         "항목을 만들고 ID 를 찍는다. --id 가 없으면 발급한다. 이미 있는 ID 는 거부한다", addItem},
+        {"item", "rename", "ID 새ID", "ID 만 바꾼다 (관계 · 이력은 그대로 따라온다)", renameItem},
         {"item", "set", "ID [--title T] [--summary S] [--parent ID|-] [--body T|--body-file F] [--tag 이름=값]...", "항목을 고친다", setItem},
         {"item", "show", "ID [--tag 이름]... [--tags] [--relation 이름]... [--relations]", "항목 한 줄", showItem},
         {"item", "list", "[--kind K] [--tag 이름[=값,...]]... [--tags] [--relation 이름]... [--relations]", "항목 목록 (8.3, 8.4)", listItems},
@@ -25,8 +27,8 @@ const std::vector<CommandEntry>& commands()
         {"checkpoint", "show", "[CP]", "체크포인트 한 줄 (기본: 가장 최근)", showCheckpoint},
         {"checkpoint", "list", "[--step N]", "체크포인트 목록", listCheckpoints},
         {"checkpoint", "prune", "CP --actor user", "CP 이전 기록을 지운다 (사용자만)", pruneCheckpoints},
-        {"where", "", "", "현재 위치와 다음 단계", showPosition},
-        {"journey", "", "", "지나온 단계 구간", showJourney},
+        {"where", "", "", "현재 단계", showPosition},
+        {"history", "", "[--depth N|all]", "현재 체크포인트부터 조상 쪽으로 N 개 (기본 3)", showHistory},
         {"decision", "show", "KIND", "결정 기록", showDecision},
         {"decision", "set", "KIND (--text T | --file F)", "결정 기록을 다시 쓴다 (2048 바이트 이하)", setDecision},
         {"diff", "", "FROM TO [--kind K (--added|--removed|--modified)... [--title] [--summary] [--tag 이름]... [--tags] [--relation 이름]... [--relations] [--no-color]]",

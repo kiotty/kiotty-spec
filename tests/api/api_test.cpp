@@ -26,9 +26,19 @@ KiottySpecText textOf(const char* text) { return KiottySpecText{text, std::strle
 
 bool ok(KiottySpecStatus status) { return status == KIOTTY_SPEC_STATUS_SUCCESS; }
 
+// <root>/.kiotty/spec.kisp 를 연다. code 는 여는 데 실패한 이유다.
+KiottySpecContextResult openContext(const KiottySpecConfiguration& configuration, const std::string& root)
+{
+    KiottySpecContextResult created = KiottySpec_createContext(&configuration);
+    if (!ok(created.code)) { return created; }
+    const std::string database = root + "/.kiotty/spec.kisp";
+    created.code = KiottySpec_open(created.value, textOf(database.c_str())).code;
+    return created;
+}
+
 bool testWritesNeedCheckpoint(KiottySpecContext* context)
 {
-    bool passed = expectTrue(KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf("a"), textOf("")).code == KIOTTY_SPEC_STATUS_PRECONDITION,
+    bool passed = expectTrue(KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf(""), textOf("a"), textOf("")).code == KIOTTY_SPEC_STATUS_PRECONDITION,
                              "write without checkpoint");
     const KiottySpecCheckpointHandleResult started = KiottySpec_startCheckpoint(context, KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING, textOf("요구사항"));
     passed = expectTrue(ok(started.code) && started.value == 1, "first checkpoint is 1") && passed;
@@ -39,7 +49,7 @@ bool testWritesNeedCheckpoint(KiottySpecContext* context)
 
 bool testItemsTagsRelations(KiottySpecContext* context)
 {
-    const KiottySpecIdResult requirement = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("저장"), textOf("항목을 저장한다"));
+    const KiottySpecIdResult requirement = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf(""), textOf("저장"), textOf("항목을 저장한다"));
     bool passed = expectTrue(ok(requirement.code) && std::strcmp(requirement.value, "REQ-001") == 0, "requirement id");
     passed = expectTrue(KiottySpec_readCheckpoint(context, KIOTTY_SPEC_CHECKPOINT_CURRENT).value.state == KIOTTY_SPEC_CHECKPOINT_STATE_RUNNING,
                         "first write runs checkpoint") && passed;
@@ -53,7 +63,7 @@ bool testItemsTagsRelations(KiottySpecContext* context)
     passed = expectTrue(ok(read.code) && std::strstr(body, "저장된다") != nullptr, "read body") && passed;
     passed = expectTrue(KiottySpec_readItemBody(context, textOf("REQ-001"), body, 4).code == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "small buffer") && passed;
 
-    const KiottySpecIdResult interface = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_EXTERNAL_INTERFACE, textOf("열기"), textOf(""));
+    const KiottySpecIdResult interface = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_EXTERNAL_INTERFACE, textOf(""), textOf("열기"), textOf(""));
     passed = expectTrue(ok(KiottySpec_addRelation(context, textOf(interface.value), 0, textOf("REQ-001")).code), "add relation") && passed;
     passed = expectTrue(KiottySpec_addRelation(context, textOf(interface.value), 0, textOf("REQ-001")).code == KIOTTY_SPEC_STATUS_CONFLICT,
                         "duplicate relation") && passed;
@@ -105,6 +115,56 @@ bool testRoundTrip(KiottySpecContext* context)
     return passed;
 }
 
+// ID 는 유일한 필드일 뿐이다. 관계 · 이력은 내부 키로 따라오므로 rename 뒤에도 그대로 이어진다.
+bool testGivenIdAndRename(KiottySpecContext*)
+{
+    const std::string root = g_root + "/rename";
+    KiottySpecConfiguration configuration {};
+    const KiottySpecContextResult created = openContext(configuration, root);
+    KiottySpecContext* context = created.value;
+    bool passed = expectTrue(ok(created.code), "open rename project");
+    KiottySpec_startCheckpoint(context, KIOTTY_SPEC_STEP_DESIGN_DISCUSSING, textOf("이름"));
+    const KiottySpecIdResult given = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf("DSN-010"), textOf("주어진 ID"), textOf(""));
+    passed = expectTrue(ok(given.code) && std::strcmp(given.value, "DSN-010") == 0, "given id") && passed;
+    const KiottySpecIdResult issued = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf(""), textOf("발급"), textOf(""));
+    passed = expectTrue(ok(issued.code) && std::strcmp(issued.value, "DSN-011") == 0, "issued id skips past given id") && passed;
+    passed = expectTrue(KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf("DSN-010"), textOf("겹침"), textOf("")).code ==
+                            KIOTTY_SPEC_STATUS_CONFLICT,
+                        "duplicate id rejected") &&
+             passed;
+    passed = expectTrue(KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf("_bad"), textOf("잘못"), textOf("")).code ==
+                            KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
+                        "invalid id rejected") &&
+             passed;
+    const KiottySpecIdResult requirement = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf(""), textOf("요구"), textOf(""));
+    passed = expectTrue(ok(KiottySpec_addRelation(context, textOf("DSN-010"), 0, textOf(requirement.value)).code), "relate") && passed;
+    KiottySpec_writeItemBody(context, textOf("DSN-010"), textOf("본문"));
+    KiottySpec_completeCheckpoint(context, KIOTTY_SPEC_ACTOR_USER);
+
+    passed = expectTrue(KiottySpec_renameItem(context, textOf("DSN-010"), textOf("DSN-011")).code == KIOTTY_SPEC_STATUS_CONFLICT,
+                        "rename onto existing id rejected") &&
+             passed;
+    passed = expectTrue(ok(KiottySpec_renameItem(context, textOf("DSN-010"), textOf("LOGIN")).code), "rename") && passed;
+    passed = expectTrue(KiottySpec_readItem(context, textOf("DSN-010")).code == KIOTTY_SPEC_STATUS_NOT_FOUND, "old id gone") && passed;
+    passed = expectTrue(ok(KiottySpec_readItem(context, textOf("LOGIN")).code), "new id found") && passed;
+    char body[16] {};
+    passed = expectTrue(ok(KiottySpec_readItemBody(context, textOf("LOGIN"), body, sizeof(body)).code) && std::strcmp(body, "본문") == 0,
+                        "body follows rename") &&
+             passed;
+    const KiottySpecCursorResult relations = KiottySpec_openRelationCursor(context, textOf("LOGIN"), KIOTTY_SPEC_DIRECTION_BOTH);
+    passed = expectTrue(ok(relations.code) && relations.total == 1, "relation follows rename") && passed;
+    KiottySpec_closeCursor(context, relations.value);
+    const KiottySpecItemResult past = KiottySpec_readItemAt(context, textOf("LOGIN"), KIOTTY_SPEC_CHECKPOINT_CURRENT);
+    passed = expectTrue(ok(past.code), "history follows rename") && passed;
+
+    // 다시 열어도 (풀을 DB 에서 다시 적재해도) 새 ID 다.
+    KiottySpec_releaseContext(context);
+    const KiottySpecContextResult reopened = openContext(configuration, root);
+    passed = expectTrue(ok(KiottySpec_readItem(reopened.value, textOf("LOGIN")).code), "rename persists") && passed;
+    KiottySpec_releaseContext(reopened.value);
+    return passed;
+}
+
 // 설계서 v1 5.4 의 호출 예와 같은 모양의 변화를 두 체크포인트에 걸쳐 만든다.
 bool testDiff(KiottySpecContext*)
 {
@@ -112,32 +172,31 @@ bool testDiff(KiottySpecContext*)
     std::error_code error;
     std::filesystem::create_directories(root, error);
     KiottySpecConfiguration configuration {};
-    configuration.project_root = textOf(root.c_str());
-    const KiottySpecContextResult created = KiottySpec_createContext(&configuration);
+    const KiottySpecContextResult created = openContext(configuration, root);
     KiottySpecContext* context = created.value;
     const KiottySpecText none {nullptr, 0};
 
     KiottySpec_startCheckpoint(context, KIOTTY_SPEC_STEP_DESIGN_DISCUSSING, textOf("설계 1"));
-    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("요구 1"), textOf(""));
-    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("요구 2"), textOf(""));
-    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf("본문 저장"), textOf("본문은 ID로만 읽는다"));
-    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf("파일 추적"), textOf(""));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf(""), textOf("요구 1"), textOf(""));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf(""), textOf("요구 2"), textOf(""));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf(""), textOf("본문 저장"), textOf("본문은 ID로만 읽는다"));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf(""), textOf("파일 추적"), textOf(""));
     KiottySpec_addRelation(context, textOf("DSN-002"), 0, textOf("REQ-001"));
-    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf("링크 그래프"), textOf("관계를 링크 타입으로 검사한다"));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf(""), textOf("링크 그래프"), textOf("관계를 링크 타입으로 검사한다"));
     KiottySpec_addRelation(context, textOf("DSN-003"), 0, textOf("REQ-001"));
     KiottySpec_setItemTag(context, KiottySpec_findItem(context, textOf("DSN-003")).value, 1, 1);
     bool passed = expectTrue(ok(KiottySpec_completeCheckpoint(context, KIOTTY_SPEC_ACTOR_USER).code), "complete first");
 
     KiottySpec_startCheckpoint(context, KIOTTY_SPEC_STEP_DESIGN_DISCUSSING, textOf("설계 2"));
     KiottySpec_removeItem(context, textOf("DSN-002"));
-    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf("커서 풀"), textOf(""));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf(""), textOf("커서 풀"), textOf(""));
     KiottySpec_addRelation(context, textOf("DSN-004"), 0, textOf("REQ-002"));
     KiottySpec_updateItem(context, textOf("DSN-003"), textOf("관계 저장소"), textOf("관계를 모델의 관계 정의로 검사한다"));
     KiottySpec_setItemTag(context, KiottySpec_findItem(context, textOf("DSN-003")).value, 1, 4);
     KiottySpec_removeRelation(context, textOf("DSN-003"), 0, textOf("REQ-001"));
     KiottySpec_addRelation(context, textOf("DSN-003"), 0, textOf("REQ-002"));
     KiottySpec_writeItemBody(context, textOf("DSN-001"), textOf("## 내용\n바뀜\n"));
-    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf("잠깐"), textOf(""));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_DESIGN, textOf(""), textOf("잠깐"), textOf(""));
     KiottySpec_removeItem(context, textOf("DSN-005"));
 
     KiottySpecDiffQuery query {1, KIOTTY_SPEC_CHECKPOINT_CURRENT, 1u << (KIOTTY_SPEC_ITEM_KIND_DESIGN - 1), 0};
@@ -225,18 +284,17 @@ bool testFailedWriteRollsBack()
     std::filesystem::create_directories(root, error);
     const std::string path = root.generic_string();
     KiottySpecConfiguration configuration {};
-    configuration.project_root = textOf(path.c_str());
     configuration.max_items = 2;
-    const KiottySpecContextResult created = KiottySpec_createContext(&configuration);
+    const KiottySpecContextResult created = openContext(configuration, path);
     KiottySpecContext* const context = created.value;
     bool passed = expectTrue(ok(created.code), "create small context");
     passed = expectTrue(ok(KiottySpec_startCheckpoint(context, KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING, textOf("작은 풀")).code), "start") && passed;
-    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("a"), textOf(""));
-    const KiottySpecIdResult second = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("b"), textOf(""));
-    const KiottySpecIdResult full = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("c"), textOf(""));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf(""), textOf("a"), textOf(""));
+    const KiottySpecIdResult second = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf(""), textOf("b"), textOf(""));
+    const KiottySpecIdResult full = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf(""), textOf("c"), textOf(""));
     passed = expectTrue(full.code == KIOTTY_SPEC_STATUS_POOL_IS_FULL, "third item does not fit") && passed;
     passed = expectTrue(ok(KiottySpec_removeItem(context, textOf(second.value)).code), "remove second") && passed;
-    const KiottySpecIdResult again = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("d"), textOf(""));
+    const KiottySpecIdResult again = KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf(""), textOf("d"), textOf(""));
     passed = expectTrue(ok(again.code) && std::strcmp(again.value, "REQ-003") == 0, "failed write gave its id back") && passed;
     KiottySpec_releaseContext(context);
     std::filesystem::remove_all(root, error);
@@ -254,8 +312,7 @@ int main()
     g_root = root.generic_string();
 
     KiottySpecConfiguration configuration {};
-    configuration.project_root = textOf(g_root.c_str());
-    const KiottySpecContextResult created = KiottySpec_createContext(&configuration);
+    const KiottySpecContextResult created = openContext(configuration, g_root);
     if (!ok(created.code)) {
         std::printf("FAIL create context\n");
         KiottySpec_releaseContext(created.value);
@@ -268,6 +325,7 @@ int main()
         {"complete", testComplete},
         {"round trip", testRoundTrip},
         {"diff", testDiff},
+        {"given id and rename", testGivenIdAndRename},
     };
     int failed = 0;
     for (const auto& test : tests) {

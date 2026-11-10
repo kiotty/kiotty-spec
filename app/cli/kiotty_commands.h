@@ -38,6 +38,7 @@ int printItemCursor(Session& session, const KiottySpecCursorResult& cursor, cons
 // 명령. 명령 표는 kiotty_commands.cpp 에 있다.
 int initProject(Session& session);
 int addItem(Session& session);
+int renameItem(Session& session);
 int setItem(Session& session);
 int showItem(Session& session);
 int listItems(Session& session);
@@ -57,7 +58,7 @@ int showCheckpoint(Session& session);
 int listCheckpoints(Session& session);
 int pruneCheckpoints(Session& session);
 int showPosition(Session& session);
-int showJourney(Session& session);
+int showHistory(Session& session);
 int showDecision(Session& session);
 int setDecision(Session& session);
 int showModel(Session& session);

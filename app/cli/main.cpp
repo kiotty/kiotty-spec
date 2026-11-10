@@ -41,6 +41,21 @@ std::string findRoot(const Arguments& args)
     return pathToUtf8(current);
 }
 
+// <루트>/.kiotty/spec.kisp. 예전 이름 spec.db 만 있으면 새 이름으로 옮긴다.
+std::string databasePath(const std::string& root)
+{
+    const std::filesystem::path directory = std::filesystem::u8path(root) / ".kiotty";
+    const std::filesystem::path database = directory / "spec.kisp";
+    std::error_code error;
+    if (!std::filesystem::exists(database, error) && std::filesystem::exists(directory / "spec.db", error)) {
+        for (const char* suffix : {"", "-wal", "-shm"}) {
+            const std::filesystem::path old = directory / (std::string("spec.db") + suffix);
+            if (std::filesystem::exists(old, error)) { std::filesystem::rename(old, directory / (std::string("spec.kisp") + suffix), error); }
+        }
+    }
+    return pathToUtf8(database);
+}
+
 KiottySpecActor findActor(const Arguments& args)
 {
     const std::string name = args.option("actor").value_or(environment("KIOTTY_SPEC_ACTOR"));
@@ -52,7 +67,9 @@ void printHelp()
     std::cout << "사용법: ks <그룹> [동사] [인자...] [--root DIR] [--actor ai|user]\n"
                  "출력은 TSV 이며 첫 줄이 머리글이다. 쓰기 명령은 성공하면 아무것도 찍지 않는다 (만든 ID 는 찍는다).\n"
                  "Kind: change_request requirement rule external_interface design unit_test_plan milestone unit_test_result\n"
-                 "      system_test_plan system_test_result code_inspection_result e2e_test_plan e2e_test_result\n\n";
+                 "      system_test_plan system_test_result code_inspection_result e2e_test_plan e2e_test_result\n"
+                 "      한글 모델 이름도 받는다 (`ks model` 의 name 열).\n"
+                 "DB: <루트>/.kiotty/spec.kisp\n\n";
     for (const CommandEntry& command : commands()) {
         std::cout << "  ks " << command.group << (command.verb[0] != '\0' ? " " : "") << command.verb << " " << command.usage << "\n      "
                   << command.summary << "\n";
@@ -93,17 +110,12 @@ int run(const std::vector<std::string>& tokens)
         return 0;
     }
     session.actor = findActor(session.args);
-    const std::string root = findRoot(session.args);
+    const std::string database = databasePath(findRoot(session.args));
     KiottySpecConfiguration configuration {};
-    configuration.project_root = textOf(root);
     const KiottySpecContextResult created = KiottySpec_createContext(&configuration);
     session.context = created.value;
-    int code = 0;
-    if (created.code != KIOTTY_SPEC_STATUS_SUCCESS) {
-        code = fail(session, created.code);
-    } else {
-        code = command->run(session);
-    }
+    const KiottySpecStatus opened = created.code == KIOTTY_SPEC_STATUS_SUCCESS ? KiottySpec_open(session.context, textOf(database)).code : created.code;
+    const int code = opened != KIOTTY_SPEC_STATUS_SUCCESS ? fail(session, opened) : command->run(session);
     KiottySpec_releaseContext(session.context);
     return code;
 }

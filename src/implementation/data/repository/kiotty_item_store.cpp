@@ -16,9 +16,10 @@ using entity::ItemRecord;
 using entity::TagRecord;
 
 constexpr char LOAD_SQL[] =
-    "SELECT v.item_id, v.checkpoint, v.kind, v.parent_id, v.title, v.summary, v.tags FROM item_version v "
-    "JOIN (SELECT item_id, MAX(checkpoint) AS latest FROM item_version GROUP BY item_id) m "
-    "ON v.item_id = m.item_id AND v.checkpoint = m.latest WHERE v.removed = 0 ORDER BY v.item_id";
+    "SELECT i.id, v.checkpoint, v.kind, p.id, v.title, v.summary, v.tags, i.key FROM item_version v "
+    "JOIN (SELECT item_key, MAX(checkpoint) AS latest FROM item_version GROUP BY item_key) m "
+    "ON v.item_key = m.item_key AND v.checkpoint = m.latest JOIN item i ON i.key = v.item_key "
+    "LEFT JOIN item p ON p.key = v.parent_key WHERE v.removed = 0 ORDER BY i.id";
 
 bool lessTag(const TagRecord& left, const TagRecord& right)
 {
@@ -29,7 +30,7 @@ bool lessTag(const TagRecord& left, const TagRecord& right)
 }
 
 ItemStore::ItemStore(Storage& storage, size_t max_items, size_t max_tags)
-    : _storage(storage), _items(max_items), _id_index(max_items), _tags(max_tags)
+    : _storage(storage), _items(max_items), _id_index(max_items), _keys(max_items), _tags(max_tags)
 {
 }
 
@@ -65,6 +66,7 @@ KiottySpecStatus ItemStore::loadRow(const Row& row)
     const ItemHandle handle = _items.acquire();
     if (!handle.isValid()) { return _storage.reject(KIOTTY_SPEC_STATUS_POOL_IS_FULL, {literalText("항목 수가 max_items 를 넘음")}); }
     *_items.get(handle).value = record;
+    _keys[handle.index] = row.integer(7);
     const KiottySpecStatus indexed = _id_index.insert(record.id, handle.index);
     if (indexed != KIOTTY_SPEC_STATUS_SUCCESS) { return _storage.reject(indexed, {literalText("ID 색인에 넣을 수 없음: "), row.text(0)}); }
     return loadTags(handle, record.kind, row.text(0), row.text(6));

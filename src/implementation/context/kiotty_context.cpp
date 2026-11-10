@@ -24,13 +24,29 @@ constexpr char POST_SYNC_HOOK[] =
     "[ -d .kiotty/spec ] && ks import jsonl\n"
     "exit 0\n";
 
-constexpr char SPEC_DIRECTORY[] = ".kiotty";
-constexpr char JSONL_DIRECTORY[] = ".kiotty/spec";
-constexpr char DATABASE_FILE[] = ".kiotty/spec.db";
+constexpr char DATABASE_EXTENSION[] = ".kisp";
+constexpr char JSONL_SUFFIX[] = ".jsonl";
 constexpr char LEGACY_SUFFIX[] = ".v1";
 constexpr char GITIGNORE_FILE[] = ".gitignore";
 constexpr size_t MAX_EPOCH_DIGITS = 20;
 constexpr char GIT_DIRECTORY[] = ".git";
+
+// content 에 line 과 똑같은 줄이 있는지
+bool hasLine(Span<const char> content, Span<const char> line)
+{
+    const std::string_view text = viewOf(content);
+    const std::string_view wanted = viewOf(line);
+    size_t start = 0;
+    while (start <= text.size()) {
+        size_t end = text.find('\n', start);
+        if (end == std::string_view::npos) { end = text.size(); }
+        std::string_view current = text.substr(start, end - start);
+        if (!current.empty() && current.back() == '\r') { current.remove_suffix(1); }
+        if (current == wanted) { return true; }
+        start = end + 1;
+    }
+    return false;
+}
 constexpr char HOOKS_DIRECTORY[] = ".git/hooks";
 
 }
@@ -62,17 +78,18 @@ SystemPathResult Context::under(Span<const char> base, Span<const char> part)
     return joined;
 }
 
-KiottySpecStatus Context::open(Span<const char> root)
+KiottySpecStatus Context::open(Span<const char> database)
 {
-    if (_opened) { return _failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, {literalText("프로젝트가 이미 열려 있음")}); }
-    if (!isDirectory(root)) { return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("프로젝트 루트가 디렉토리가 아님: "), root}); }
-    const auto absolute = absolutePath(root);
-    if (!absolute) { return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("프로젝트 루트를 절대 경로로 바꿀 수 없음: "), root}); }
-    _root = absolute.value;
-    const auto spec = under(_root.view(), literalText(SPEC_DIRECTORY));
-    if (!spec) { return spec.code; }
-    if (createDirectories(spec.value.view()) != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText(".kiotty 디렉토리를 만들 수 없음")});
+    if (_opened) { return _failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, {literalText("DB 가 이미 열려 있음")}); }
+    if (database.length() == 0) { return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("DB 파일 경로가 비어 있음")}); }
+    if (isDirectory(database)) { return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("DB 파일 경로가 디렉토리임: "), database}); }
+    const auto absolute = absolutePath(database);
+    if (!absolute) { return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("DB 파일 경로를 절대 경로로 바꿀 수 없음: "), database}); }
+    _database = absolute.value;
+    const Span<const char> directory = parentOf(_database.view());
+    _root.assign(parentOf(directory));
+    if (createDirectories(directory) != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("DB 디렉토리를 만들 수 없음: "), directory});
     }
     const KiottySpecStatus catalog = _catalog.load();
     if (catalog != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(catalog, {literalText("모델 표를 적재할 수 없음")}); }
@@ -86,18 +103,16 @@ KiottySpecStatus Context::open(Span<const char> root)
 
 KiottySpecStatus Context::openDatabase()
 {
-    const auto database = under(_root.view(), literalText(DATABASE_FILE));
-    if (!database) { return database.code; }
     for (int attempt = 0; attempt < 2; ++attempt) {
-        const KiottySpecStatus opened = _connection.open(database.value.view());
+        const KiottySpecStatus opened = _connection.open(_database.view());
         if (opened != KIOTTY_SPEC_STATUS_SUCCESS) {
-            return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("DB 를 열 수 없음 "), database.value.view(), literalText(": "), _connection.message()});
+            return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("DB 를 열 수 없음 "), _database.view(), literalText(": "), _connection.message()});
         }
         const auto version = ensure(_storage);
         if (!version) { return version.code; }
         if (version.value == SCHEMA_VERSION) { return KIOTTY_SPEC_STATUS_SUCCESS; }
         _connection.close();
-        const KiottySpecStatus moved = moveLegacyDatabase(database.value.view());
+        const KiottySpecStatus moved = moveLegacyDatabase(_database.view());
         if (moved != KIOTTY_SPEC_STATUS_SUCCESS) { return moved; }
     }
     return _failure.raise(KIOTTY_SPEC_STATUS_DATABASE, {literalText("DB 스키마를 만들 수 없음")});
@@ -117,7 +132,18 @@ KiottySpecStatus Context::moveLegacyDatabase(Span<const char> database)
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-SystemPathResult Context::jsonlDirectory() { return under(_root.view(), literalText(JSONL_DIRECTORY)); }
+SystemPathResult Context::jsonlDirectory()
+{
+    const Span<const char> name = fileNameOf(_database.view());
+    const std::string_view extension(DATABASE_EXTENSION);
+    const bool has_extension = name.length() > extension.size() && viewOf(name).substr(name.length() - extension.size()) == extension;
+    if (has_extension) { return under(parentOf(_database.view()), Span<const char>(name.data(), name.length() - extension.size())); }
+    SystemPath directory;
+    if (directory.assign(_database.view()) != KIOTTY_SPEC_STATUS_SUCCESS || directory.append(literalText(JSONL_SUFFIX)) != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return SystemPathResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, {literalText("경로가 너무 김: "), _database.view()}));
+    }
+    return SystemPathResult::success(directory);
+}
 
 KiottySpecStatus Context::updateGitignore()
 {
@@ -129,14 +155,21 @@ KiottySpecStatus Context::updateGitignore()
         return _failure.raise(read.code, {literalText("파일을 읽을 수 없거나 작업 버퍼보다 큼: "), gitignore.value.view()});
     }
     _work.adopt(read ? read.value : 0);
-    const Span<const char> entries[] = {literalText(".kiotty/spec.db"), literalText(".kiotty/spec.db-wal"), literalText(".kiotty/spec.db-shm"),
-                                        literalText(".kiotty/spec.db.v1")};
-    for (const Span<const char> entry : entries) {
+    // 루트에서 본 DB 경로 (.kiotty/spec.kisp) 와 SQLite 가 옆에 만드는 파일
+    const Span<const char> directory = fileNameOf(parentOf(_database.view()));
+    const Span<const char> file = fileNameOf(_database.view());
+    const Span<const char> suffixes[] = {literalText(""), literalText("-wal"), literalText("-shm"), literalText(LEGACY_SUFFIX)};
+    for (const Span<const char> suffix : suffixes) {
+        SystemPath entry;
+        entry.assign(directory);
+        entry.append(literalText("/"));
+        entry.append(file);
+        if (entry.append(suffix) != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, {literalText("경로가 너무 김")}); }
         const Span<const char> content = _work.view();
-        if (viewOf(content).find(viewOf(entry)) != std::string_view::npos) { continue; }
+        if (hasLine(content, entry.view())) { continue; }
         KiottySpecStatus status = KIOTTY_SPEC_STATUS_SUCCESS;
         if (content.length() > 0 && content[content.length() - 1] != '\n') { status = _work.append(literalText("\n")); }
-        if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _work.append(entry); }
+        if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _work.append(entry.view()); }
         if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _work.append(literalText("\n")); }
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(status, {literalText(".gitignore 가 작업 버퍼보다 커짐")}); }
     }

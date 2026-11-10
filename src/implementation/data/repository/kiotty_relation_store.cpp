@@ -12,12 +12,13 @@ using entity::ItemHandle;
 using entity::RelationRecord;
 
 constexpr char LOAD_SQL[] =
-    "SELECT v.from_id, v.model, v.relation, v.to_id FROM relation_version v "
-    "JOIN (SELECT from_id, relation, to_id, MAX(checkpoint) AS latest FROM relation_version GROUP BY from_id, relation, to_id) m "
-    "ON v.from_id = m.from_id AND v.relation = m.relation AND v.to_id = m.to_id AND v.checkpoint = m.latest WHERE v.removed = 0";
+    "SELECT f.id, v.model, v.relation, t.id FROM relation_version v "
+    "JOIN (SELECT from_key, relation, to_key, MAX(checkpoint) AS latest FROM relation_version GROUP BY from_key, relation, to_key) m "
+    "ON v.from_key = m.from_key AND v.relation = m.relation AND v.to_key = m.to_key AND v.checkpoint = m.latest "
+    "JOIN item f ON f.key = v.from_key JOIN item t ON t.key = v.to_key WHERE v.removed = 0";
 
 constexpr char WRITE_SQL[] =
-    "INSERT OR REPLACE INTO relation_version (from_id, model, relation, to_id, checkpoint, removed) VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
+    "INSERT OR REPLACE INTO relation_version (from_key, model, relation, to_key, checkpoint, removed) VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
 
 bool lessRelation(const RelationRecord& left, const RelationRecord& right)
 {
@@ -73,15 +74,15 @@ bool RelationStore::contains(const RelationRecord& relation) const
 
 KiottySpecStatus RelationStore::writeVersion(const RelationRecord& relation, bool removed, uint32_t sequence)
 {
-    const auto from = _items.reader().get(relation.from);
-    const auto to = _items.reader().get(relation.to);
-    if (!from || !to) { return KIOTTY_SPEC_STATUS_INVALID_HANDLE; }
+    const int64_t from = _items.reader().key(relation.from);
+    const int64_t to = _items.reader().key(relation.to);
+    if (from == 0 || to == 0) { return KIOTTY_SPEC_STATUS_INVALID_HANDLE; }
     auto query = _storage.prepare(literalText(WRITE_SQL));
     if (!query) { return query.code; }
-    query.value.bind(1, from.value->id.view());
+    query.value.bind(1, from);
     query.value.bind(2, spanOf(entity::kindName(relation.model)));
     query.value.bind(3, static_cast<int64_t>(relation.relation));
-    query.value.bind(4, to.value->id.view());
+    query.value.bind(4, to);
     query.value.bind(5, static_cast<int64_t>(sequence));
     query.value.bind(6, static_cast<int64_t>(removed ? 1 : 0));
     return _storage.check(query.value.execute());
