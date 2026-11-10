@@ -22,6 +22,7 @@ KiottySpecContextResult KiottySpec_createContext(const KiottySpecConfiguration* 
     if (configuration->max_cursors != 0) { settings.maxCursors = configuration->max_cursors; }
     if (configuration->max_cursor_rows != 0) { settings.maxCursorRows = configuration->max_cursor_rows; }
     if (configuration->work_buffer_bytes != 0) { settings.workBufferBytes = configuration->work_buffer_bytes; }
+    if (configuration->max_body_bytes != 0) { settings.maxBodyBytes = configuration->max_body_bytes; }
     // 할당 실패는 process 종료다 (개발수칙 1.1). 소유권은 releaseContext 가 되찾는다.
     KiottySpecContext* context = std::make_unique<KiottySpecContext>(settings).release();
     return KiottySpecContextResult{KIOTTY_SPEC_STATUS_SUCCESS, context};

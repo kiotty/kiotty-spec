@@ -50,7 +50,7 @@ Result<uint64_t, KiottySpecStatus> PastReader::tagAt(Span<const char> id, uint32
     return Result<uint64_t, KiottySpecStatus>::success(_w.items.history().tagAt(version.value->key, tag, checkpoint));
 }
 
-// 본문은 현재 것만 파일에 있다. 그 시점의 본문 해시가 지금과 같을 때만 돌려준다. 과거 본문은 git 이력에 있다.
+// 본문은 현재 것만 .kisp 에 있다. 그 시점의 본문 해시가 지금과 같을 때만 돌려준다. 과거 본문은 git 이력에 있다.
 Result<size_t, KiottySpecStatus> PastReader::bodyAt(Span<const char> id, uint32_t checkpoint, char* buffer, size_t capacity)
 {
     using SizeResult = Result<size_t, KiottySpecStatus>;
@@ -61,7 +61,7 @@ Result<size_t, KiottySpecStatus> PastReader::bodyAt(Span<const char> id, uint32_
     if (!same) {
         return SizeResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, {literalText("그 시점의 본문은 지금과 달라 git 이력에만 있음: "), id}));
     }
-    return readBodyFile(_w.items.tables().body_directory.view(), version.value->key, buffer, capacity);
+    return copyBody(_w.items.tables().bodies.find(version.value->key), buffer, capacity);
 }
 
 Result<size_t, KiottySpecStatus> PastReader::decisionAt(entity::ItemKind kind, uint32_t checkpoint, char* buffer, size_t capacity)

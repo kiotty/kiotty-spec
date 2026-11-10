@@ -122,7 +122,7 @@ bool testKispFileWriteAndHash()
     {
         core::KispFileWriter writer;
         ok = expectTrue(writer.open(path) == KIOTTY_SPEC_STATUS_SUCCESS, "open kisp writer") && ok;
-        writer.write(core::literalText("#kisp 1 model 1\n"));
+        writer.write(core::literalText("#kisp 2 model 1\n"));
         writer.write(core::literalText("meta\tO\tproject.name\tx\n"));
         ok = expectTrue(!core::isFile(path), "nothing replaced before commit") && ok;
         ok = expectTrue(writer.commit() == KIOTTY_SPEC_STATUS_SUCCESS, "commit") && ok;

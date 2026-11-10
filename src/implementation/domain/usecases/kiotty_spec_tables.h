@@ -13,7 +13,7 @@
 namespace kiotty::spec::implementation {
 
 // .kisp 파일 형식 (docs/plan/261110_kisp_v1.md). 모델이 바뀌어 이름이 달라지면 MODEL_VERSION 을 올린다.
-inline constexpr std::string_view KISP_HEADER = "#kisp 1 model 1";
+inline constexpr std::string_view KISP_HEADER = "#kisp 2 model 1";
 inline constexpr std::string_view TABLE_MARKER = "TABLE";
 inline constexpr std::string_view LIVE_MARKER = "O";
 inline constexpr std::string_view REMOVED_MARKER = "X";
@@ -26,6 +26,7 @@ inline constexpr std::string_view ITEM_VERSION_TABLE = "item_version";
 inline constexpr std::string_view TAG_TABLE = "tag";
 inline constexpr std::string_view RELATION_TABLE = "relation";
 inline constexpr std::string_view DECISION_TABLE = "decision";
+inline constexpr std::string_view BODY_TABLE = "body";
 
 // 파일과 오가는 store 와 모델 표. SpecFile 이 세부 클래스에 빌려준다.
 struct SpecTables {

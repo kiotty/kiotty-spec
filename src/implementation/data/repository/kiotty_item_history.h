@@ -29,7 +29,7 @@ public:
     Result<entity::IdText, KiottySpecStatus> nextId(Span<const char> prefix) const;
     // 버전이 있는 모든 key 를 (Kind, ID) 순으로. 정렬 배열을 빌려 쓰므로 다음 호출 전까지만 유효하다.
     Span<const uint32_t> keysByKindAndId();
-    // 정리 (설계서 v1 5.3). 버전이 없어진 key 의 ID 줄과 본문 파일도 지운다.
+    // 정리 (설계서 v1 5.3). 버전이 없어진 key 의 ID 줄과 본문도 지운다.
     void prune(uint32_t base);
 
 private:
@@ -37,8 +37,5 @@ private:
 
     ItemTables& _t;
 };
-
-// 본문 파일 경로 <directory>/<key 8자리 16진수>.md
-SystemPathResult bodyPath(Span<const char> directory, uint32_t key);
 
 }

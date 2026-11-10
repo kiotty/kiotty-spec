@@ -16,9 +16,7 @@ using entity::ItemVersion;
 using entity::TagVersion;
 
 constexpr size_t MIN_ID_DIGITS = 3;
-constexpr size_t KEY_DIGITS = 8;
 constexpr uint32_t MAX_ID_NUMBER = 100000000u;
-constexpr char BODY_EXTENSION[] = ".md";
 
 struct IdParts {
     Span<const char> prefix;
@@ -40,14 +38,6 @@ IdParts splitId(Span<const char> id)
     return parts;
 }
 
-}
-
-SystemPathResult bodyPath(Span<const char> directory, uint32_t key)
-{
-    FixedString<KEY_DIGITS + sizeof(BODY_EXTENSION)> name;
-    appendHex(name, key, KEY_DIGITS);
-    name.append(literalText(BODY_EXTENSION));
-    return joinPath(directory, name.view());
 }
 
 Result<uint32_t, KiottySpecStatus> ItemHistory::keyOf(Span<const char> id) const
@@ -137,8 +127,7 @@ void ItemHistory::prune(uint32_t base)
     for (size_t index = _t.names.length(); index > 0; --index) {
         const uint32_t key = _t.names.keyAt(index - 1);
         if (_t.versions.latest(key, UINT32_MAX) != nullptr) { continue; }
-        const SystemPathResult path = bodyPath(_t.body_directory.view(), key);
-        if (path) { removeFile(path.value.view()); }
+        _t.bodies.erase(key);
         _t.names.erase(key);
     }
 }

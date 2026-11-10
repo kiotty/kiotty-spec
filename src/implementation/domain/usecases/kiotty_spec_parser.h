@@ -29,6 +29,7 @@ private:
     KiottySpecStatus parseTag(const KispFields& fields, uint32_t removed);
     KiottySpecStatus parseRelation(const KispFields& fields, uint32_t removed);
     KiottySpecStatus parseDecision(const KispFields& fields);
+    KiottySpecStatus parseBody(const KispFields& fields);
     Result<entity::ItemKind, KiottySpecStatus> kindOfKey(uint32_t key);
     Result<uint64_t, KiottySpecStatus> parseTagValue(entity::ItemKind kind, uint32_t tag, Span<const char> names) const;
 

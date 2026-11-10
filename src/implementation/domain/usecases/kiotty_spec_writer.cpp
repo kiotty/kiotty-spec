@@ -25,6 +25,7 @@ constexpr std::string_view ITEM_VERSION_HEADER = "TABLE\titem_version\tO/X\tkey\
 constexpr std::string_view TAG_HEADER = "TABLE\ttag\tO/X\tkey\ttag\tcheckpoint\tvalue\n";
 constexpr std::string_view RELATION_HEADER = "TABLE\trelation\tO/X\tfrom\tmodel\trelation\tto\tcheckpoint\n";
 constexpr std::string_view DECISION_HEADER = "TABLE\tdecision\tO/X\tkind\tcheckpoint\ttext\n";
+constexpr std::string_view BODY_HEADER = "TABLE\tbody\tO/X\tkey\ttext\n";
 
 constexpr size_t KEY_DIGITS = 8;
 constexpr size_t HASH_DIGITS = 16;
@@ -90,6 +91,7 @@ KiottySpecStatus SpecWriter::write()
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = writeTags(); }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = writeRelations(); }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = writeDecisions(); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = writeBodies(); }
     return status;
 }
 
@@ -216,6 +218,20 @@ KiottySpecStatus SpecWriter::writeDecisions()
         line.add(spanOf(entity::kindName(version.kind)));
         addDecimal(line, version.checkpoint);
         line.add(version.text.view());
+        status = emit(line);
+    }
+    return status;
+}
+
+// 항목 key 순서로 현재 본문을 한 줄씩 쓴다. 줄바꿈은 \n 으로 이스케이프된다.
+KiottySpecStatus SpecWriter::writeBodies()
+{
+    KiottySpecStatus status = writeHeader(BODY_HEADER);
+    const BodyStore& bodies = _t.items.tables().bodies;
+    for (size_t index = 0; index < bodies.length() && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
+        KispLineEncoder line = startLine(BODY_TABLE, 0);
+        addKey(line, bodies.keyAt(index));
+        line.add(bodies.bodyAt(index));
         status = emit(line);
     }
     return status;

@@ -1,8 +1,8 @@
-"""jsonl (스키마 3, item.jsonl 이 있는 형식) 을 .kisp 텍스트 파일과 본문 파일로 바꾼다.
+"""jsonl (스키마 3, item.jsonl 이 있는 형식) 을 .kisp 텍스트 파일로 바꾼다.
 
     python tools/kisp_from_jsonl.py <jsonl 디렉토리> <.kisp 경로>
 
-본문은 .kisp 에서 확장자를 뺀 디렉토리에 <key>.md 로 쓴다 (.kiotty/spec.kisp -> .kiotty/spec/).
+항목의 현재 본문은 파일 끝의 body 표에 쓴다.
 더 옛 형식 (스키마 1 · 2 jsonl, SQLite spec.db) 은 커밋 4205e5d 의 ks 로 먼저 `ks import jsonl` · `ks export jsonl` 한다.
 모델 1 의 태그 · 관계 이름은 src/implementation/domain/usecases/kiotty_model_catalog.cpp 를 옮긴 것이다.
 """
@@ -53,6 +53,7 @@ HEADERS = [
     'TABLE\ttag\tO/X\tkey\ttag\tcheckpoint\tvalue',
     'TABLE\trelation\tO/X\tfrom\tmodel\trelation\tto\tcheckpoint',
     'TABLE\tdecision\tO/X\tkind\tcheckpoint\ttext',
+    'TABLE\tbody\tO/X\tkey\ttext',
 ]
 
 
@@ -150,7 +151,7 @@ def write_kisp(directory, output):
                         for row in load(directory, 'relation_version')), key=lambda relation: relation[:4])
     decisions = sorted(load(directory, 'decision_version'), key=lambda row: (KINDS.index(row['kind']), row['checkpoint']))
 
-    out = ['#kisp 1 model 1\n', HEADERS[0] + '\n']
+    out = ['#kisp 2 model 1\n', HEADERS[0] + '\n']
     out += [line('meta', 'O', row['key'], row['value']) for row in sorted(meta, key=lambda row: row['key'].encode('utf-8'))]
     out.append(HEADERS[1] + '\n')
     for row in sorted(checkpoints, key=lambda row: row['sequence']):
@@ -170,23 +171,19 @@ def write_kisp(directory, output):
         out.append(line('relation', 'X' if removed else 'O', key_text(source), model, RELATIONS[model][relation], key_text(target), checkpoint))
     out.append(HEADERS[6] + '\n')
     out += [line('decision', 'O', row['kind'], row['checkpoint'], row['description']) for row in decisions]
+    out.append(HEADERS[7] + '\n')
+    out += [line('body', 'O', key_text(key), body) for key, body in current_bodies(directory, keys)]
     with open(output, 'wb') as stream:
         stream.write(''.join(out).encode('utf-8'))
-    return keys
 
 
-def write_bodies(directory, output, keys):
-    bodies = os.path.splitext(output)[0]
-    os.makedirs(bodies, exist_ok=True)
+# 지우지 않은 항목의 마지막 버전 본문을 key 순서로
+def current_bodies(directory, keys):
     latest = {}
     for row in load(directory, 'item_version'):
         if row['item_key'] not in latest or latest[row['item_key']]['checkpoint'] < row['checkpoint']:
             latest[row['item_key']] = row
-    for old_key, row in latest.items():
-        if row['removed'] or not row['body']:
-            continue
-        with open(os.path.join(bodies, '%08x.md' % keys[old_key]), 'wb') as stream:
-            stream.write(row['body'].encode('utf-8'))
+    return sorted((keys[old_key], row['body']) for old_key, row in latest.items() if not row['removed'] and row['body'])
 
 
 def main():
@@ -195,8 +192,7 @@ def main():
     directory, output = sys.argv[1], sys.argv[2]
     if not os.path.isfile(os.path.join(directory, 'item.jsonl')):
         sys.exit('item.jsonl 이 없음: 스키마 3 jsonl 이 아니다. ' + __doc__)
-    keys = write_kisp(directory, output)
-    write_bodies(directory, output, keys)
+    write_kisp(directory, output)
 
 
 if __name__ == '__main__':

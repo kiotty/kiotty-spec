@@ -32,6 +32,7 @@ struct Configuration {
     size_t maxTags {8192};
     size_t maxCheckpoints {4096};
     size_t maxDecisionVersions {1024};
+    size_t maxBodyBytes {16 * 1024 * 1024};
     size_t maxCursors {16};
     size_t maxCursorRows {4096};
     size_t workBufferBytes {256 * 1024};
@@ -47,7 +48,6 @@ public:
     Context& operator=(const Context&) = delete;
 
     // .kisp 파일을 읽어 버전 표와 현재 뷰를 만든다. 없으면 디렉토리와 함께 빈 파일을 만든다.
-    // 본문 파일은 확장자를 뺀 이름의 디렉토리에 둔다 (.kiotty/spec.kisp → .kiotty/spec/<key>.md).
     KiottySpecStatus open(Span<const char> database);
     KiottySpecStatus init(Span<const char> name);
 
@@ -63,8 +63,6 @@ public:
     TextBuffer& work() { return _work; }
 
 private:
-    SystemPathResult bodyDirectory(Span<const char> database);
-
     bool _opened {false};
     SystemPath _root;
     Failure _failure;

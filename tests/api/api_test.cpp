@@ -112,7 +112,9 @@ bool testReopen(KiottySpecContext* context)
 {
     const std::string path = g_root + "/.kiotty/spec.kisp";
     const std::string before = readAll(path);
-    bool passed = expectTrue(before.rfind("#kisp 1 model 1\n", 0) == 0, "file starts with header");
+    bool passed = expectTrue(before.rfind("#kisp 2 model 1\n", 0) == 0, "file starts with header");
+    passed = expectTrue(before.find("\nbody\tO\t") != std::string::npos &&before.find("## 인수 조건\\n- 저장된다\\n") != std::string::npos, "body line in file") && passed;
+    passed = expectTrue(!std::filesystem::exists(g_root + "/.kiotty/spec"), "no body directory") && passed;
     KiottySpecConfiguration configuration {};
     const KiottySpecContextResult other = openContext(configuration, g_root);
     passed = expectTrue(ok(other.code), "reopen") && passed;
@@ -120,7 +122,7 @@ bool testReopen(KiottySpecContext* context)
     passed = expectTrue(ok(item.code) && std::strcmp(item.value.title, "저장") == 0, "item after reopen") && passed;
     char body[64] {};
     const KiottySpecSizeResult read = KiottySpec_readItemBody(other.value, textOf("REQ-001"), body, sizeof(body));
-    passed = expectTrue(ok(read.code), "body after reopen") && passed;
+    passed = expectTrue(ok(read.code) && std::strcmp(body, "## 인수 조건\n- 저장된다\n") == 0, "body after reopen") && passed;
     passed = expectTrue(ok(KiottySpec_startCheckpoint(other.value, KIOTTY_SPEC_STEP_DESIGN_DISCUSSING, textOf("다시 열기")).code), "start in other") && passed;
     passed = expectTrue(ok(KiottySpec_resumeCheckpoint(other.value).code), "resume in other") && passed;
     KiottySpec_releaseContext(other.value);
@@ -335,6 +337,39 @@ bool testFailedWriteRollsBack()
     return passed;
 }
 
+// 본문 영역이 작으면 고친 본문을 붙이기 전에 앞으로 당기고, 그래도 모자라면 CAPACITY_EXCEEDED 이며 되돌린다.
+bool testSmallBodyArea()
+{
+    std::error_code error;
+    const auto root = std::filesystem::temp_directory_path(error) / "kiotty_api_bodies";
+    std::filesystem::remove_all(root, error);
+    std::filesystem::create_directories(root, error);
+    const std::string path = root.generic_string();
+    KiottySpecConfiguration configuration {};
+    configuration.max_body_bytes = 16;
+    const KiottySpecContextResult created = openContext(configuration, path);
+    KiottySpecContext* const context = created.value;
+    bool passed = expectTrue(ok(created.code), "create small body context");
+    passed = expectTrue(ok(KiottySpec_startCheckpoint(context, KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING, textOf("작은 본문")).code), "start") && passed;
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("REQ-001"), textOf("a"), textOf(""));
+    KiottySpec_createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("REQ-002"), textOf("b"), textOf(""));
+    passed = expectTrue(ok(KiottySpec_writeItemBody(context, textOf("REQ-001"), textOf("aaaaaa")).code), "first body") && passed;
+    passed = expectTrue(ok(KiottySpec_writeItemBody(context, textOf("REQ-002"), textOf("bbbbbb")).code), "second body") && passed;
+    passed = expectTrue(ok(KiottySpec_writeItemBody(context, textOf("REQ-001"), textOf("cccccccc")).code), "rewrite compacts") && passed;
+    passed = expectTrue(KiottySpec_writeItemBody(context, textOf("REQ-001"), textOf("ddddddddddd")).code == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "body area full") && passed;
+    char body[32] {};
+    KiottySpec_readItemBody(context, textOf("REQ-001"), body, sizeof(body));
+    passed = expectTrue(std::strcmp(body, "cccccccc") == 0, "failed body write rolled back") && passed;
+    KiottySpec_readItemBody(context, textOf("REQ-002"), body, sizeof(body));
+    passed = expectTrue(std::strcmp(body, "bbbbbb") == 0, "other body kept") && passed;
+    passed = expectTrue(ok(KiottySpec_writeItemBody(context, textOf("REQ-002"), textOf("")).code), "empty body") && passed;
+    const KiottySpecSizeResult empty = KiottySpec_readItemBody(context, textOf("REQ-002"), body, sizeof(body));
+    passed = expectTrue(ok(empty.code) && empty.value == 0 && body[0] == '\0', "empty body reads empty") && passed;
+    KiottySpec_releaseContext(context);
+    std::filesystem::remove_all(root, error);
+    return passed;
+}
+
 }
 
 int main()
@@ -373,6 +408,9 @@ int main()
     const bool rolled_back = testFailedWriteRollsBack();
     std::printf("%s failed write rolls back\n", rolled_back ? "PASS" : "FAIL");
     if (!rolled_back) { ++failed; }
+    const bool small_bodies = testSmallBodyArea();
+    std::printf("%s small body area\n", small_bodies ? "PASS" : "FAIL");
+    if (!small_bodies) { ++failed; }
     std::printf("%d failed\n", failed);
     return failed;
 }

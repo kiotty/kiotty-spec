@@ -19,8 +19,8 @@ class SpecFile
 public:
     SpecFile(const SpecTables& tables, TextBuffer& work) : _t(tables), _work(work) {}
 
-    // database 를 열고 본문 파일은 bodies 디렉토리에 둔다. 파일이 없으면 빈 프로젝트다.
-    KiottySpecStatus open(Span<const char> database, Span<const char> bodies);
+    // 파일이 없으면 빈 프로젝트다.
+    KiottySpecStatus open(Span<const char> database);
     KiottySpecStatus load();
     KiottySpecStatus save();
     // 연 뒤에 파일이 밖에서 바뀌었으면 CONFLICT

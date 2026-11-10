@@ -23,6 +23,7 @@ constexpr size_t ITEM_VERSION_FIELDS = 9;
 constexpr size_t TAG_FIELDS = 6;
 constexpr size_t RELATION_FIELDS = 7;
 constexpr size_t DECISION_FIELDS = 5;
+constexpr size_t BODY_FIELDS = 4;
 constexpr size_t KEY_DIGITS = 8;
 constexpr size_t HASH_DIGITS = 16;
 constexpr uint64_t MAX_SEQUENCE = UINT32_MAX;
@@ -75,6 +76,7 @@ KiottySpecStatus SpecParser::parse(const KispFields& fields)
     if (table == TAG_TABLE) { return parseTag(fields, removed); }
     if (table == RELATION_TABLE) { return parseRelation(fields, removed); }
     if (table == DECISION_TABLE) { return parseDecision(fields); }
+    if (table == BODY_TABLE) { return parseBody(fields); }
     return _t.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("모르는 표: "), fields.values[0]});
 }
 
@@ -218,6 +220,21 @@ KiottySpecStatus SpecParser::parseDecision(const KispFields& fields)
     slot.value->kind = kind.value;
     slot.value->removed = 0;
     return slot.value->text.assign(fields.values[4]);
+}
+
+// 항목의 현재 본문. item 줄이 있는 key 에만 둘 수 있고 key 마다 한 줄이다.
+KiottySpecStatus SpecParser::parseBody(const KispFields& fields)
+{
+    if (fields.count != BODY_FIELDS) { return invalid(_t.failure, literalText("body 줄의 열 수가 다름")); }
+    const auto key = parseKey(fields.values[2]);
+    const bool valid = key && fields.values[3].length() > 0 && fits(fields.values[3], entity::MAX_BODY_LENGTH);
+    if (!valid) { return invalid(_t.failure, literalText("body 줄의 키나 본문이 잘못됨")); }
+    ItemTables& tables = _t.items.tables();
+    if (!tables.names.find(key.value)) { return _t.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, {literalText("item 줄이 없는 본문: "), fields.values[2]}); }
+    if (tables.bodies.find(key.value).length() > 0) { return _t.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, {literalText("같은 항목의 본문이 두 줄 (병합을 확인할 것): "), fields.values[2]}); }
+    const KiottySpecStatus stored = tables.bodies.put(key.value, fields.values[3]);
+    if (stored != KIOTTY_SPEC_STATUS_SUCCESS) { return _t.failure.raise(stored, {literalText("본문이 max_body_bytes 를 넘음")}); }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 }

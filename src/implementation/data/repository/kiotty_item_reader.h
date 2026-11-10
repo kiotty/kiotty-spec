@@ -35,7 +35,4 @@ private:
     ItemTables& _t;
 };
 
-// 본문 파일을 buffer 에 null 종료로 복사한다. 파일이 없으면 빈 본문이다.
-Result<size_t, KiottySpecStatus> readBodyFile(Span<const char> directory, uint32_t key, char* buffer, size_t capacity);
-
 }

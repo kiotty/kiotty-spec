@@ -12,9 +12,9 @@ namespace kiotty::spec::implementation {
 
 namespace {
 
-// 작업 버퍼를 줄 버퍼와 줄 영역으로 나눈다. 한 줄의 상한은 LINE_BYTES 다.
+// 작업 버퍼를 줄 버퍼와 줄 영역으로 나눈다. 줄 영역은 모든 글자를 이스케이프한 가장 긴 본문 줄이 들어가는 크기다.
 constexpr size_t READ_BUFFER_BYTES = 64 * 1024;
-constexpr size_t LINE_BYTES = 16 * 1024;
+constexpr size_t LINE_BYTES = 2 * entity::MAX_BODY_LENGTH + 1024;
 constexpr size_t MAX_LINE_MESSAGE = 512;
 constexpr std::string_view CONFLICT_MARKERS[] = {"<<<<<<<", "=======", ">>>>>>>"};
 constexpr char COMMENT = '#';
@@ -40,13 +40,12 @@ bool isConflictMarker(std::string_view line)
 
 }
 
-KiottySpecStatus SpecFile::open(Span<const char> database, Span<const char> bodies)
+KiottySpecStatus SpecFile::open(Span<const char> database)
 {
     if (_work.capacity() < READ_BUFFER_BYTES + LINE_BYTES) {
-        return _t.failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, {literalText("work_buffer_bytes 가 80 KiB 보다 작음")});
+        return _t.failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, {literalText("work_buffer_bytes 가 97 KiB 보다 작음")});
     }
-    KiottySpecStatus status = _database.assign(database);
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _t.items.tables().body_directory.assign(bodies); }
+    const KiottySpecStatus status = _database.assign(database);
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return _t.failure.raise(status, {literalText("경로가 너무 김")}); }
     return load();
 }

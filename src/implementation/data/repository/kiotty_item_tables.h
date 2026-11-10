@@ -3,7 +3,7 @@
 #include "implementation/core/kiotty_fixed_map.h"
 #include "implementation/core/kiotty_lazy_pool.h"
 #include "implementation/core/kiotty_version_table.h"
-#include "implementation/data/datasource/kiotty_file_system.h"
+#include "implementation/data/repository/kiotty_body_store.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 #include "implementation/domain/entity/kiotty_version_records.h"
 
@@ -18,6 +18,7 @@ struct ItemCapacity {
     size_t tags;
     size_t versions;
     size_t tag_versions;
+    size_t body_bytes;
 };
 
 // ItemStore 가 소유하는 표 묶음. 세부 클래스는 이것을 reference 로 받는다 (개발수칙 4.19).
@@ -33,11 +34,12 @@ struct ItemTables {
           keys(capacity.items, entity::NO_KEY),
           parents(capacity.items, entity::NO_KEY),
           tags(capacity.tags),
-          order(capacity.versions)
+          order(capacity.versions),
+          bodies(capacity.body_bytes, capacity.versions)
     {
     }
 
-    // 파일 내용: key → ID, 항목 버전, 태그 버전
+    // 파일 내용: key → ID, 항목 버전, 태그 버전, 현재 본문
     FixedMap<uint32_t, entity::IdText> names;
     VersionTable<entity::ItemVersion> versions;
     VersionTable<entity::TagVersion> tag_versions;
@@ -53,7 +55,7 @@ struct ItemTables {
 
     // 정렬할 때 빌려 쓰는 key 배열
     std::vector<uint32_t> order;
-    SystemPath body_directory;
+    BodyStore bodies;
 };
 
 }

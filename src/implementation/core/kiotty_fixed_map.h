@@ -59,6 +59,7 @@ public:
     size_t capacity() const { return _keys.size(); }
     const Key& keyAt(size_t index) const { return _keys[index]; }
     const Value& valueAt(size_t index) const { return _values[index]; }
+    Value& valueAt(size_t index) { return _values[index]; }
 
 private:
     size_t lowerBound(const Key& key) const

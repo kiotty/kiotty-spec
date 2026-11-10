@@ -28,6 +28,7 @@ void ItemStore::clear()
     _t.names.clear();
     _t.versions.clear();
     _t.tag_versions.clear();
+    _t.bodies.clear();
 }
 
 KiottySpecStatus ItemStore::rebuild()

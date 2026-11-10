@@ -143,15 +143,13 @@ KiottySpecStatus ItemWriter::applyTag(ItemHandle handle, ItemKind kind, uint32_t
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-// 본문 파일을 먼저 쓰고, 본문 해시를 바꾼 버전을 쓴다. 빈 본문은 파일을 지운다.
+// 본문을 먼저 두고, 본문 해시를 바꾼 버전을 쓴다. 빈 본문은 지운다.
 KiottySpecStatus ItemWriter::writeBody(ItemHandle handle, Span<const char> body, uint32_t sequence)
 {
     auto version = currentVersion(handle);
     if (!version) { return version.code; }
-    const SystemPathResult path = bodyPath(_t.body_directory.view(), version.value.key);
-    if (!path) { return _failure.raise(path.code, {literalText("본문 경로가 너무 김")}); }
-    const KiottySpecStatus stored = body.length() == 0 ? removeFile(path.value.view()) : writeWholeFile(path.value.view(), body);
-    if (stored != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText("본문 파일을 쓸 수 없음: "), path.value.view()}); }
+    const KiottySpecStatus stored = _t.bodies.put(version.value.key, body);
+    if (stored != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(stored, {literalText("본문 영역 (max_body_bytes) 이 모자람. 정리할 것")}); }
     version.value.checkpoint = sequence;
     version.value.body_hash = body.length() == 0 ? 0 : hash64(body);
     return writeVersion(handle, version.value);
