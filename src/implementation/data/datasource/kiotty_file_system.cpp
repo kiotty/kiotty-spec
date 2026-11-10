@@ -39,55 +39,6 @@ KiottySpecStatus createDirectories(Span<const char> path)
     return platform::isDirectory(path) ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 }
 
-Result<size_t, KiottySpecStatus> readFile(Span<const char> path, Span<char> buffer)
-{
-    using SizeResult = Result<size_t, KiottySpecStatus>;
-    const int descriptor = platform::openFile(path, platform::OpenMode::READ);
-    if (descriptor < 0) { return SizeResult::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
-    size_t length = 0;
-    int count = 1;
-    while (count > 0 && length < buffer.length()) {
-        count = platform::readSome(descriptor, buffer.data() + length, chunkOf(buffer.length() - length));
-        if (count > 0) { length += static_cast<size_t>(count); }
-    }
-    // buffer 가 꼭 찼으면 한 바이트를 더 읽어 보아 남은 내용이 있는지 본다.
-    char extra = 0;
-    if (count > 0) { count = platform::readSome(descriptor, &extra, 1); }
-    platform::closeFile(descriptor);
-    if (count > 0) { return SizeResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
-    if (count < 0) { return SizeResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT); }
-    return SizeResult::success(length);
-}
-
-Result<size_t, KiottySpecStatus> fileLength(Span<const char> path)
-{
-    using SizeResult = Result<size_t, KiottySpecStatus>;
-    constexpr size_t CHUNK_BYTES = 512;
-    const int descriptor = platform::openFile(path, platform::OpenMode::READ);
-    if (descriptor < 0) { return SizeResult::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
-    char chunk[CHUNK_BYTES] {};
-    size_t length = 0;
-    int count = platform::readSome(descriptor, chunk, CHUNK_BYTES);
-    while (count > 0) {
-        length += static_cast<size_t>(count);
-        count = platform::readSome(descriptor, chunk, CHUNK_BYTES);
-    }
-    platform::closeFile(descriptor);
-    if (count < 0) { return SizeResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT); }
-    return SizeResult::success(length);
-}
-
-KiottySpecStatus writeWholeFile(Span<const char> path, Span<const char> content)
-{
-    const Span<const char> parent = parentOf(path);
-    if (parent.length() > platform::rootLength(path)) { createDirectories(parent); }
-    const int descriptor = platform::openFile(path, platform::OpenMode::WRITE);
-    if (descriptor < 0) { return KIOTTY_SPEC_STATUS_INPUT_OUTPUT; }
-    const KiottySpecStatus written = writeAll(descriptor, content);
-    platform::closeFile(descriptor);
-    return written;
-}
-
 int openForReading(Span<const char> path) { return platform::openFile(path, platform::OpenMode::READ); }
 
 int openForWriting(Span<const char> path) { return platform::openFile(path, platform::OpenMode::WRITE); }
@@ -97,8 +48,6 @@ int readDescriptor(int descriptor, Span<char> buffer) { return platform::readSom
 KiottySpecStatus writeDescriptor(int descriptor, Span<const char> content) { return writeAll(descriptor, content); }
 
 void closeDescriptor(int descriptor) { platform::closeFile(descriptor); }
-
-KiottySpecStatus makeExecutable(Span<const char> path) { return platform::makeExecutable(path); }
 
 // 없는 파일이면 성공으로 본다.
 KiottySpecStatus removeFile(Span<const char> path)

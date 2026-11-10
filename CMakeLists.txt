@@ -106,3 +106,9 @@ add_executable(kiotty_api_test tests/api/api_test.cpp)
 target_link_libraries(kiotty_api_test PRIVATE kiotty_spec)
 kiotty_warnings(kiotty_api_test)
 kiotty_no_exceptions(kiotty_api_test)
+
+# 시스템 테스트: 기능 요구사항의 인수 조건을 C 인터페이스로 실행한다 (ST-001 ~ ST-031).
+add_executable(kiotty_system_test tests/system/system_test.cpp)
+target_link_libraries(kiotty_system_test PRIVATE kiotty_spec)
+kiotty_warnings(kiotty_system_test)
+kiotty_no_exceptions(kiotty_system_test)

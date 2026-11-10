@@ -56,13 +56,4 @@ inline bool isValidUtf8(Span<const char> text)
 }
 
 
-// UTF-8 글자 경계에서 limit 바이트 이하로 자른다.
-inline Span<const char> cutUtf8(Span<const char> text, size_t limit)
-{
-    if (text.length() <= limit) { return text; }
-    size_t cut = limit;
-    while (cut > 0 && isUtf8Continuation(text[cut])) { --cut; }
-    return Span<const char>(text.data(), cut);
-}
-
 }

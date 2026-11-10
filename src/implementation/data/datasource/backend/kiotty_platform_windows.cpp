@@ -31,12 +31,6 @@ using WidePathResult = Result<WidePath, KiottySpecStatus>;
 
 bool isLetter(char letter) { return (letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z'); }
 
-char lowerAscii(char letter)
-{
-    if (letter >= 'A' && letter <= 'Z') { return static_cast<char>(letter - 'A' + 'a'); }
-    return letter;
-}
-
 WidePathResult widen(Span<const char> path)
 {
     WidePath wide;
@@ -71,12 +65,6 @@ bool statOf(Span<const char> path, struct _stat64& status)
 
 bool isSeparator(char letter) { return letter == '/' || letter == '\\'; }
 
-bool sameChar(char left, char right)
-{
-    if (isSeparator(left) && isSeparator(right)) { return true; }
-    return lowerAscii(left) == lowerAscii(right);
-}
-
 size_t rootLength(Span<const char> path)
 {
     const size_t length = path.length();
@@ -85,12 +73,6 @@ size_t rootLength(Span<const char> path)
     if (has_drive && length >= 3 && isSeparator(path[2])) { return 3; }
     if (has_drive) { return 2; }
     return length >= 1 && isSeparator(path[0]) ? 1 : 0;
-}
-
-bool isAbsolute(Span<const char> path)
-{
-    const size_t root = rootLength(path);
-    return root >= 2 && isSeparator(path[root - 1]);
 }
 
 SystemPathResult absolutePath(Span<const char> path)
@@ -135,12 +117,6 @@ bool isFile(Span<const char> path)
 {
     struct _stat64 status {};
     return statOf(path, status) && (status.st_mode & _S_IFREG) != 0;
-}
-
-// Windows 에는 실행 비트가 없다.
-KiottySpecStatus makeExecutable(Span<const char> path)
-{
-    return path.length() == 0 ? KIOTTY_SPEC_STATUS_INVALID_ARGUMENT : KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 KiottySpecStatus removeFile(Span<const char> path)

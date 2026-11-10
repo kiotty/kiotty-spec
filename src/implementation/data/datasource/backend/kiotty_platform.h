@@ -17,11 +17,8 @@ enum class OpenMode : uint32_t {
 };
 
 bool isSeparator(char letter);
-// 경로 비교용. Windows 는 대소문자를 가리지 않는다.
-bool sameChar(char left, char right);
 // "//", "C:/", "C:", "/" 같은 루트의 길이
 size_t rootLength(Span<const char> path);
-bool isAbsolute(Span<const char> path);
 SystemPathResult absolutePath(Span<const char> path);
 
 // 파일 기술자. 열지 못하면 음수
@@ -35,7 +32,6 @@ void closeFile(int descriptor);
 bool makeDirectory(Span<const char> path);
 bool isDirectory(Span<const char> path);
 bool isFile(Span<const char> path);
-KiottySpecStatus makeExecutable(Span<const char> path);
 KiottySpecStatus removeFile(Span<const char> path);
 // to 가 있으면 바꾼다. 같은 디렉토리 안에서는 원자적이다.
 KiottySpecStatus renameFile(Span<const char> from, Span<const char> to);

@@ -4,6 +4,7 @@
 #include "implementation/core/kiotty_fixed_string.h"
 #include "implementation/core/kiotty_text.h"
 #include "implementation/core/kiotty_text_view.h"
+#include "implementation/data/datasource/kiotty_file_writer.h"
 
 namespace kiotty::spec::implementation {
 
@@ -15,6 +16,17 @@ ItemCapacity itemCapacity(const Configuration& configuration)
 {
     return ItemCapacity{configuration.maxItems, configuration.maxTags, configuration.maxItems * VERSION_FACTOR, configuration.maxTags * VERSION_FACTOR,
                         configuration.maxBodyBytes};
+}
+
+KiottySpecStatus writeMergeAttributes(Span<const char> directory)
+{
+    const SystemPathResult path = joinPath(directory, literalText(".gitattributes"));
+    if (!path) { return path.code; }
+    if (isFile(path.value.view())) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    FileWriter writer;
+    const KiottySpecStatus opened = writer.open(path.value.view());
+    if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return opened; }
+    return writer.write(literalText("*.kisp text eol=lf merge=union\n"));
 }
 
 }
@@ -54,8 +66,11 @@ KiottySpecStatus Context::open(Span<const char> database)
         return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, {literalText(".kisp 디렉토리를 만들 수 없음: "), absolute.value.view()});
     }
     const KiottySpecStatus created = exists ? KIOTTY_SPEC_STATUS_SUCCESS : _file.save();
-    _opened = created == KIOTTY_SPEC_STATUS_SUCCESS;
-    return created;
+    if (created != KIOTTY_SPEC_STATUS_SUCCESS) { return created; }
+    const KiottySpecStatus attributed = exists ? KIOTTY_SPEC_STATUS_SUCCESS : writeMergeAttributes(parentOf(absolute.value.view()));
+    if (attributed != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(attributed, {literalText(".gitattributes 를 만들 수 없음")}); }
+    _opened = true;
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 KiottySpecStatus Context::init(Span<const char> name)

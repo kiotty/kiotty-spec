@@ -28,8 +28,6 @@ bool statOf(Span<const char> path, struct stat& status)
 
 bool isSeparator(char letter) { return letter == '/'; }
 
-bool sameChar(char left, char right) { return left == right; }
-
 size_t rootLength(Span<const char> path)
 {
     const size_t length = path.length();
@@ -37,11 +35,9 @@ size_t rootLength(Span<const char> path)
     return length >= 1 && path[0] == '/' ? 1 : 0;
 }
 
-bool isAbsolute(Span<const char> path) { return rootLength(path) > 0; }
-
 SystemPathResult absolutePath(Span<const char> path)
 {
-    if (isAbsolute(path)) { return joinPath(path, Span<const char>()); }
+    if (rootLength(path) > 0) { return joinPath(path, Span<const char>()); }
     char current[MAX_SYSTEM_PATH_LENGTH + 1] {};
     if (::getcwd(current, MAX_SYSTEM_PATH_LENGTH) == nullptr) { return SystemPathResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT); }
     return joinPath(boundedText(current, MAX_SYSTEM_PATH_LENGTH), path);
@@ -78,16 +74,6 @@ bool isFile(Span<const char> path)
 {
     struct stat status {};
     return statOf(path, status) && S_ISREG(status.st_mode);
-}
-
-KiottySpecStatus makeExecutable(Span<const char> path)
-{
-    SystemPath terminated;
-    if (terminated.assign(path) != KIOTTY_SPEC_STATUS_SUCCESS) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-    struct stat status {};
-    if (::stat(terminated.c_str(), &status) != 0) { return KIOTTY_SPEC_STATUS_INPUT_OUTPUT; }
-    if (::chmod(terminated.c_str(), status.st_mode | S_IXUSR | S_IXGRP | S_IXOTH) != 0) { return KIOTTY_SPEC_STATUS_INPUT_OUTPUT; }
-    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 KiottySpecStatus removeFile(Span<const char> path)
