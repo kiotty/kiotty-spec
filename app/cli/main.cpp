@@ -19,7 +19,8 @@ std::string environment(const char* name)
     const std::wstring wide_name = pathFromUtf8(name).wstring();
     wchar_t* value = nullptr;
     size_t size = 0;
-    if (_wdupenv_s(&value, &size, wide_name.c_str()) != 0 || value == nullptr) { return ""; }
+    const errno_t duplicated = _wdupenv_s(&value, &size, wide_name.c_str());
+    if (duplicated != 0 || value == nullptr) { return ""; }
     const std::string result = utf8FromWide(std::wstring_view(value));
     std::free(value);
     return result;
@@ -31,13 +32,22 @@ std::string environment(const char* name)
 
 std::string findRoot(const Arguments& args)
 {
-    if (const auto root = args.option("root")) { return *root; }
-    if (const auto env = environment("KIOTTY_SPEC_ROOT"); !env.empty()) { return env; }
+    const std::optional<std::string> root = args.option("root");
+    if (root) { return *root; }
+    const std::string environment_root = environment("KIOTTY_SPEC_ROOT");
+    const bool has_environment_root = !environment_root.empty();
+    if (has_environment_root) { return environment_root; }
     std::error_code error {};
     const auto current = std::filesystem::current_path(error);
-    for (auto probe = current; !probe.empty(); probe = probe.parent_path()) {
-        if (std::filesystem::is_directory(probe / ".kiotty", error)) { return pathToUtf8(probe); }
-        if (probe == probe.parent_path()) { break; }
+    std::filesystem::path probe = current;
+    while (true) {
+        const bool is_empty = probe.empty();
+        if (is_empty) { break; }
+        const bool is_directory = std::filesystem::is_directory(probe / ".kiotty", error);
+        if (is_directory) { return pathToUtf8(probe); }
+        const std::filesystem::path parent = probe.parent_path();
+        if (probe == parent) { break; }
+        probe = parent;
     }
     return pathToUtf8(current);
 }
@@ -76,7 +86,8 @@ const CommandEntry* findCommand(const std::vector<std::string>& tokens, size_t& 
             consumed = 1;
             return &command;
         }
-        if (tokens.size() > 1 && tokens[1] == command.verb) {
+        const bool has_verb_token = tokens.size() > 1;
+        if (has_verb_token && tokens[1] == command.verb) {
             consumed = 2;
             return &command;
         }
@@ -86,7 +97,8 @@ const CommandEntry* findCommand(const std::vector<std::string>& tokens, size_t& 
 
 int run(const std::vector<std::string>& tokens)
 {
-    if (tokens.empty() || tokens[0] == "help" || tokens[0] == "--help" || tokens[0] == "-h") {
+    const bool is_empty = tokens.empty();
+    if (is_empty || tokens[0] == "help" || tokens[0] == "--help" || tokens[0] == "-h") {
         printHelp();
         return 0;
     }
@@ -100,7 +112,8 @@ int run(const std::vector<std::string>& tokens)
     const bool diff = std::string_view(command->group) == "diff";
     session.args =
         parseArguments(tokens, consumed, diff ? DIFF_FLAGS : std::vector<std::string_view>());
-    if (session.args.flag("help")) {
+    const bool has_help_flag = session.args.flag("help");
+    if (has_help_flag) {
         std::cout << "ks " << command->group << (command->verb[0] != '\0' ? " " : "")
                   << command->verb << " " << command->usage << "\n  " << command->summary << "\n";
         return 0;

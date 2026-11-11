@@ -73,7 +73,8 @@ int addItem(Session& session)
     const KiottySpecIdResult created = KiottySpec_createItem(session.context, &draft);
     if (created.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, created.code); }
     const std::string id = created.value;
-    if (const auto parent = session.args.option("parent")) {
+    const std::optional<std::string> parent = session.args.option("parent");
+    if (parent) {
         const KiottySpecStatusResult set =
             KiottySpec_setItemParent(session.context, textOf(id), textOf(*parent));
         if (set.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, set.code); }
@@ -107,7 +108,8 @@ int setItem(Session& session)
             KiottySpec_updateItem(session.context, textOf(*id), title_text, summary_text);
         if (updated.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, updated.code); }
     }
-    if (const auto parent = session.args.option("parent")) {
+    const std::optional<std::string> parent = session.args.option("parent");
+    if (parent) {
         const std::string target = *parent == "-" ? std::string() : *parent;
         const KiottySpecStatusResult set =
             KiottySpec_setItemParent(session.context, textOf(*id), textOf(target));
@@ -149,7 +151,8 @@ int renameItem(Session& session)
 int listItems(Session& session)
 {
     KiottySpecItemKind kind = static_cast<KiottySpecItemKind>(0);
-    if (const auto name = session.args.option("kind")) {
+    const std::optional<std::string> name = session.args.option("kind");
+    if (name) {
         const auto parsed = kindArgument(session, *name);
         if (!parsed) { return 2; }
         kind = *parsed;
@@ -209,10 +212,9 @@ int showTags(Session& session)
     printRow({"tag", "value"});
     for (uint32_t index = 0; index < model.value.tag_count; ++index) {
         KiottySpecTagDefinition definition {};
-        if (KiottySpec_readTagDefinition(session.context, item.value.kind, index, &definition)
-                .code != KIOTTY_SPEC_STATUS_SUCCESS) {
-            continue;
-        }
+        const KiottySpecStatusResult read =
+            KiottySpec_readTagDefinition(session.context, item.value.kind, index, &definition);
+        if (read.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
         const KiottySpecTagResult tag = KiottySpec_readItemTag(session.context, item.handle, index);
         printRow(
             { definition.name,
@@ -247,16 +249,19 @@ int listRelations(Session& session)
     const std::string* id = positional(session, 0);
     if (id == nullptr) { return usage("ks relation list ID [--up|--down]"); }
     KiottySpecDirection direction = KIOTTY_SPEC_DIRECTION_BOTH;
-    if (session.args.flag("up")) { direction = KIOTTY_SPEC_DIRECTION_UPSTREAM; }
-    if (session.args.flag("down")) { direction = KIOTTY_SPEC_DIRECTION_DOWNSTREAM; }
+    const bool has_up_flag = session.args.flag("up");
+    const bool has_down_flag = session.args.flag("down");
+    if (has_up_flag) { direction = KIOTTY_SPEC_DIRECTION_UPSTREAM; }
+    if (has_down_flag) { direction = KIOTTY_SPEC_DIRECTION_DOWNSTREAM; }
     const KiottySpecCursorResult cursor =
         KiottySpec_openRelationCursor(session.context, textOf(*id), direction);
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
     printRow({"from", "relation", "to"});
     KiottySpecRelationPage page {};
-    while (KiottySpec_fetchRelationPage(session.context, cursor.value, &page).code ==
-               KIOTTY_SPEC_STATUS_SUCCESS &&
-           page.length > 0) {
+    while (true) {
+        const KiottySpecStatusResult fetched =
+            KiottySpec_fetchRelationPage(session.context, cursor.value, &page);
+        if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
         for (size_t index = 0; index < page.length; ++index) {
             const KiottySpecRelation& relation = page.elements[index];
             const KiottySpecRelationDefinitionResult definition = KiottySpec_readRelationDefinition(
@@ -274,7 +279,8 @@ int showImpact(Session& session)
     const std::string* id = positional(session, 0);
     if (id == nullptr) { return usage("ks impact ID [--depth N]"); }
     uint32_t depth = DEFAULT_IMPACT_DEPTH;
-    if (const auto text = session.args.option("depth")) {
+    const std::optional<std::string> text = session.args.option("depth");
+    if (text) {
         depth = static_cast<uint32_t>(std::strtoul(text->c_str(), nullptr, 10));
     }
     const KiottySpecCursorResult cursor =
@@ -282,9 +288,10 @@ int showImpact(Session& session)
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
     printRow({"id"});
     KiottySpecIdPage page {};
-    while (KiottySpec_fetchIdPage(session.context, cursor.value, &page).code ==
-               KIOTTY_SPEC_STATUS_SUCCESS &&
-           page.length > 0) {
+    while (true) {
+        const KiottySpecStatusResult fetched =
+            KiottySpec_fetchIdPage(session.context, cursor.value, &page);
+        if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
         for (size_t index = 0; index < page.length; ++index) { printRow({page.elements[index]}); }
     }
     KiottySpec_closeCursor(session.context, cursor.value);

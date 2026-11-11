@@ -44,7 +44,8 @@ int completeCheckpoint(Session& session)
 int showCheckpoint(Session& session)
 {
     KiottySpecCheckpointHandle handle = KIOTTY_SPEC_CHECKPOINT_CURRENT;
-    if (const std::string* name = positional(session, 0)) {
+    const std::string* name = positional(session, 0);
+    if (name) {
         const auto parsed = parseCheckpoint(*name);
         if (!parsed) { return usage("체크포인트는 CP-0003 또는 3"); }
         handle = *parsed;
@@ -60,7 +61,8 @@ int showCheckpoint(Session& session)
 int listCheckpoints(Session& session)
 {
     uint32_t step = 0;
-    if (const auto text = session.args.option("step")) {
+    const std::optional<std::string> text = session.args.option("step");
+    if (text) {
         step = static_cast<uint32_t>(std::strtoul(text->c_str(), nullptr, 10));
     }
     const KiottySpecCursorResult cursor =
@@ -68,9 +70,10 @@ int listCheckpoints(Session& session)
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
     printRow(CHECKPOINT_HEADER);
     KiottySpecCheckpointPage page {};
-    while (KiottySpec_fetchCheckpointPage(session.context, cursor.value, &page).code ==
-               KIOTTY_SPEC_STATUS_SUCCESS &&
-           page.length > 0) {
+    while (true) {
+        const KiottySpecStatusResult fetched =
+            KiottySpec_fetchCheckpointPage(session.context, cursor.value, &page);
+        if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
         for (size_t index = 0; index < page.length; ++index) {
             printCheckpoint(page.handles[index], page.elements[index]);
         }
@@ -104,7 +107,8 @@ int showPosition(Session& session)
 int showHistory(Session& session)
 {
     uint32_t depth = DEFAULT_HISTORY_DEPTH;
-    if (const auto text = session.args.option("depth")) {
+    const std::optional<std::string> text = session.args.option("depth");
+    if (text) {
         char* end = nullptr;
         const unsigned long value = *text == "all" ? 0 : std::strtoul(text->c_str(), &end, 10);
         if (*text != "all" && (value == 0 || end == nullptr || *end != '\0')) {
@@ -155,7 +159,8 @@ int setDecision(Session& session)
 
 int showModel(Session& session)
 {
-    if (const std::string* name = positional(session, 0)) {
+    const std::string* name = positional(session, 0);
+    if (name) {
         const auto kind = kindArgument(session, *name);
         if (!kind) { return 2; }
         const KiottySpecModelResult model = KiottySpec_readModel(session.context, *kind);

@@ -25,7 +25,8 @@ std::optional<ColumnPlan> planColumns(Session& session, KiottySpecItemKind kind)
         if (equal != std::string::npos) {
             const auto mask = parseBits(tag->definition, spec.substr(equal + 1));
             if (!mask) { return std::nullopt; }
-            if (plan.queries.size() == KIOTTY_SPEC_MAX_TAG_QUERIES) {
+            const bool is_full = plan.queries.size() == KIOTTY_SPEC_MAX_TAG_QUERIES;
+            if (is_full) {
                 std::cerr << "error: 태그 조건은 " << KIOTTY_SPEC_MAX_TAG_QUERIES << " 개까지\n";
                 return std::nullopt;
             }
@@ -34,13 +35,13 @@ std::optional<ColumnPlan> planColumns(Session& session, KiottySpecItemKind kind)
         addTag(*tag);
     }
     const KiottySpecModelResult model = KiottySpec_readModel(session.context, kind);
-    if (session.args.flag("tags")) {
+    const bool has_tags_flag = session.args.flag("tags");
+    if (has_tags_flag) {
         for (uint32_t index = 0; index < model.value.tag_count; ++index) {
             TagColumn tag {index, {}};
-            if (KiottySpec_readTagDefinition(session.context, kind, index, &tag.definition).code ==
-                KIOTTY_SPEC_STATUS_SUCCESS) {
-                addTag(tag);
-            }
+            const KiottySpecStatusResult read =
+                KiottySpec_readTagDefinition(session.context, kind, index, &tag.definition);
+            if (read.code == KIOTTY_SPEC_STATUS_SUCCESS) { addTag(tag); }
         }
     }
     std::vector<uint32_t> relations {};
@@ -49,7 +50,8 @@ std::optional<ColumnPlan> planColumns(Session& session, KiottySpecItemKind kind)
         if (!relation) { return std::nullopt; }
         relations.push_back(*relation);
     }
-    if (session.args.flag("relations")) {
+    const bool has_relations_flag = session.args.flag("relations");
+    if (has_relations_flag) {
         for (uint32_t index = 0; index < model.value.relation_count; ++index) {
             relations.push_back(index);
         }
@@ -65,12 +67,14 @@ std::optional<ColumnPlan> planColumns(Session& session, KiottySpecItemKind kind)
             return std::nullopt;
         }
         KiottySpecRelationPage page {};
-        while (KiottySpec_fetchRelationPage(session.context, cursor.value, &page).code ==
-                   KIOTTY_SPEC_STATUS_SUCCESS &&
-               page.length > 0) {
+        while (true) {
+            const KiottySpecStatusResult fetched =
+                KiottySpec_fetchRelationPage(session.context, cursor.value, &page);
+            if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
             for (size_t index = 0; index < page.length; ++index) {
                 std::string& targets = column.targets[itemId(session, page.elements[index].from)];
-                if (!targets.empty()) { targets += ','; }
+                const bool has_targets = !targets.empty();
+                if (has_targets) { targets += ','; }
                 targets += itemId(session, page.elements[index].to);
             }
         }

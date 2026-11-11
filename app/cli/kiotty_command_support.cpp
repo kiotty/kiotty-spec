@@ -39,8 +39,10 @@ std::string stepName(uint32_t step)
 
 BodyOption bodyOption(Session& session, const char* text_name, const char* file_name)
 {
-    if (const auto text = session.args.option(text_name)) { return BodyOption{text, false}; }
-    if (const auto file = session.args.option(file_name)) {
+    const std::optional<std::string> text = session.args.option(text_name);
+    if (text) { return BodyOption{text, false}; }
+    const std::optional<std::string> file = session.args.option(file_name);
+    if (file) {
         const auto content = readFileText(*file);
         if (!content) { std::cerr << "error: 파일을 읽을 수 없음: " << *file << "\n"; }
         return BodyOption{content, !content};

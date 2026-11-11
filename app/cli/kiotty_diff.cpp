@@ -28,10 +28,13 @@ constexpr const char* RESET = "\x1b[0m";
 bool colorTerminal()
 {
 #ifdef _WIN32
-    if (_isatty(_fileno(stdout)) == 0) { return false; }
+    const bool is_terminal = _isatty(_fileno(stdout)) != 0;
+    if (!is_terminal) { return false; }
     const HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD mode = 0;
-    if (output == INVALID_HANDLE_VALUE || GetConsoleMode(output, &mode) == 0) { return false; }
+    if (output == INVALID_HANDLE_VALUE) { return false; }
+    const bool has_console_mode = GetConsoleMode(output, &mode) != 0;
+    if (!has_console_mode) { return false; }
     return SetConsoleMode(output, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
 #else
     return isatty(fileno(stdout)) != 0;
@@ -134,9 +137,10 @@ std::string summaryDiff(Session& session, const KiottySpecItemDiff& diff,
     }
     std::string text {};
     KiottySpecTextDiffPage page {};
-    while (KiottySpec_fetchTextDiffPage(session.context, cursor.value, &page).code ==
-               KIOTTY_SPEC_STATUS_SUCCESS &&
-           page.length > 0) {
+    while (true) {
+        const KiottySpecStatusResult fetched =
+            KiottySpec_fetchTextDiffPage(session.context, cursor.value, &page);
+        if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
         for (size_t index = 0; index < page.length; ++index) {
             text += painter.paint(page.elements[index]);
         }
@@ -179,7 +183,8 @@ int runDiff(Session& session)
         tags.push_back(*tag);
     }
     const KiottySpecModelResult model = KiottySpec_readModel(session.context, *kind);
-    if (session.args.flag("tags")) {
+    const bool has_tags_flag = session.args.flag("tags");
+    if (has_tags_flag) {
         tags.clear();
         for (uint32_t index = 0; index < model.value.tag_count; ++index) {
             TagColumn tag {index, {}};
@@ -193,7 +198,8 @@ int runDiff(Session& session)
         if (!relation) { return 2; }
         relations.emplace_back(*relation, name);
     }
-    if (session.args.flag("relations")) {
+    const bool has_relations_flag = session.args.flag("relations");
+    if (has_relations_flag) {
         relations.clear();
         for (uint32_t index = 0; index < model.value.relation_count; ++index) {
             relations.emplace_back(
@@ -201,14 +207,16 @@ int runDiff(Session& session)
         }
     }
     std::map<RelationKey, std::vector<RelationChange>> changes {};
-    if (!relations.empty()) {
+    const bool has_relations = !relations.empty();
+    if (has_relations) {
         const KiottySpecCursorResult cursor =
             KiottySpec_openRelationDiffCursor(session.context, &query);
         if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
         KiottySpecRelationDiffPage page {};
-        while (KiottySpec_fetchRelationDiffPage(session.context, cursor.value, &page).code ==
-                   KIOTTY_SPEC_STATUS_SUCCESS &&
-               page.length > 0) {
+        while (true) {
+            const KiottySpecStatusResult fetched =
+                KiottySpec_fetchRelationDiffPage(session.context, cursor.value, &page);
+            if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
             for (size_t index = 0; index < page.length; ++index) {
                 const KiottySpecRelationDiff& diff = page.elements[index];
                 changes[{ diff.from_id, diff.relation }].push_back(
@@ -222,16 +230,19 @@ int runDiff(Session& session)
     const KiottySpecCursorResult cursor = KiottySpec_openItemDiffCursor(session.context, &query);
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
     KiottySpecItemDiffPage page {};
-    while (KiottySpec_fetchItemDiffPage(session.context, cursor.value, &page).code ==
-               KIOTTY_SPEC_STATUS_SUCCESS &&
-           page.length > 0) {
+    while (true) {
+        const KiottySpecStatusResult fetched =
+            KiottySpec_fetchItemDiffPage(session.context, cursor.value, &page);
+        if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
         diffs.insert(diffs.end(), page.elements, page.elements + page.length);
     }
     KiottySpec_closeCursor(session.context, cursor.value);
 
     std::vector<std::string> header = {"id", "kind"};
-    if (session.args.flag("title")) { header.push_back("title"); }
-    if (session.args.flag("summary")) { header.push_back("summary"); }
+    const bool has_title = session.args.flag("title");
+    const bool has_summary = session.args.flag("summary");
+    if (has_title) { header.push_back("title"); }
+    if (has_summary) { header.push_back("summary"); }
     for (const TagColumn& tag : tags) { header.push_back(tag.definition.name); }
     for (const auto& relation : relations) { header.push_back(relation.second); }
 
@@ -258,14 +269,14 @@ int runDiff(Session& session)
                 added || diff.change == KIOTTY_SPEC_CHANGE_MODIFIED ? range.to : range.from;
             std::vector<std::string> row = {diff.id, kindName(diff.kind)};
             const bool modified = diff.change == KIOTTY_SPEC_CHANGE_MODIFIED;
-            if (session.args.flag("title")) {
+            if (has_title) {
                 const bool changed =
                     modified && (diff.changed_fields & KIOTTY_SPEC_CHANGED_FIELD_TITLE) != 0;
                 row.push_back(changed
                                   ? quoted(before.value.title) + " -> " + quoted(after.value.title)
                                   : cell(shown.title));
             }
-            if (session.args.flag("summary")) {
+            if (has_summary) {
                 const bool changed =
                     modified && (diff.changed_fields & KIOTTY_SPEC_CHANGED_FIELD_SUMMARY) != 0;
                 row.push_back(changed ? summaryDiff(session, diff, range, painter,
@@ -288,7 +299,8 @@ int runDiff(Session& session)
             for (const auto& relation : relations) {
                 const auto found = changes.find({diff.id, relation.first});
                 std::string text {};
-                if (found != changes.end()) {
+                const bool has_changes = found != changes.end();
+                if (has_changes) {
                     for (const RelationChange& change : found->second) {
                         if (!modified) {
                             text += (text.empty() ? "" : ",") + change.to_id;
