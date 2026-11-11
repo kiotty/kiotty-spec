@@ -19,7 +19,8 @@ class FixedVector
 public:
     KiottySpecStatus append(Element element)
     {
-        if (_length == Capacity) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+        const bool is_full = isFull(_length);
+        if (is_full) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
         _values[_length] = std::move(element);
         ++_length;
         return KIOTTY_SPEC_STATUS_SUCCESS;
@@ -35,13 +36,17 @@ public:
 
     Result<Element&, KiottySpecStatus> at(size_t index)
     {
-        if (index >= _length) {
+        const bool is_outside = isOutside(index, _length);
+        if (is_outside) {
             return Result<Element&, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_OUT_OF_RANGE);
         }
         return Result<Element&, KiottySpecStatus>::success(_values[index]);
     }
 
 private:
+    static bool isFull(size_t length) { return length == Capacity; }
+    static bool isOutside(size_t index, size_t length) { return index >= length; }
+
     Element _values[Capacity] {};
     size_t _length {0};
 };

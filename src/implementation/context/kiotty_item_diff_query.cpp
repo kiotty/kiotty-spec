@@ -10,6 +10,7 @@ constexpr uint32_t MAX_KIND_BIT = 32;
 
 bool isKindInMask(uint32_t mask, uint32_t kind);
 bool isLive(const ItemVersion* version);
+bool isFieldWanted(uint32_t fields, uint32_t field_mask);
 
 }
 
@@ -22,14 +23,19 @@ KiottySpecStatus ItemDiffQuery::open()
 
 Result<bool, KiottySpecStatus> ItemDiffQuery::next()
 {
-    const size_t key_count = _keys.length();
-    while (_position < key_count) {
-        const uint32_t key = _keys[_position];
-        ++_position;
-        const bool is_decoded = decode(key);
-        if (is_decoded) { return Result<bool, KiottySpecStatus>::success(true); }
+    const Span<const uint32_t> keys = _keys;
+    const size_t key_count = keys.length();
+    size_t position = _position;
+    bool is_decoded = false;
+    while (position < key_count) {
+        const Result<const uint32_t&, KiottySpecStatus> key = keys.at(position);
+        if (!key) { return Result<bool, KiottySpecStatus>::failure(key.code); }
+        ++position;
+        is_decoded = decode(*key.value);
+        if (is_decoded) { break; }
     }
-    return Result<bool, KiottySpecStatus>::success(false);
+    _position = position;
+    return Result<bool, KiottySpecStatus>::success(is_decoded);
 }
 
 bool ItemDiffQuery::decode(uint32_t key)
@@ -48,14 +54,15 @@ bool ItemDiffQuery::decode(uint32_t key)
     const bool is_live_after = isLive(after);
     _current.before = is_live_before ? _items.history().lastWriteAt(key, _range.from) : 0;
     _current.after = after != nullptr ? _items.history().lastWriteAt(key, _range.to) : 0;
-    if (!is_live_before && is_live_after) { _current.change = KIOTTY_SPEC_CHANGE_ADDED; }
-    if (is_live_before && !is_live_after) { _current.change = KIOTTY_SPEC_CHANGE_REMOVED; }
+    const bool has_liveness_change = is_live_before != is_live_after;
+    if (has_liveness_change) {
+        _current.change = is_live_after ? KIOTTY_SPEC_CHANGE_ADDED : KIOTTY_SPEC_CHANGE_REMOVED;
+    }
     if (is_live_before && is_live_after) {
         _current.fields = changedFields(key, *before, *after);
     }
-    const bool wanted =
-        _current.fields != 0 && (_field_mask == 0 || (_current.fields & _field_mask) != 0);
-    if (wanted) { _current.change = KIOTTY_SPEC_CHANGE_MODIFIED; }
+    const bool is_wanted = isFieldWanted(_current.fields, _field_mask);
+    if (is_wanted) { _current.change = KIOTTY_SPEC_CHANGE_MODIFIED; }
     return _current.change != 0;
 }
 
@@ -63,8 +70,8 @@ uint32_t ItemDiffQuery::changedFields(uint32_t key, const ItemVersion& before,
                                       const ItemVersion& after) const
 {
     uint32_t fields = 0;
-    if (!(before.title == after.title)) { fields |= KIOTTY_SPEC_CHANGED_FIELD_TITLE; }
-    if (!(before.summary == after.summary)) { fields |= KIOTTY_SPEC_CHANGED_FIELD_SUMMARY; }
+    if (before.title != after.title) { fields |= KIOTTY_SPEC_CHANGED_FIELD_TITLE; }
+    if (before.summary != after.summary) { fields |= KIOTTY_SPEC_CHANGED_FIELD_SUMMARY; }
     if (before.parent != after.parent) { fields |= KIOTTY_SPEC_CHANGED_FIELD_PARENT; }
     const bool has_tag_change = _items.history().tagsDiffer(key, _range.from, _range.to);
     if (has_tag_change) { fields |= KIOTTY_SPEC_CHANGED_FIELD_TAGS; }
@@ -78,6 +85,9 @@ bool isKindInMask(uint32_t mask, uint32_t kind)
 { return mask == 0 || (kind >= 1 && kind <= MAX_KIND_BIT && (mask & (1u << (kind - 1))) != 0); }
 
 bool isLive(const ItemVersion* version) { return version != nullptr && version->removed == 0; }
+
+bool isFieldWanted(uint32_t fields, uint32_t field_mask)
+{ return fields != 0 && (field_mask == 0 || (fields & field_mask) != 0); }
 
 }
 

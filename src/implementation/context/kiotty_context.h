@@ -72,7 +72,7 @@ public:
     TextBuffer& work() { return _work; }
 
 private:
-    bool _opened {false};
+    bool _is_opened {false};
     SystemPath _root {};
     entity::Failure _failure {};
     TextBuffer _work;

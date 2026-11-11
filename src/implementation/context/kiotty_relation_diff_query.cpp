@@ -22,26 +22,37 @@ KiottySpecStatus RelationDiffQuery::open()
 
 Result<bool, KiottySpecStatus> RelationDiffQuery::next()
 {
-    const size_t first_count = _firsts.length();
-    while (_position < first_count) {
-        const uint32_t first = _firsts[_position];
-        ++_position;
-        const bool is_decoded = decode(first);
-        if (is_decoded) { return Result<bool, KiottySpecStatus>::success(true); }
+    const Span<const uint32_t> firsts = _firsts;
+    const size_t first_count = firsts.length();
+    size_t position = _position;
+    bool is_decoded = false;
+    while (position < first_count) {
+        const Result<const uint32_t&, KiottySpecStatus> first = firsts.at(position);
+        if (!first) { return Result<bool, KiottySpecStatus>::failure(first.code); }
+        ++position;
+        const Result<bool, KiottySpecStatus> decoded = decode(*first.value);
+        if (!decoded) { return decoded; }
+        is_decoded = decoded.value;
+        if (is_decoded) { break; }
     }
-    return Result<bool, KiottySpecStatus>::success(false);
+    _position = position;
+    return Result<bool, KiottySpecStatus>::success(is_decoded);
 }
 
-bool RelationDiffQuery::decode(uint32_t first)
+Result<bool, KiottySpecStatus> RelationDiffQuery::decode(uint32_t first)
 {
-    const RelationVersion& any = _relations.versions().all()[first];
+    using DecodeResult = Result<bool, KiottySpecStatus>;
+    const Span<const RelationVersion> versions = _relations.versions().all();
+    const Result<const RelationVersion&, KiottySpecStatus> found = versions.at(first);
+    if (!found) { return DecodeResult::failure(found.code); }
+    const RelationVersion& any = *found.value;
     const bool is_in_mask = isKindInMask(_kind_mask, static_cast<uint32_t>(any.model));
-    if (!is_in_mask) { return false; }
+    if (!is_in_mask) { return DecodeResult::success(false); }
     const RelationVersion* before = _relations.versions().latest(any.identity(), _range.from);
     const RelationVersion* after = _relations.versions().latest(any.identity(), _range.to);
     const bool is_live_before = isLive(before);
     const bool is_live_after = isLive(after);
-    if (is_live_before == is_live_after) { return false; }
+    if (is_live_before == is_live_after) { return DecodeResult::success(false); }
     const ItemTables& tables = _items.tables();
     _current = RelationDiffRow{};
     _current.from_id = tables.names.find(any.from).value;
@@ -50,7 +61,7 @@ bool RelationDiffQuery::decode(uint32_t first)
     _current.model = static_cast<uint32_t>(any.model);
     _current.checkpoint = after != nullptr ? after->checkpoint : 0;
     _current.change = is_live_after ? KIOTTY_SPEC_CHANGE_ADDED : KIOTTY_SPEC_CHANGE_REMOVED;
-    return true;
+    return DecodeResult::success(true);
 }
 
 namespace {

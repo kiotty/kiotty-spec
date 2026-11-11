@@ -24,18 +24,25 @@ public:
         if (area_length == 0 || text_length > available) {
             return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED;
         }
-        for (size_t index = 0; index < text_length; ++index) {
-            _area[_length + index] = text[index];
-        }
+        writeAt(_area, _length, text);
         _length += text_length;
         _area[_length] = '\0';
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
 
     Span<const char> view() const { return Span<const char>(_area.data(), _length); }
-    size_t capacity() const { return _area.length() == 0 ? 0 : _area.length() - 1; }
+    size_t capacity() const { return measureCapacity(_area.length()); }
 
 private:
+    static void writeAt(Span<char> area, size_t offset, Span<const char> text)
+    {
+        const size_t text_length = text.length();
+        for (size_t index = 0; index < text_length; ++index) { area[offset + index] = text[index]; }
+    }
+
+    static size_t measureCapacity(size_t area_length)
+    { return area_length == 0 ? 0 : area_length - 1; }
+
     Span<char> _area;
     size_t _length {0};
 };

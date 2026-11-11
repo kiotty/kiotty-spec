@@ -8,11 +8,12 @@ constexpr uint32_t GENERATION_SHIFT = 32;
 constexpr uint64_t INDEX_MASK = 0xFFFFFFFFu;
 
 CursorId encode(Handle handle);
+Span<CursorRow> selectRows(Span<CursorRow> rows, size_t index, size_t width);
 
 }
 
 CursorPool::CursorPool(size_t max_cursors, size_t max_rows, size_t total_rows)
-    : _slots(max_cursors), _rows(total_rows), _maxRows(max_rows)
+    : _slots(max_cursors), _rows(total_rows), _max_rows(max_rows)
 {}
 
 CursorIdResult CursorPool::open(CursorKind kind)
@@ -30,13 +31,14 @@ KiottySpecStatus CursorPool::push(CursorId cursor, const CursorRow &row)
     const Handle handle = decode(cursor);
     const auto slot = _slots.get(handle);
     if (!slot) { return slot.code; }
-    if (slot.value->length >= _maxRows) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-    rowsOf(handle)[slot.value->length] = row;
+    const Result<CursorRow&, KiottySpecStatus> target = rowsOf(handle).at(slot.value->length);
+    if (!target) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+    *target.value = row;
     ++slot.value->length;
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-CursorRowsResult CursorPool::fetch(CursorId cursor, CursorKind kind, size_t maxCount)
+CursorRowsResult CursorPool::fetch(CursorId cursor, CursorKind kind, size_t max_count)
 {
     const Handle handle = decode(cursor);
     const auto slot = _slots.get(handle);
@@ -45,7 +47,7 @@ CursorRowsResult CursorPool::fetch(CursorId cursor, CursorKind kind, size_t maxC
         return CursorRowsResult::failure(KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE);
     }
     const size_t left = slot.value->length - slot.value->position;
-    const size_t count = left < maxCount ? left : maxCount;
+    const size_t count = left < max_count ? left : max_count;
     const Span<const CursorRow> page(rowsOf(handle).data() + slot.value->position, count);
     slot.value->position += count;
     return CursorRowsResult::success(page);
@@ -81,7 +83,7 @@ Handle CursorPool::decode(CursorId cursor)
 
 Span<CursorRow> CursorPool::rowsOf(Handle handle)
 {
-    return Span<CursorRow>(_rows.data() + static_cast<size_t>(handle.index) * _maxRows, _maxRows);
+    return selectRows(viewVector(_rows), handle.index, _max_rows);
 }
 
 namespace {
@@ -91,6 +93,9 @@ CursorId encode(Handle handle)
     return (static_cast<uint64_t>(handle.generation) << GENERATION_SHIFT) |
            (static_cast<uint64_t>(handle.index) + 1);
 }
+
+Span<CursorRow> selectRows(Span<CursorRow> rows, size_t index, size_t width)
+{ return Span<CursorRow>(rows.data() + index * width, width); }
 
 }
 

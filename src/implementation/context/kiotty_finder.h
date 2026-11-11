@@ -25,7 +25,7 @@ class Finder
 {
 public:
     Finder(Workspace& workspace, CursorPool& cursors, Checker& checker, size_t max_items)
-        : _w(workspace), _cursors(cursors), _checker(checker), _visited(max_items, 0),
+        : _workspace(workspace), _cursors(cursors), _checker(checker), _visited(max_items, 0),
           _queue(max_items, 0)
     {
     }
@@ -37,10 +37,10 @@ public:
     CursorIdResult relationsByModel(entity::ItemKind kind, uint32_t relation);
     CursorIdResult tags(entity::ItemHandle item);
 
-    HistoryFinder history() { return HistoryFinder(_w, _cursors, _checker); }
+    HistoryFinder history() { return HistoryFinder(_workspace, _cursors, _checker); }
 
 private:
-    Workspace& _w;
+    Workspace& _workspace;
     CursorPool& _cursors;
     Checker& _checker;
     std::vector<uint8_t> _visited;

@@ -36,7 +36,7 @@ public:
     const RelationDiffRow& current() const { return _current; }
 
 private:
-    bool decode(uint32_t first);
+    Result<bool, KiottySpecStatus> decode(uint32_t first);
 
     ItemStore& _items;
     RelationStore& _relations;

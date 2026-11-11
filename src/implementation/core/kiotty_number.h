@@ -21,9 +21,10 @@ inline Result<uint64_t, KiottySpecStatus> parseDecimal(Span<const char> text, ui
     constexpr uint64_t DECIMAL_BASE = 10;
     uint64_t number = 0;
     for (const char letter : text) {
-        const bool digit = letter >= '0' && letter <= '9';
+        const bool is_digit = letter >= '0' && letter <= '9';
         const uint64_t value = static_cast<uint64_t>(letter - '0');
-        if (!digit || number > (maximum - value) / DECIMAL_BASE) {
+        const bool is_accepted = is_digit && number <= (maximum - value) / DECIMAL_BASE;
+        if (!is_accepted) {
             return Result<uint64_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
         }
         number = number * DECIMAL_BASE + value;
@@ -42,13 +43,15 @@ inline Result<uint64_t, KiottySpecStatus> parseHex(Span<const char> text, size_t
     }
     uint64_t number = 0;
     for (const char letter : text) {
-        const bool decimal = letter >= '0' && letter <= '9';
-        const bool lower = letter >= 'a' && letter <= 'f';
-        if (!decimal && !lower) {
+        const bool is_decimal = letter >= '0' && letter <= '9';
+        const bool is_lower_hex = letter >= 'a' && letter <= 'f';
+        const bool is_hex_digit = is_decimal || is_lower_hex;
+        if (!is_hex_digit) {
             return Result<uint64_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
         }
-        const uint64_t value = decimal ? static_cast<uint64_t>(letter - '0')
-                                       : static_cast<uint64_t>(letter - 'a' + FIRST_LETTER_VALUE);
+        const uint64_t value =
+            is_decimal ? static_cast<uint64_t>(letter - '0')
+                       : static_cast<uint64_t>(letter - 'a' + FIRST_LETTER_VALUE);
         number = (number << DIGIT_BITS) | value;
     }
     return Result<uint64_t, KiottySpecStatus>::success(number);

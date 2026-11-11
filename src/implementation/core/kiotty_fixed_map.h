@@ -2,6 +2,7 @@
 
 #include "kiotty_spec.h"
 #include "kiotty_result.h"
+#include "kiotty_span.h"
 
 #include <cstddef>
 #include <utility>
@@ -17,10 +18,11 @@ public:
 
     KiottySpecStatus insert(const Key& key, Value value)
     {
-        const size_t position = lowerBound(key);
-        if (position < _length && !(key < _keys[position])) { return KIOTTY_SPEC_STATUS_CONFLICT; }
-        const size_t slot_count = _keys.size();
-        if (_length == slot_count) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+        const size_t position = lowerBound(_keys, _length, key);
+        const bool has_key = hasKeyAt(_keys, _length, position, key);
+        if (has_key) { return KIOTTY_SPEC_STATUS_CONFLICT; }
+        const bool is_full = isFull(_length, _keys.size());
+        if (is_full) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
         for (size_t index = _length; index > position; --index) {
             _keys[index] = _keys[index - 1];
             _values[index] = std::move(_values[index - 1]);
@@ -33,8 +35,9 @@ public:
 
     Result<Value, KiottySpecStatus> find(const Key& key) const
     {
-        const size_t position = lowerBound(key);
-        if (position == _length || key < _keys[position]) {
+        const size_t position = lowerBound(_keys, _length, key);
+        const bool is_missing = isMissingAt(_keys, _length, position, key);
+        if (is_missing) {
             return Result<Value, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
         }
         return Result<Value, KiottySpecStatus>::success(_values[position]);
@@ -42,12 +45,10 @@ public:
 
     KiottySpecStatus erase(const Key& key)
     {
-        const size_t position = lowerBound(key);
-        if (position == _length || key < _keys[position]) { return KIOTTY_SPEC_STATUS_NOT_FOUND; }
-        for (size_t index = position + 1; index < _length; ++index) {
-            _keys[index - 1] = _keys[index];
-            _values[index - 1] = std::move(_values[index]);
-        }
+        const size_t position = lowerBound(_keys, _length, key);
+        const bool is_missing = isMissingAt(_keys, _length, position, key);
+        if (is_missing) { return KIOTTY_SPEC_STATUS_NOT_FOUND; }
+        eraseAt(viewVector(_keys), viewVector(_values), position, _length);
         --_length;
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
@@ -61,16 +62,34 @@ public:
     Value& valueAt(size_t index) { return _values[index]; }
 
 private:
-    size_t lowerBound(const Key& key) const
+    static size_t lowerBound(const std::vector<Key>& keys, size_t length, const Key& key)
     {
         constexpr size_t BISECT_DIVISOR = 2;
         size_t low = 0;
-        size_t high = _length;
+        size_t high = length;
         while (low < high) {
             const size_t middle = low + (high - low) / BISECT_DIVISOR;
-            if (_keys[middle] < key) { low = middle + 1; } else { high = middle; }
+            if (keys[middle] < key) { low = middle + 1; } else { high = middle; }
         }
         return low;
+    }
+
+    static bool hasKeyAt(const std::vector<Key>& keys, size_t length, size_t position,
+                         const Key& key)
+    { return position < length && !(key < keys[position]); }
+
+    static bool isMissingAt(const std::vector<Key>& keys, size_t length, size_t position,
+                            const Key& key)
+    { return position == length || key < keys[position]; }
+
+    static bool isFull(size_t length, size_t capacity) { return length == capacity; }
+
+    static void eraseAt(Span<Key> keys, Span<Value> values, size_t position, size_t length)
+    {
+        for (size_t index = position + 1; index < length; ++index) {
+            keys[index - 1] = keys[index];
+            values[index - 1] = std::move(values[index]);
+        }
     }
 
     std::vector<Key> _keys;

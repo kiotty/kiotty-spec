@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <type_traits>
+#include <vector>
 
 namespace kiotty::spec::implementation {
 
@@ -23,21 +24,29 @@ public:
     Element* data() const { return _data; }
     size_t length() const { return _length; }
     Element* begin() const { return _data; }
-    Element* end() const { return _data + _length; }
+    Element* end() const { return advance(_data, _length); }
 
     Element& operator[](size_t index) const { return _data[index]; }
 
     Result<Element&, KiottySpecStatus> at(size_t index) const
     {
-        if (index >= _length) {
+        const bool is_outside = isOutside(index, _length);
+        if (is_outside) {
             return Result<Element&, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_OUT_OF_RANGE);
         }
         return Result<Element&, KiottySpecStatus>::success(_data[index]);
     }
 
 private:
+    static Element* advance(Element* data, size_t length) { return data + length; }
+    static bool isOutside(size_t index, size_t length) { return index >= length; }
+
     Element* _data;
     size_t _length;
 };
+
+template <typename Element>
+Span<Element> viewVector(std::vector<Element>& values)
+{ return Span<Element>(values.data(), values.size()); }
 
 }

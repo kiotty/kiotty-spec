@@ -31,7 +31,7 @@ class Differ
 {
 public:
     Differ(Workspace& workspace, CursorPool& cursors, TextBuffer& work)
-        : _w(workspace), _cursors(cursors), _work(work)
+        : _workspace(workspace), _cursors(cursors), _work(work)
     {}
 
     Result<DiffRange, KiottySpecStatus> range(uint64_t from, uint64_t to);
@@ -42,8 +42,8 @@ public:
     CursorIdResult items(DiffRange range, uint32_t kind_mask, uint32_t field_mask);
     CursorIdResult relations(DiffRange range, uint32_t kind_mask);
 
-    PastReader past() { return PastReader(_w); }
-    TextDiffer text() { return TextDiffer(_w, _cursors, _work); }
+    PastReader past() { return PastReader(_workspace); }
+    TextDiffer text() { return TextDiffer(_workspace, _cursors, _work); }
 
 private:
     KiottySpecStatus countItems(DiffRange range, uint32_t kind_mask, uint32_t field_mask,
@@ -53,7 +53,7 @@ private:
     KiottySpecStatus countDecisions(DiffRange range, uint32_t kind_mask,
                                     KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
 
-    Workspace& _w;
+    Workspace& _workspace;
     CursorPool& _cursors;
     TextBuffer& _work;
 };

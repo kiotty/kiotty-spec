@@ -20,7 +20,7 @@ struct ItemVersionView {
 class PastReader
 {
 public:
-    explicit PastReader(Workspace& workspace) : _w(workspace) {}
+    explicit PastReader(Workspace& workspace) : _workspace(workspace) {}
 
     Result<ItemVersionView, KiottySpecStatus> itemAt(Span<const char> id, uint32_t checkpoint);
     Result<uint64_t, KiottySpecStatus> tagAt(Span<const char> id, uint32_t tag,
@@ -34,7 +34,7 @@ private:
     Result<const entity::ItemVersion*, KiottySpecStatus> versionAt(Span<const char> id,
                                                                    uint32_t checkpoint);
 
-    Workspace& _w;
+    Workspace& _workspace;
 };
 
 }

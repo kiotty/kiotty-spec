@@ -14,8 +14,10 @@ struct Points {
     size_t count {};
 };
 
+enum class HunkKind : uint8_t { EQUAL, EDIT };
+
 struct Hunk {
-    bool edit {};
+    HunkKind kind {HunkKind::EQUAL};
     uint16_t before_start {};
     uint16_t before_end {};
     uint16_t after_start {};
@@ -26,16 +28,16 @@ struct Hunks {
     Hunk items[MAX_HUNKS] {};
     size_t count {};
 
-    void add(bool edit, size_t before_start, size_t before_end, size_t after_start,
+    void add(HunkKind kind, size_t before_start, size_t before_end, size_t after_start,
              size_t after_end)
     {
-        if (count > 0 && items[count - 1].edit == edit) {
+        if (count > 0 && items[count - 1].kind == kind) {
             items[count - 1].before_end = static_cast<uint16_t>(before_end);
             items[count - 1].after_end = static_cast<uint16_t>(after_end);
             return;
         }
         items[count++] =
-            Hunk { edit, static_cast<uint16_t>(before_start), static_cast<uint16_t>(before_end),
+            Hunk { kind, static_cast<uint16_t>(before_start), static_cast<uint16_t>(before_end),
                    static_cast<uint16_t>(after_start), static_cast<uint16_t>(after_end) };
     }
 
@@ -104,15 +106,15 @@ Result<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const ch
         bool is_same = false;
         if (has_both_points) { is_same = isSamePoint(before, a, i, after, b, j); }
         if (is_same) {
-            hunks.add(false, a.starts[i], a.starts[i + 1], b.starts[j], b.starts[j + 1]);
+            hunks.add(HunkKind::EQUAL, a.starts[i], a.starts[i + 1], b.starts[j], b.starts[j + 1]);
             ++i;
             ++j;
         } else if (j == b.count ||
                    (i < a.count && table[(i + 1) * width + j] >= table[i * width + j + 1])) {
-            hunks.add(true, a.starts[i], a.starts[i + 1], b.starts[j], b.starts[j]);
+            hunks.add(HunkKind::EDIT, a.starts[i], a.starts[i + 1], b.starts[j], b.starts[j]);
             ++i;
         } else {
-            hunks.add(true, a.starts[i], a.starts[i], b.starts[j], b.starts[j + 1]);
+            hunks.add(HunkKind::EDIT, a.starts[i], a.starts[i], b.starts[j], b.starts[j + 1]);
             ++j;
         }
     }
@@ -130,15 +132,16 @@ Result<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const ch
     };
     for (size_t index = 0; index < hunks.count; ++index) {
         const Hunk& hunk = hunks.items[index];
-        bool fits = true;
-        if (hunk.edit) {
-            fits =
+        bool has_room = true;
+        if (hunk.kind == HunkKind::EDIT) {
+            has_room =
                 emit(TextChange::REMOVED, TextSource::BEFORE, hunk.before_start, hunk.before_end) &&
                 emit(TextChange::ADDED, TextSource::AFTER, hunk.after_start, hunk.after_end);
         } else {
-            fits = emit(TextChange::UNCHANGED, TextSource::AFTER, hunk.after_start, hunk.after_end);
+            has_room =
+                emit(TextChange::UNCHANGED, TextSource::AFTER, hunk.after_start, hunk.after_end);
         }
-        if (!fits) { return CountResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
+        if (!has_room) { return CountResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
     }
     return CountResult::success(count);
 }
@@ -174,23 +177,26 @@ bool isSamePoint(Span<const char> before, const Points& a, size_t i, Span<const 
 
 void mergeShortEqualities(Hunks& hunks)
 {
-    bool changed = true;
-    while (changed) {
-        changed = false;
+    bool has_changed = true;
+    while (has_changed) {
+        has_changed = false;
         for (size_t index = 1; index + 1 < hunks.count; ++index) {
             const Hunk& equal = hunks.items[index];
             const Hunk& left = hunks.items[index - 1];
             const Hunk& right = hunks.items[index + 1];
-            if (equal.edit || !left.edit || !right.edit) { continue; }
+            if (equal.kind == HunkKind::EDIT || left.kind == HunkKind::EQUAL ||
+                right.kind == HunkKind::EQUAL) {
+                continue;
+            }
             const size_t length = static_cast<size_t>(equal.before_end) - equal.before_start;
             const size_t left_side = measureLargerSide(left);
             const size_t right_side = measureLargerSide(right);
             if (length > left_side || length > right_side) { continue; }
-            hunks.items[index - 1] = Hunk { true, left.before_start, right.before_end,
+            hunks.items[index - 1] = Hunk { HunkKind::EDIT, left.before_start, right.before_end,
                                             left.after_start, right.after_end };
             hunks.erase(index);
             hunks.erase(index);
-            changed = true;
+            has_changed = true;
             break;
         }
     }
@@ -206,15 +212,16 @@ size_t measureLargerSide(const Hunk& hunk)
 void alignToWords(Hunks& hunks, Span<const char> before, Span<const char> after)
 {
     for (size_t index = 0; index < hunks.count; ++index) {
-        if (!hunks.items[index].edit) { continue; }
-        while (index + 1 < hunks.count && !hunks.items[index + 1].edit) {
+        if (hunks.items[index].kind == HunkKind::EQUAL) { continue; }
+        while (index + 1 < hunks.count && hunks.items[index + 1].kind == HunkKind::EQUAL) {
             Hunk& edit = hunks.items[index];
             Hunk& equal = hunks.items[index + 1];
-            const bool before_open = edit.before_end > edit.before_start &&
-                                     !isSpace(before[static_cast<size_t>(edit.before_end) - 1]);
-            const bool after_open = edit.after_end > edit.after_start &&
-                                    !isSpace(after[static_cast<size_t>(edit.after_end) - 1]);
-            if (!before_open && !after_open) { break; }
+            const bool is_before_open = edit.before_end > edit.before_start &&
+                                        !isSpace(before[static_cast<size_t>(edit.before_end) - 1]);
+            const bool is_after_open = edit.after_end > edit.after_start &&
+                                       !isSpace(after[static_cast<size_t>(edit.after_end) - 1]);
+            const bool is_open = is_before_open || is_after_open;
+            if (!is_open) { break; }
             const bool is_space_after = isSpace(after[equal.after_start]);
             if (is_space_after) { break; }
             const size_t width = findNextPointEnd(after, equal.after_start) - equal.after_start;
@@ -224,21 +231,22 @@ void alignToWords(Hunks& hunks, Span<const char> before, Span<const char> after)
             equal.after_start = static_cast<uint16_t>(equal.after_start + width);
             if (equal.after_start == equal.after_end) {
                 hunks.erase(index + 1);
-                if (index + 1 < hunks.count && hunks.items[index + 1].edit) {
+                if (index + 1 < hunks.count && hunks.items[index + 1].kind == HunkKind::EDIT) {
                     hunks.items[index].before_end = hunks.items[index + 1].before_end;
                     hunks.items[index].after_end = hunks.items[index + 1].after_end;
                     hunks.erase(index + 1);
                 }
             }
         }
-        while (index > 0 && !hunks.items[index - 1].edit) {
+        while (index > 0 && hunks.items[index - 1].kind == HunkKind::EQUAL) {
             Hunk& edit = hunks.items[index];
             Hunk& equal = hunks.items[index - 1];
-            const bool before_open =
+            const bool is_before_open =
                 edit.before_end > edit.before_start && !isSpace(before[edit.before_start]);
-            const bool after_open =
+            const bool is_after_open =
                 edit.after_end > edit.after_start && !isSpace(after[edit.after_start]);
-            if (!before_open && !after_open) { break; }
+            const bool is_open = is_before_open || is_after_open;
+            if (!is_open) { break; }
             const bool is_space_before = isSpace(after[static_cast<size_t>(equal.after_end) - 1]);
             if (is_space_before) { break; }
             const size_t width = equal.after_end - findPreviousPointStart(after, equal.after_end);
@@ -249,7 +257,7 @@ void alignToWords(Hunks& hunks, Span<const char> before, Span<const char> after)
             if (equal.after_start == equal.after_end) {
                 hunks.erase(index - 1);
                 --index;
-                if (index > 0 && hunks.items[index - 1].edit) {
+                if (index > 0 && hunks.items[index - 1].kind == HunkKind::EDIT) {
                     hunks.items[index - 1].before_end = hunks.items[index].before_end;
                     hunks.items[index - 1].after_end = hunks.items[index].after_end;
                     hunks.erase(index);

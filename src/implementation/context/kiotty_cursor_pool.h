@@ -55,7 +55,7 @@ public:
 
     CursorIdResult open(CursorKind kind);
     KiottySpecStatus push(CursorId cursor, const CursorRow &row);
-    CursorRowsResult fetch(CursorId cursor, CursorKind kind, size_t maxCount);
+    CursorRowsResult fetch(CursorId cursor, CursorKind kind, size_t max_count);
     Result<size_t, KiottySpecStatus> total(CursorId cursor);
     KiottySpecStatus close(CursorId cursor);
     Result<CursorSpace, KiottySpecStatus> space(CursorId cursor, CursorKind kind);
@@ -67,7 +67,7 @@ private:
 
     LazyPool<CursorSlot> _slots;
     std::vector<CursorRow> _rows;
-    size_t _maxRows;
+    size_t _max_rows;
 };
 
 }

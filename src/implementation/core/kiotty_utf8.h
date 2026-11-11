@@ -29,7 +29,7 @@ constexpr uint32_t UTF8_FOUR_BYTE_MIN_POINT = 0x10000;
 constexpr uint32_t UTF8_MAX_POINT = 0x10FFFF;
 
 inline size_t utf8SequenceLength(unsigned char lead);
-inline bool isUtf8SequenceWellFormed(Span<const char> text, size_t index, size_t length);
+inline bool isUtf8SequenceValid(Span<const char> text, size_t index, size_t length);
 inline bool isUtf8Continuation(char byte);
 inline uint32_t utf8CodePointAt(Span<const char> text, size_t index, size_t length);
 
@@ -40,7 +40,7 @@ inline bool isValidUtf8(Span<const char> text)
     while (index < text_length) {
         const size_t length = utf8SequenceLength(static_cast<unsigned char>(text[index]));
         if (length == 0 || index + length > text_length) { return false; }
-        const bool is_well_formed = isUtf8SequenceWellFormed(text, index, length);
+        const bool is_well_formed = isUtf8SequenceValid(text, index, length);
         if (!is_well_formed) { return false; }
         index += length;
     }
@@ -62,7 +62,7 @@ inline size_t utf8SequenceLength(unsigned char lead)
     return 0;
 }
 
-inline bool isUtf8SequenceWellFormed(Span<const char> text, size_t index, size_t length)
+inline bool isUtf8SequenceValid(Span<const char> text, size_t index, size_t length)
 {
     for (size_t offset = 1; offset < length; ++offset) {
         const bool is_continuation = isUtf8Continuation(text[index + offset]);

@@ -38,7 +38,8 @@ Context::Context(const Configuration& configuration)
 
 KiottySpecStatus Context::open(Span<const char> database)
 {
-    if (_opened) {
+    const bool is_opened = _is_opened;
+    if (is_opened) {
         return _failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_FILE, database);
     }
     const size_t database_length = database.length();
@@ -52,29 +53,28 @@ KiottySpecStatus Context::open(Span<const char> database)
     }
     const auto absolute = absolutePath(database);
     if (!absolute) { return _failure.raise(absolute.code, KIOTTY_SPEC_SUBJECT_FILE, database); }
-    _root.assign(parentOf(parentOf(absolute.value.view())));
+    const Span<const char> directory = parentOf(absolute.value.view());
+    _root.assign(parentOf(directory));
     const KiottySpecStatus catalog = _catalog.load();
     if (catalog != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(catalog, KIOTTY_SPEC_SUBJECT_MODEL);
     }
-    const bool exists = isFile(absolute.value.view());
+    const bool is_existing = isFile(absolute.value.view());
     const KiottySpecStatus loaded = _file.open(absolute.value.view());
     if (loaded != KIOTTY_SPEC_STATUS_SUCCESS) { return loaded; }
     const KiottySpecStatus prepared =
-        exists ? KIOTTY_SPEC_STATUS_SUCCESS : createDirectories(parentOf(absolute.value.view()));
+        is_existing ? KIOTTY_SPEC_STATUS_SUCCESS : createDirectories(directory);
     if (prepared != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE,
-                              parentOf(absolute.value.view()));
+        return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE, directory);
     }
-    const KiottySpecStatus created = exists ? KIOTTY_SPEC_STATUS_SUCCESS : _file.save();
+    const KiottySpecStatus created = is_existing ? KIOTTY_SPEC_STATUS_SUCCESS : _file.save();
     if (created != KIOTTY_SPEC_STATUS_SUCCESS) { return created; }
     const KiottySpecStatus attributed =
-        exists ? KIOTTY_SPEC_STATUS_SUCCESS : writeMergeAttributes(parentOf(absolute.value.view()));
+        is_existing ? KIOTTY_SPEC_STATUS_SUCCESS : writeMergeAttributes(directory);
     if (attributed != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return _failure.raise(attributed, KIOTTY_SPEC_SUBJECT_FILE,
-                              parentOf(absolute.value.view()));
+        return _failure.raise(attributed, KIOTTY_SPEC_SUBJECT_FILE, directory);
     }
-    _opened = true;
+    _is_opened = true;
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 

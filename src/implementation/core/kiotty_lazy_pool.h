@@ -25,7 +25,8 @@ public:
 
     Handle acquire()
     {
-        if (_free_count == 0) { return Handle{Handle::INVALID_INDEX, 0}; }
+        const bool is_exhausted = isExhausted(_free_count);
+        if (is_exhausted) { return Handle{Handle::INVALID_INDEX, 0}; }
         --_free_count;
         const uint32_t index = _free_indices[_free_count];
         _in_use[index] = 1;
@@ -34,7 +35,7 @@ public:
 
     Result<Element&, KiottySpecStatus> get(Handle handle)
     {
-        const bool is_live = isLive(handle);
+        const bool is_live = isLive(_in_use, _generations, _values.size(), handle);
         if (!is_live) {
             return Result<Element&, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_HANDLE);
         }
@@ -44,7 +45,8 @@ public:
     void releaseAll()
     {
         for (size_t index = _values.size(); index > 0; --index) {
-            if (_in_use[index - 1] != 0) {
+            const bool is_in_use = isInUse(_in_use, index - 1);
+            if (is_in_use) {
                 release(Handle { static_cast<uint32_t>(index - 1), _generations[index - 1] });
             }
         }
@@ -52,7 +54,7 @@ public:
 
     KiottySpecStatus release(Handle handle)
     {
-        const bool is_live = isLive(handle);
+        const bool is_live = isLive(_in_use, _generations, _values.size(), handle);
         if (!is_live) { return KIOTTY_SPEC_STATUS_INVALID_HANDLE; }
         _in_use[handle.index] = 0;
         ++_generations[handle.index];
@@ -65,19 +67,25 @@ public:
 
     Handle handleAt(size_t index) const
     {
-        const size_t value_count = _values.size();
-        if (index >= value_count || _in_use[index] == 0) {
-            return Handle { Handle::INVALID_INDEX, 0 };
-        }
+        const bool is_vacant = isVacant(_in_use, _values.size(), index);
+        if (is_vacant) { return Handle { Handle::INVALID_INDEX, 0 }; }
         return Handle{static_cast<uint32_t>(index), _generations[index]};
     }
 
 private:
-    bool isLive(Handle handle) const
+    static bool isExhausted(size_t free_count) { return free_count == 0; }
+
+    static bool isInUse(const std::vector<uint8_t>& in_use, size_t index)
+    { return in_use[index] != 0; }
+
+    static bool isVacant(const std::vector<uint8_t>& in_use, size_t value_count, size_t index)
+    { return index >= value_count || in_use[index] == 0; }
+
+    static bool isLive(const std::vector<uint8_t>& in_use, const std::vector<uint32_t>& generations,
+                       size_t value_count, Handle handle)
     {
-        const size_t value_count = _values.size();
         if (handle.index >= value_count) { return false; }
-        return _in_use[handle.index] != 0 && _generations[handle.index] == handle.generation;
+        return in_use[handle.index] != 0 && generations[handle.index] == handle.generation;
     }
 
     std::vector<Element> _values;

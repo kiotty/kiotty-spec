@@ -23,23 +23,26 @@ Span<const char> selectText(const Result<ItemVersionView, KiottySpecStatus>& ver
 
 CursorIdResult TextDiffer::open(entity::ItemHandle item, uint32_t field, DiffRange range)
 {
-    const auto record = _w.items.reader().get(item);
+    const auto record = _workspace.items.reader().get(item);
     if (!record) {
         return CursorIdResult::failure(
-            _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_HANDLE, KIOTTY_SPEC_SUBJECT_ITEM));
+            _workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_HANDLE, KIOTTY_SPEC_SUBJECT_ITEM));
     }
     const IdText id = record.value->id;
-    const auto before = PastReader(_w).itemAt(id.view(), range.from);
-    const auto after = PastReader(_w).itemAt(id.view(), range.to);
-    if (!before && !after) {
-        return CursorIdResult::failure(
-            _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_ITEM, id.view()));
+    const auto before = PastReader(_workspace).itemAt(id.view(), range.from);
+    const auto after = PastReader(_workspace).itemAt(id.view(), range.to);
+    const bool has_any_version = before || after;
+    if (!has_any_version) {
+        return CursorIdResult::failure(_workspace.failure.raise(
+            KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_ITEM, id.view()));
     }
     const Span<const char> before_text = selectText(before, field);
     const Span<const char> after_text = selectText(after, field);
 
     const auto cursor = _cursors.open(CursorKind::TEXT_DIFF);
-    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
+    if (!cursor) {
+        return CursorIdResult::failure(raiseCursorFull(_workspace.failure, cursor.code));
+    }
     const auto space = _cursors.space(cursor.value, CursorKind::TEXT_DIFF);
     char* const bytes = reinterpret_cast<char*>(space.value.rows.data());
     const size_t room = space.value.rows.length() * sizeof(CursorRow);
@@ -47,9 +50,9 @@ CursorIdResult TextDiffer::open(entity::ItemHandle item, uint32_t field, DiffRan
         room > SEGMENT_OFFSET ? (room - SEGMENT_OFFSET) / sizeof(TextSegment) : 0;
     if (segment_room == 0) {
         _cursors.close(cursor.value);
-        return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED,
-                                                        KIOTTY_SPEC_SUBJECT_CURSOR_ROWS,
-                                                        literalText("max_cursor_rows")));
+        return CursorIdResult::failure(_workspace.failure.raise(
+            KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, KIOTTY_SPEC_SUBJECT_CURSOR_ROWS,
+            literalText("max_cursor_rows")));
     }
     std::memcpy(bytes, before_text.data(), before_text.length());
     std::memcpy(bytes + TEXT_SLOT_BYTES, after_text.data(), after_text.length());
@@ -62,8 +65,8 @@ CursorIdResult TextDiffer::open(entity::ItemHandle item, uint32_t field, DiffRan
                                    segment_room < MAX_SEGMENTS ? segment_room : MAX_SEGMENTS));
     if (!count) {
         _cursors.close(cursor.value);
-        return CursorIdResult::failure(_w.failure.raise(count.code, KIOTTY_SPEC_SUBJECT_CURSOR_ROWS,
-                                                        literalText("max_cursor_rows")));
+        return CursorIdResult::failure(_workspace.failure.raise(
+            count.code, KIOTTY_SPEC_SUBJECT_CURSOR_ROWS, literalText("max_cursor_rows")));
     }
     space.value.slot->length = count.value;
     space.value.slot->position = 0;

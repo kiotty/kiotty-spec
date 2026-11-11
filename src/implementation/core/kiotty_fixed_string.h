@@ -38,14 +38,16 @@ public:
     const char* c_str() const { return _data; }
     Span<const char> view() const { return Span<const char>(_data, length()); }
     operator std::string_view() const { return std::string_view(_data, length()); }
-    size_t length() const
+    size_t length() const { return measureLength(_data); }
+
+private:
+    static size_t measureLength(const char (&data)[Capacity + 1])
     {
         size_t count = 0;
-        while (count < Capacity && _data[count] != '\0') { ++count; }
+        while (count < Capacity && data[count] != '\0') { ++count; }
         return count;
     }
 
-private:
     char _data[Capacity + 1] {};
 };
 
@@ -59,6 +61,12 @@ template <size_t Left, size_t Right>
 bool operator==(const FixedString<Left>& left, const FixedString<Right>& right)
 {
     return std::string_view(left) == std::string_view(right);
+}
+
+template <size_t Left, size_t Right>
+bool operator!=(const FixedString<Left>& left, const FixedString<Right>& right)
+{
+    return std::string_view(left) != std::string_view(right);
 }
 
 template <size_t Capacity>

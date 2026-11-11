@@ -2,6 +2,7 @@
 
 #include "implementation/context/kiotty_cursor_rows.h"
 #include "implementation/core/kiotty_text_view.h"
+#include "implementation/core/kiotty_version_table.h"
 
 namespace kiotty::spec::implementation {
 
@@ -58,16 +59,16 @@ Result<DiffRange, KiottySpecStatus> Differ::range(uint64_t from, uint64_t to)
 {
     using RangeResult = Result<DiffRange, KiottySpecStatus>;
     if (from == KIOTTY_SPEC_CHECKPOINT_CURRENT) {
-        return RangeResult::failure(
-            _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_DIFF_RANGE));
+        return RangeResult::failure(_workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
+                                                             KIOTTY_SPEC_SUBJECT_DIFF_RANGE));
     }
     const auto start = point(from);
     if (!start) { return RangeResult::failure(start.code); }
     const auto end = point(to);
     if (!end) { return RangeResult::failure(end.code); }
     if (start.value >= end.value) {
-        return RangeResult::failure(
-            _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_DIFF_RANGE));
+        return RangeResult::failure(_workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
+                                                             KIOTTY_SPEC_SUBJECT_DIFF_RANGE));
     }
     return RangeResult::success(DiffRange{start.value, end.value});
 }
@@ -76,12 +77,12 @@ Result<uint32_t, KiottySpecStatus> Differ::point(uint64_t checkpoint)
 {
     using PointResult = Result<uint32_t, KiottySpecStatus>;
     const uint32_t sequence = checkpoint == KIOTTY_SPEC_CHECKPOINT_CURRENT
-                                  ? _w.checkpoints.latest()
+                                  ? _workspace.checkpoints.latest()
                                   : static_cast<uint32_t>(checkpoint & CHECKPOINT_SEQUENCE_MASK);
-    const bool has_checkpoint = _w.checkpoints.at(sequence) != nullptr;
+    const bool has_checkpoint = _workspace.checkpoints.at(sequence) != nullptr;
     if (!has_checkpoint) {
         return PointResult::failure(
-            _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
+            _workspace.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
     return PointResult::success(sequence);
 }
@@ -99,12 +100,16 @@ KiottySpecStatus Differ::summarize(DiffRange range, uint32_t kind_mask, uint32_t
 KiottySpecStatus Differ::countItems(DiffRange range, uint32_t kind_mask, uint32_t field_mask,
                                     KindCounts (&counts)[entity::ITEM_KIND_COUNT])
 {
-    ItemDiffQuery query(_w.items, range, kind_mask, field_mask);
+    ItemDiffQuery query(_workspace.items, range, kind_mask, field_mask);
     const KiottySpecStatus opened = query.open();
     if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return opened; }
+    const Span<KindCounts> kind_counts(counts, entity::ITEM_KIND_COUNT);
     Result<bool, KiottySpecStatus> next = query.next();
     for (; next && next.value; next = query.next()) {
-        KindCounts& count = counts[query.current().kind - 1];
+        const Result<KindCounts&, KiottySpecStatus> found =
+            kind_counts.at(query.current().kind - 1);
+        if (!found) { return found.code; }
+        KindCounts& count = *found.value;
         const uint32_t change = query.current().change;
         if (change == KIOTTY_SPEC_CHANGE_ADDED) { ++count.added; }
         if (change == KIOTTY_SPEC_CHANGE_MODIFIED) { ++count.modified; }
@@ -116,12 +121,16 @@ KiottySpecStatus Differ::countItems(DiffRange range, uint32_t kind_mask, uint32_
 KiottySpecStatus Differ::countRelations(DiffRange range, uint32_t kind_mask,
                                         KindCounts (&counts)[entity::ITEM_KIND_COUNT])
 {
-    RelationDiffQuery query(_w.items, _w.relations, range, kind_mask);
+    RelationDiffQuery query(_workspace.items, _workspace.relations, range, kind_mask);
     const KiottySpecStatus opened = query.open();
     if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return opened; }
+    const Span<KindCounts> kind_counts(counts, entity::ITEM_KIND_COUNT);
     Result<bool, KiottySpecStatus> next = query.next();
     for (; next && next.value; next = query.next()) {
-        KindCounts& count = counts[query.current().model - 1];
+        const Result<KindCounts&, KiottySpecStatus> found =
+            kind_counts.at(query.current().model - 1);
+        if (!found) { return found.code; }
+        KindCounts& count = *found.value;
         const uint32_t change = query.current().change;
         if (change == KIOTTY_SPEC_CHANGE_ADDED) {
             ++count.relations_added;
@@ -135,12 +144,17 @@ KiottySpecStatus Differ::countRelations(DiffRange range, uint32_t kind_mask,
 KiottySpecStatus Differ::countDecisions(DiffRange range, uint32_t kind_mask,
                                         KindCounts (&counts)[entity::ITEM_KIND_COUNT])
 {
+    const Span<KindCounts> kind_counts(counts, entity::ITEM_KIND_COUNT);
     for (uint32_t kind = 1; kind <= entity::ITEM_KIND_COUNT; ++kind) {
-        const entity::DecisionVersion* before = _w.decisions.versions().latest(kind, range.from);
-        const entity::DecisionVersion* after = _w.decisions.versions().latest(kind, range.to);
-        const bool changed = before != after;
+        const Result<KindCounts&, KiottySpecStatus> found = kind_counts.at(kind - 1);
+        if (!found) { return found.code; }
+        KindCounts& count = *found.value;
+        const VersionTable<entity::DecisionVersion>& versions = _workspace.decisions.versions();
+        const entity::DecisionVersion* before = versions.latest(kind, range.from);
+        const entity::DecisionVersion* after = versions.latest(kind, range.to);
+        const bool has_changed = before != after;
         const bool is_in_mask = isKindInMask(kind_mask, kind);
-        if (is_in_mask && changed) { counts[kind - 1].has_decision_change = true; }
+        if (is_in_mask && has_changed) { count.has_decision_change = true; }
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
@@ -148,8 +162,10 @@ KiottySpecStatus Differ::countDecisions(DiffRange range, uint32_t kind_mask,
 CursorIdResult Differ::items(DiffRange range, uint32_t kind_mask, uint32_t field_mask)
 {
     const auto cursor = _cursors.open(CursorKind::ITEM_DIFF);
-    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
-    ItemDiffQuery query(_w.items, range, kind_mask, field_mask);
+    if (!cursor) {
+        return CursorIdResult::failure(raiseCursorFull(_workspace.failure, cursor.code));
+    }
+    ItemDiffQuery query(_workspace.items, range, kind_mask, field_mask);
     KiottySpecStatus status = query.open();
     Result<bool, KiottySpecStatus> next = status == KIOTTY_SPEC_STATUS_SUCCESS
                                               ? query.next()
@@ -162,7 +178,7 @@ CursorIdResult Differ::items(DiffRange range, uint32_t kind_mask, uint32_t field
         row.third = diff.before | (static_cast<uint64_t>(diff.after) << ITEM_AFTER_SHIFT);
         row.fourth = diff.kind | (static_cast<uint64_t>(diff.change) << ITEM_CHANGE_SHIFT) |
                      (static_cast<uint64_t>(diff.fields) << ITEM_FIELDS_SHIFT);
-        status = pushRow(_cursors, _w.failure, cursor.value, row);
+        status = pushRow(_cursors, _workspace.failure, cursor.value, row);
     }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = next.code; }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { return cursor; }
@@ -173,8 +189,10 @@ CursorIdResult Differ::items(DiffRange range, uint32_t kind_mask, uint32_t field
 CursorIdResult Differ::relations(DiffRange range, uint32_t kind_mask)
 {
     const auto cursor = _cursors.open(CursorKind::RELATION_DIFF);
-    if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
-    RelationDiffQuery query(_w.items, _w.relations, range, kind_mask);
+    if (!cursor) {
+        return CursorIdResult::failure(raiseCursorFull(_workspace.failure, cursor.code));
+    }
+    RelationDiffQuery query(_workspace.items, _workspace.relations, range, kind_mask);
     KiottySpecStatus status = query.open();
     Result<bool, KiottySpecStatus> next = status == KIOTTY_SPEC_STATUS_SUCCESS
                                               ? query.next()
@@ -191,7 +209,7 @@ CursorIdResult Differ::relations(DiffRange range, uint32_t kind_mask)
             (static_cast<uint64_t>(diff.relation & RELATION_ID_MASK) << RELATION_ID_SHIFT) |
             (static_cast<uint64_t>(diff.model) << RELATION_MODEL_SHIFT) |
             (static_cast<uint64_t>(diff.change) << RELATION_CHANGE_SHIFT));
-        status = pushRow(_cursors, _w.failure, cursor.value, row);
+        status = pushRow(_cursors, _workspace.failure, cursor.value, row);
     }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = next.code; }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { return cursor; }

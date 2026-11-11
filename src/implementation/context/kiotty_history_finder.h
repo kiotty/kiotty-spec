@@ -23,7 +23,7 @@ class HistoryFinder
 {
 public:
     HistoryFinder(Workspace& workspace, CursorPool& cursors, Checker& checker)
-        : _w(workspace), _cursors(cursors), _checker(checker)
+        : _workspace(workspace), _cursors(cursors), _checker(checker)
     {}
 
     CursorIdResult checkpoints(uint32_t step);
@@ -32,7 +32,7 @@ public:
     Result<Position, KiottySpecStatus> position();
 
 private:
-    Workspace& _w;
+    Workspace& _workspace;
     CursorPool& _cursors;
     Checker& _checker;
 };

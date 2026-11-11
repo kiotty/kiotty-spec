@@ -22,14 +22,14 @@ class TextDiffer
 {
 public:
     TextDiffer(Workspace& workspace, CursorPool& cursors, TextBuffer& work)
-        : _w(workspace), _cursors(cursors), _work(work)
+        : _workspace(workspace), _cursors(cursors), _work(work)
     {}
 
     CursorIdResult open(entity::ItemHandle item, uint32_t field, DiffRange range);
     Result<TextPiece, KiottySpecStatus> next(CursorId cursor);
 
 private:
-    Workspace& _w;
+    Workspace& _workspace;
     CursorPool& _cursors;
     TextBuffer& _work;
 };

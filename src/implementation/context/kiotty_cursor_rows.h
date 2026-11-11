@@ -13,6 +13,7 @@ namespace kiotty::spec::implementation {
 
 constexpr size_t PACKED_ID_WORD_BYTES = 8;
 constexpr size_t PACKED_ID_WORDS = 2;
+constexpr size_t PACKED_ID_BYTES = PACKED_ID_WORD_BYTES * PACKED_ID_WORDS;
 constexpr uint32_t BITS_PER_BYTE = 8;
 constexpr uint64_t BYTE_MASK = 0xFFu;
 
@@ -43,9 +44,8 @@ inline uint64_t packIdWord(entity::IdText id, size_t offset)
     const Span<const char> text = id.view();
     uint64_t word {0};
     for (size_t index = 0; index < PACKED_ID_WORD_BYTES; ++index) {
-        const size_t position = offset + index;
-        const uint64_t byte =
-            position < text.length() ? static_cast<unsigned char>(text[position]) : 0u;
+        const Result<const char&, KiottySpecStatus> letter = text.at(offset + index);
+        const uint64_t byte = letter ? static_cast<unsigned char>(*letter.value) : 0u;
         word |= byte << (BITS_PER_BYTE * index);
     }
     return word;
@@ -53,11 +53,13 @@ inline uint64_t packIdWord(entity::IdText id, size_t offset)
 
 inline entity::IdText unpackId(uint64_t first, uint64_t second)
 {
-    char bytes[PACKED_ID_WORD_BYTES * PACKED_ID_WORDS] {};
-    for (size_t index = 0; index < PACKED_ID_WORD_BYTES; ++index) {
-        bytes[index] = static_cast<char>((first >> (BITS_PER_BYTE * index)) & BYTE_MASK);
-        bytes[PACKED_ID_WORD_BYTES + index] =
-            static_cast<char>((second >> (BITS_PER_BYTE * index)) & BYTE_MASK);
+    char bytes[PACKED_ID_BYTES] {};
+    const Span<char> letters(bytes, PACKED_ID_BYTES);
+    const size_t letter_count = letters.length();
+    for (size_t index = 0; index < letter_count; ++index) {
+        const uint64_t word = index < PACKED_ID_WORD_BYTES ? first : second;
+        const size_t shift = BITS_PER_BYTE * (index % PACKED_ID_WORD_BYTES);
+        letters[index] = static_cast<char>((word >> shift) & BYTE_MASK);
     }
     entity::IdText id {};
     id.assign(boundedText(bytes, entity::MAX_ID_LENGTH));
