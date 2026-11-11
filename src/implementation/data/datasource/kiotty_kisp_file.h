@@ -33,7 +33,7 @@ private:
     KispLineDecoder _decoder;
     size_t _line_number {0};
     uint64_t _hash {EMPTY_KISP_HASH};
-    bool _present {false};
+    bool _is_present {false};
 };
 
 class KispFileWriter
@@ -55,7 +55,7 @@ private:
     SystemPath _path {};
     SystemPath _temporary {};
     uint64_t _hash {EMPTY_KISP_HASH};
-    bool _open {false};
+    bool _is_open {false};
 };
 
 Result<uint64_t, KiottySpecStatus> hashKispFile(Span<const char> path, Span<char> buffer);

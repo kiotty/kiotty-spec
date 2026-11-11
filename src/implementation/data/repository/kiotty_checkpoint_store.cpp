@@ -2,6 +2,8 @@
 
 #include "implementation/core/kiotty_text_view.h"
 
+#include <algorithm>
+
 namespace kiotty::spec::implementation {
 
 namespace {
@@ -18,17 +20,22 @@ void CheckpointStore::clear()
 
 KiottySpecStatus CheckpointStore::put(uint32_t sequence, const CheckpointRecord& record)
 {
-    const size_t capacity = _records.size();
-    if (sequence < 1 || sequence > capacity) {
+    const Span<CheckpointRecord> records(_records.data(), _records.size());
+    const Span<uint8_t> exists(_exists.data(), _exists.size());
+    const Result<CheckpointRecord&, KiottySpecStatus> slot = records.at(sequence - 1);
+    const Result<uint8_t&, KiottySpecStatus> flag = exists.at(sequence - 1);
+    const bool is_out_of_range = !slot || !flag;
+    if (is_out_of_range) {
         return _failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED,
                               KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_checkpoints"));
     }
-    if (_exists[sequence - 1] != 0) {
+    const bool is_taken = *flag.value != 0;
+    if (is_taken) {
         return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE);
     }
-    _records[sequence - 1] = record;
-    _exists[sequence - 1] = 1;
-    if (sequence > _latest) { _latest = sequence; }
+    *slot.value = record;
+    *flag.value = 1;
+    _latest = std::max(_latest, sequence);
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
@@ -44,11 +51,12 @@ Result<const CheckpointRecord*, KiottySpecStatus> CheckpointStore::get(uint32_t 
 
 const CheckpointRecord* CheckpointStore::at(uint32_t sequence) const
 {
-    const size_t capacity = _records.size();
-    if (sequence == 0 || sequence > capacity || _exists[sequence - 1] == 0) {
-        return nullptr;
-    }
-    return &_records[sequence - 1];
+    const Span<const CheckpointRecord> records(_records.data(), _records.size());
+    const Span<const uint8_t> exists(_exists.data(), _exists.size());
+    const Result<const CheckpointRecord&, KiottySpecStatus> record = records.at(sequence - 1);
+    const Result<const uint8_t&, KiottySpecStatus> flag = exists.at(sequence - 1);
+    const bool is_present = record && flag && *flag.value != 0;
+    return is_present ? record.value : nullptr;
 }
 
 }

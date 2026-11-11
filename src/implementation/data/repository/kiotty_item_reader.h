@@ -14,23 +14,23 @@ namespace kiotty::spec::implementation {
 class ItemReader
 {
 public:
-    explicit ItemReader(ItemTables& tables) : _t(tables) {}
+    explicit ItemReader(ItemTables& tables) : _tables(tables) {}
 
     Result<entity::ItemHandle, KiottySpecStatus> find(Span<const char> id) const;
     Result<entity::ItemHandle, KiottySpecStatus> findKey(uint32_t key) const;
     Result<const entity::ItemRecord*, KiottySpecStatus> get(entity::ItemHandle handle) const;
     entity::ItemHandle handleInIdOrder(size_t position) const
-    { return _t.items.handleAt(_t.id_index.valueAt(position)); }
-    entity::ItemHandle handleAt(size_t index) const { return _t.items.handleAt(index); }
-    size_t capacity() const { return _t.items.capacity(); }
+    { return _tables.items.handleAt(_tables.id_index.valueAt(position)); }
+    entity::ItemHandle handleAt(size_t index) const { return _tables.items.handleAt(index); }
+    size_t capacity() const { return _tables.items.capacity(); }
     uint32_t key(entity::ItemHandle handle) const;
-    size_t count() const { return _t.id_index.length(); }
+    size_t count() const { return _tables.id_index.length(); }
 
     Result<size_t, KiottySpecStatus> readBody(entity::ItemHandle handle, char* buffer,
                                               size_t capacity) const;
 
 private:
-    ItemTables& _t;
+    ItemTables& _tables;
 };
 
 }

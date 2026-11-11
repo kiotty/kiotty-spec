@@ -17,27 +17,27 @@ class ItemStore
 {
 public:
     ItemStore(entity::Failure& failure, const ItemCapacity& capacity)
-        : _failure(failure), _t(capacity)
+        : _failure(failure), _tables(capacity)
     {}
 
     void clear();
     KiottySpecStatus rebuild();
 
-    ItemTables& tables() { return _t; }
-    ItemHistory history() { return ItemHistory(_t); }
-    ItemReader reader() { return ItemReader(_t); }
+    ItemTables& tables() { return _tables; }
+    ItemHistory history() { return ItemHistory(_tables); }
+    ItemReader reader() { return ItemReader(_tables); }
     ItemTags tags() const
-    { return ItemTags(Span<const entity::TagRecord>(_t.tags.data(), _t.tag_count)); }
-    ItemWriter writer() { return ItemWriter(_t, _failure); }
+    { return ItemTags(Span<const entity::TagRecord>(_tables.tags.data(), _tables.tag_count)); }
+    ItemWriter writer() { return ItemWriter(_tables, _failure); }
 
 private:
-    size_t collectLatest();
+    Span<const uint32_t> collectLatest();
     KiottySpecStatus place(const entity::ItemVersion& version);
     void linkParents();
     KiottySpecStatus loadTags();
 
     entity::Failure& _failure;
-    ItemTables _t;
+    ItemTables _tables;
 };
 
 }

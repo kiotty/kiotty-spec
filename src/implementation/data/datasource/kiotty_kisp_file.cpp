@@ -33,27 +33,34 @@ KiottySpecStatus KispFileReader::open(Span<const char> path)
 {
     _line_number = 0;
     _hash = EMPTY_KISP_HASH;
-    _present = isFile(path);
-    if (!_present) { return KIOTTY_SPEC_STATUS_NOT_FOUND; }
-    return _file.open(path) == KIOTTY_SPEC_STATUS_SUCCESS ? KIOTTY_SPEC_STATUS_SUCCESS
-                                                          : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+    const bool is_present = isFile(path);
+    _is_present = is_present;
+    if (is_present) {
+        return _file.open(path) == KIOTTY_SPEC_STATUS_SUCCESS ? KIOTTY_SPEC_STATUS_SUCCESS
+                                                              : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+    }
+    return KIOTTY_SPEC_STATUS_NOT_FOUND;
 }
 
 Result<bool, KiottySpecStatus> KispFileReader::next()
 {
-    if (!_present) { return Result<bool, KiottySpecStatus>::success(false); }
-    const Result<bool, KiottySpecStatus> read = _file.next();
-    if (!read || !read.value) { return read; }
-    ++_line_number;
-    _hash = hashLine(_file.line(), _hash);
+    using LineResult = Result<bool, KiottySpecStatus>;
+    const LineResult read = _is_present ? _file.next() : LineResult::success(false);
+    const bool has_line = read && read.value;
+    if (has_line) {
+        ++_line_number;
+        _hash = hashLine(_file.line(), _hash);
+    }
     return read;
 }
 
 KispFileWriter::~KispFileWriter()
 {
-    if (!_open) { return; }
-    _file.close();
-    removeFile(_temporary.view());
+    const bool is_open = _is_open;
+    if (is_open) {
+        _file.close();
+        removeFile(_temporary.view());
+    }
 }
 
 KiottySpecStatus KispFileWriter::open(Span<const char> path)
@@ -66,7 +73,7 @@ KiottySpecStatus KispFileWriter::open(Span<const char> path)
     }
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
     status = _file.open(_temporary.view());
-    _open = status == KIOTTY_SPEC_STATUS_SUCCESS;
+    _is_open = status == KIOTTY_SPEC_STATUS_SUCCESS;
     return status;
 }
 
@@ -79,7 +86,7 @@ KiottySpecStatus KispFileWriter::write(Span<const char> line)
 KiottySpecStatus KispFileWriter::commit()
 {
     _file.close();
-    _open = false;
+    _is_open = false;
     const KiottySpecStatus renamed = renameFile(_temporary.view(), _path.view());
     if (renamed != KIOTTY_SPEC_STATUS_SUCCESS) { removeFile(_temporary.view()); }
     return renamed;

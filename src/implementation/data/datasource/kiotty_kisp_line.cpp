@@ -16,59 +16,35 @@ struct EscapePair {
 
 static_assert(sizeof(EscapePair) == 2, "unexpected padding");
 
+struct FieldCursor {
+    size_t index {0};
+    size_t written {0};
+    KiottySpecStatus status {KIOTTY_SPEC_STATUS_SUCCESS};
+};
+
+static_assert(sizeof(FieldCursor) == 24, "unexpected padding");
+
 constexpr EscapePair ESCAPE_PAIRS[] = {{'\t', 't'}, {'\n', 'n'}, {'\r', 'r'}, {'\\', '\\'}};
 
 constexpr size_t ESCAPE_SEQUENCE_LENGTH = 2;
 
+Result<KispFields, KiottySpecStatus> fillFields(Span<const char> line, Span<char> area);
+FieldCursor writeField(Span<const char> line, Span<char> area, const FieldCursor& initial);
+char readLetter(Span<const char> text, size_t index);
+bool isSeparatorDue(size_t count, KiottySpecStatus status);
+bool isSuccess(KiottySpecStatus status);
 char unescape(char letter);
 char escapeOf(char letter);
 
 }
 
 Result<KispFields, KiottySpecStatus> KispLineDecoder::decode(Span<const char> line) const
-{
-    using FieldsResult = Result<KispFields, KiottySpecStatus>;
-    KispFields fields {};
-    size_t written = 0;
-    size_t start = 0;
-    size_t index = 0;
-    const size_t length = line.length();
-    const size_t capacity = _area.length();
-    while (index <= length) {
-        const bool end = index == length || line[index] == TAB;
-        if (end) {
-            if (fields.count == MAX_KISP_FIELDS) {
-                return FieldsResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
-            }
-            fields.values[fields.count] = Span<const char>(_area.data() + start, written - start);
-            ++fields.count;
-            start = written;
-            ++index;
-            continue;
-        }
-        char letter = line[index];
-        if (letter == ESCAPE) {
-            letter = index + 1 < length ? unescape(line[index + 1]) : '\0';
-            if (letter == '\0') {
-                return FieldsResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
-            }
-            ++index;
-        }
-        if (written == capacity) {
-            return FieldsResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED);
-        }
-        _area[written] = letter;
-        ++written;
-        ++index;
-    }
-    return FieldsResult::success(fields);
-}
+{ return fillFields(line, _area); }
 
 void KispLineEncoder::add(Span<const char> field)
 {
-    if (_count > 0 && _status == KIOTTY_SPEC_STATUS_SUCCESS) {
-        _status = _text.append(literalText("\t"));
-    }
+    const bool is_separator_due = isSeparatorDue(_count, _status);
+    if (is_separator_due) { _status = _text.append(literalText("\t")); }
     ++_count;
     extend(field);
 }
@@ -76,24 +52,86 @@ void KispLineEncoder::add(Span<const char> field)
 void KispLineEncoder::extend(Span<const char> text)
 {
     const size_t length = text.length();
-    for (size_t index = 0; index < length && _status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
-        const char escaped[ESCAPE_SEQUENCE_LENGTH] = {ESCAPE, escapeOf(text[index])};
-        const bool plain = escaped[1] == '\0';
-        _status = plain ? _text.append(Span<const char>(&text[index], 1))
-                        : _text.append(Span<const char>(escaped, ESCAPE_SEQUENCE_LENGTH));
+    for (size_t index = 0; index < length; ++index) {
+        const char escaped_letter = escapeOf(text[index]);
+        const char sequence[ESCAPE_SEQUENCE_LENGTH] = {ESCAPE, escaped_letter};
+        const bool is_plain = escaped_letter == '\0';
+        const Span<const char> escaped(sequence, ESCAPE_SEQUENCE_LENGTH);
+        const Span<const char> piece = is_plain ? Span<const char>(&text[index], 1) : escaped;
+        const bool is_writing = isSuccess(_status);
+        if (is_writing) { _status = _text.append(piece); }
     }
 }
 
 Result<Span<const char>, KiottySpecStatus> KispLineEncoder::finish()
 {
-    if (_status == KIOTTY_SPEC_STATUS_SUCCESS) { _status = _text.append(literalText("\n")); }
-    if (_status != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return Result<Span<const char>, KiottySpecStatus>::failure(_status);
-    }
-    return Result<Span<const char>, KiottySpecStatus>::success(_text.view());
+    const bool is_writing = isSuccess(_status);
+    if (is_writing) { _status = _text.append(literalText("\n")); }
+    const bool is_finished = isSuccess(_status);
+    if (is_finished) { return Result<Span<const char>, KiottySpecStatus>::success(_text.view()); }
+    return Result<Span<const char>, KiottySpecStatus>::failure(_status);
 }
 
 namespace {
+
+Result<KispFields, KiottySpecStatus> fillFields(Span<const char> line, Span<char> area)
+{
+    using FieldsResult = Result<KispFields, KiottySpecStatus>;
+    KispFields fields {};
+    const Span<Span<const char>> slots(fields.values, MAX_KISP_FIELDS);
+    FieldCursor cursor {};
+    const size_t length = line.length();
+    while (cursor.index <= length) {
+        const size_t start = cursor.written;
+        cursor = writeField(line, area, cursor);
+        if (cursor.status != KIOTTY_SPEC_STATUS_SUCCESS) {
+            return FieldsResult::failure(cursor.status);
+        }
+        const Result<Span<const char>&, KiottySpecStatus> slot = slots.at(fields.count);
+        if (!slot) { return FieldsResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+        *slot.value = Span<const char>(area.data() + start, cursor.written - start);
+        ++fields.count;
+        ++cursor.index;
+    }
+    return FieldsResult::success(fields);
+}
+
+FieldCursor writeField(Span<const char> line, Span<char> area, const FieldCursor& initial)
+{
+    FieldCursor cursor = initial;
+    const size_t length = line.length();
+    while (cursor.index < length) {
+        const char letter = readLetter(line, cursor.index);
+        if (letter == TAB) { return cursor; }
+        const bool is_escape = letter == ESCAPE;
+        const char decoded = is_escape ? unescape(readLetter(line, cursor.index + 1)) : letter;
+        const bool is_broken_escape = is_escape && decoded == '\0';
+        const Result<char&, KiottySpecStatus> target = area.at(cursor.written);
+        if (is_broken_escape) {
+            cursor.status = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
+            return cursor;
+        }
+        if (!target) {
+            cursor.status = KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED;
+            return cursor;
+        }
+        *target.value = decoded;
+        ++cursor.written;
+        cursor.index += is_escape ? ESCAPE_SEQUENCE_LENGTH : 1;
+    }
+    return cursor;
+}
+
+char readLetter(Span<const char> text, size_t index)
+{
+    const Result<const char&, KiottySpecStatus> letter = text.at(index);
+    return letter ? *letter.value : '\0';
+}
+
+bool isSeparatorDue(size_t count, KiottySpecStatus status)
+{ return count > 0 && status == KIOTTY_SPEC_STATUS_SUCCESS; }
+
+bool isSuccess(KiottySpecStatus status) { return status == KIOTTY_SPEC_STATUS_SUCCESS; }
 
 char unescape(char letter)
 {

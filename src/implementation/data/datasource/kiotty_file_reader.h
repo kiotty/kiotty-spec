@@ -27,7 +27,7 @@ private:
     int _descriptor {-1};
     size_t _start {0};
     size_t _end {0};
-    bool _finished {false};
+    bool _is_finished {false};
 };
 
 }

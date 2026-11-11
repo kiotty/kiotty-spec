@@ -17,7 +17,7 @@ namespace kiotty::spec::implementation {
 class ItemWriter
 {
 public:
-    ItemWriter(ItemTables& tables, entity::Failure& failure) : _t(tables), _failure(failure) {}
+    ItemWriter(ItemTables& tables, entity::Failure& failure) : _tables(tables), _failure(failure) {}
 
     Result<entity::ItemHandle, KiottySpecStatus> create(const entity::ItemRecord& record,
                                                         uint32_t sequence);
@@ -30,9 +30,9 @@ public:
     KiottySpecStatus rename(entity::ItemHandle handle, entity::IdText id);
 
 private:
-    ItemReader reader() const { return ItemReader(_t); }
+    ItemReader reader() const { return ItemReader(_tables); }
     ItemTags tags() const
-    { return ItemTags(Span<const entity::TagRecord>(_t.tags.data(), _t.tag_count)); }
+    { return ItemTags(Span<const entity::TagRecord>(_tables.tags.data(), _tables.tag_count)); }
     KiottySpecStatus checkUnused(entity::IdText id);
     Result<uint32_t, KiottySpecStatus> newKey(entity::IdText id) const;
     KiottySpecStatus writeVersion(entity::ItemHandle handle, const entity::ItemVersion& version);
@@ -40,8 +40,14 @@ private:
     KiottySpecStatus applyTag(entity::ItemHandle handle, entity::ItemKind kind, uint32_t tag,
                               uint64_t value);
     void dropTags(entity::ItemHandle handle);
+    Span<uint32_t> viewKeys() const
+    { return Span<uint32_t>(_tables.keys.data(), _tables.keys.size()); }
+    Span<uint32_t> viewParents() const
+    { return Span<uint32_t>(_tables.parents.data(), _tables.parents.size()); }
+    Span<entity::TagRecord> viewTags() const
+    { return Span<entity::TagRecord>(_tables.tags.data(), _tables.tags.size()); }
 
-    ItemTables& _t;
+    ItemTables& _tables;
     entity::Failure& _failure;
 };
 

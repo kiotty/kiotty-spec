@@ -27,6 +27,10 @@ public:
     Result<size_t, KiottySpecStatus> dropBefore(uint32_t base);
 
 private:
+    Span<entity::CheckpointRecord> viewRecords() const
+    { return Span<entity::CheckpointRecord>(_records.data(), _records.size()); }
+    Span<uint8_t> viewFlags() const { return Span<uint8_t>(_exists.data(), _exists.size()); }
+
     entity::Failure& _failure;
     std::vector<entity::CheckpointRecord>& _records;
     std::vector<uint8_t>& _exists;

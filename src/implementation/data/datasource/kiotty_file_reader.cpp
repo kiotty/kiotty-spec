@@ -2,52 +2,160 @@
 
 #include "implementation/data/datasource/kiotty_file_system.h"
 
+#include <algorithm>
+
 namespace kiotty::spec::implementation {
 
-FileReader::~FileReader()
-{
-    if (_descriptor >= 0) { closeDescriptor(_descriptor); }
+namespace {
+
+struct LineWindow {
+    Span<const char> line {};
+    size_t start {0};
+    size_t end {0};
+    size_t scan {0};
+    KiottySpecStatus status {KIOTTY_SPEC_STATUS_SUCCESS};
+    bool has_line {false};
+    bool is_finished {false};
+};
+
+static_assert(sizeof(LineWindow) == 48, "unexpected padding");
+
+void closeOpenDescriptor(int descriptor);
+KiottySpecStatus checkOpened(int descriptor);
+bool isClosedDescriptor(int descriptor);
+LineWindow readLine(int descriptor, Span<char> buffer, const LineWindow& initial);
+LineWindow readMore(int descriptor, Span<char> buffer, const LineWindow& window);
+LineWindow copyToFront(Span<char> buffer, const LineWindow& window);
+LineWindow cutLine(Span<const char> buffer, const LineWindow& window);
+size_t findNewline(Span<const char> buffer, size_t from, size_t end);
+bool isCarriageReturnAt(Span<const char> buffer, size_t index);
+
 }
+
+FileReader::~FileReader() { closeOpenDescriptor(_descriptor); }
 
 KiottySpecStatus FileReader::open(Span<const char> path)
 {
-    if (_descriptor >= 0) { closeDescriptor(_descriptor); }
+    closeOpenDescriptor(_descriptor);
     _descriptor = openForReading(path);
     _start = 0;
     _end = 0;
-    _finished = false;
-    return _descriptor >= 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_NOT_FOUND;
+    _is_finished = false;
+    return checkOpened(_descriptor);
 }
 
 Result<bool, KiottySpecStatus> FileReader::next()
 {
     using LineResult = Result<bool, KiottySpecStatus>;
-    if (_descriptor < 0) { return LineResult::failure(KIOTTY_SPEC_STATUS_PRECONDITION); }
-    size_t scan = _start;
-    while (true) {
-        while (scan < _end && _buffer[scan] != '\n') { ++scan; }
-        if (scan < _end || (_finished && _start < _end)) { break; }
-        if (_finished) { return LineResult::success(false); }
-        const size_t kept = _end - _start;
-        for (size_t index = 0; index < kept; ++index) { _buffer[index] = _buffer[_start + index]; }
-        _start = 0;
-        _end = kept;
-        scan = kept;
-        const size_t capacity = _buffer.length();
-        if (_end == capacity) {
-            return LineResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED);
-        }
-        const int count =
-            readDescriptor(_descriptor, Span<char>(_buffer.data() + _end, _buffer.length() - _end));
-        if (count < 0) { return LineResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT); }
-        if (count == 0) { _finished = true; }
-        _end += static_cast<size_t>(count);
+    const bool is_closed = isClosedDescriptor(_descriptor);
+    if (is_closed) { return LineResult::failure(KIOTTY_SPEC_STATUS_PRECONDITION); }
+    LineWindow window {};
+    window.start = _start;
+    window.end = _end;
+    window.is_finished = _is_finished;
+    window = readLine(_descriptor, _buffer, window);
+    _start = window.start;
+    _end = window.end;
+    _is_finished = window.is_finished;
+    if (window.has_line) { _line = window.line; }
+    if (window.status != KIOTTY_SPEC_STATUS_SUCCESS) { return LineResult::failure(window.status); }
+    return LineResult::success(window.has_line);
+}
+
+namespace {
+
+void closeOpenDescriptor(int descriptor)
+{
+    if (descriptor >= 0) { closeDescriptor(descriptor); }
+}
+
+KiottySpecStatus checkOpened(int descriptor)
+{ return descriptor >= 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_NOT_FOUND; }
+
+bool isClosedDescriptor(int descriptor) { return descriptor < 0; }
+
+LineWindow readLine(int descriptor, Span<char> buffer, const LineWindow& initial)
+{
+    LineWindow window = initial;
+    window.scan = findNewline(buffer, window.start, window.end);
+    while (window.status == KIOTTY_SPEC_STATUS_SUCCESS) {
+        const bool has_newline = window.scan < window.end;
+        const bool has_tail = window.is_finished && window.start < window.end;
+        if (has_newline || has_tail) { return cutLine(buffer, window); }
+        if (window.is_finished) { return window; }
+        window = readMore(descriptor, buffer, window);
+        window.scan = findNewline(buffer, window.scan, window.end);
     }
-    size_t last = scan;
-    if (last > _start && _buffer[last - 1] == '\r') { --last; }
-    _line = Span<const char>(_buffer.data() + _start, last - _start);
-    _start = scan < _end ? scan + 1 : _end;
-    return LineResult::success(true);
+    return window;
+}
+
+LineWindow readMore(int descriptor, Span<char> buffer, const LineWindow& window)
+{
+    LineWindow moved = copyToFront(buffer, window);
+    const size_t capacity = buffer.length();
+    const bool is_full = moved.end == capacity;
+    if (is_full) { moved.status = KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+    if (moved.status != KIOTTY_SPEC_STATUS_SUCCESS) { return moved; }
+    const int count =
+        readDescriptor(descriptor, Span<char>(buffer.data() + moved.end, capacity - moved.end));
+    if (count < 0) {
+        moved.status = KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+        return moved;
+    }
+    moved.is_finished = count == 0;
+    moved.end += static_cast<size_t>(count);
+    return moved;
+}
+
+LineWindow copyToFront(Span<char> buffer, const LineWindow& window)
+{
+    LineWindow moved = window;
+    const size_t kept = window.end - window.start;
+    for (size_t index = 0; index < kept; ++index) {
+        const Result<char&, KiottySpecStatus> source = buffer.at(window.start + index);
+        const Result<char&, KiottySpecStatus> target = buffer.at(index);
+        const bool is_in_range = source && target;
+        if (is_in_range) {
+            *target.value = *source.value;
+            continue;
+        }
+        moved.status = KIOTTY_SPEC_STATUS_OUT_OF_RANGE;
+        return moved;
+    }
+    moved.start = 0;
+    moved.end = kept;
+    moved.scan = kept;
+    return moved;
+}
+
+LineWindow cutLine(Span<const char> buffer, const LineWindow& window)
+{
+    size_t last = window.scan;
+    const bool has_carriage_return = last > window.start && isCarriageReturnAt(buffer, last - 1);
+    if (has_carriage_return) { --last; }
+    LineWindow cut = window;
+    cut.line = Span<const char>(buffer.data() + window.start, last - window.start);
+    cut.start = window.scan < window.end ? window.scan + 1 : window.end;
+    cut.has_line = true;
+    return cut;
+}
+
+size_t findNewline(Span<const char> buffer, size_t from, size_t end)
+{
+    const size_t limit = std::min(end, buffer.length());
+    for (size_t index = from; index < limit; ++index) {
+        const bool is_newline = buffer[index] == '\n';
+        if (is_newline) { return index; }
+    }
+    return end;
+}
+
+bool isCarriageReturnAt(Span<const char> buffer, size_t index)
+{
+    const Result<const char&, KiottySpecStatus> letter = buffer.at(index);
+    return letter && *letter.value == '\r';
+}
+
 }
 
 }

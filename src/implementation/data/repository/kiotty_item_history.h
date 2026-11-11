@@ -13,7 +13,7 @@ namespace kiotty::spec::implementation {
 class ItemHistory
 {
 public:
-    explicit ItemHistory(ItemTables& tables) : _t(tables) {}
+    explicit ItemHistory(ItemTables& tables) : _tables(tables) {}
 
     Result<uint32_t, KiottySpecStatus> keyOf(Span<const char> id) const;
     Result<entity::IdText, KiottySpecStatus> idOf(uint32_t key) const;
@@ -27,7 +27,7 @@ public:
 private:
     Span<const entity::TagVersion> tagsOf(uint32_t key) const;
 
-    ItemTables& _t;
+    ItemTables& _tables;
 };
 
 }

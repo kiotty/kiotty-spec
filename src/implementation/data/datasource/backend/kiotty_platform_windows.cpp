@@ -18,6 +18,7 @@
 
 #include <cerrno>
 #include <cstdio>
+#include <iterator>
 
 namespace kiotty::spec::implementation::platform {
 
@@ -37,6 +38,7 @@ bool readStatus(Span<const char> path, struct _stat64& status);
 WidePathResult widen(Span<const char> path);
 SystemPathResult narrow(const wchar_t* wide);
 bool isLetter(char letter);
+char readLetter(Span<const char> path, size_t index);
 
 }
 
@@ -54,19 +56,16 @@ SystemPathResult absolutePath(Span<const char> path)
 
 size_t rootLength(Span<const char> path)
 {
-    const size_t length = path.length();
-    if (length >= DOUBLE_SEPARATOR_ROOT_LENGTH) {
-        const bool is_first_separator = isSeparator(path[0]);
-        const bool is_second_separator = isSeparator(path[1]);
-        if (is_first_separator && is_second_separator) { return DOUBLE_SEPARATOR_ROOT_LENGTH; }
-    }
-    const bool has_drive = length >= DRIVE_LENGTH && isLetter(path[0]) && path[1] == ':';
-    if (has_drive && length >= DRIVE_ROOT_LENGTH) {
-        const bool is_third_separator = isSeparator(path[DRIVE_LENGTH]);
-        if (is_third_separator) { return DRIVE_ROOT_LENGTH; }
-    }
+    const char first = readLetter(path, 0);
+    const char second = readLetter(path, 1);
+    const char third = readLetter(path, DRIVE_LENGTH);
+    const bool is_double_separator = isSeparator(first) && isSeparator(second);
+    if (is_double_separator) { return DOUBLE_SEPARATOR_ROOT_LENGTH; }
+    const bool has_drive = isLetter(first) && second == ':';
+    const bool has_drive_root = has_drive && isSeparator(third);
+    if (has_drive_root) { return DRIVE_ROOT_LENGTH; }
     if (has_drive) { return DRIVE_LENGTH; }
-    return length >= 1 && isSeparator(path[0]) ? 1 : 0;
+    return isSeparator(first) ? 1 : 0;
 }
 
 int openFile(Span<const char> path, OpenMode mode)
@@ -141,10 +140,13 @@ WidePathResult widen(Span<const char> path)
     const int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path.data(),
                                            static_cast<int>(path.length()), wide.text,
                                            static_cast<int>(MAX_SYSTEM_PATH_LENGTH));
-    const bool invalid = length <= 0 && GetLastError() == ERROR_NO_UNICODE_TRANSLATION;
-    if (invalid) { return WidePathResult::failure(KIOTTY_SPEC_STATUS_INVALID_UTF8); }
+    const bool is_invalid_utf8 = length <= 0 && GetLastError() == ERROR_NO_UNICODE_TRANSLATION;
+    if (is_invalid_utf8) { return WidePathResult::failure(KIOTTY_SPEC_STATUS_INVALID_UTF8); }
     if (length <= 0) { return WidePathResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
-    wide.text[length] = L'\0';
+    const Result<wchar_t&, KiottySpecStatus> terminator =
+        Span<wchar_t>(wide.text, std::size(wide.text)).at(static_cast<size_t>(length));
+    if (!terminator) { return WidePathResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
+    *terminator.value = L'\0';
     return WidePathResult::success(wide);
 }
 
@@ -166,6 +168,12 @@ SystemPathResult narrow(const wchar_t* wide)
 
 bool isLetter(char letter)
 { return (letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z'); }
+
+char readLetter(Span<const char> path, size_t index)
+{
+    const Result<const char&, KiottySpecStatus> letter = path.at(index);
+    return letter ? *letter.value : '\0';
+}
 
 }
 

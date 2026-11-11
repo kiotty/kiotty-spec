@@ -6,6 +6,8 @@
 #include "implementation/core/kiotty_text_view.h"
 #include "implementation/data/repository/kiotty_item_history.h"
 
+#include <algorithm>
+
 namespace kiotty::spec::implementation {
 
 namespace {
@@ -19,8 +21,24 @@ using entity::ItemVersion;
 using entity::TagRecord;
 using entity::TagVersion;
 
+using CountResult = Result<size_t, KiottySpecStatus>;
+
 constexpr uint32_t MAX_KEY_ATTEMPTS = 64;
 constexpr uint32_t KEY_SHIFT = 32;
+
+ItemVersion buildVersion(const ItemRecord& record, uint32_t key, uint32_t sequence,
+                         uint32_t parent);
+KiottySpecStatus writeLinks(Span<uint32_t> keys, Span<uint32_t> parents, uint32_t index,
+                            const ItemVersion& version);
+KiottySpecStatus writeAt(Span<uint32_t> values, uint32_t index, uint32_t value);
+bool isAtCapacity(size_t count, size_t capacity);
+CountResult applyRecord(Span<TagRecord> records, size_t count, size_t position,
+                        const TagRecord& record);
+bool isSameTag(const TagRecord& left, const TagRecord& right);
+size_t removeAt(Span<TagRecord> used, size_t position);
+CountResult insertAt(Span<TagRecord> records, size_t count, size_t position,
+                     const TagRecord& record);
+size_t removeItemTags(Span<TagRecord> used, uint32_t index);
 
 }
 
@@ -29,38 +47,32 @@ Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record
     using HandleResult = Result<ItemHandle, KiottySpecStatus>;
     const KiottySpecStatus unused = checkUnused(record.id);
     if (unused != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(unused); }
-    const size_t item_count = _t.id_index.length();
-    const size_t item_capacity = _t.id_index.capacity();
-    if (item_count == item_capacity) {
+    const bool is_full = isAtCapacity(_tables.id_index.length(), _tables.id_index.capacity());
+    if (is_full) {
         return HandleResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL,
                                                     KIOTTY_SPEC_SUBJECT_CONFIGURATION,
                                                     literalText("max_items")));
     }
     const auto key = newKey(record.id);
     if (!key) { return HandleResult::failure(key.code); }
-    ItemVersion version {};
-    version.key = key.value;
-    version.checkpoint = sequence;
-    version.parent = reader().key(record.parent);
-    version.kind = record.kind;
-    version.title = record.title;
-    version.summary = record.summary;
-    KiottySpecStatus status = _t.names.insert(key.value, record.id);
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _t.versions.write(version); }
+    const uint32_t parent = reader().key(record.parent);
+    const ItemVersion version = buildVersion(record, key.value, sequence, parent);
+    KiottySpecStatus status = _tables.names.insert(key.value, record.id);
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _tables.versions.write(version); }
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
         return HandleResult::failure(
             _failure.raise(status, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items")));
     }
-    const ItemHandle handle = _t.items.acquire();
+    const ItemHandle handle = _tables.items.acquire();
     const bool is_valid = handle.isValid();
     if (!is_valid) { return HandleResult::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL); }
-    ItemRecord& stored = *_t.items.get(handle).value;
+    ItemRecord& stored = *_tables.items.get(handle).value;
     stored = record;
     stored.checkpoint = CheckpointHandle{sequence, 0};
-    _t.keys[handle.index] = key.value;
-    _t.parents[handle.index] = version.parent;
-    _t.id_index.insert(stored.id, handle.index);
-    _t.key_index.insert(key.value, handle.index);
+    status = writeLinks(viewKeys(), viewParents(), handle.index, version);
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(status); }
+    _tables.id_index.insert(stored.id, handle.index);
+    _tables.key_index.insert(key.value, handle.index);
     return HandleResult::success(handle);
 }
 
@@ -74,27 +86,28 @@ KiottySpecStatus ItemWriter::update(ItemHandle handle, const ItemRecord& record,
     version.value.parent = reader().key(record.parent);
     const KiottySpecStatus written = writeVersion(handle, version.value);
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
-    ItemRecord& stored = *_t.items.get(handle).value;
+    ItemRecord& stored = *_tables.items.get(handle).value;
     stored.title = record.title;
     stored.summary = record.summary;
     stored.parent = record.parent;
-    _t.parents[handle.index] = version.value.parent;
-    return KIOTTY_SPEC_STATUS_SUCCESS;
+    const Span<uint32_t> parents = viewParents();
+    return writeAt(parents, handle.index, version.value.parent);
 }
 
 KiottySpecStatus ItemWriter::setTag(ItemHandle handle, uint32_t tag, uint64_t value,
                                     uint32_t sequence)
 {
-    const auto stored = _t.items.get(handle);
+    const auto stored = _tables.items.get(handle);
     if (!stored) { return stored.code; }
-    const bool adds = value != 0 && tags().value(handle, tag) == 0;
-    const size_t tag_capacity = _t.tags.size();
-    if (adds && _t.tag_count == tag_capacity) {
+    const bool is_adding = value != 0 && tags().value(handle, tag) == 0;
+    const bool is_full = isAtCapacity(_tables.tag_count, _tables.tags.size());
+    if (is_adding && is_full) {
         return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
                               literalText("max_tags"));
     }
-    const TagVersion version {value, _t.keys[handle.index], tag, sequence, value == 0 ? 1u : 0u};
-    const KiottySpecStatus written = _t.tag_versions.write(version);
+    const uint32_t key = reader().key(handle);
+    const TagVersion version {value, key, tag, sequence, value == 0 ? 1u : 0u};
+    const KiottySpecStatus written = _tables.tag_versions.write(version);
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_tags"));
     }
@@ -106,7 +119,7 @@ KiottySpecStatus ItemWriter::writeBody(ItemHandle handle, Span<const char> body,
 {
     auto version = currentVersion(handle);
     if (!version) { return version.code; }
-    const KiottySpecStatus stored = _t.bodies.put(version.value.key, body);
+    const KiottySpecStatus stored = _tables.bodies.put(version.value.key, body);
     if (stored != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(stored, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
                               literalText("max_body_bytes"));
@@ -125,33 +138,35 @@ KiottySpecStatus ItemWriter::remove(ItemHandle handle, uint32_t sequence)
     const KiottySpecStatus written = writeVersion(handle, version.value);
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
     dropTags(handle);
-    _t.id_index.erase(_t.items.get(handle).value->id);
-    _t.key_index.erase(version.value.key);
-    _t.keys[handle.index] = entity::NO_KEY;
-    return _t.items.release(handle);
+    _tables.id_index.erase(_tables.items.get(handle).value->id);
+    _tables.key_index.erase(version.value.key);
+    const Span<uint32_t> keys = viewKeys();
+    const KiottySpecStatus cleared = writeAt(keys, handle.index, entity::NO_KEY);
+    if (cleared != KIOTTY_SPEC_STATUS_SUCCESS) { return cleared; }
+    return _tables.items.release(handle);
 }
 
 KiottySpecStatus ItemWriter::rename(ItemHandle handle, IdText id)
 {
-    const auto stored = _t.items.get(handle);
+    const auto stored = _tables.items.get(handle);
     if (!stored) { return stored.code; }
     const KiottySpecStatus unused = checkUnused(id);
     if (unused != KIOTTY_SPEC_STATUS_SUCCESS) { return unused; }
-    const uint32_t key = _t.keys[handle.index];
-    _t.names.erase(key);
-    _t.names.insert(key, id);
-    _t.id_index.erase(stored.value->id);
+    const uint32_t key = reader().key(handle);
+    _tables.names.erase(key);
+    _tables.names.insert(key, id);
+    _tables.id_index.erase(stored.value->id);
     stored.value->id = id;
-    return _t.id_index.insert(id, handle.index);
+    return _tables.id_index.insert(id, handle.index);
 }
 
 KiottySpecStatus ItemWriter::checkUnused(IdText id)
 {
-    const auto existing = _t.id_index.find(id);
+    const auto existing = _tables.id_index.find(id);
     if (existing) {
         return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_ID, id.view());
     }
-    const auto removed = ItemHistory(_t).keyOf(id.view());
+    const auto removed = ItemHistory(_tables).keyOf(id.view());
     if (removed) {
         return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_ID_IN_HISTORY,
                               id.view());
@@ -162,12 +177,12 @@ KiottySpecStatus ItemWriter::checkUnused(IdText id)
 Result<uint32_t, KiottySpecStatus> ItemWriter::newKey(IdText id) const
 {
     const uint64_t moment = static_cast<uint64_t>(nowEpochSeconds()) ^
-                            (static_cast<uint64_t>(_t.names.length()) << KEY_SHIFT);
+                            (static_cast<uint64_t>(_tables.names.length()) << KEY_SHIFT);
     for (uint32_t attempt = 0; attempt < MAX_KEY_ATTEMPTS; ++attempt) {
         const uint64_t mixed = mix64(hash64(id.view(), moment + attempt));
         const uint32_t key = static_cast<uint32_t>(mixed ^ (mixed >> KEY_SHIFT));
         if (key == entity::NO_KEY) { continue; }
-        const auto existing = _t.names.find(key);
+        const auto existing = _tables.names.find(key);
         if (!existing) { return Result<uint32_t, KiottySpecStatus>::success(key); }
     }
     return Result<uint32_t, KiottySpecStatus>::failure(
@@ -176,11 +191,12 @@ Result<uint32_t, KiottySpecStatus> ItemWriter::newKey(IdText id) const
 
 Result<ItemVersion, KiottySpecStatus> ItemWriter::currentVersion(ItemHandle handle) const
 {
-    const auto record = _t.items.get(handle);
+    const auto record = _tables.items.get(handle);
     if (!record) {
         return Result<ItemVersion, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_HANDLE);
     }
-    const ItemVersion* version = _t.versions.latest(_t.keys[handle.index], UINT32_MAX);
+    const uint32_t key = reader().key(handle);
+    const ItemVersion* version = _tables.versions.latest(key, UINT32_MAX);
     if (version == nullptr) {
         return Result<ItemVersion, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
     }
@@ -189,11 +205,11 @@ Result<ItemVersion, KiottySpecStatus> ItemWriter::currentVersion(ItemHandle hand
 
 KiottySpecStatus ItemWriter::writeVersion(ItemHandle handle, const ItemVersion& version)
 {
-    const KiottySpecStatus written = _t.versions.write(version);
+    const KiottySpecStatus written = _tables.versions.write(version);
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items"));
     }
-    _t.items.get(handle).value->checkpoint = CheckpointHandle{version.checkpoint, 0};
+    _tables.items.get(handle).value->checkpoint = CheckpointHandle{version.checkpoint, 0};
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
@@ -201,37 +217,99 @@ KiottySpecStatus ItemWriter::applyTag(ItemHandle handle, ItemKind kind, uint32_t
                                       uint64_t value)
 {
     const size_t position = tags().position(handle.index, tag);
-    const bool exists = position < _t.tag_count && _t.tags[position].item.index == handle.index &&
-                        _t.tags[position].tag == tag;
-    if (exists && value != 0) {
-        _t.tags[position].value = value;
-        return KIOTTY_SPEC_STATUS_SUCCESS;
-    }
-    if (exists) {
-        for (size_t index = position + 1; index < _t.tag_count; ++index) {
-            _t.tags[index - 1] = _t.tags[index];
-        }
-        --_t.tag_count;
-        return KIOTTY_SPEC_STATUS_SUCCESS;
-    }
-    if (value == 0) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    for (size_t index = _t.tag_count; index > position; --index) {
-        _t.tags[index] = _t.tags[index - 1];
-    }
-    _t.tags[position] = TagRecord{handle, kind, tag, value};
-    ++_t.tag_count;
+    const Span<TagRecord> records = viewTags();
+    const TagRecord record {handle, kind, tag, value};
+    const CountResult applied = applyRecord(records, _tables.tag_count, position, record);
+    if (!applied) { return applied.code; }
+    _tables.tag_count = applied.value;
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 void ItemWriter::dropTags(ItemHandle handle)
 {
-    size_t kept = 0;
-    for (size_t index = 0; index < _t.tag_count; ++index) {
-        if (_t.tags[index].item.index == handle.index) { continue; }
-        _t.tags[kept] = _t.tags[index];
-        ++kept;
+    const Span<TagRecord> used(viewTags().begin(), _tables.tag_count);
+    _tables.tag_count = removeItemTags(used, handle.index);
+}
+
+namespace {
+
+ItemVersion buildVersion(const ItemRecord& record, uint32_t key, uint32_t sequence,
+                         uint32_t parent)
+{
+    ItemVersion version {};
+    version.key = key;
+    version.checkpoint = sequence;
+    version.parent = parent;
+    version.kind = record.kind;
+    version.title = record.title;
+    version.summary = record.summary;
+    return version;
+}
+
+KiottySpecStatus writeLinks(Span<uint32_t> keys, Span<uint32_t> parents, uint32_t index,
+                            const ItemVersion& version)
+{
+    const KiottySpecStatus key_written = writeAt(keys, index, version.key);
+    if (key_written != KIOTTY_SPEC_STATUS_SUCCESS) { return key_written; }
+    return writeAt(parents, index, version.parent);
+}
+
+KiottySpecStatus writeAt(Span<uint32_t> values, uint32_t index, uint32_t value)
+{
+    const Result<uint32_t&, KiottySpecStatus> slot = values.at(index);
+    if (!slot) { return slot.code; }
+    *slot.value = value;
+    return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+bool isAtCapacity(size_t count, size_t capacity) { return count == capacity; }
+
+CountResult applyRecord(Span<TagRecord> records, size_t count, size_t position,
+                        const TagRecord& record)
+{
+    const Span<TagRecord> used(records.begin(), count);
+    const Result<TagRecord&, KiottySpecStatus> found = used.at(position);
+    const bool is_existing = found && isSameTag(*found.value, record);
+    if (is_existing && record.value != 0) {
+        TagRecord& existing = *found.value;
+        existing.value = record.value;
+        return CountResult::success(count);
     }
-    _t.tag_count = kept;
+    if (is_existing) { return CountResult::success(removeAt(used, position)); }
+    if (record.value == 0) { return CountResult::success(count); }
+    return insertAt(records, count, position, record);
+}
+
+bool isSameTag(const TagRecord& left, const TagRecord& right)
+{ return left.item.index == right.item.index && left.tag == right.tag; }
+
+size_t removeAt(Span<TagRecord> used, size_t position)
+{
+    std::copy(used.begin() + position + 1, used.end(), used.begin() + position);
+    return used.length() - 1;
+}
+
+CountResult insertAt(Span<TagRecord> records, size_t count, size_t position,
+                     const TagRecord& record)
+{
+    const Result<TagRecord&, KiottySpecStatus> spare = records.at(count);
+    if (!spare) { return CountResult::failure(spare.code); }
+    std::copy_backward(records.begin() + position, records.begin() + count,
+                       records.begin() + count + 1);
+    const Result<TagRecord&, KiottySpecStatus> slot = records.at(position);
+    if (!slot) { return CountResult::failure(slot.code); }
+    *slot.value = record;
+    return CountResult::success(count + 1);
+}
+
+size_t removeItemTags(Span<TagRecord> used, uint32_t index)
+{
+    return static_cast<size_t>(
+        std::remove_if(used.begin(), used.end(),
+                       [index](const TagRecord& record) { return record.item.index == index; }) -
+        used.begin());
+}
+
 }
 
 }

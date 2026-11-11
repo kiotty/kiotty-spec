@@ -21,6 +21,7 @@ constexpr mode_t DIRECTORY_MODE = 0777;
 constexpr size_t DOUBLE_SEPARATOR_ROOT_LENGTH = 2;
 
 bool readStatus(Span<const char> path, struct stat& status);
+char readLetter(Span<const char> path, size_t index);
 
 }
 
@@ -38,11 +39,11 @@ SystemPathResult absolutePath(Span<const char> path)
 
 size_t rootLength(Span<const char> path)
 {
-    const size_t length = path.length();
-    if (length >= DOUBLE_SEPARATOR_ROOT_LENGTH && path[0] == '/' && path[1] == '/') {
-        return DOUBLE_SEPARATOR_ROOT_LENGTH;
-    }
-    return length >= 1 && path[0] == '/' ? 1 : 0;
+    const char first = readLetter(path, 0);
+    const char second = readLetter(path, 1);
+    const bool is_double_separator = first == '/' && second == '/';
+    if (is_double_separator) { return DOUBLE_SEPARATOR_ROOT_LENGTH; }
+    return first == '/' ? 1 : 0;
 }
 
 bool isSeparator(char letter) { return letter == '/'; }
@@ -118,6 +119,12 @@ bool readStatus(Span<const char> path, struct stat& status)
     SystemPath terminated {};
     return terminated.assign(path) == KIOTTY_SPEC_STATUS_SUCCESS &&
            ::stat(terminated.c_str(), &status) == 0;
+}
+
+char readLetter(Span<const char> path, size_t index)
+{
+    const Result<const char&, KiottySpecStatus> letter = path.at(index);
+    return letter ? *letter.value : '\0';
 }
 
 }

@@ -11,6 +11,7 @@ namespace {
 constexpr char SEPARATOR[] = "/";
 
 KiottySpecStatus appendSlashed(SystemPath& out, Span<const char> text);
+bool isSeparatorAt(Span<const char> path, size_t index);
 
 }
 
@@ -23,9 +24,9 @@ SystemPathResult joinPath(Span<const char> base, Span<const char> part)
     if (copied != KIOTTY_SPEC_STATUS_SUCCESS) { return SystemPathResult::failure(copied); }
     const size_t part_length = part.length();
     if (part_length == 0) { return SystemPathResult::success(joined); }
-    const bool needs_separator =
-        joined.length() > 0 && !platform::isSeparator(base[base.length() - 1]);
-    if (needs_separator) { joined.append(literalText(SEPARATOR)); }
+    const bool has_trailing_separator = isSeparatorAt(base, base.length() - 1);
+    const bool is_separator_needed = joined.length() > 0 && !has_trailing_separator;
+    if (is_separator_needed) { joined.append(literalText(SEPARATOR)); }
     const KiottySpecStatus appended = appendSlashed(joined, part);
     if (appended != KIOTTY_SPEC_STATUS_SUCCESS) { return SystemPathResult::failure(appended); }
     return SystemPathResult::success(joined);
@@ -35,13 +36,13 @@ Span<const char> fileNameOf(Span<const char> path)
 {
     size_t end = path.length();
     while (end > 0) {
-        const bool is_separator = platform::isSeparator(path[end - 1]);
+        const bool is_separator = isSeparatorAt(path, end - 1);
         if (!is_separator) { break; }
         --end;
     }
     size_t begin = end;
     while (begin > 0) {
-        const bool is_separator = platform::isSeparator(path[begin - 1]);
+        const bool is_separator = isSeparatorAt(path, begin - 1);
         if (is_separator) { break; }
         --begin;
     }
@@ -52,12 +53,12 @@ Span<const char> parentOf(Span<const char> path)
 {
     size_t index = path.length();
     while (index > 0) {
-        const bool is_separator = platform::isSeparator(path[index - 1]);
+        const bool is_separator = isSeparatorAt(path, index - 1);
         if (is_separator) { break; }
         --index;
     }
     while (index > 0) {
-        const bool is_separator = platform::isSeparator(path[index - 1]);
+        const bool is_separator = isSeparatorAt(path, index - 1);
         if (!is_separator) { break; }
         --index;
     }
@@ -75,6 +76,12 @@ KiottySpecStatus appendSlashed(SystemPath& out, Span<const char> text)
         if (appended != KIOTTY_SPEC_STATUS_SUCCESS) { return appended; }
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+bool isSeparatorAt(Span<const char> path, size_t index)
+{
+    const Result<const char&, KiottySpecStatus> letter = path.at(index);
+    return letter && platform::isSeparator(*letter.value);
 }
 
 }
