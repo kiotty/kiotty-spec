@@ -25,7 +25,8 @@ class Finder
 {
 public:
     Finder(Workspace& workspace, CursorPool& cursors, Checker& checker, size_t max_items)
-        : _w(workspace), _cursors(cursors), _checker(checker), _visited(max_items, 0), _queue(max_items, 0)
+        : _w(workspace), _cursors(cursors), _checker(checker), _visited(max_items, 0),
+          _queue(max_items, 0)
     {
     }
 

@@ -10,7 +10,19 @@
 
 namespace kiotty::spec::implementation {
 
-enum class CursorKind : uint8_t { NONE, ITEM, TAG, RELATION, CHECKPOINT, STEP_RUN, ID, ITEM_DIFF, RELATION_DIFF, TEXT_DIFF, UNMET_CONDITION };
+enum class CursorKind : uint8_t {
+    NONE,
+    ITEM,
+    TAG,
+    RELATION,
+    CHECKPOINT,
+    STEP_RUN,
+    ID,
+    ITEM_DIFF,
+    RELATION_DIFF,
+    TEXT_DIFF,
+    UNMET_CONDITION
+};
 
 struct CursorRow {
     uint64_t first {0};

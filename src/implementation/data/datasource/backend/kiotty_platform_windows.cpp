@@ -29,13 +29,15 @@ struct WidePath {
 
 using WidePathResult = Result<WidePath, KiottySpecStatus>;
 
-bool isLetter(char letter) { return (letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z'); }
+bool isLetter(char letter)
+{ return (letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z'); }
 
 WidePathResult widen(Span<const char> path)
 {
     WidePath wide {};
     if (path.length() == 0) { return WidePathResult::success(wide); }
-    const int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path.data(), static_cast<int>(path.length()), wide.text,
+    const int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path.data(),
+                                           static_cast<int>(path.length()), wide.text,
                                            static_cast<int>(MAX_SYSTEM_PATH_LENGTH));
     const bool invalid = length <= 0 && GetLastError() == ERROR_NO_UNICODE_TRANSLATION;
     if (invalid) { return WidePathResult::failure(KIOTTY_SPEC_STATUS_INVALID_UTF8); }
@@ -47,11 +49,15 @@ WidePathResult widen(Span<const char> path)
 SystemPathResult narrow(const wchar_t* wide)
 {
     char buffer[MAX_SYSTEM_PATH_LENGTH + 1] {};
-    const int length = WideCharToMultiByte(CP_UTF8, 0, wide, -1, buffer, static_cast<int>(MAX_SYSTEM_PATH_LENGTH), nullptr, nullptr);
+    const int length = WideCharToMultiByte(
+        CP_UTF8, 0, wide, -1, buffer, static_cast<int>(MAX_SYSTEM_PATH_LENGTH), nullptr, nullptr);
     if (length <= 0) { return SystemPathResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
-    for (int index = 0; index < length - 1; ++index) { buffer[index] = isSeparator(buffer[index]) ? '/' : buffer[index]; }
+    for (int index = 0; index < length - 1; ++index) {
+        buffer[index] = isSeparator(buffer[index]) ? '/' : buffer[index];
+    }
     SystemPath path {};
-    const KiottySpecStatus copied = path.assign(Span<const char>(buffer, static_cast<size_t>(length - 1)));
+    const KiottySpecStatus copied =
+        path.assign(Span<const char>(buffer, static_cast<size_t>(length - 1)));
     if (copied != KIOTTY_SPEC_STATUS_SUCCESS) { return SystemPathResult::failure(copied); }
     return SystemPathResult::success(path);
 }
@@ -81,7 +87,9 @@ SystemPathResult absolutePath(Span<const char> path)
     const WidePathResult wide = widen(path);
     if (!wide) { return SystemPathResult::failure(wide.code); }
     wchar_t full[MAX_SYSTEM_PATH_LENGTH + 1] {};
-    if (_wfullpath(full, wide.value.text, MAX_SYSTEM_PATH_LENGTH) == nullptr) { return SystemPathResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT); }
+    if (_wfullpath(full, wide.value.text, MAX_SYSTEM_PATH_LENGTH) == nullptr) {
+        return SystemPathResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT);
+    }
     return narrow(full);
 }
 
@@ -95,9 +103,11 @@ int openFile(Span<const char> path, OpenMode mode)
     return descriptor;
 }
 
-int readSome(int descriptor, char* buffer, size_t length) { return _read(descriptor, buffer, static_cast<unsigned int>(length)); }
+int readSome(int descriptor, char* buffer, size_t length)
+{ return _read(descriptor, buffer, static_cast<unsigned int>(length)); }
 
-int writeSome(int descriptor, const char* buffer, size_t length) { return _write(descriptor, buffer, static_cast<unsigned int>(length)); }
+int writeSome(int descriptor, const char* buffer, size_t length)
+{ return _write(descriptor, buffer, static_cast<unsigned int>(length)); }
 
 void closeFile(int descriptor) { _close(descriptor); }
 
@@ -124,7 +134,8 @@ KiottySpecStatus removeFile(Span<const char> path)
 {
     const WidePathResult wide = widen(path);
     if (!wide) { return wide.code; }
-    return _wremove(wide.value.text) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+    return _wremove(wide.value.text) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS
+                                          : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 }
 
 KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
@@ -133,7 +144,8 @@ KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
     const WidePathResult target = widen(to);
     if (!source) { return source.code; }
     if (!target) { return target.code; }
-    const BOOL moved = MoveFileExW(source.value.text, target.value.text, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+    const BOOL moved = MoveFileExW(source.value.text, target.value.text,
+                                   MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
     return moved != 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 }
 

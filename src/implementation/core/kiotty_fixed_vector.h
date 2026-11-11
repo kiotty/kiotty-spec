@@ -13,7 +13,8 @@ template <typename Element, size_t Capacity>
 class FixedVector
 {
     static_assert(Capacity > 0, "Capacity must be positive");
-    static_assert(std::is_default_constructible<Element>::value, "Element must be default constructible");
+    static_assert(std::is_default_constructible<Element>::value,
+                  "Element must be default constructible");
 
 public:
     KiottySpecStatus append(Element element)
@@ -34,7 +35,9 @@ public:
 
     Result<Element&, KiottySpecStatus> at(size_t index)
     {
-        if (index >= _length) { return Result<Element&, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_OUT_OF_RANGE); }
+        if (index >= _length) {
+            return Result<Element&, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_OUT_OF_RANGE);
+        }
         return Result<Element&, KiottySpecStatus>::success(_values[index]);
     }
 

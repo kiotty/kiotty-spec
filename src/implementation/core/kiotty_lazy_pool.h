@@ -15,7 +15,8 @@ class LazyPool
 {
 public:
     explicit LazyPool(size_t capacity)
-        : _values(capacity), _generations(capacity, 0), _in_use(capacity, 0), _free_indices(capacity), _free_count(capacity)
+        : _values(capacity), _generations(capacity, 0), _in_use(capacity, 0),
+          _free_indices(capacity), _free_count(capacity)
     {
         for (size_t index = 0; index < capacity; ++index) {
             _free_indices[index] = static_cast<uint32_t>(capacity - 1 - index);
@@ -33,7 +34,9 @@ public:
 
     Result<Element&, KiottySpecStatus> get(Handle handle)
     {
-        if (!isLive(handle)) { return Result<Element&, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_HANDLE); }
+        if (!isLive(handle)) {
+            return Result<Element&, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_HANDLE);
+        }
         return Result<Element&, KiottySpecStatus>::success(_values[handle.index]);
     }
 
@@ -51,14 +54,18 @@ public:
 
     Handle handleAt(size_t index) const
     {
-        if (index >= _values.size() || _in_use[index] == 0) { return Handle{Handle::INVALID_INDEX, 0}; }
+        if (index >= _values.size() || _in_use[index] == 0) {
+            return Handle { Handle::INVALID_INDEX, 0 };
+        }
         return Handle{static_cast<uint32_t>(index), _generations[index]};
     }
 
     void releaseAll()
     {
         for (size_t index = _values.size(); index > 0; --index) {
-            if (_in_use[index - 1] != 0) { release(Handle{static_cast<uint32_t>(index - 1), _generations[index - 1]}); }
+            if (_in_use[index - 1] != 0) {
+                release(Handle { static_cast<uint32_t>(index - 1), _generations[index - 1] });
+            }
         }
     }
 

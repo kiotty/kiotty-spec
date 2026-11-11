@@ -10,7 +10,9 @@
 #include <string_view>
 
 struct KiottySpecContext {
-    explicit KiottySpecContext(const kiotty::spec::implementation::Configuration& configuration) : context(configuration) {}
+    explicit KiottySpecContext(const kiotty::spec::implementation::Configuration& configuration)
+        : context(configuration)
+    {}
     kiotty::spec::implementation::Context context;
 };
 
@@ -41,14 +43,16 @@ entity::ItemHandle fromHandle(KiottySpecItemHandle handle);
 KiottySpecCheckpointHandle toCheckpoint(entity::CheckpointHandle handle);
 KiottySpecItem toItem(const entity::ItemRecord& record);
 KiottySpecCheckpoint toCheckpointRecord(const entity::CheckpointRecord& record);
-KiottySpecTag toTag(KiottySpecItemHandle item, KiottySpecItemKind model, uint32_t tag, uint64_t value);
+KiottySpecTag toTag(KiottySpecItemHandle item, KiottySpecItemKind model, uint32_t tag,
+                    uint64_t value);
 KiottySpecStatusResult status(KiottySpecStatus code);
 KiottySpecSizeResult sizeResult(KiottySpecStatus code, size_t value);
 KiottySpecCursorResult cursorFailure(KiottySpecStatus code);
 KiottySpecCursorResult cursorResult(impl::Context& context, const impl::CursorIdResult& opened);
 KiottySpecNameResult nameResult(std::string_view name);
 bool isKind(uint32_t kind);
-impl::Result<entity::ItemHandle, KiottySpecStatus> resolve(impl::Context& context, KiottySpecText id);
+impl::Result<entity::ItemHandle, KiottySpecStatus> resolve(impl::Context& context,
+                                                           KiottySpecText id);
 void copyTerminated(impl::Span<char> target, impl::Span<const char> source);
 
 }

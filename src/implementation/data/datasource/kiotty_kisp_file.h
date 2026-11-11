@@ -18,7 +18,8 @@ constexpr uint64_t EMPTY_KISP_HASH = 0xcbf29ce484222325ull;
 class KispFileReader
 {
 public:
-    KispFileReader(Span<char> buffer, Span<char> decode_area) : _file(buffer), _decoder(decode_area) {}
+    KispFileReader(Span<char> buffer, Span<char> decode_area) : _file(buffer), _decoder(decode_area)
+    {}
 
     KiottySpecStatus open(Span<const char> path);
     Result<bool, KiottySpecStatus> next();

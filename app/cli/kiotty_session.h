@@ -21,7 +21,8 @@ struct Arguments {
     bool flag(std::string_view name) const;
 };
 
-Arguments parseArguments(const std::vector<std::string>& tokens, size_t first, const std::vector<std::string_view>& extra_flags);
+Arguments parseArguments(const std::vector<std::string>& tokens, size_t first,
+                         const std::vector<std::string_view>& extra_flags);
 
 struct Session {
     KiottySpecContext* context {nullptr};
@@ -50,8 +51,10 @@ struct TagColumn {
 };
 
 std::optional<TagColumn> findTag(Session& session, KiottySpecItemKind kind, std::string_view name);
-std::optional<uint32_t> findRelation(Session& session, KiottySpecItemKind kind, std::string_view name);
-std::optional<uint64_t> parseBits(const KiottySpecTagDefinition& definition, std::string_view names);
+std::optional<uint32_t> findRelation(Session& session, KiottySpecItemKind kind,
+                                     std::string_view name);
+std::optional<uint64_t> parseBits(const KiottySpecTagDefinition& definition,
+                                  std::string_view names);
 std::string bitNames(const KiottySpecTagDefinition& definition, uint64_t value);
 
 using Command = int (*)(Session&);

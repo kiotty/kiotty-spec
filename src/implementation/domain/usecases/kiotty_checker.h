@@ -32,7 +32,9 @@ static_assert(sizeof(TagBit) == 16, "unexpected padding");
 class Checker
 {
 public:
-    Checker(Workspace& workspace, size_t max_items) : _w(workspace), _body(entity::MAX_BODY_LENGTH + 1), _rows(max_items) {}
+    Checker(Workspace& workspace, size_t max_items)
+        : _w(workspace), _body(entity::MAX_BODY_LENGTH + 1), _rows(max_items)
+    {}
 
     Span<const UnmetCondition> collect(entity::Step step);
 
@@ -44,13 +46,15 @@ public:
 private:
     TagBit tagBit(entity::ItemKind kind, std::string_view tag, std::string_view bit);
     uint32_t relationIndex(entity::ItemKind kind, std::string_view name);
-    size_t countRelations(entity::ItemKind model, uint32_t relation, entity::ItemHandle item, bool as_target);
+    size_t countRelations(entity::ItemKind model, uint32_t relation, entity::ItemHandle item,
+                          bool as_target);
     void add(KiottySpecCondition condition, entity::IdText id);
 
     void checkEntrySteps();
     void checkAcceptanceCriteria();
     void checkMilestoneCoverage();
-    void checkOneToOne(entity::ItemKind target_kind, entity::ItemKind test_kind, std::string_view relation, KiottySpecCondition pair_condition,
+    void checkOneToOne(entity::ItemKind target_kind, entity::ItemKind test_kind,
+                       std::string_view relation, KiottySpecCondition pair_condition,
                        bool functional_only);
     void checkResults();
 

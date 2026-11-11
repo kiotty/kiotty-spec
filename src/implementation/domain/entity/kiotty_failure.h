@@ -34,7 +34,8 @@ inline Span<const char> cutAtCharacter(Span<const char> text, size_t limit)
 class Failure
 {
 public:
-    KiottySpecStatus raise(KiottySpecStatus status, KiottySpecSubject subject, Span<const char> text = Span<const char>(), uint64_t line = 0)
+    KiottySpecStatus raise(KiottySpecStatus status, KiottySpecSubject subject,
+                           Span<const char> text = Span<const char>(), uint64_t line = 0)
     {
         _detail.status = status;
         _detail.subject = subject;

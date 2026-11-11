@@ -16,7 +16,9 @@ namespace kiotty::spec::implementation {
 class ItemStore
 {
 public:
-    ItemStore(entity::Failure& failure, const ItemCapacity& capacity) : _failure(failure), _t(capacity) {}
+    ItemStore(entity::Failure& failure, const ItemCapacity& capacity)
+        : _failure(failure), _t(capacity)
+    {}
 
     void clear();
     KiottySpecStatus rebuild();
@@ -24,7 +26,8 @@ public:
     ItemTables& tables() { return _t; }
     ItemHistory history() { return ItemHistory(_t); }
     ItemReader reader() { return ItemReader(_t); }
-    ItemTags tags() const { return ItemTags(Span<const entity::TagRecord>(_t.tags.data(), _t.tag_count)); }
+    ItemTags tags() const
+    { return ItemTags(Span<const entity::TagRecord>(_t.tags.data(), _t.tag_count)); }
     ItemWriter writer() { return ItemWriter(_t, _failure); }
 
 private:

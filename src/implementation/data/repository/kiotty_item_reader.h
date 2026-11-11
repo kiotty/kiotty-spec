@@ -23,9 +23,11 @@ public:
     size_t capacity() const { return _t.items.capacity(); }
     uint32_t key(entity::ItemHandle handle) const;
     size_t count() const { return _t.id_index.length(); }
-    entity::ItemHandle handleInIdOrder(size_t position) const { return _t.items.handleAt(_t.id_index.valueAt(position)); }
+    entity::ItemHandle handleInIdOrder(size_t position) const
+    { return _t.items.handleAt(_t.id_index.valueAt(position)); }
 
-    Result<size_t, KiottySpecStatus> readBody(entity::ItemHandle handle, char* buffer, size_t capacity) const;
+    Result<size_t, KiottySpecStatus> readBody(entity::ItemHandle handle, char* buffer,
+                                              size_t capacity) const;
 
 private:
     ItemTables& _t;

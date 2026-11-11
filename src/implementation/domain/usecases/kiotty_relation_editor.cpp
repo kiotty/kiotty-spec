@@ -12,7 +12,8 @@ using entity::RelationRecord;
 
 }
 
-Result<RelationRecord, KiottySpecStatus> RelationEditor::relationOf(Span<const char> from_id, uint32_t relation, Span<const char> to_id)
+Result<RelationRecord, KiottySpecStatus>
+RelationEditor::relationOf(Span<const char> from_id, uint32_t relation, Span<const char> to_id)
 {
     using RelationResult = Result<RelationRecord, KiottySpecStatus>;
     const auto from = _w.resolve(from_id);
@@ -23,27 +24,35 @@ Result<RelationRecord, KiottySpecStatus> RelationEditor::relationOf(Span<const c
     const ItemKind to_kind = _w.items.reader().get(to.value).value->kind;
     const KiottySpecStatus allowed = _w.catalog.checkRelation(from_kind, relation, to_kind);
     if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return RelationResult::failure(_w.failure.raise(allowed, KIOTTY_SPEC_SUBJECT_RELATION, from_id));
+        return RelationResult::failure(
+            _w.failure.raise(allowed, KIOTTY_SPEC_SUBJECT_RELATION, from_id));
     }
     return RelationResult::success(RelationRecord{from.value, to.value, from_kind, relation});
 }
 
-KiottySpecStatus RelationEditor::add(Span<const char> from_id, uint32_t relation, Span<const char> to_id)
+KiottySpecStatus RelationEditor::add(Span<const char> from_id, uint32_t relation,
+                                     Span<const char> to_id)
 {
     const auto record = relationOf(from_id, relation, to_id);
     if (!record) { return record.code; }
-    if (_w.relations.contains(record.value)) { return _w.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_RELATION, from_id); }
+    if (_w.relations.contains(record.value)) {
+        return _w.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_RELATION, from_id);
+    }
     WriteScope scope(_w, _lifecycle);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }
     return scope.finish(_w.relations.add(record.value, sequence.value));
 }
 
-KiottySpecStatus RelationEditor::remove(Span<const char> from_id, uint32_t relation, Span<const char> to_id)
+KiottySpecStatus RelationEditor::remove(Span<const char> from_id, uint32_t relation,
+                                        Span<const char> to_id)
 {
     const auto record = relationOf(from_id, relation, to_id);
     if (!record) { return record.code; }
-    if (!_w.relations.contains(record.value)) { return _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_RELATION, from_id); }
+    if (!_w.relations.contains(record.value)) {
+        return _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_RELATION,
+                                from_id);
+    }
     WriteScope scope(_w, _lifecycle);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }

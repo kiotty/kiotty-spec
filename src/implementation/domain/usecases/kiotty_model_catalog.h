@@ -44,13 +44,16 @@ public:
 
     KiottySpecStatus load();
 
-    const entity::Model& model(entity::ItemKind kind) const { return _models[entity::kindIndex(kind)]; }
+    const entity::Model& model(entity::ItemKind kind) const
+    { return _models[entity::kindIndex(kind)]; }
 
-    ModelFinder finder() const { return ModelFinder(Span<const entity::Model>(_models, entity::ITEM_KIND_COUNT)); }
+    ModelFinder finder() const
+    { return ModelFinder(Span<const entity::Model>(_models, entity::ITEM_KIND_COUNT)); }
 
     KiottySpecStatus checkTagValue(entity::ItemKind kind, uint32_t tag, uint64_t value) const;
 
-    KiottySpecStatus checkRelation(entity::ItemKind from, uint32_t relation, entity::ItemKind to) const;
+    KiottySpecStatus checkRelation(entity::ItemKind from, uint32_t relation,
+                                   entity::ItemKind to) const;
 
 private:
     KiottySpecStatus loadTags();

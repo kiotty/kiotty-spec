@@ -19,7 +19,8 @@ class RelationStore
 {
 public:
     RelationStore(entity::Failure& failure, ItemStore& items, size_t capacity, size_t versions)
-        : _failure(failure), _items(items), _versions(versions), _records(capacity), _order(versions)
+        : _failure(failure), _items(items), _versions(versions), _records(capacity),
+          _order(versions)
     {
     }
 
@@ -27,7 +28,8 @@ public:
     Span<const uint32_t> relationsInDiffOrder();
     KiottySpecStatus rebuild();
 
-    Span<const entity::RelationRecord> all() const { return Span<const entity::RelationRecord>(_records.data(), _length); }
+    Span<const entity::RelationRecord> all() const
+    { return Span<const entity::RelationRecord>(_records.data(), _length); }
     bool contains(const entity::RelationRecord& relation) const;
 
     KiottySpecStatus add(const entity::RelationRecord& relation, uint32_t sequence);
@@ -36,7 +38,8 @@ public:
 
 private:
     size_t lowerBound(const entity::RelationRecord& relation) const;
-    KiottySpecStatus writeVersion(const entity::RelationRecord& relation, uint32_t removed, uint32_t sequence);
+    KiottySpecStatus writeVersion(const entity::RelationRecord& relation, uint32_t removed,
+                                  uint32_t sequence);
 
     entity::Failure& _failure;
     ItemStore& _items;

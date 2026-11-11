@@ -29,13 +29,16 @@ public:
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
 
-    void sort() { std::sort(_records.begin(), _records.begin() + static_cast<std::ptrdiff_t>(_length), less); }
+    void sort()
+    { std::sort(_records.begin(), _records.begin() + static_cast<std::ptrdiff_t>(_length), less); }
 
     Result<size_t, KiottySpecStatus> findDuplicate() const
     {
         for (size_t index = 1; index < _length; ++index) {
             const bool same = _records[index - 1].identity() == _records[index].identity();
-            if (same && _records[index - 1].checkpoint == _records[index].checkpoint) { return Result<size_t, KiottySpecStatus>::success(index); }
+            if (same && _records[index - 1].checkpoint == _records[index].checkpoint) {
+                return Result<size_t, KiottySpecStatus>::success(index);
+            }
         }
         return Result<size_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
     }
@@ -43,10 +46,15 @@ public:
     Result<Record&, KiottySpecStatus> slot(Identity identity, uint32_t checkpoint)
     {
         const size_t position = lowerBound(identity, checkpoint);
-        const bool found = position < _length && _records[position].identity() == identity && _records[position].checkpoint == checkpoint;
+        const bool found = position < _length && _records[position].identity() == identity &&
+                           _records[position].checkpoint == checkpoint;
         if (found) { return Result<Record&, KiottySpecStatus>::success(_records[position]); }
-        if (_length == _records.size()) { return Result<Record&, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL); }
-        for (size_t index = _length; index > position; --index) { _records[index] = _records[index - 1]; }
+        if (_length == _records.size()) {
+            return Result<Record&, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL);
+        }
+        for (size_t index = _length; index > position; --index) {
+            _records[index] = _records[index - 1];
+        }
         _records[position] = emptyRecord();
         _records[position].checkpoint = checkpoint;
         ++_length;
@@ -73,7 +81,9 @@ public:
     size_t countAt(uint32_t checkpoint) const
     {
         size_t count = 0;
-        for (size_t index = 0; index < _length; ++index) { count += _records[index].checkpoint == checkpoint ? 1 : 0; }
+        for (size_t index = 0; index < _length; ++index) {
+            count += _records[index].checkpoint == checkpoint ? 1 : 0;
+        }
         return count;
     }
 
@@ -122,7 +132,8 @@ private:
         while (low < high) {
             const size_t middle = low + (high - low) / 2;
             const Record& record = _records[middle];
-            const bool before = record.identity() < identity || (record.identity() == identity && record.checkpoint < checkpoint);
+            const bool before = record.identity() < identity ||
+                                (record.identity() == identity && record.checkpoint < checkpoint);
             if (before) { low = middle + 1; } else { high = middle; }
         }
         return low;
@@ -138,7 +149,9 @@ private:
     size_t pruneGroup(size_t first, size_t end, uint32_t base, size_t kept)
     {
         size_t last_old = end;
-        for (size_t index = first; index < end && _records[index].checkpoint <= base; ++index) { last_old = index; }
+        for (size_t index = first; index < end && _records[index].checkpoint <= base; ++index) {
+            last_old = index;
+        }
         for (size_t index = first; index < end; ++index) {
             const bool older = _records[index].checkpoint <= base;
             const bool survivor = index == last_old && _records[index].removed == 0;

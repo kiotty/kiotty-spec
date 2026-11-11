@@ -24,7 +24,9 @@ const std::string_view MILESTONE_UNIT_TEST_RELATION {"포함 유닛 테스트"};
 const std::string_view SYSTEM_TEST_REQUIREMENT_RELATION {"검증 요구사항"};
 const std::string_view CODE_INSPECTION_RULE_RELATION {"검사 개발 수칙"};
 const std::string_view END_TO_END_TEST_INTERFACE_RELATION {"검증 외부 인터페이스"};
-const std::string_view ACCEPTANCE_CRITERIA_KEYWORDS[ACCEPTANCE_CRITERIA_KEYWORD_COUNT] {"인수 조건", "인수조건"};
+const std::string_view ACCEPTANCE_CRITERIA_KEYWORDS[ACCEPTANCE_CRITERIA_KEYWORD_COUNT] {
+    "인수 조건", "인수조건"
+};
 
 namespace {
 
@@ -73,42 +75,70 @@ const ModelSource MODEL_SOURCES[] = {
 };
 
 const TagSource TAG_SOURCES[] = {
-    {ItemKind::CHANGE_REQUEST, "출처", Cardinality::MANY, {"사용자 피드백", "이슈", "초기 요구"}},
-    {ItemKind::CHANGE_REQUEST, "상태", Cardinality::SINGLE, {"열림", "반영 중", "완료", "거부"}},
-    {ItemKind::CHANGE_REQUEST, "진입 단계", Cardinality::SINGLE,
-     {"Step 1", "Step 2", "Step 3", "Step 4", "Step 5", "Step 6", "Step 7", "Step 8", "Step 9", "Step 10", "Step 11", "Step 12"}},
-    {ItemKind::REQUIREMENT, "요구사항 종류", Cardinality::MANY, {"기능 요구사항", "품질 요구사항", "환경 요구사항"}},
-    {ItemKind::RULE, "수칙 종류", Cardinality::MANY, {"아키텍처", "컨벤션", "코딩 제약", "의존성", "테스트"}},
-    {ItemKind::EXTERNAL_INTERFACE, "인터페이스 종류", Cardinality::MANY, {"GUI 뷰", "C 함수", "C 타입"}},
-    {ItemKind::DESIGN, "설계 종류", Cardinality::MANY, {"모듈", "동작 흐름", "디렉토리", "메모리 정책"}},
-    {ItemKind::DESIGN, "구현 상태", Cardinality::SINGLE, {"미구현", "변경 필요", "구현 완료"}},
-    {ItemKind::UNIT_TEST_PLAN, "구현 상태", Cardinality::SINGLE, {"미구현", "변경 필요", "구현 완료"}},
-    {ItemKind::UNIT_TEST_RESULT, "결과", Cardinality::SINGLE, {"PASS", "FAIL"}},
-    {ItemKind::SYSTEM_TEST_RESULT, "결과", Cardinality::SINGLE, {"PASS", "FAIL"}},
-    {ItemKind::CODE_INSPECTION_RESULT, "결과", Cardinality::SINGLE, {"PASS", "FAIL"}},
-    {ItemKind::END_TO_END_TEST_RESULT, "결과", Cardinality::SINGLE, {"PASS", "FAIL"}},
+    { ItemKind::CHANGE_REQUEST,
+      "출처",
+      Cardinality::MANY,
+      { "사용자 피드백", "이슈", "초기 요구" } },
+    { ItemKind::CHANGE_REQUEST,
+      "상태",
+      Cardinality::SINGLE,
+      { "열림", "반영 중", "완료", "거부" } },
+    { ItemKind::CHANGE_REQUEST,
+      "진입 단계",
+      Cardinality::SINGLE,
+      { "Step 1", "Step 2", "Step 3", "Step 4", "Step 5", "Step 6", "Step 7", "Step 8", "Step 9",
+        "Step 10", "Step 11", "Step 12" } },
+    { ItemKind::REQUIREMENT,
+      "요구사항 종류",
+      Cardinality::MANY,
+      { "기능 요구사항", "품질 요구사항", "환경 요구사항" } },
+    { ItemKind::RULE,
+      "수칙 종류",
+      Cardinality::MANY,
+      { "아키텍처", "컨벤션", "코딩 제약", "의존성", "테스트" } },
+    { ItemKind::EXTERNAL_INTERFACE,
+      "인터페이스 종류",
+      Cardinality::MANY,
+      { "GUI 뷰", "C 함수", "C 타입" } },
+    { ItemKind::DESIGN,
+      "설계 종류",
+      Cardinality::MANY,
+      { "모듈", "동작 흐름", "디렉토리", "메모리 정책" } },
+    { ItemKind::DESIGN, "구현 상태", Cardinality::SINGLE, { "미구현", "변경 필요", "구현 완료" } },
+    { ItemKind::UNIT_TEST_PLAN,
+      "구현 상태",
+      Cardinality::SINGLE,
+      { "미구현", "변경 필요", "구현 완료" } },
+    { ItemKind::UNIT_TEST_RESULT, "결과", Cardinality::SINGLE, { "PASS", "FAIL" } },
+    { ItemKind::SYSTEM_TEST_RESULT, "결과", Cardinality::SINGLE, { "PASS", "FAIL" } },
+    { ItemKind::CODE_INSPECTION_RESULT, "결과", Cardinality::SINGLE, { "PASS", "FAIL" } },
+    { ItemKind::END_TO_END_TEST_RESULT, "결과", Cardinality::SINGLE, { "PASS", "FAIL" } },
 };
 
 const RelationSource RELATION_SOURCES[] = {
-    {ItemKind::CHANGE_REQUEST, "영향 요구사항", ItemKind::REQUIREMENT, Cardinality::MANY},
-    {ItemKind::CHANGE_REQUEST, "영향 개발 수칙", ItemKind::RULE, Cardinality::MANY},
-    {ItemKind::CHANGE_REQUEST, "영향 외부 인터페이스", ItemKind::EXTERNAL_INTERFACE, Cardinality::MANY},
-    {ItemKind::CHANGE_REQUEST, "영향 설계 사항", ItemKind::DESIGN, Cardinality::MANY},
-    {ItemKind::CHANGE_REQUEST, "관련 마일스톤", ItemKind::MILESTONE, Cardinality::MANY},
-    {ItemKind::REQUIREMENT, "관련 요구사항", ItemKind::REQUIREMENT, Cardinality::MANY},
-    {ItemKind::EXTERNAL_INTERFACE, "관련 요구사항", ItemKind::REQUIREMENT, Cardinality::MANY},
-    {ItemKind::DESIGN, "관련 요구사항", ItemKind::REQUIREMENT, Cardinality::MANY},
-    {ItemKind::DESIGN, "관련 외부 인터페이스", ItemKind::EXTERNAL_INTERFACE, Cardinality::MANY},
-    {ItemKind::DESIGN, "의존 설계 사항", ItemKind::DESIGN, Cardinality::MANY},
-    {ItemKind::UNIT_TEST_PLAN, "검증 설계 사항", ItemKind::DESIGN, Cardinality::MANY},
-    {ItemKind::MILESTONE, "포함 설계 사항", ItemKind::DESIGN, Cardinality::MANY},
-    {ItemKind::MILESTONE, "포함 유닛 테스트", ItemKind::UNIT_TEST_PLAN, Cardinality::MANY},
-    {ItemKind::UNIT_TEST_RESULT, "대상 유닛 테스트", ItemKind::UNIT_TEST_PLAN, Cardinality::MANY},
-    {ItemKind::SYSTEM_TEST_PLAN, "검증 요구사항", ItemKind::REQUIREMENT, Cardinality::SINGLE},
-    {ItemKind::SYSTEM_TEST_RESULT, "대상 시스템 테스트", ItemKind::SYSTEM_TEST_PLAN, Cardinality::MANY},
-    {ItemKind::CODE_INSPECTION_RESULT, "검사 개발 수칙", ItemKind::RULE, Cardinality::SINGLE},
-    {ItemKind::END_TO_END_TEST_PLAN, "검증 외부 인터페이스", ItemKind::EXTERNAL_INTERFACE, Cardinality::SINGLE},
-    {ItemKind::END_TO_END_TEST_RESULT, "대상 E2E 테스트", ItemKind::END_TO_END_TEST_PLAN, Cardinality::MANY},
+    { ItemKind::CHANGE_REQUEST, "영향 요구사항", ItemKind::REQUIREMENT, Cardinality::MANY },
+    { ItemKind::CHANGE_REQUEST, "영향 개발 수칙", ItemKind::RULE, Cardinality::MANY },
+    { ItemKind::CHANGE_REQUEST, "영향 외부 인터페이스", ItemKind::EXTERNAL_INTERFACE,
+      Cardinality::MANY },
+    { ItemKind::CHANGE_REQUEST, "영향 설계 사항", ItemKind::DESIGN, Cardinality::MANY },
+    { ItemKind::CHANGE_REQUEST, "관련 마일스톤", ItemKind::MILESTONE, Cardinality::MANY },
+    { ItemKind::REQUIREMENT, "관련 요구사항", ItemKind::REQUIREMENT, Cardinality::MANY },
+    { ItemKind::EXTERNAL_INTERFACE, "관련 요구사항", ItemKind::REQUIREMENT, Cardinality::MANY },
+    { ItemKind::DESIGN, "관련 요구사항", ItemKind::REQUIREMENT, Cardinality::MANY },
+    { ItemKind::DESIGN, "관련 외부 인터페이스", ItemKind::EXTERNAL_INTERFACE, Cardinality::MANY },
+    { ItemKind::DESIGN, "의존 설계 사항", ItemKind::DESIGN, Cardinality::MANY },
+    { ItemKind::UNIT_TEST_PLAN, "검증 설계 사항", ItemKind::DESIGN, Cardinality::MANY },
+    { ItemKind::MILESTONE, "포함 설계 사항", ItemKind::DESIGN, Cardinality::MANY },
+    { ItemKind::MILESTONE, "포함 유닛 테스트", ItemKind::UNIT_TEST_PLAN, Cardinality::MANY },
+    { ItemKind::UNIT_TEST_RESULT, "대상 유닛 테스트", ItemKind::UNIT_TEST_PLAN, Cardinality::MANY },
+    { ItemKind::SYSTEM_TEST_PLAN, "검증 요구사항", ItemKind::REQUIREMENT, Cardinality::SINGLE },
+    { ItemKind::SYSTEM_TEST_RESULT, "대상 시스템 테스트", ItemKind::SYSTEM_TEST_PLAN,
+      Cardinality::MANY },
+    { ItemKind::CODE_INSPECTION_RESULT, "검사 개발 수칙", ItemKind::RULE, Cardinality::SINGLE },
+    { ItemKind::END_TO_END_TEST_PLAN, "검증 외부 인터페이스", ItemKind::EXTERNAL_INTERFACE,
+      Cardinality::SINGLE },
+    { ItemKind::END_TO_END_TEST_RESULT, "대상 E2E 테스트", ItemKind::END_TO_END_TEST_PLAN,
+      Cardinality::MANY },
 };
 
 static_assert(std::size(MODEL_SOURCES) == entity::ITEM_KIND_COUNT, "one model per kind");
@@ -123,7 +153,10 @@ KiottySpecStatus ModelCatalog::load()
 {
     KiottySpecStatus status = loadTags();
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = loadRelations(); }
-    for (size_t index = 0; index < entity::ITEM_KIND_COUNT && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) { status = loadModel(index); }
+    for (size_t index = 0; index < entity::ITEM_KIND_COUNT && status == KIOTTY_SPEC_STATUS_SUCCESS;
+         ++index) {
+        status = loadModel(index);
+    }
     return status;
 }
 
@@ -133,9 +166,12 @@ KiottySpecStatus ModelCatalog::loadTags()
         const TagSource& source = TAG_SOURCES[index];
         entity::TagDefinition& definition = _tags[index];
         KiottySpecStatus status = assignText(definition.name, source.name);
-        for (size_t bit = 0; bit < entity::TAG_BIT_COUNT && status == KIOTTY_SPEC_STATUS_SUCCESS; ++bit) {
+        for (size_t bit = 0; bit < entity::TAG_BIT_COUNT && status == KIOTTY_SPEC_STATUS_SUCCESS;
+             ++bit) {
             definition.bit_names[bit].clear();
-            if (source.bits[bit] != nullptr) { status = assignText(definition.bit_names[bit], source.bits[bit]); }
+            if (source.bits[bit] != nullptr) {
+                status = assignText(definition.bit_names[bit], source.bits[bit]);
+            }
         }
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
         definition.cardinality = source.cardinality;
@@ -164,13 +200,18 @@ KiottySpecStatus ModelCatalog::loadModel(size_t index)
     model.kind = source.kind;
     model.created_in = source.created_in;
     const auto ofKind = [&](const auto& entry) { return entry.kind == source.kind; };
-    const Result<IndexRange, KiottySpecStatus> tags = contiguousRange(Span<const TagSource>(TAG_SOURCES, TAG_COUNT), ofKind);
-    const Result<IndexRange, KiottySpecStatus> relations = contiguousRange(Span<const RelationSource>(RELATION_SOURCES, RELATION_COUNT), ofKind);
+    const Result<IndexRange, KiottySpecStatus> tags =
+        contiguousRange(Span<const TagSource>(TAG_SOURCES, TAG_COUNT), ofKind);
+    const Result<IndexRange, KiottySpecStatus> relations =
+        contiguousRange(Span<const RelationSource>(RELATION_SOURCES, RELATION_COUNT), ofKind);
     if (!tags || !relations) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     model.tags = Span<const entity::TagDefinition>(_tags + tags.value.first, tags.value.length);
-    model.relations = Span<const entity::RelationDefinition>(_relations + relations.value.first, relations.value.length);
+    model.relations = Span<const entity::RelationDefinition>(_relations + relations.value.first,
+                                                             relations.value.length);
     KiottySpecStatus status = assignText(model.name, source.name);
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = assignText(model.id_prefix, source.id_prefix); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
+        status = assignText(model.id_prefix, source.id_prefix);
+    }
     return status;
 }
 
@@ -182,9 +223,13 @@ KiottySpecStatus ModelCatalog::checkTagValue(ItemKind kind, uint32_t tag, uint64
     if ((value & ~entity::TAG_VALUE_MASK) != 0) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     const entity::TagDefinition& definition = tags[tag];
     for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
-        if ((value & (uint64_t{1} << bit)) != 0 && definition.bit_names[bit].empty()) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
+        if ((value & (uint64_t { 1 } << bit)) != 0 && definition.bit_names[bit].empty()) {
+            return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
+        }
     }
-    if (definition.cardinality == Cardinality::SINGLE && !hasSingleBit(value)) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
+    if (definition.cardinality == Cardinality::SINGLE && !hasSingleBit(value)) {
+        return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
+    }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 

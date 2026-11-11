@@ -16,7 +16,9 @@ namespace kiotty::spec::implementation {
 class CheckpointStore
 {
 public:
-    CheckpointStore(entity::Failure& failure, size_t capacity) : _failure(failure), _records(capacity), _exists(capacity, 0) {}
+    CheckpointStore(entity::Failure& failure, size_t capacity)
+        : _failure(failure), _records(capacity), _exists(capacity, 0)
+    {}
 
     void clear();
     KiottySpecStatus put(uint32_t sequence, const entity::CheckpointRecord& record);

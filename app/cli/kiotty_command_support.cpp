@@ -6,9 +6,19 @@ namespace kiotty::cli {
 
 namespace {
 
-const char* const STEP_NAMES[] = {"", "변경 요청 접수", "요구사항", "외부 인터페이스", "설계", "유닛 테스트 계획", "개발 계획",
-                                  "구현", "시스템 테스트 계획", "시스템 테스트 실행", "코드 검사", "E2E 테스트 계획", "E2E 테스트 실행"};
-
+const char* const STEP_NAMES[] = { "",
+                                   "변경 요청 접수",
+                                   "요구사항",
+                                   "외부 인터페이스",
+                                   "설계",
+                                   "유닛 테스트 계획",
+                                   "개발 계획",
+                                   "구현",
+                                   "시스템 테스트 계획",
+                                   "시스템 테스트 실행",
+                                   "코드 검사",
+                                   "E2E 테스트 계획",
+                                   "E2E 테스트 실행" };
 }
 
 int check(Session& session, KiottySpecStatus status)

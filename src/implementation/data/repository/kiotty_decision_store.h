@@ -18,11 +18,14 @@ constexpr size_t MAX_DECISION_BYTES = entity::MAX_DECISION_VERSION_LENGTH;
 class DecisionStore
 {
 public:
-    DecisionStore(entity::Failure& failure, size_t versions) : _failure(failure), _versions(versions) {}
+    DecisionStore(entity::Failure& failure, size_t versions)
+        : _failure(failure), _versions(versions)
+    {}
 
     VersionTable<entity::DecisionVersion>& versions() { return _versions; }
     KiottySpecStatus write(entity::ItemKind kind, Span<const char> text, uint32_t sequence);
-    Result<size_t, KiottySpecStatus> read(entity::ItemKind kind, uint32_t checkpoint, char* buffer, size_t capacity) const;
+    Result<size_t, KiottySpecStatus> read(entity::ItemKind kind, uint32_t checkpoint, char* buffer,
+                                          size_t capacity) const;
 
 private:
     entity::Failure& _failure;

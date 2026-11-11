@@ -15,13 +15,18 @@ using entity::ItemKind;
 
 Result<uint32_t, KiottySpecStatus> ModelFinder::findTag(ItemKind kind, Span<const char> name) const
 {
-    return findIndex(model(kind).tags, [&](const entity::TagDefinition& definition) { return std::string_view(definition.name) == viewOf(name); });
+    return findIndex(model(kind).tags, [&](const entity::TagDefinition& definition) {
+        return std::string_view(definition.name) == viewOf(name);
+    });
 }
 
-Result<uint32_t, KiottySpecStatus> ModelFinder::findTagBit(ItemKind kind, uint32_t tag, Span<const char> name) const
+Result<uint32_t, KiottySpecStatus> ModelFinder::findTagBit(ItemKind kind, uint32_t tag,
+                                                           Span<const char> name) const
 {
     const Span<const entity::TagDefinition> tags = model(kind).tags;
-    if (tag >= tags.length()) { return Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    if (tag >= tags.length()) {
+        return Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
+    }
     for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
         const entity::TagName& bit_name = tags[tag].bit_names[bit];
         if (!bit_name.empty() && std::string_view(bit_name) == viewOf(name)) {
@@ -31,9 +36,12 @@ Result<uint32_t, KiottySpecStatus> ModelFinder::findTagBit(ItemKind kind, uint32
     return Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
 }
 
-Result<uint32_t, KiottySpecStatus> ModelFinder::findRelation(ItemKind kind, Span<const char> name) const
+Result<uint32_t, KiottySpecStatus> ModelFinder::findRelation(ItemKind kind,
+                                                             Span<const char> name) const
 {
-    return findIndex(model(kind).relations, [&](const entity::RelationDefinition& definition) { return std::string_view(definition.name) == viewOf(name); });
+    return findIndex(model(kind).relations, [&](const entity::RelationDefinition& definition) {
+        return std::string_view(definition.name) == viewOf(name);
+    });
 }
 
 }

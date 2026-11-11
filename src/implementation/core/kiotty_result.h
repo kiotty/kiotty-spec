@@ -9,7 +9,8 @@ template <typename Value, typename Code>
 struct Result
 {
     static_assert(std::is_enum<Code>::value, "Code must be an enum class");
-    static_assert(std::is_default_constructible<Value>::value, "Value must be default constructible");
+    static_assert(std::is_default_constructible<Value>::value,
+                  "Value must be default constructible");
 
     Code code {};
     Value value {};

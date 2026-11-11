@@ -9,18 +9,22 @@ constexpr uint64_t INDEX_MASK = 0xFFFFFFFFu;
 
 CursorId encode(Handle handle)
 {
-    return (static_cast<uint64_t>(handle.generation) << GENERATION_SHIFT) | (static_cast<uint64_t>(handle.index) + 1);
+    return (static_cast<uint64_t>(handle.generation) << GENERATION_SHIFT) |
+           (static_cast<uint64_t>(handle.index) + 1);
 }
 
 }
 
-CursorPool::CursorPool(size_t max_cursors, size_t max_rows, size_t total_rows) : _slots(max_cursors), _rows(total_rows), _maxRows(max_rows) {}
+CursorPool::CursorPool(size_t max_cursors, size_t max_rows, size_t total_rows)
+    : _slots(max_cursors), _rows(total_rows), _maxRows(max_rows)
+{}
 
 Handle CursorPool::decode(CursorId cursor)
 {
     const uint64_t index = cursor & INDEX_MASK;
     if (index == 0) { return Handle{Handle::INVALID_INDEX, 0}; }
-    return Handle{static_cast<uint32_t>(index - 1), static_cast<uint32_t>(cursor >> GENERATION_SHIFT)};
+    return Handle { static_cast<uint32_t>(index - 1),
+                    static_cast<uint32_t>(cursor >> GENERATION_SHIFT) };
 }
 
 Span<CursorRow> CursorPool::rowsOf(Handle handle)
@@ -53,7 +57,9 @@ CursorRowsResult CursorPool::fetch(CursorId cursor, CursorKind kind, size_t maxC
     const Handle handle = decode(cursor);
     const auto slot = _slots.get(handle);
     if (!slot) { return CursorRowsResult::failure(slot.code); }
-    if (slot.value->kind != kind) { return CursorRowsResult::failure(KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE); }
+    if (slot.value->kind != kind) {
+        return CursorRowsResult::failure(KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE);
+    }
     const size_t left = slot.value->length - slot.value->position;
     const size_t count = left < maxCount ? left : maxCount;
     const Span<const CursorRow> page(rowsOf(handle).data() + slot.value->position, count);
@@ -75,7 +81,9 @@ Result<CursorSpace, KiottySpecStatus> CursorPool::space(CursorId cursor, CursorK
     const Handle handle = decode(cursor);
     const auto slot = _slots.get(handle);
     if (!slot) { return Result<CursorSpace, KiottySpecStatus>::failure(slot.code); }
-    if (slot.value->kind != kind) { return Result<CursorSpace, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE); }
+    if (slot.value->kind != kind) {
+        return Result<CursorSpace, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE);
+    }
     return Result<CursorSpace, KiottySpecStatus>::success(CursorSpace{slot.value, rowsOf(handle)});
 }
 

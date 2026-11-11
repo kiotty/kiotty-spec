@@ -13,7 +13,8 @@ KiottySpecStatus writeAll(int descriptor, Span<const char> content)
 {
     size_t written = 0;
     while (written < content.length()) {
-        const int count = platform::writeSome(descriptor, content.data() + written, content.length() - written);
+        const int count =
+            platform::writeSome(descriptor, content.data() + written, content.length() - written);
         if (count <= 0) { return KIOTTY_SPEC_STATUS_INPUT_OUTPUT; }
         written += static_cast<size_t>(count);
     }
@@ -32,19 +33,26 @@ KiottySpecStatus createDirectories(Span<const char> path)
 {
     const size_t root = platform::rootLength(path);
     for (size_t index = root; index < path.length(); ++index) {
-        if (platform::isSeparator(path[index])) { platform::makeDirectory(Span<const char>(path.data(), index)); }
+        if (platform::isSeparator(path[index])) {
+            platform::makeDirectory(Span<const char>(path.data(), index));
+        }
     }
     platform::makeDirectory(path);
-    return platform::isDirectory(path) ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+    return platform::isDirectory(path) ? KIOTTY_SPEC_STATUS_SUCCESS
+                                       : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 }
 
-int openForReading(Span<const char> path) { return platform::openFile(path, platform::OpenMode::READ); }
+int openForReading(Span<const char> path)
+{ return platform::openFile(path, platform::OpenMode::READ); }
 
-int openForWriting(Span<const char> path) { return platform::openFile(path, platform::OpenMode::WRITE); }
+int openForWriting(Span<const char> path)
+{ return platform::openFile(path, platform::OpenMode::WRITE); }
 
-int readDescriptor(int descriptor, Span<char> buffer) { return platform::readSome(descriptor, buffer.data(), chunkOf(buffer.length())); }
+int readDescriptor(int descriptor, Span<char> buffer)
+{ return platform::readSome(descriptor, buffer.data(), chunkOf(buffer.length())); }
 
-KiottySpecStatus writeDescriptor(int descriptor, Span<const char> content) { return writeAll(descriptor, content); }
+KiottySpecStatus writeDescriptor(int descriptor, Span<const char> content)
+{ return writeAll(descriptor, content); }
 
 void closeDescriptor(int descriptor) { platform::closeFile(descriptor); }
 
@@ -54,6 +62,6 @@ KiottySpecStatus removeFile(Span<const char> path)
     return platform::removeFile(path);
 }
 
-KiottySpecStatus renameFile(Span<const char> from, Span<const char> to) { return platform::renameFile(from, to); }
-
+KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
+{ return platform::renameFile(from, to); }
 }

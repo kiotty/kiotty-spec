@@ -32,7 +32,8 @@ IdParts splitId(Span<const char> id)
     IdParts parts {};
     parts.prefix = Span<const char>(id.data(), dash);
     if (dash == id.length()) { return parts; }
-    const auto number = parseDecimal(Span<const char>(id.data() + dash + 1, id.length() - dash - 1), MAX_ID_NUMBER);
+    const auto number =
+        parseDecimal(Span<const char>(id.data() + dash + 1, id.length() - dash - 1), MAX_ID_NUMBER);
     parts.number = number ? static_cast<uint32_t>(number.value) : 0;
     return parts;
 }
@@ -42,18 +43,25 @@ IdParts splitId(Span<const char> id)
 Result<uint32_t, KiottySpecStatus> ItemHistory::keyOf(Span<const char> id) const
 {
     for (size_t index = 0; index < _t.names.length(); ++index) {
-        if (viewOf(_t.names.valueAt(index).view()) == viewOf(id)) { return Result<uint32_t, KiottySpecStatus>::success(_t.names.keyAt(index)); }
+        if (viewOf(_t.names.valueAt(index).view()) == viewOf(id)) {
+            return Result<uint32_t, KiottySpecStatus>::success(_t.names.keyAt(index));
+        }
     }
     return Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
 }
 
-Result<IdText, KiottySpecStatus> ItemHistory::idOf(uint32_t key) const { return _t.names.find(key); }
+Result<IdText, KiottySpecStatus> ItemHistory::idOf(uint32_t key) const
+{ return _t.names.find(key); }
 
 Span<const TagVersion> ItemHistory::tagsOf(uint32_t key) const
 {
     const Span<const TagVersion> all = _t.tag_versions.all();
-    const TagVersion* first = std::lower_bound(all.begin(), all.end(), key, [](const TagVersion& tag, uint32_t value) { return tag.key < value; });
-    const TagVersion* last = std::upper_bound(first, all.end(), key, [](uint32_t value, const TagVersion& tag) { return value < tag.key; });
+    const TagVersion* first =
+        std::lower_bound(all.begin(), all.end(), key,
+                         [](const TagVersion& tag, uint32_t value) { return tag.key < value; });
+    const TagVersion* last =
+        std::upper_bound(first, all.end(), key,
+                         [](uint32_t value, const TagVersion& tag) { return value < tag.key; });
     return Span<const TagVersion>(first, static_cast<size_t>(last - first));
 }
 
@@ -93,8 +101,12 @@ Result<IdText, KiottySpecStatus> ItemHistory::nextId(Span<const char> prefix) co
     IdText id {};
     KiottySpecStatus status = id.assign(prefix);
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = id.append(literalText("-")); }
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = appendDecimal(id, largest + 1, MIN_ID_DIGITS); }
-    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return Result<IdText, KiottySpecStatus>::failure(status); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
+        status = appendDecimal(id, largest + 1, MIN_ID_DIGITS);
+    }
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return Result<IdText, KiottySpecStatus>::failure(status);
+    }
     return Result<IdText, KiottySpecStatus>::success(id);
 }
 
@@ -107,12 +119,15 @@ Span<const uint32_t> ItemHistory::keysByKindAndId()
         ++count;
     }
     const ItemTables& tables = _t;
-    std::sort(_t.order.begin(), _t.order.begin() + static_cast<std::ptrdiff_t>(count), [&tables](uint32_t left, uint32_t right) {
-        const uint32_t left_kind = static_cast<uint32_t>(tables.versions.latest(left, UINT32_MAX)->kind);
-        const uint32_t right_kind = static_cast<uint32_t>(tables.versions.latest(right, UINT32_MAX)->kind);
-        if (left_kind != right_kind) { return left_kind < right_kind; }
-        return tables.names.find(left).value < tables.names.find(right).value;
-    });
+    std::sort(_t.order.begin(), _t.order.begin() + static_cast<std::ptrdiff_t>(count),
+              [&tables](uint32_t left, uint32_t right) {
+                  const uint32_t left_kind =
+                      static_cast<uint32_t>(tables.versions.latest(left, UINT32_MAX)->kind);
+                  const uint32_t right_kind =
+                      static_cast<uint32_t>(tables.versions.latest(right, UINT32_MAX)->kind);
+                  if (left_kind != right_kind) { return left_kind < right_kind; }
+                  return tables.names.find(left).value < tables.names.find(right).value;
+              });
     return Span<const uint32_t>(_t.order.data(), count);
 }
 
@@ -120,7 +135,9 @@ void ItemHistory::prune(uint32_t base)
 {
     _t.versions.prune(base);
     const ItemTables& tables = _t;
-    _t.tag_versions.retain([&tables](const TagVersion& tag) { return tables.versions.latest(tag.key, UINT32_MAX) != nullptr; });
+    _t.tag_versions.retain([&tables](const TagVersion& tag) {
+        return tables.versions.latest(tag.key, UINT32_MAX) != nullptr;
+    });
     _t.tag_versions.prune(base);
     for (size_t index = _t.names.length(); index > 0; --index) {
         const uint32_t key = _t.names.keyAt(index - 1);

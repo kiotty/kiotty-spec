@@ -24,6 +24,6 @@ struct TextSegment {
 
 static_assert(sizeof(TextSegment) == 8, "unexpected padding");
 
-Result<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const char> after, Span<uint8_t> table, Span<TextSegment> out);
-
+Result<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const char> after,
+                                          Span<uint8_t> table, Span<TextSegment> out);
 }

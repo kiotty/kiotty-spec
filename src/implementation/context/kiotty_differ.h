@@ -30,12 +30,15 @@ struct KindCounts {
 class Differ
 {
 public:
-    Differ(Workspace& workspace, CursorPool& cursors, TextBuffer& work) : _w(workspace), _cursors(cursors), _work(work) {}
+    Differ(Workspace& workspace, CursorPool& cursors, TextBuffer& work)
+        : _w(workspace), _cursors(cursors), _work(work)
+    {}
 
     Result<DiffRange, KiottySpecStatus> range(uint64_t from, uint64_t to);
     Result<uint32_t, KiottySpecStatus> point(uint64_t checkpoint);
 
-    KiottySpecStatus summarize(DiffRange range, uint32_t kind_mask, uint32_t field_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
+    KiottySpecStatus summarize(DiffRange range, uint32_t kind_mask, uint32_t field_mask,
+                               KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
     CursorIdResult items(DiffRange range, uint32_t kind_mask, uint32_t field_mask);
     CursorIdResult relations(DiffRange range, uint32_t kind_mask);
 
@@ -43,9 +46,12 @@ public:
     TextDiffer text() { return TextDiffer(_w, _cursors, _work); }
 
 private:
-    KiottySpecStatus countItems(DiffRange range, uint32_t kind_mask, uint32_t field_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
-    KiottySpecStatus countRelations(DiffRange range, uint32_t kind_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
-    KiottySpecStatus countDecisions(DiffRange range, uint32_t kind_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
+    KiottySpecStatus countItems(DiffRange range, uint32_t kind_mask, uint32_t field_mask,
+                                KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
+    KiottySpecStatus countRelations(DiffRange range, uint32_t kind_mask,
+                                    KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
+    KiottySpecStatus countDecisions(DiffRange range, uint32_t kind_mask,
+                                    KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
 
     Workspace& _w;
     CursorPool& _cursors;

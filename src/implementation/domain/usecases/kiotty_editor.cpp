@@ -20,13 +20,18 @@ KiottySpecStatus Editor::markNeedsChange(ItemHandle item, uint32_t sequence)
     const auto record = _w.items.reader().get(item);
     if (!record) { return record.code; }
     const ItemKind kind = record.value->kind;
-    if (kind != ItemKind::DESIGN && kind != ItemKind::UNIT_TEST_PLAN) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    if (kind != ItemKind::DESIGN && kind != ItemKind::UNIT_TEST_PLAN) {
+        return KIOTTY_SPEC_STATUS_SUCCESS;
+    }
     const auto state = _w.catalog.finder().findTag(kind, spanOf(IMPLEMENTATION_STATE_TAG));
     if (!state) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     const auto done = _w.catalog.finder().findTagBit(kind, state.value, spanOf(IMPLEMENTED_BIT));
-    const auto changed = _w.catalog.finder().findTagBit(kind, state.value, spanOf(NEEDS_CHANGE_BIT));
+    const auto changed =
+        _w.catalog.finder().findTagBit(kind, state.value, spanOf(NEEDS_CHANGE_BIT));
     if (!done || !changed) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    if (_w.items.tags().value(item, state.value) != (uint64_t{1} << done.value)) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    if (_w.items.tags().value(item, state.value) != (uint64_t { 1 } << done.value)) {
+        return KIOTTY_SPEC_STATUS_SUCCESS;
+    }
     return _w.items.writer().setTag(item, state.value, uint64_t{1} << changed.value, sequence);
 }
 
@@ -37,13 +42,19 @@ KiottySpecStatus Editor::checkId(Span<const char> id)
     return _w.failure.raise(valid, KIOTTY_SPEC_SUBJECT_ID, id);
 }
 
-Result<IdText, KiottySpecStatus> Editor::createItem(ItemKind kind, Span<const char> id, Span<const char> title, Span<const char> summary)
+Result<IdText, KiottySpecStatus> Editor::createItem(ItemKind kind, Span<const char> id,
+                                                    Span<const char> title,
+                                                    Span<const char> summary)
 {
     using IdResult = Result<IdText, KiottySpecStatus>;
     if (!entity::isValidKind(static_cast<uint32_t>(kind))) {
-        return IdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_KIND));
+        return IdResult::failure(
+            _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_KIND));
     }
-    if (title.length() == 0) { return IdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_TITLE)); }
+    if (title.length() == 0) {
+        return IdResult::failure(
+            _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_TITLE));
+    }
     KiottySpecStatus status = id.length() > 0 ? checkId(id) : KIOTTY_SPEC_STATUS_SUCCESS;
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return IdResult::failure(status); }
     WriteScope scope(_w, _lifecycle);
@@ -55,8 +66,9 @@ Result<IdText, KiottySpecStatus> Editor::createItem(ItemKind kind, Span<const ch
     return created;
 }
 
-Result<IdText, KiottySpecStatus> Editor::insertItem(ItemKind kind, Span<const char> given, Span<const char> title, Span<const char> summary,
-                                                   uint32_t sequence)
+Result<IdText, KiottySpecStatus> Editor::insertItem(ItemKind kind, Span<const char> given,
+                                                    Span<const char> title,
+                                                    Span<const char> summary, uint32_t sequence)
 {
     using IdResult = Result<IdText, KiottySpecStatus>;
     Result<IdText, KiottySpecStatus> id = IdResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
@@ -92,13 +104,16 @@ KiottySpecStatus Editor::renameItem(Span<const char> id, Span<const char> new_id
     return _w.finish(_w.items.writer().rename(item.value, next));
 }
 
-KiottySpecStatus Editor::updateItem(Span<const char> id, Span<const char> title, Span<const char> summary)
+KiottySpecStatus Editor::updateItem(Span<const char> id, Span<const char> title,
+                                    Span<const char> summary)
 {
     const auto item = _w.resolve(id);
     if (!item) { return item.code; }
     ItemRecord record = *_w.items.reader().get(item.value).value;
     if (title.data() != nullptr) {
-        if (title.length() == 0) { return _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_TITLE); }
+        if (title.length() == 0) {
+            return _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_TITLE);
+        }
         record.title.assign(title);
     }
     if (summary.data() != nullptr) {
@@ -108,7 +123,9 @@ KiottySpecStatus Editor::updateItem(Span<const char> id, Span<const char> title,
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }
     KiottySpecStatus status = _w.items.writer().update(item.value, record, sequence.value);
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = markNeedsChange(item.value, sequence.value); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
+        status = markNeedsChange(item.value, sequence.value);
+    }
     return scope.finish(status);
 }
 
@@ -123,7 +140,8 @@ KiottySpecStatus Editor::setParent(Span<const char> id, Span<const char> parent_
         if (!parent) { return parent.code; }
         for (ItemHandle probe = parent.value; probe.isValid();) {
             if (probe.index == item.value.index) {
-                return _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_PARENT, id);
+                return _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
+                                        KIOTTY_SPEC_SUBJECT_PARENT, id);
             }
             const auto above = _w.items.reader().get(probe);
             if (!above) { break; }
@@ -143,15 +161,19 @@ KiottySpecStatus Editor::removeItem(Span<const char> id)
     if (!item) { return item.code; }
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
         const auto child = _w.items.reader().get(_w.items.reader().handleAt(index));
-        if (child && child.value->parent.index == item.value.index && child.value->parent.isValid()) {
-            return _w.failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_CHILD, child.value->id.view());
+        if (child && child.value->parent.index == item.value.index &&
+            child.value->parent.isValid()) {
+            return _w.failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_CHILD,
+                                    child.value->id.view());
         }
     }
     WriteScope scope(_w, _lifecycle);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }
     KiottySpecStatus status = _w.relations.removeAllOf(item.value, sequence.value);
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _w.items.writer().remove(item.value, sequence.value); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
+        status = _w.items.writer().remove(item.value, sequence.value);
+    }
     return scope.finish(status);
 }
 
@@ -163,7 +185,9 @@ KiottySpecStatus Editor::writeBody(Span<const char> id, Span<const char> body)
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }
     KiottySpecStatus status = _w.items.writer().writeBody(item.value, body, sequence.value);
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = markNeedsChange(item.value, sequence.value); }
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
+        status = markNeedsChange(item.value, sequence.value);
+    }
     return scope.finish(status);
 }
 
@@ -172,10 +196,13 @@ KiottySpecStatus Editor::setTag(ItemHandle item, uint32_t tag, uint64_t value)
     const auto record = _w.items.reader().get(item);
     if (!record) { return _w.failure.raise(record.code, KIOTTY_SPEC_SUBJECT_ITEM); }
     if (tag >= _w.catalog.model(record.value->kind).tags.length()) {
-        return _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_TAG, record.value->id.view());
+        return _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_TAG,
+                                record.value->id.view());
     }
     const KiottySpecStatus allowed = _w.catalog.checkTagValue(record.value->kind, tag, value);
-    if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) { return _w.failure.raise(allowed, KIOTTY_SPEC_SUBJECT_TAG_VALUE, record.value->id.view()); }
+    if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return _w.failure.raise(allowed, KIOTTY_SPEC_SUBJECT_TAG_VALUE, record.value->id.view());
+    }
     WriteScope scope(_w, _lifecycle);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }

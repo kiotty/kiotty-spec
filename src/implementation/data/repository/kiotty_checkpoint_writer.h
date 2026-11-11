@@ -15,12 +15,14 @@ namespace kiotty::spec::implementation {
 class CheckpointWriter
 {
 public:
-    CheckpointWriter(entity::Failure& failure, std::vector<entity::CheckpointRecord>& records, std::vector<uint8_t>& exists, uint32_t& latest)
+    CheckpointWriter(entity::Failure& failure, std::vector<entity::CheckpointRecord>& records,
+                     std::vector<uint8_t>& exists, uint32_t& latest)
         : _failure(failure), _records(records), _exists(exists), _latest(latest)
     {
     }
 
-    Result<uint32_t, KiottySpecStatus> create(entity::Step step, Span<const char> description, int64_t created_at);
+    Result<uint32_t, KiottySpecStatus> create(entity::Step step, Span<const char> description,
+                                              int64_t created_at);
     KiottySpecStatus setState(uint32_t sequence, entity::CheckpointState state);
     Result<size_t, KiottySpecStatus> dropBefore(uint32_t base);
 

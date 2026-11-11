@@ -15,11 +15,14 @@ public:
     explicit ModelFinder(Span<const entity::Model> models) : _models(models) {}
 
     Result<uint32_t, KiottySpecStatus> findTag(entity::ItemKind kind, Span<const char> name) const;
-    Result<uint32_t, KiottySpecStatus> findTagBit(entity::ItemKind kind, uint32_t tag, Span<const char> name) const;
-    Result<uint32_t, KiottySpecStatus> findRelation(entity::ItemKind kind, Span<const char> name) const;
+    Result<uint32_t, KiottySpecStatus> findTagBit(entity::ItemKind kind, uint32_t tag,
+                                                  Span<const char> name) const;
+    Result<uint32_t, KiottySpecStatus> findRelation(entity::ItemKind kind,
+                                                    Span<const char> name) const;
 
 private:
-    const entity::Model& model(entity::ItemKind kind) const { return _models[entity::kindIndex(kind)]; }
+    const entity::Model& model(entity::ItemKind kind) const
+    { return _models[entity::kindIndex(kind)]; }
 
     Span<const entity::Model> _models;
 };

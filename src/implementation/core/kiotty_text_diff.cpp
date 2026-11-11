@@ -28,7 +28,8 @@ bool splitPoints(Span<const char> text, Points& points)
     return true;
 }
 
-bool samePoint(Span<const char> before, const Points& a, size_t i, Span<const char> after, const Points& b, size_t j)
+bool samePoint(Span<const char> before, const Points& a, size_t i, Span<const char> after,
+               const Points& b, size_t j)
 {
     const size_t left = static_cast<size_t>(a.starts[i + 1]) - a.starts[i];
     const size_t right = static_cast<size_t>(b.starts[j + 1]) - b.starts[j];
@@ -51,15 +52,17 @@ struct Hunks {
     Hunk items[MAX_HUNKS] {};
     size_t count {};
 
-    void add(bool edit, size_t before_start, size_t before_end, size_t after_start, size_t after_end)
+    void add(bool edit, size_t before_start, size_t before_end, size_t after_start,
+             size_t after_end)
     {
         if (count > 0 && items[count - 1].edit == edit) {
             items[count - 1].before_end = static_cast<uint16_t>(before_end);
             items[count - 1].after_end = static_cast<uint16_t>(after_end);
             return;
         }
-        items[count++] = Hunk{edit, static_cast<uint16_t>(before_start), static_cast<uint16_t>(before_end), static_cast<uint16_t>(after_start),
-                              static_cast<uint16_t>(after_end)};
+        items[count++] =
+            Hunk { edit, static_cast<uint16_t>(before_start), static_cast<uint16_t>(before_end),
+                   static_cast<uint16_t>(after_start), static_cast<uint16_t>(after_end) };
     }
 
     void erase(size_t index)
@@ -88,7 +91,8 @@ void mergeShortEqualities(Hunks& hunks)
             if (equal.edit || !left.edit || !right.edit) { continue; }
             const size_t length = static_cast<size_t>(equal.before_end) - equal.before_start;
             if (length > largerSide(left) || length > largerSide(right)) { continue; }
-            hunks.items[index - 1] = Hunk{true, left.before_start, right.before_end, left.after_start, right.after_end};
+            hunks.items[index - 1] = Hunk { true, left.before_start, right.before_end,
+                                            left.after_start, right.after_end };
             hunks.erase(index);
             hunks.erase(index);
             changed = true;
@@ -97,7 +101,8 @@ void mergeShortEqualities(Hunks& hunks)
     }
 }
 
-bool isSpace(char letter) { return letter == ' ' || letter == '\t' || letter == '\n' || letter == '\r'; }
+bool isSpace(char letter)
+{ return letter == ' ' || letter == '\t' || letter == '\n' || letter == '\r'; }
 
 size_t previousPointStart(Span<const char> text, size_t end)
 {
@@ -120,8 +125,10 @@ void alignToWords(Hunks& hunks, Span<const char> before, Span<const char> after)
         while (index + 1 < hunks.count && !hunks.items[index + 1].edit) {
             Hunk& edit = hunks.items[index];
             Hunk& equal = hunks.items[index + 1];
-            const bool before_open = edit.before_end > edit.before_start && !isSpace(before[static_cast<size_t>(edit.before_end) - 1]);
-            const bool after_open = edit.after_end > edit.after_start && !isSpace(after[static_cast<size_t>(edit.after_end) - 1]);
+            const bool before_open = edit.before_end > edit.before_start &&
+                                     !isSpace(before[static_cast<size_t>(edit.before_end) - 1]);
+            const bool after_open = edit.after_end > edit.after_start &&
+                                    !isSpace(after[static_cast<size_t>(edit.after_end) - 1]);
             if ((!before_open && !after_open) || isSpace(after[equal.after_start])) { break; }
             const size_t width = nextPointEnd(after, equal.after_start) - equal.after_start;
             edit.before_end = static_cast<uint16_t>(edit.before_end + width);
@@ -140,9 +147,14 @@ void alignToWords(Hunks& hunks, Span<const char> before, Span<const char> after)
         while (index > 0 && !hunks.items[index - 1].edit) {
             Hunk& edit = hunks.items[index];
             Hunk& equal = hunks.items[index - 1];
-            const bool before_open = edit.before_end > edit.before_start && !isSpace(before[edit.before_start]);
-            const bool after_open = edit.after_end > edit.after_start && !isSpace(after[edit.after_start]);
-            if ((!before_open && !after_open) || isSpace(after[static_cast<size_t>(equal.after_end) - 1])) { break; }
+            const bool before_open =
+                edit.before_end > edit.before_start && !isSpace(before[edit.before_start]);
+            const bool after_open =
+                edit.after_end > edit.after_start && !isSpace(after[edit.after_start]);
+            if ((!before_open && !after_open) ||
+                isSpace(after[static_cast<size_t>(equal.after_end) - 1])) {
+                break;
+            }
             const size_t width = equal.after_end - previousPointStart(after, equal.after_end);
             edit.before_start = static_cast<uint16_t>(edit.before_start - width);
             edit.after_start = static_cast<uint16_t>(edit.after_start - width);
@@ -164,16 +176,21 @@ void alignToWords(Hunks& hunks, Span<const char> before, Span<const char> after)
 
 }
 
-Result<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const char> after, Span<uint8_t> table, Span<TextSegment> out)
+Result<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const char> after,
+                                          Span<uint8_t> table, Span<TextSegment> out)
 {
     using CountResult = Result<size_t, KiottySpecStatus>;
-    if (before.length() > MAX_DIFF_TEXT_BYTES || after.length() > MAX_DIFF_TEXT_BYTES) { return CountResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
+    if (before.length() > MAX_DIFF_TEXT_BYTES || after.length() > MAX_DIFF_TEXT_BYTES) {
+        return CountResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED);
+    }
     Points a {};
     Points b {};
     splitPoints(before, a);
     splitPoints(after, b);
     const size_t width = b.count + 1;
-    if (table.length() < (a.count + 1) * width) { return CountResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
+    if (table.length() < (a.count + 1) * width) {
+        return CountResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED);
+    }
 
     for (size_t i = a.count + 1; i > 0; --i) {
         for (size_t j = b.count + 1; j > 0; --j) {
@@ -201,7 +218,8 @@ Result<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const ch
             hunks.add(false, a.starts[i], a.starts[i + 1], b.starts[j], b.starts[j + 1]);
             ++i;
             ++j;
-        } else if (j == b.count || (i < a.count && table[(i + 1) * width + j] >= table[i * width + j + 1])) {
+        } else if (j == b.count ||
+                   (i < a.count && table[(i + 1) * width + j] >= table[i * width + j + 1])) {
             hunks.add(true, a.starts[i], a.starts[i + 1], b.starts[j], b.starts[j]);
             ++i;
         } else {
@@ -216,15 +234,17 @@ Result<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const ch
     auto emit = [&](TextChange change, TextSource source, size_t start, size_t end) {
         if (end == start) { return true; }
         if (count == out.length()) { return false; }
-        out[count++] = TextSegment{change, source, static_cast<uint16_t>(start), static_cast<uint16_t>(end - start), 0};
+        out[count++] = TextSegment { change, source, static_cast<uint16_t>(start),
+                                     static_cast<uint16_t>(end - start), 0 };
         return true;
     };
     for (size_t index = 0; index < hunks.count; ++index) {
         const Hunk& hunk = hunks.items[index];
         bool fits = true;
         if (hunk.edit) {
-            fits = emit(TextChange::REMOVED, TextSource::BEFORE, hunk.before_start, hunk.before_end) &&
-                   emit(TextChange::ADDED, TextSource::AFTER, hunk.after_start, hunk.after_end);
+            fits =
+                emit(TextChange::REMOVED, TextSource::BEFORE, hunk.before_start, hunk.before_end) &&
+                emit(TextChange::ADDED, TextSource::AFTER, hunk.after_start, hunk.after_end);
         } else {
             fits = emit(TextChange::UNCHANGED, TextSource::AFTER, hunk.after_start, hunk.after_end);
         }

@@ -37,7 +37,10 @@ std::optional<ColumnPlan> planColumns(Session& session, KiottySpecItemKind kind)
     if (session.args.flag("tags")) {
         for (uint32_t index = 0; index < model.value.tag_count; ++index) {
             TagColumn tag {index, {}};
-            if (KiottySpec_readTagDefinition(session.context, kind, index, &tag.definition).code == KIOTTY_SPEC_STATUS_SUCCESS) { addTag(tag); }
+            if (KiottySpec_readTagDefinition(session.context, kind, index, &tag.definition).code ==
+                KIOTTY_SPEC_STATUS_SUCCESS) {
+                addTag(tag);
+            }
         }
     }
     std::vector<uint32_t> relations {};
@@ -47,18 +50,24 @@ std::optional<ColumnPlan> planColumns(Session& session, KiottySpecItemKind kind)
         relations.push_back(*relation);
     }
     if (session.args.flag("relations")) {
-        for (uint32_t index = 0; index < model.value.relation_count; ++index) { relations.push_back(index); }
+        for (uint32_t index = 0; index < model.value.relation_count; ++index) {
+            relations.push_back(index);
+        }
     }
     for (const uint32_t relation : relations) {
         Column column {};
-        column.header = KiottySpec_readRelationDefinition(session.context, kind, relation).value.name;
-        const KiottySpecCursorResult cursor = KiottySpec_openRelationCursorByModel(session.context, kind, relation);
+        column.header =
+            KiottySpec_readRelationDefinition(session.context, kind, relation).value.name;
+        const KiottySpecCursorResult cursor =
+            KiottySpec_openRelationCursorByModel(session.context, kind, relation);
         if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) {
             fail(session, cursor.code);
             return std::nullopt;
         }
         KiottySpecRelationPage page {};
-        while (KiottySpec_fetchRelationPage(session.context, cursor.value, &page).code == KIOTTY_SPEC_STATUS_SUCCESS && page.length > 0) {
+        while (KiottySpec_fetchRelationPage(session.context, cursor.value, &page).code ==
+                   KIOTTY_SPEC_STATUS_SUCCESS &&
+               page.length > 0) {
             for (size_t index = 0; index < page.length; ++index) {
                 std::string& targets = column.targets[itemId(session, page.elements[index].from)];
                 if (!targets.empty()) { targets += ','; }
@@ -82,14 +91,22 @@ void printItemHeader(const ColumnPlan* plan)
 
 void printItem(Session& session, const KiottySpecItem& item, const ColumnPlan* plan)
 {
-    std::vector<std::string> row = {item.id, kindName(item.kind), cell(item.title), cell(item.summary), checkpointName(item.checkpoint),
-                                    itemId(session, item.parent)};
+    std::vector<std::string> row = { item.id,
+                                     kindName(item.kind),
+                                     cell(item.title),
+                                     cell(item.summary),
+                                     checkpointName(item.checkpoint),
+                                     itemId(session, item.parent) };
     if (plan != nullptr) {
-        const KiottySpecItemHandleResult handle = KiottySpec_findItem(session.context, textOf(item.id));
+        const KiottySpecItemHandleResult handle =
+            KiottySpec_findItem(session.context, textOf(item.id));
         for (const Column& column : plan->columns) {
             if (column.is_tag) {
-                const KiottySpecTagResult tag = KiottySpec_readItemTag(session.context, handle.value, column.tag.index);
-                row.push_back(bitNames(column.tag.definition, tag.code == KIOTTY_SPEC_STATUS_SUCCESS ? tag.value.value : 0));
+                const KiottySpecTagResult tag =
+                    KiottySpec_readItemTag(session.context, handle.value, column.tag.index);
+                row.push_back(bitNames(column.tag.definition, tag.code == KIOTTY_SPEC_STATUS_SUCCESS
+                                                                  ? tag.value.value
+                                                                  : 0));
                 continue;
             }
             const auto found = column.targets.find(item.id);
@@ -105,10 +122,13 @@ int printItemCursor(Session& session, const KiottySpecCursorResult& cursor, cons
     printItemHeader(plan);
     KiottySpecItemPage page {};
     while (true) {
-        const KiottySpecStatusResult fetched = KiottySpec_fetchItemPage(session.context, cursor.value, &page);
+        const KiottySpecStatusResult fetched =
+            KiottySpec_fetchItemPage(session.context, cursor.value, &page);
         if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, fetched.code); }
         if (page.length == 0) { break; }
-        for (size_t index = 0; index < page.length; ++index) { printItem(session, page.elements[index], plan); }
+        for (size_t index = 0; index < page.length; ++index) {
+            printItem(session, page.elements[index], plan);
+        }
     }
     KiottySpec_closeCursor(session.context, cursor.value);
     return 0;

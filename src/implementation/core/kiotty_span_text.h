@@ -17,8 +17,12 @@ public:
 
     KiottySpecStatus append(Span<const char> text)
     {
-        if (_area.length() == 0 || text.length() > capacity() - _length) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-        for (size_t index = 0; index < text.length(); ++index) { _area[_length + index] = text[index]; }
+        if (_area.length() == 0 || text.length() > capacity() - _length) {
+            return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED;
+        }
+        for (size_t index = 0; index < text.length(); ++index) {
+            _area[_length + index] = text[index];
+        }
         _length += text.length();
         _area[_length] = '\0';
         return KIOTTY_SPEC_STATUS_SUCCESS;

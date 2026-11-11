@@ -12,7 +12,10 @@ using RecordResult = impl::Result<const entity::ItemRecord*, KiottySpecStatus>;
 RecordResult recordOf(impl::Context& context, KiottySpecItemHandle item)
 {
     const RecordResult record = context.workspace().items.reader().get(fromHandle(item));
-    if (!record) { return RecordResult::failure(context.failure().raise(record.code, KIOTTY_SPEC_SUBJECT_ITEM)); }
+    if (!record) {
+        return RecordResult::failure(
+            context.failure().raise(record.code, KIOTTY_SPEC_SUBJECT_ITEM));
+    }
     return record;
 }
 
@@ -20,7 +23,8 @@ RecordResult recordOf(impl::Context& context, KiottySpecItemHandle item)
 
 extern "C" {
 
-KiottySpecIdResult KiottySpec_createItem(KiottySpecContext* context, const KiottySpecItemDraft* draft)
+KiottySpecIdResult KiottySpec_createItem(KiottySpecContext* context,
+                                         const KiottySpecItemDraft* draft)
 {
     KiottySpecIdResult result {};
     result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
@@ -40,13 +44,15 @@ KiottySpecIdResult KiottySpec_createItem(KiottySpecContext* context, const Kiott
         result.code = summary.code;
         return result;
     }
-    const auto created = context->context.editor().createItem(static_cast<entity::ItemKind>(draft->kind), id.value, title.value, summary.value);
+    const auto created = context->context.editor().createItem(
+        static_cast<entity::ItemKind>(draft->kind), id.value, title.value, summary.value);
     result.code = created.code;
     if (created) { copyText(result.value, created.value); }
     return result;
 }
 
-KiottySpecStatusResult KiottySpec_renameItem(KiottySpecContext* context, KiottySpecText id, KiottySpecText new_id)
+KiottySpecStatusResult KiottySpec_renameItem(KiottySpecContext* context, KiottySpecText id,
+                                             KiottySpecText new_id)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     const TextResult current = parseId(context->context, id);
@@ -56,7 +62,8 @@ KiottySpecStatusResult KiottySpec_renameItem(KiottySpecContext* context, KiottyS
     return status(context->context.editor().renameItem(current.value, next.value));
 }
 
-KiottySpecItemResult KiottySpec_readItemByHandle(KiottySpecContext* context, KiottySpecItemHandle item)
+KiottySpecItemResult KiottySpec_readItemByHandle(KiottySpecContext* context,
+                                                 KiottySpecItemHandle item)
 {
     KiottySpecItemResult result {};
     if (context == nullptr) {
@@ -98,7 +105,8 @@ KiottySpecItemHandleResult KiottySpec_findItem(KiottySpecContext* context, Kiott
     return result;
 }
 
-KiottySpecStatusResult KiottySpec_updateItem(KiottySpecContext* context, KiottySpecText id, KiottySpecText title, KiottySpecText summary)
+KiottySpecStatusResult KiottySpec_updateItem(KiottySpecContext* context, KiottySpecText id,
+                                             KiottySpecText title, KiottySpecText summary)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     const TextResult parsed_id = parseId(context->context, id);
@@ -107,10 +115,12 @@ KiottySpecStatusResult KiottySpec_updateItem(KiottySpecContext* context, KiottyS
     if (!parsed_title) { return status(parsed_title.code); }
     const TextResult parsed_summary = parseSummary(context->context, summary);
     if (!parsed_summary) { return status(parsed_summary.code); }
-    return status(context->context.editor().updateItem(parsed_id.value, parsed_title.value, parsed_summary.value));
+    return status(context->context.editor().updateItem(parsed_id.value, parsed_title.value,
+                                                       parsed_summary.value));
 }
 
-KiottySpecStatusResult KiottySpec_setItemParent(KiottySpecContext* context, KiottySpecText id, KiottySpecText parent_id)
+KiottySpecStatusResult KiottySpec_setItemParent(KiottySpecContext* context, KiottySpecText id,
+                                                KiottySpecText parent_id)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     const TextResult child = parseId(context->context, id);
@@ -128,7 +138,8 @@ KiottySpecStatusResult KiottySpec_removeItem(KiottySpecContext* context, KiottyS
     return status(context->context.editor().removeItem(parsed.value));
 }
 
-KiottySpecStatusResult KiottySpec_writeItemBody(KiottySpecContext* context, KiottySpecText id, KiottySpecText text)
+KiottySpecStatusResult KiottySpec_writeItemBody(KiottySpecContext* context, KiottySpecText id,
+                                                KiottySpecText text)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     const TextResult parsed_id = parseId(context->context, id);
@@ -138,22 +149,26 @@ KiottySpecStatusResult KiottySpec_writeItemBody(KiottySpecContext* context, Kiot
     return status(context->context.editor().writeBody(parsed_id.value, body.value));
 }
 
-KiottySpecSizeResult KiottySpec_readItemBody(KiottySpecContext* context, KiottySpecText id, KiottySpecBuffer buffer)
+KiottySpecSizeResult KiottySpec_readItemBody(KiottySpecContext* context, KiottySpecText id,
+                                             KiottySpecBuffer buffer)
 {
     if (context == nullptr) { return sizeResult(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, 0); }
     const auto handle = resolve(context->context, id);
     if (!handle) { return sizeResult(handle.code, 0); }
-    const auto read = context->context.workspace().items.reader().readBody(handle.value, buffer.data, buffer.capacity);
+    const auto read = context->context.workspace().items.reader().readBody(
+        handle.value, buffer.data, buffer.capacity);
     return sizeResult(read.code, read.value);
 }
 
-KiottySpecStatusResult KiottySpec_setItemTag(KiottySpecContext* context, KiottySpecItemHandle item, uint32_t tag, uint64_t value)
+KiottySpecStatusResult KiottySpec_setItemTag(KiottySpecContext* context, KiottySpecItemHandle item,
+                                             uint32_t tag, uint64_t value)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     return status(context->context.editor().setTag(fromHandle(item), tag, value));
 }
 
-KiottySpecTagResult KiottySpec_readItemTag(KiottySpecContext* context, KiottySpecItemHandle item, uint32_t tag)
+KiottySpecTagResult KiottySpec_readItemTag(KiottySpecContext* context, KiottySpecItemHandle item,
+                                           uint32_t tag)
 {
     KiottySpecTagResult result {};
     if (context == nullptr) {
@@ -167,15 +182,18 @@ KiottySpecTagResult KiottySpec_readItemTag(KiottySpecContext* context, KiottySpe
         return result;
     }
     if (tag >= workspace.catalog.model(record.value->kind).tags.length()) {
-        result.code = context->context.failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_TAG, record.value->id.view());
+        result.code = context->context.failure().raise(
+            KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_TAG, record.value->id.view());
         return result;
     }
     result.code = KIOTTY_SPEC_STATUS_SUCCESS;
-    result.value = toTag(item, static_cast<KiottySpecItemKind>(record.value->kind), tag, workspace.items.tags().value(fromHandle(item), tag));
+    result.value = toTag(item, static_cast<KiottySpecItemKind>(record.value->kind), tag,
+                         workspace.items.tags().value(fromHandle(item), tag));
     return result;
 }
 
-KiottySpecCursorResult KiottySpec_openTagCursor(KiottySpecContext* context, KiottySpecItemHandle item)
+KiottySpecCursorResult KiottySpec_openTagCursor(KiottySpecContext* context,
+                                                KiottySpecItemHandle item)
 {
     if (context == nullptr) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     const RecordResult record = recordOf(context->context, item);
@@ -183,16 +201,20 @@ KiottySpecCursorResult KiottySpec_openTagCursor(KiottySpecContext* context, Kiot
     return cursorResult(context->context, context->context.finder().tags(fromHandle(item)));
 }
 
-KiottySpecStatusResult KiottySpec_fetchTagPage(KiottySpecContext* context, KiottySpecCursor cursor, KiottySpecTagPage* page)
+KiottySpecStatusResult KiottySpec_fetchTagPage(KiottySpecContext* context, KiottySpecCursor cursor,
+                                               KiottySpecTagPage* page)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     if (page == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     page->length = 0;
-    const auto rows = context->context.cursors().fetch(cursor, impl::CursorKind::TAG, KIOTTY_SPEC_PAGE_CAPACITY);
+    const auto rows =
+        context->context.cursors().fetch(cursor, impl::CursorKind::TAG, KIOTTY_SPEC_PAGE_CAPACITY);
     if (!rows) { return status(rows.code); }
     for (const impl::CursorRow& row : rows.value) {
         const size_t index = page->length;
-        page->elements[index] = toTag(row.first, static_cast<KiottySpecItemKind>(row.second & LOW_MASK), static_cast<uint32_t>(row.second >> SHIFT), row.third);
+        page->elements[index] =
+            toTag(row.first, static_cast<KiottySpecItemKind>(row.second & LOW_MASK),
+                  static_cast<uint32_t>(row.second >> SHIFT), row.third);
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);

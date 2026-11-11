@@ -19,11 +19,14 @@ using entity::RelationVersion;
 using entity::TagVersion;
 
 constexpr std::string_view META_HEADER = "TABLE\tmeta\tO/X\tkey\tvalue\n";
-constexpr std::string_view CHECKPOINT_HEADER = "TABLE\tcheckpoint\tO/X\tsequence\tprevious\tstep\tstate\tcreated_at\tdescription\n";
+constexpr std::string_view CHECKPOINT_HEADER =
+    "TABLE\tcheckpoint\tO/X\tsequence\tprevious\tstep\tstate\tcreated_at\tdescription\n";
 constexpr std::string_view ITEM_HEADER = "TABLE\titem\tO/X\tkey\tid\n";
-constexpr std::string_view ITEM_VERSION_HEADER = "TABLE\titem_version\tO/X\tkey\tcheckpoint\tkind\tparent\ttitle\tsummary\tbody\n";
+constexpr std::string_view ITEM_VERSION_HEADER =
+    "TABLE\titem_version\tO/X\tkey\tcheckpoint\tkind\tparent\ttitle\tsummary\tbody\n";
 constexpr std::string_view TAG_HEADER = "TABLE\ttag\tO/X\tkey\ttag\tcheckpoint\tvalue\n";
-constexpr std::string_view RELATION_HEADER = "TABLE\trelation\tO/X\tfrom\tmodel\trelation\tto\tcheckpoint\n";
+constexpr std::string_view RELATION_HEADER =
+    "TABLE\trelation\tO/X\tfrom\tmodel\trelation\tto\tcheckpoint\n";
 constexpr std::string_view DECISION_HEADER = "TABLE\tdecision\tO/X\tkind\tcheckpoint\ttext\n";
 constexpr std::string_view BODY_HEADER = "TABLE\tbody\tO/X\tkey\ttext\n";
 
@@ -94,7 +97,8 @@ KiottySpecStatus SpecWriter::write()
     return status;
 }
 
-KiottySpecStatus SpecWriter::writeHeader(std::string_view columns) { return _file.write(spanOf(columns)); }
+KiottySpecStatus SpecWriter::writeHeader(std::string_view columns)
+{ return _file.write(spanOf(columns)); }
 
 KispLineEncoder SpecWriter::startLine(std::string_view table, uint32_t removed)
 {
@@ -107,7 +111,10 @@ KispLineEncoder SpecWriter::startLine(std::string_view table, uint32_t removed)
 KiottySpecStatus SpecWriter::emit(KispLineEncoder& line)
 {
     const auto finished = line.finish();
-    if (!finished) { return _t.failure.raise(finished.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("work_buffer_bytes")); }
+    if (!finished) {
+        return _t.failure.raise(finished.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
+                                literalText("work_buffer_bytes"));
+    }
     return _file.write(finished.value);
 }
 
@@ -115,7 +122,8 @@ KiottySpecStatus SpecWriter::writeMeta()
 {
     KiottySpecStatus status = writeHeader(META_HEADER);
     const auto& entries = _t.meta.all();
-    for (size_t index = 0; index < entries.length() && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
+    for (size_t index = 0; index < entries.length() && status == KIOTTY_SPEC_STATUS_SUCCESS;
+         ++index) {
         KispLineEncoder line = startLine(META_TABLE, 0);
         line.add(entries.keyAt(index).view());
         line.add(entries.valueAt(index).view());
@@ -127,12 +135,17 @@ KiottySpecStatus SpecWriter::writeMeta()
 KiottySpecStatus SpecWriter::writeCheckpoints()
 {
     KiottySpecStatus status = writeHeader(CHECKPOINT_HEADER);
-    for (uint32_t sequence = 1; sequence <= _t.checkpoints.latest() && status == KIOTTY_SPEC_STATUS_SUCCESS; ++sequence) {
+    for (uint32_t sequence = 1;
+         sequence <= _t.checkpoints.latest() && status == KIOTTY_SPEC_STATUS_SUCCESS; ++sequence) {
         const CheckpointRecord* record = _t.checkpoints.at(sequence);
         if (record == nullptr) { continue; }
         KispLineEncoder line = startLine(CHECKPOINT_TABLE, 0);
         addDecimal(line, sequence);
-        if (record->previous.isValid()) { addDecimal(line, record->previous.sequence); } else { line.add(spanOf(NONE_MARKER)); }
+        if (record->previous.isValid()) {
+            addDecimal(line, record->previous.sequence);
+        } else {
+            line.add(spanOf(NONE_MARKER));
+        }
         addDecimal(line, static_cast<uint64_t>(record->step));
         line.add(spanOf(entity::stateName(record->state)));
         addDecimal(line, record->created_at > 0 ? static_cast<uint64_t>(record->created_at) : 0);
@@ -146,7 +159,8 @@ KiottySpecStatus SpecWriter::writeItems()
 {
     KiottySpecStatus status = writeHeader(ITEM_HEADER);
     const auto& names = _t.items.tables().names;
-    for (size_t index = 0; index < names.length() && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
+    for (size_t index = 0; index < names.length() && status == KIOTTY_SPEC_STATUS_SUCCESS;
+         ++index) {
         KispLineEncoder line = startLine(ITEM_TABLE, 0);
         addKey(line, names.keyAt(index));
         line.add(names.valueAt(index).view());
@@ -226,7 +240,8 @@ KiottySpecStatus SpecWriter::writeBodies()
 {
     KiottySpecStatus status = writeHeader(BODY_HEADER);
     const BodyStore& bodies = _t.items.tables().bodies;
-    for (size_t index = 0; index < bodies.length() && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
+    for (size_t index = 0; index < bodies.length() && status == KIOTTY_SPEC_STATUS_SUCCESS;
+         ++index) {
         KispLineEncoder line = startLine(BODY_TABLE, 0);
         addKey(line, bodies.keyAt(index));
         line.add(bodies.bodyAt(index));

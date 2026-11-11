@@ -30,7 +30,9 @@ Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record
     const KiottySpecStatus unused = checkUnused(record.id);
     if (unused != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(unused); }
     if (_t.id_index.length() == _t.id_index.capacity()) {
-        return HandleResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items")));
+        return HandleResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL,
+                                                    KIOTTY_SPEC_SUBJECT_CONFIGURATION,
+                                                    literalText("max_items")));
     }
     const auto key = newKey(record.id);
     if (!key) { return HandleResult::failure(key.code); }
@@ -43,7 +45,10 @@ Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record
     version.summary = record.summary;
     KiottySpecStatus status = _t.names.insert(key.value, record.id);
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _t.versions.write(version); }
-    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(_failure.raise(status, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items"))); }
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return HandleResult::failure(
+            _failure.raise(status, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items")));
+    }
     const ItemHandle handle = _t.items.acquire();
     if (!handle.isValid()) { return HandleResult::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL); }
     ItemRecord& stored = *_t.items.get(handle).value;
@@ -58,35 +63,50 @@ Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record
 
 KiottySpecStatus ItemWriter::checkUnused(IdText id)
 {
-    if (_t.id_index.find(id)) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_ID, id.view()); }
+    if (_t.id_index.find(id)) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_ID, id.view());
+    }
     const auto removed = ItemHistory(_t).keyOf(id.view());
-    if (removed) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_ID_IN_HISTORY, id.view()); }
+    if (removed) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_ID_IN_HISTORY,
+                              id.view());
+    }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 Result<uint32_t, KiottySpecStatus> ItemWriter::newKey(IdText id) const
 {
-    const uint64_t moment = static_cast<uint64_t>(nowEpochSeconds()) ^ (static_cast<uint64_t>(_t.names.length()) << KEY_SHIFT);
+    const uint64_t moment = static_cast<uint64_t>(nowEpochSeconds()) ^
+                            (static_cast<uint64_t>(_t.names.length()) << KEY_SHIFT);
     for (uint32_t attempt = 0; attempt < MAX_KEY_ATTEMPTS; ++attempt) {
         const uint64_t mixed = mix64(hash64(id.view(), moment + attempt));
         const uint32_t key = static_cast<uint32_t>(mixed ^ (mixed >> KEY_SHIFT));
-        if (key != entity::NO_KEY && !_t.names.find(key)) { return Result<uint32_t, KiottySpecStatus>::success(key); }
+        if (key != entity::NO_KEY && !_t.names.find(key)) {
+            return Result<uint32_t, KiottySpecStatus>::success(key);
+        }
     }
-    return Result<uint32_t, KiottySpecStatus>::failure(_failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_ID, id.view()));
+    return Result<uint32_t, KiottySpecStatus>::failure(
+        _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_ID, id.view()));
 }
 
 Result<ItemVersion, KiottySpecStatus> ItemWriter::currentVersion(ItemHandle handle) const
 {
-    if (!_t.items.get(handle)) { return Result<ItemVersion, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_HANDLE); }
+    if (!_t.items.get(handle)) {
+        return Result<ItemVersion, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_HANDLE);
+    }
     const ItemVersion* version = _t.versions.latest(_t.keys[handle.index], UINT32_MAX);
-    if (version == nullptr) { return Result<ItemVersion, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
+    if (version == nullptr) {
+        return Result<ItemVersion, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
+    }
     return Result<ItemVersion, KiottySpecStatus>::success(*version);
 }
 
 KiottySpecStatus ItemWriter::writeVersion(ItemHandle handle, const ItemVersion& version)
 {
     const KiottySpecStatus written = _t.versions.write(version);
-    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items")); }
+    if (written != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items"));
+    }
     _t.items.get(handle).value->checkpoint = CheckpointHandle{version.checkpoint, 0};
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
@@ -109,34 +129,46 @@ KiottySpecStatus ItemWriter::update(ItemHandle handle, const ItemRecord& record,
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-KiottySpecStatus ItemWriter::setTag(ItemHandle handle, uint32_t tag, uint64_t value, uint32_t sequence)
+KiottySpecStatus ItemWriter::setTag(ItemHandle handle, uint32_t tag, uint64_t value,
+                                    uint32_t sequence)
 {
     const auto stored = _t.items.get(handle);
     if (!stored) { return stored.code; }
     const bool adds = value != 0 && tags().value(handle, tag) == 0;
-    if (adds && _t.tag_count == _t.tags.size()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_tags")); }
+    if (adds && _t.tag_count == _t.tags.size()) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
+                              literalText("max_tags"));
+    }
     const TagVersion version {value, _t.keys[handle.index], tag, sequence, value == 0 ? 1u : 0u};
     const KiottySpecStatus written = _t.tag_versions.write(version);
-    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_tags")); }
+    if (written != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_tags"));
+    }
     stored.value->checkpoint = CheckpointHandle{sequence, 0};
     return applyTag(handle, stored.value->kind, tag, value);
 }
 
-KiottySpecStatus ItemWriter::applyTag(ItemHandle handle, ItemKind kind, uint32_t tag, uint64_t value)
+KiottySpecStatus ItemWriter::applyTag(ItemHandle handle, ItemKind kind, uint32_t tag,
+                                      uint64_t value)
 {
     const size_t position = tags().position(handle.index, tag);
-    const bool exists = position < _t.tag_count && _t.tags[position].item.index == handle.index && _t.tags[position].tag == tag;
+    const bool exists = position < _t.tag_count && _t.tags[position].item.index == handle.index &&
+                        _t.tags[position].tag == tag;
     if (exists && value != 0) {
         _t.tags[position].value = value;
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
     if (exists) {
-        for (size_t index = position + 1; index < _t.tag_count; ++index) { _t.tags[index - 1] = _t.tags[index]; }
+        for (size_t index = position + 1; index < _t.tag_count; ++index) {
+            _t.tags[index - 1] = _t.tags[index];
+        }
         --_t.tag_count;
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
     if (value == 0) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    for (size_t index = _t.tag_count; index > position; --index) { _t.tags[index] = _t.tags[index - 1]; }
+    for (size_t index = _t.tag_count; index > position; --index) {
+        _t.tags[index] = _t.tags[index - 1];
+    }
     _t.tags[position] = TagRecord{handle, kind, tag, value};
     ++_t.tag_count;
     return KIOTTY_SPEC_STATUS_SUCCESS;
@@ -147,7 +179,10 @@ KiottySpecStatus ItemWriter::writeBody(ItemHandle handle, Span<const char> body,
     auto version = currentVersion(handle);
     if (!version) { return version.code; }
     const KiottySpecStatus stored = _t.bodies.put(version.value.key, body);
-    if (stored != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(stored, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_body_bytes")); }
+    if (stored != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return _failure.raise(stored, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
+                              literalText("max_body_bytes"));
+    }
     version.value.checkpoint = sequence;
     version.value.body_hash = body.length() == 0 ? 0 : hash64(body);
     return writeVersion(handle, version.value);

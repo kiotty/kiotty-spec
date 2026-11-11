@@ -11,7 +11,9 @@ namespace kiotty::spec::implementation {
 class SpecWriter
 {
 public:
-    SpecWriter(const SpecTables& tables, KispFileWriter& file, Span<char> area) : _t(tables), _file(file), _area(area) {}
+    SpecWriter(const SpecTables& tables, KispFileWriter& file, Span<char> area)
+        : _t(tables), _file(file), _area(area)
+    {}
 
     KiottySpecStatus write();
 

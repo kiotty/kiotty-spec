@@ -23,7 +23,8 @@ uint64_t packHandle(ItemHandle handle)
 
 ItemHandle unpackHandle(uint64_t value)
 {
-    return ItemHandle{static_cast<uint32_t>(value & 0xFFFFFFFFu), static_cast<uint32_t>(value >> SHIFT)};
+    return ItemHandle { static_cast<uint32_t>(value & 0xFFFFFFFFu),
+                        static_cast<uint32_t>(value >> SHIFT) };
 }
 
 CursorIdResult Finder::items(uint32_t kind, Span<const TagQuery> queries)
@@ -37,7 +38,8 @@ CursorIdResult Finder::items(uint32_t kind, Span<const TagQuery> queries)
         if (kind != 0 && static_cast<uint32_t>(item.value->kind) != kind) { continue; }
         bool selected = true;
         for (const TagQuery& query : queries) {
-            if (query.kind != item.value->kind || (_w.items.tags().value(handle, query.tag) & query.mask) == 0) {
+            if (query.kind != item.value->kind ||
+                (_w.items.tags().value(handle, query.tag) & query.mask) == 0) {
                 selected = false;
                 break;
             }
@@ -46,7 +48,9 @@ CursorIdResult Finder::items(uint32_t kind, Span<const TagQuery> queries)
         CursorRow row {};
         row.first = packHandle(handle);
         const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
-        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return closeWith(_cursors, cursor.value, pushed); }
+        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) {
+            return closeWith(_cursors, cursor.value, pushed);
+        }
     }
     return cursor;
 }
@@ -58,11 +62,15 @@ CursorIdResult Finder::children(ItemHandle parent)
     for (size_t position = 0; position < _w.items.reader().count(); ++position) {
         const ItemHandle handle = _w.items.reader().handleInIdOrder(position);
         const auto item = _w.items.reader().get(handle);
-        if (!item || !item.value->parent.isValid() || item.value->parent.index != parent.index) { continue; }
+        if (!item || !item.value->parent.isValid() || item.value->parent.index != parent.index) {
+            continue;
+        }
         CursorRow row {};
         row.first = packHandle(handle);
         const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
-        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return closeWith(_cursors, cursor.value, pushed); }
+        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) {
+            return closeWith(_cursors, cursor.value, pushed);
+        }
     }
     return cursor;
 }
@@ -81,7 +89,9 @@ CursorIdResult Finder::impact(ItemHandle item, uint32_t depth)
         while (head < level_end) {
             const uint32_t current = _queue[head++];
             for (const RelationRecord& relation : _w.relations.all()) {
-                if (relation.to.index != current || _visited[relation.from.index] != 0) { continue; }
+                if (relation.to.index != current || _visited[relation.from.index] != 0) {
+                    continue;
+                }
                 _visited[relation.from.index] = 1;
                 _queue[tail++] = relation.from.index;
             }
@@ -93,7 +103,9 @@ CursorIdResult Finder::impact(ItemHandle item, uint32_t depth)
         CursorRow row {};
         row.first = packHandle(handle);
         const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
-        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return closeWith(_cursors, cursor.value, pushed); }
+        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) {
+            return closeWith(_cursors, cursor.value, pushed);
+        }
     }
     return cursor;
 }
@@ -102,16 +114,24 @@ CursorIdResult Finder::relations(ItemHandle item, KiottySpecDirection direction)
 {
     const auto cursor = _cursors.open(CursorKind::RELATION);
     if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
-    const bool up = direction == KIOTTY_SPEC_DIRECTION_UPSTREAM || direction == KIOTTY_SPEC_DIRECTION_BOTH;
-    const bool down = direction == KIOTTY_SPEC_DIRECTION_DOWNSTREAM || direction == KIOTTY_SPEC_DIRECTION_BOTH;
+    const bool up =
+        direction == KIOTTY_SPEC_DIRECTION_UPSTREAM || direction == KIOTTY_SPEC_DIRECTION_BOTH;
+    const bool down =
+        direction == KIOTTY_SPEC_DIRECTION_DOWNSTREAM || direction == KIOTTY_SPEC_DIRECTION_BOTH;
     for (const RelationRecord& relation : _w.relations.all()) {
-        if (!((up && relation.from.index == item.index) || (down && relation.to.index == item.index))) { continue; }
+        if (!((up && relation.from.index == item.index) ||
+              (down && relation.to.index == item.index))) {
+            continue;
+        }
         CursorRow row {};
         row.first = packHandle(relation.from);
         row.second = packHandle(relation.to);
-        row.third = static_cast<uint64_t>(relation.model) | (static_cast<uint64_t>(relation.relation) << SHIFT);
+        row.third = static_cast<uint64_t>(relation.model) |
+                    (static_cast<uint64_t>(relation.relation) << SHIFT);
         const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
-        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return closeWith(_cursors, cursor.value, pushed); }
+        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) {
+            return closeWith(_cursors, cursor.value, pushed);
+        }
     }
     return cursor;
 }
@@ -123,13 +143,19 @@ CursorIdResult Finder::relationsByModel(ItemKind kind, uint32_t relation_index)
     for (size_t position = 0; position < _w.items.reader().count(); ++position) {
         const ItemHandle from = _w.items.reader().handleInIdOrder(position);
         for (const RelationRecord& relation : _w.relations.all()) {
-            if (relation.from.index != from.index || relation.model != kind || relation.relation != relation_index) { continue; }
+            if (relation.from.index != from.index || relation.model != kind ||
+                relation.relation != relation_index) {
+                continue;
+            }
             CursorRow row {};
             row.first = packHandle(relation.from);
             row.second = packHandle(relation.to);
-            row.third = static_cast<uint64_t>(relation.model) | (static_cast<uint64_t>(relation.relation) << SHIFT);
+            row.third = static_cast<uint64_t>(relation.model) |
+                        (static_cast<uint64_t>(relation.relation) << SHIFT);
             const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
-            if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return closeWith(_cursors, cursor.value, pushed); }
+            if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) {
+                return closeWith(_cursors, cursor.value, pushed);
+            }
         }
     }
     return cursor;
@@ -145,7 +171,9 @@ CursorIdResult Finder::tags(ItemHandle item)
         row.second = static_cast<uint64_t>(tag.model) | (static_cast<uint64_t>(tag.tag) << SHIFT);
         row.third = tag.value;
         const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
-        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return closeWith(_cursors, cursor.value, pushed); }
+        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) {
+            return closeWith(_cursors, cursor.value, pushed);
+        }
     }
     return cursor;
 }

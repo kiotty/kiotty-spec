@@ -44,7 +44,10 @@ struct Workspace {
     Result<entity::ItemHandle, KiottySpecStatus> resolve(Span<const char> id)
     {
         const auto found = items.reader().find(id);
-        if (!found) { return Result<entity::ItemHandle, KiottySpecStatus>::failure(failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_ITEM, id)); }
+        if (!found) {
+            return Result<entity::ItemHandle, KiottySpecStatus>::failure(
+                failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_ITEM, id));
+        }
         return found;
     }
 };

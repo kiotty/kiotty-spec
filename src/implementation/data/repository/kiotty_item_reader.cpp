@@ -11,16 +11,22 @@ using entity::ItemRecord;
 Result<ItemHandle, KiottySpecStatus> ItemReader::find(Span<const char> id) const
 {
     IdText key {};
-    if (key.assign(id) != KIOTTY_SPEC_STATUS_SUCCESS) { return Result<ItemHandle, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
+    if (key.assign(id) != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return Result<ItemHandle, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
+    }
     const auto index = _t.id_index.find(key);
-    if (!index) { return Result<ItemHandle, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
+    if (!index) {
+        return Result<ItemHandle, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
+    }
     return Result<ItemHandle, KiottySpecStatus>::success(_t.items.handleAt(index.value));
 }
 
 Result<ItemHandle, KiottySpecStatus> ItemReader::findKey(uint32_t key) const
 {
     const auto index = _t.key_index.find(key);
-    if (!index) { return Result<ItemHandle, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
+    if (!index) {
+        return Result<ItemHandle, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
+    }
     return Result<ItemHandle, KiottySpecStatus>::success(_t.items.handleAt(index.value));
 }
 
@@ -37,9 +43,12 @@ uint32_t ItemReader::key(ItemHandle handle) const
     return _t.keys[handle.index];
 }
 
-Result<size_t, KiottySpecStatus> ItemReader::readBody(ItemHandle handle, char* buffer, size_t capacity) const
+Result<size_t, KiottySpecStatus> ItemReader::readBody(ItemHandle handle, char* buffer,
+                                                      size_t capacity) const
 {
-    if (!_t.items.get(handle)) { return Result<size_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_HANDLE); }
+    if (!_t.items.get(handle)) {
+        return Result<size_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_HANDLE);
+    }
     return copyBody(_t.bodies.find(_t.keys[handle.index]), buffer, capacity);
 }
 

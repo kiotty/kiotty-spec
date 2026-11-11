@@ -21,7 +21,9 @@ struct TextPiece {
 class TextDiffer
 {
 public:
-    TextDiffer(Workspace& workspace, CursorPool& cursors, TextBuffer& work) : _w(workspace), _cursors(cursors), _work(work) {}
+    TextDiffer(Workspace& workspace, CursorPool& cursors, TextBuffer& work)
+        : _w(workspace), _cursors(cursors), _work(work)
+    {}
 
     CursorIdResult open(entity::ItemHandle item, uint32_t field, DiffRange range);
     Result<TextPiece, KiottySpecStatus> next(CursorId cursor);

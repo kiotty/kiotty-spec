@@ -42,7 +42,8 @@ std::string findRoot(const Arguments& args)
     return pathToUtf8(current);
 }
 
-std::string databasePath(const std::string& root) { return pathToUtf8(std::filesystem::u8path(root) / ".kiotty" / "spec.kisp"); }
+std::string databasePath(const std::string& root)
+{ return pathToUtf8(std::filesystem::u8path(root) / ".kiotty" / "spec.kisp"); }
 
 KiottySpecActor findActor(const Arguments& args)
 {
@@ -53,14 +54,17 @@ KiottySpecActor findActor(const Arguments& args)
 void printHelp()
 {
     std::cout << "사용법: ks <그룹> [동사] [인자...] [--root DIR] [--actor ai|user]\n"
-                 "출력은 TSV 이며 첫 줄이 머리글이다. 쓰기 명령은 성공하면 아무것도 찍지 않는다 (만든 ID 는 찍는다).\n"
-                 "Kind: change_request requirement rule external_interface design unit_test_plan milestone unit_test_result\n"
-                 "      system_test_plan system_test_result code_inspection_result e2e_test_plan e2e_test_result\n"
+                 "출력은 TSV 이며 첫 줄이 머리글이다. 쓰기 명령은 성공하면 아무것도 찍지 않는다 "
+                 "(만든 ID 는 찍는다).\n"
+                 "Kind: change_request requirement rule external_interface design unit_test_plan "
+                 "milestone unit_test_result\n"
+                 "      system_test_plan system_test_result code_inspection_result e2e_test_plan "
+                 "e2e_test_result\n"
                  "      한글 모델 이름도 받는다 (`ks model` 의 name 열).\n"
                  "DB: <루트>/.kiotty/spec.kisp\n\n";
     for (const CommandEntry& command : commands()) {
-        std::cout << "  ks " << command.group << (command.verb[0] != '\0' ? " " : "") << command.verb << " " << command.usage << "\n      "
-                  << command.summary << "\n";
+        std::cout << "  ks " << command.group << (command.verb[0] != '\0' ? " " : "")
+                  << command.verb << " " << command.usage << "\n      " << command.summary << "\n";
     }
 }
 
@@ -88,13 +92,17 @@ int run(const std::vector<std::string>& tokens)
     }
     size_t consumed = 0;
     const CommandEntry* command = findCommand(tokens, consumed);
-    if (command == nullptr) { return usage("알 수 없는 명령 '" + tokens[0] + (tokens.size() > 1 ? " " + tokens[1] : "") + "'. `ks help` 참고"); }
+    if (command == nullptr) {
+        return usage("알 수 없는 명령 '" + tokens[0] + (tokens.size() > 1 ? " " + tokens[1] : "") +
+                     "'. `ks help` 참고");
+    }
     Session session {};
     const bool diff = std::string_view(command->group) == "diff";
-    session.args = parseArguments(tokens, consumed, diff ? DIFF_FLAGS : std::vector<std::string_view>());
+    session.args =
+        parseArguments(tokens, consumed, diff ? DIFF_FLAGS : std::vector<std::string_view>());
     if (session.args.flag("help")) {
-        std::cout << "ks " << command->group << (command->verb[0] != '\0' ? " " : "") << command->verb << " " << command->usage << "\n  "
-                  << command->summary << "\n";
+        std::cout << "ks " << command->group << (command->verb[0] != '\0' ? " " : "")
+                  << command->verb << " " << command->usage << "\n  " << command->summary << "\n";
         return 0;
     }
     session.actor = findActor(session.args);
@@ -102,8 +110,11 @@ int run(const std::vector<std::string>& tokens)
     KiottySpecConfiguration configuration {};
     const KiottySpecContextResult created = KiottySpec_createContext(&configuration);
     session.context = created.value;
-    const KiottySpecStatus opened = created.code == KIOTTY_SPEC_STATUS_SUCCESS ? KiottySpec_open(session.context, textOf(database)).code : created.code;
-    const int code = opened != KIOTTY_SPEC_STATUS_SUCCESS ? fail(session, opened) : command->run(session);
+    const KiottySpecStatus opened = created.code == KIOTTY_SPEC_STATUS_SUCCESS
+                                        ? KiottySpec_open(session.context, textOf(database)).code
+                                        : created.code;
+    const int code =
+        opened != KIOTTY_SPEC_STATUS_SUCCESS ? fail(session, opened) : command->run(session);
     KiottySpec_releaseContext(session.context);
     return code;
 }
@@ -117,7 +128,8 @@ int wmain(int argc, wchar_t** argv)
     SetConsoleCP(CP_UTF8);
     std::vector<std::string> tokens {};
     for (int index = 1; index < argc; ++index) {
-        const int size = WideCharToMultiByte(CP_UTF8, 0, argv[index], -1, nullptr, 0, nullptr, nullptr);
+        const int size =
+            WideCharToMultiByte(CP_UTF8, 0, argv[index], -1, nullptr, 0, nullptr, nullptr);
         std::string token(static_cast<size_t>(size > 0 ? size - 1 : 0), '\0');
         WideCharToMultiByte(CP_UTF8, 0, argv[index], -1, token.data(), size, nullptr, nullptr);
         tokens.push_back(std::move(token));

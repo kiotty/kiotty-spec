@@ -45,12 +45,15 @@ void BodyStore::compact()
     for (size_t index = 0; index < count; ++index) { _order[index] = static_cast<uint32_t>(index); }
     const FixedMap<uint32_t, BodySlice>& slices = _slices;
     std::sort(_order.begin(), _order.begin() + static_cast<std::ptrdiff_t>(count),
-              [&slices](uint32_t left, uint32_t right) { return slices.valueAt(left).offset < slices.valueAt(right).offset; });
+              [&slices](uint32_t left, uint32_t right) {
+                  return slices.valueAt(left).offset < slices.valueAt(right).offset;
+              });
     size_t used = 0;
     for (size_t position = 0; position < count; ++position) {
         BodySlice& slice = _slices.valueAt(_order[position]);
         const auto first = _bytes.begin() + static_cast<std::ptrdiff_t>(slice.offset);
-        std::copy(first, first + static_cast<std::ptrdiff_t>(slice.length), _bytes.begin() + static_cast<std::ptrdiff_t>(used));
+        std::copy(first, first + static_cast<std::ptrdiff_t>(slice.length),
+                  _bytes.begin() + static_cast<std::ptrdiff_t>(used));
         slice.offset = used;
         used += slice.length;
     }
@@ -60,7 +63,9 @@ void BodyStore::compact()
 Result<size_t, KiottySpecStatus> copyBody(Span<const char> body, char* buffer, size_t capacity)
 {
     using SizeResult = Result<size_t, KiottySpecStatus>;
-    if (buffer == nullptr || capacity <= body.length()) { return SizeResult{KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, body.length() + 1}; }
+    if (buffer == nullptr || capacity <= body.length()) {
+        return SizeResult { KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, body.length() + 1 };
+    }
     std::copy(body.begin(), body.end(), buffer);
     buffer[body.length()] = '\0';
     return SizeResult::success(body.length());

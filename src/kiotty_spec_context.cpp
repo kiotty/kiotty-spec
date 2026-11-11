@@ -62,7 +62,8 @@ KiottySpecStatusResult KiottySpec_open(KiottySpecContext* context, KiottySpecTex
     return status(context->context.open(parsed.value));
 }
 
-void KiottySpec_releaseContext(KiottySpecContext* context) { const std::unique_ptr<KiottySpecContext> owner(context); }
+void KiottySpec_releaseContext(KiottySpecContext* context)
+{ const std::unique_ptr<KiottySpecContext> owner(context); }
 
 KiottySpecErrorResult KiottySpec_readLastError(KiottySpecContext* context)
 {
@@ -80,7 +81,8 @@ KiottySpecErrorResult KiottySpec_readLastError(KiottySpecContext* context)
     return result;
 }
 
-KiottySpecStatusResult KiottySpec_initializeProject(KiottySpecContext* context, KiottySpecText project_name)
+KiottySpecStatusResult KiottySpec_initializeProject(KiottySpecContext* context,
+                                                    KiottySpecText project_name)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     const TextResult parsed = parseProjectName(context->context, project_name);
@@ -88,9 +90,11 @@ KiottySpecStatusResult KiottySpec_initializeProject(KiottySpecContext* context, 
     return status(context->context.init(parsed.value));
 }
 
-KiottySpecNameResult KiottySpec_formatStatus(KiottySpecStatus status_code) { return nameResult(statusText(status_code)); }
+KiottySpecNameResult KiottySpec_formatStatus(KiottySpecStatus status_code)
+{ return nameResult(statusText(status_code)); }
 
-KiottySpecNameResult KiottySpec_formatKind(KiottySpecItemKind kind) { return nameResult(entity::kindName(static_cast<entity::ItemKind>(kind))); }
+KiottySpecNameResult KiottySpec_formatKind(KiottySpecItemKind kind)
+{ return nameResult(entity::kindName(static_cast<entity::ItemKind>(kind))); }
 
 KiottySpecItemKind KiottySpec_parseKind(KiottySpecText name)
 {

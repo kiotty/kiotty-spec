@@ -21,7 +21,8 @@ Span<const char> literalText(const char (&text)[Length])
     return Span<const char>(text, Length - 1);
 }
 
-inline Span<const char> spanOf(std::string_view text) { return Span<const char>(text.data(), text.size()); }
+inline Span<const char> spanOf(std::string_view text)
+{ return Span<const char>(text.data(), text.size()); }
 
 inline std::string_view viewOf(Span<const char> text)
 {

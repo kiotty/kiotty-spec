@@ -25,7 +25,8 @@ struct RelationDiffRow {
 class RelationDiffQuery
 {
 public:
-    RelationDiffQuery(ItemStore& items, RelationStore& relations, DiffRange range, uint32_t kind_mask)
+    RelationDiffQuery(ItemStore& items, RelationStore& relations, DiffRange range,
+                      uint32_t kind_mask)
         : _items(items), _relations(relations), _range(range), _kind_mask(kind_mask)
     {
     }

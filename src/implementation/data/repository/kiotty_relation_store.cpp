@@ -21,7 +21,8 @@ bool lessRelation(const RelationRecord& left, const RelationRecord& right)
 
 bool sameRelation(const RelationRecord& left, const RelationRecord& right)
 {
-    return left.from.index == right.from.index && left.relation == right.relation && left.to.index == right.to.index;
+    return left.from.index == right.from.index && left.relation == right.relation &&
+           left.to.index == right.to.index;
 }
 
 }
@@ -32,16 +33,21 @@ KiottySpecStatus RelationStore::rebuild()
     const Span<const RelationVersion> versions = _versions.all();
     for (size_t index = 0; index < versions.length(); ++index) {
         const RelationVersion& version = versions[index];
-        const bool last = index + 1 == versions.length() || !(versions[index + 1].identity() == version.identity());
+        const bool last = index + 1 == versions.length() ||
+                          !(versions[index + 1].identity() == version.identity());
         if (!last || version.removed != 0) { continue; }
         const auto from = _items.reader().findKey(version.from);
         const auto to = _items.reader().findKey(version.to);
         if (!from || !to) { continue; }
-        if (_length == _records.size()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_relations")); }
+        if (_length == _records.size()) {
+            return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL,
+                                  KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_relations"));
+        }
         _records[_length] = RelationRecord{from.value, to.value, version.model, version.relation};
         ++_length;
     }
-    std::sort(_records.begin(), _records.begin() + static_cast<std::ptrdiff_t>(_length), lessRelation);
+    std::sort(_records.begin(), _records.begin() + static_cast<std::ptrdiff_t>(_length),
+              lessRelation);
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
@@ -50,22 +56,26 @@ Span<const uint32_t> RelationStore::relationsInDiffOrder()
     const Span<const RelationVersion> versions = _versions.all();
     size_t count = 0;
     for (size_t index = 0; index < versions.length(); ++index) {
-        const bool first = index == 0 || !(versions[index - 1].identity() == versions[index].identity());
+        const bool first =
+            index == 0 || !(versions[index - 1].identity() == versions[index].identity());
         if (!first) { continue; }
         _order[count] = static_cast<uint32_t>(index);
         ++count;
     }
     const ItemTables& tables = _items.tables();
-    std::sort(_order.begin(), _order.begin() + static_cast<std::ptrdiff_t>(count), [&tables, versions](uint32_t left, uint32_t right) {
-        const RelationVersion& a = versions[left];
-        const RelationVersion& b = versions[right];
-        if (a.model != b.model) { return static_cast<uint32_t>(a.model) < static_cast<uint32_t>(b.model); }
-        const auto a_from = tables.names.find(a.from).value;
-        const auto b_from = tables.names.find(b.from).value;
-        if (!(a_from == b_from)) { return a_from < b_from; }
-        if (a.relation != b.relation) { return a.relation < b.relation; }
-        return tables.names.find(a.to).value < tables.names.find(b.to).value;
-    });
+    std::sort(_order.begin(), _order.begin() + static_cast<std::ptrdiff_t>(count),
+              [&tables, versions](uint32_t left, uint32_t right) {
+                  const RelationVersion& a = versions[left];
+                  const RelationVersion& b = versions[right];
+                  if (a.model != b.model) {
+                      return static_cast<uint32_t>(a.model) < static_cast<uint32_t>(b.model);
+                  }
+                  const auto a_from = tables.names.find(a.from).value;
+                  const auto b_from = tables.names.find(b.from).value;
+                  if (!(a_from == b_from)) { return a_from < b_from; }
+                  if (a.relation != b.relation) { return a.relation < b.relation; }
+                  return tables.names.find(a.to).value < tables.names.find(b.to).value;
+              });
     return Span<const uint32_t>(_order.data(), count);
 }
 
@@ -86,25 +96,38 @@ bool RelationStore::contains(const RelationRecord& relation) const
     return position < _length && sameRelation(_records[position], relation);
 }
 
-KiottySpecStatus RelationStore::writeVersion(const RelationRecord& relation, uint32_t removed, uint32_t sequence)
+KiottySpecStatus RelationStore::writeVersion(const RelationRecord& relation, uint32_t removed,
+                                             uint32_t sequence)
 {
     const uint32_t from = _items.reader().key(relation.from);
     const uint32_t to = _items.reader().key(relation.to);
-    if (from == entity::NO_KEY || to == entity::NO_KEY) { return KIOTTY_SPEC_STATUS_INVALID_HANDLE; }
+    if (from == entity::NO_KEY || to == entity::NO_KEY) {
+        return KIOTTY_SPEC_STATUS_INVALID_HANDLE;
+    }
     const RelationVersion version {from, relation.relation, to, sequence, removed, relation.model};
     const KiottySpecStatus written = _versions.write(version);
-    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_relations")); }
+    if (written != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
+                              literalText("max_relations"));
+    }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 KiottySpecStatus RelationStore::add(const RelationRecord& relation, uint32_t sequence)
 {
     const size_t position = lowerBound(relation);
-    if (position < _length && sameRelation(_records[position], relation)) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_RELATION); }
-    if (_length == _records.size()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_relations")); }
+    if (position < _length && sameRelation(_records[position], relation)) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_RELATION);
+    }
+    if (_length == _records.size()) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
+                              literalText("max_relations"));
+    }
     const KiottySpecStatus written = writeVersion(relation, 0, sequence);
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
-    for (size_t index = _length; index > position; --index) { _records[index] = _records[index - 1]; }
+    for (size_t index = _length; index > position; --index) {
+        _records[index] = _records[index - 1];
+    }
     _records[position] = relation;
     ++_length;
     return KIOTTY_SPEC_STATUS_SUCCESS;
@@ -113,10 +136,14 @@ KiottySpecStatus RelationStore::add(const RelationRecord& relation, uint32_t seq
 KiottySpecStatus RelationStore::remove(const RelationRecord& relation, uint32_t sequence)
 {
     const size_t position = lowerBound(relation);
-    if (position == _length || !sameRelation(_records[position], relation)) { return _failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_RELATION); }
+    if (position == _length || !sameRelation(_records[position], relation)) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_RELATION);
+    }
     const KiottySpecStatus written = writeVersion(_records[position], 1, sequence);
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
-    for (size_t index = position + 1; index < _length; ++index) { _records[index - 1] = _records[index]; }
+    for (size_t index = position + 1; index < _length; ++index) {
+        _records[index - 1] = _records[index];
+    }
     --_length;
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }

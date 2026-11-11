@@ -35,7 +35,8 @@ public:
 
 private:
     bool decode(uint32_t key);
-    uint32_t changedFields(uint32_t key, const entity::ItemVersion& before, const entity::ItemVersion& after) const;
+    uint32_t changedFields(uint32_t key, const entity::ItemVersion& before,
+                           const entity::ItemVersion& after) const;
 
     ItemStore& _items;
     DiffRange _range;

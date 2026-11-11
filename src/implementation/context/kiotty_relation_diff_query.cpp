@@ -8,7 +8,8 @@ using entity::RelationVersion;
 
 constexpr uint32_t MAX_KIND_BIT = 32;
 
-bool inMask(uint32_t mask, uint32_t kind) { return mask == 0 || (kind >= 1 && kind <= MAX_KIND_BIT && (mask & (1u << (kind - 1))) != 0); }
+bool inMask(uint32_t mask, uint32_t kind)
+{ return mask == 0 || (kind >= 1 && kind <= MAX_KIND_BIT && (mask & (1u << (kind - 1))) != 0); }
 
 bool isLive(const RelationVersion* version) { return version != nullptr && version->removed == 0; }
 

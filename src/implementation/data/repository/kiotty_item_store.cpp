@@ -52,24 +52,33 @@ size_t ItemStore::collectLatest()
     const Span<const ItemVersion> versions = _t.versions.all();
     size_t count = 0;
     for (size_t index = 0; index < versions.length(); ++index) {
-        const bool last = index + 1 == versions.length() || versions[index + 1].key != versions[index].key;
+        const bool last =
+            index + 1 == versions.length() || versions[index + 1].key != versions[index].key;
         if (!last || versions[index].removed != 0) { continue; }
         _t.order[count] = static_cast<uint32_t>(index);
         ++count;
     }
     const ItemTables& tables = _t;
-    std::sort(_t.order.begin(), _t.order.begin() + static_cast<std::ptrdiff_t>(count), [&tables, versions](uint32_t left, uint32_t right) {
-        return tables.names.find(versions[left].key).value < tables.names.find(versions[right].key).value;
-    });
+    std::sort(_t.order.begin(), _t.order.begin() + static_cast<std::ptrdiff_t>(count),
+              [&tables, versions](uint32_t left, uint32_t right) {
+                  return tables.names.find(versions[left].key).value <
+                         tables.names.find(versions[right].key).value;
+              });
     return count;
 }
 
 KiottySpecStatus ItemStore::place(const ItemVersion& version)
 {
     const auto id = _t.names.find(version.key);
-    if (!id) { return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_FILE_LINE, literalText("item_version")); }
+    if (!id) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_FILE_LINE,
+                              literalText("item_version"));
+    }
     const ItemHandle handle = _t.items.acquire();
-    if (!handle.isValid()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items")); }
+    if (!handle.isValid()) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
+                              literalText("max_items"));
+    }
     ItemRecord& record = *_t.items.get(handle).value;
     record = ItemRecord{};
     record.checkpoint = CheckpointHandle{version.checkpoint, 0};
@@ -82,7 +91,10 @@ KiottySpecStatus ItemStore::place(const ItemVersion& version)
     _t.parents[handle.index] = version.parent;
     _t.key_index.insert(version.key, handle.index);
     const KiottySpecStatus indexed = _t.id_index.insert(record.id, handle.index);
-    if (indexed != KIOTTY_SPEC_STATUS_SUCCESS) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE, record.id.view()); }
+    if (indexed != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE,
+                              record.id.view());
+    }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
@@ -101,18 +113,27 @@ KiottySpecStatus ItemStore::loadTags()
     const Span<const TagVersion> versions = _t.tag_versions.all();
     for (size_t index = 0; index < versions.length(); ++index) {
         const TagVersion& tag = versions[index];
-        const bool last = index + 1 == versions.length() || !(versions[index + 1].identity() == tag.identity());
-        const auto position = last ? _t.key_index.find(tag.key) : Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
+        const bool last =
+            index + 1 == versions.length() || !(versions[index + 1].identity() == tag.identity());
+        const auto position =
+            last ? _t.key_index.find(tag.key)
+                 : Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
         if (!position) { continue; }
         const ItemHandle handle = _t.items.handleAt(position.value);
         ItemRecord& record = *_t.items.get(handle).value;
-        if (tag.checkpoint > record.checkpoint.sequence) { record.checkpoint = CheckpointHandle{tag.checkpoint, 0}; }
+        if (tag.checkpoint > record.checkpoint.sequence) {
+            record.checkpoint = CheckpointHandle { tag.checkpoint, 0 };
+        }
         if (tag.removed != 0 || tag.value == 0) { continue; }
-        if (_t.tag_count == _t.tags.size()) { return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_tags")); }
+        if (_t.tag_count == _t.tags.size()) {
+            return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL,
+                                  KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_tags"));
+        }
         _t.tags[_t.tag_count] = TagRecord{handle, record.kind, tag.tag, tag.value};
         ++_t.tag_count;
     }
-    std::sort(_t.tags.begin(), _t.tags.begin() + static_cast<std::ptrdiff_t>(_t.tag_count), lessTag);
+    std::sort(_t.tags.begin(), _t.tags.begin() + static_cast<std::ptrdiff_t>(_t.tag_count),
+              lessTag);
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 

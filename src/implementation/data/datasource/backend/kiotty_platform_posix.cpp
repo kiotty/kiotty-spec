@@ -21,7 +21,8 @@ constexpr mode_t DIRECTORY_MODE = 0777;
 bool statOf(Span<const char> path, struct stat& status)
 {
     SystemPath terminated {};
-    return terminated.assign(path) == KIOTTY_SPEC_STATUS_SUCCESS && ::stat(terminated.c_str(), &status) == 0;
+    return terminated.assign(path) == KIOTTY_SPEC_STATUS_SUCCESS &&
+           ::stat(terminated.c_str(), &status) == 0;
 }
 
 }
@@ -39,7 +40,9 @@ SystemPathResult absolutePath(Span<const char> path)
 {
     if (rootLength(path) > 0) { return joinPath(path, Span<const char>()); }
     char current[MAX_SYSTEM_PATH_LENGTH + 1] {};
-    if (::getcwd(current, MAX_SYSTEM_PATH_LENGTH) == nullptr) { return SystemPathResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT); }
+    if (::getcwd(current, MAX_SYSTEM_PATH_LENGTH) == nullptr) {
+        return SystemPathResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT);
+    }
     return joinPath(boundedText(current, MAX_SYSTEM_PATH_LENGTH), path);
 }
 
@@ -51,9 +54,11 @@ int openFile(Span<const char> path, OpenMode mode)
     return ::open(terminated.c_str(), flags, FILE_MODE);
 }
 
-int readSome(int descriptor, char* buffer, size_t length) { return static_cast<int>(::read(descriptor, buffer, length)); }
+int readSome(int descriptor, char* buffer, size_t length)
+{ return static_cast<int>(::read(descriptor, buffer, length)); }
 
-int writeSome(int descriptor, const char* buffer, size_t length) { return static_cast<int>(::write(descriptor, buffer, length)); }
+int writeSome(int descriptor, const char* buffer, size_t length)
+{ return static_cast<int>(::write(descriptor, buffer, length)); }
 
 void closeFile(int descriptor) { ::close(descriptor); }
 
@@ -79,16 +84,23 @@ bool isFile(Span<const char> path)
 KiottySpecStatus removeFile(Span<const char> path)
 {
     SystemPath terminated {};
-    if (terminated.assign(path) != KIOTTY_SPEC_STATUS_SUCCESS) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-    return ::remove(terminated.c_str()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+    if (terminated.assign(path) != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED;
+    }
+    return ::remove(terminated.c_str()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS
+                                             : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 }
 
 KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
 {
     SystemPath source {};
     SystemPath target {};
-    if (source.assign(from) != KIOTTY_SPEC_STATUS_SUCCESS || target.assign(to) != KIOTTY_SPEC_STATUS_SUCCESS) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-    return ::rename(source.c_str(), target.c_str()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+    if (source.assign(from) != KIOTTY_SPEC_STATUS_SUCCESS ||
+        target.assign(to) != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED;
+    }
+    return ::rename(source.c_str(), target.c_str()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS
+                                                         : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 }
 
 }

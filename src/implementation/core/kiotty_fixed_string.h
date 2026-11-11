@@ -23,7 +23,9 @@ public:
     {
         const size_t current = length();
         if (text.length() > Capacity - current) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-        for (size_t index = 0; index < text.length(); ++index) { _data[current + index] = text[index]; }
+        for (size_t index = 0; index < text.length(); ++index) {
+            _data[current + index] = text[index];
+        }
         _data[current + text.length()] = '\0';
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
@@ -59,13 +61,16 @@ bool operator==(const FixedString<Left>& left, const FixedString<Right>& right)
 }
 
 template <size_t Capacity>
-bool operator==(const FixedString<Capacity>& left, std::string_view right) { return std::string_view(left) == right; }
+bool operator==(const FixedString<Capacity>& left, std::string_view right)
+{ return std::string_view(left) == right; }
 
 template <size_t Capacity>
-bool operator==(std::string_view left, const FixedString<Capacity>& right) { return left == std::string_view(right); }
+bool operator==(std::string_view left, const FixedString<Capacity>& right)
+{ return left == std::string_view(right); }
 
 template <size_t Capacity>
-bool operator!=(const FixedString<Capacity>& left, std::string_view right) { return std::string_view(left) != right; }
+bool operator!=(const FixedString<Capacity>& left, std::string_view right)
+{ return std::string_view(left) != right; }
 
 template <size_t Capacity>
 std::string operator+(std::string left, const FixedString<Capacity>& right)

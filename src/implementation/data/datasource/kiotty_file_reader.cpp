@@ -33,8 +33,11 @@ Result<bool, KiottySpecStatus> FileReader::next()
         _start = 0;
         _end = kept;
         scan = kept;
-        if (_end == _buffer.length()) { return LineResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
-        const int count = readDescriptor(_descriptor, Span<char>(_buffer.data() + _end, _buffer.length() - _end));
+        if (_end == _buffer.length()) {
+            return LineResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED);
+        }
+        const int count =
+            readDescriptor(_descriptor, Span<char>(_buffer.data() + _end, _buffer.length() - _end));
         if (count < 0) { return LineResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT); }
         if (count == 0) { _finished = true; }
         _end += static_cast<size_t>(count);

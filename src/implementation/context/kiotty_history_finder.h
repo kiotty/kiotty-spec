@@ -22,7 +22,9 @@ struct Position {
 class HistoryFinder
 {
 public:
-    HistoryFinder(Workspace& workspace, CursorPool& cursors, Checker& checker) : _w(workspace), _cursors(cursors), _checker(checker) {}
+    HistoryFinder(Workspace& workspace, CursorPool& cursors, Checker& checker)
+        : _w(workspace), _cursors(cursors), _checker(checker)
+    {}
 
     CursorIdResult checkpoints(uint32_t step);
     CursorIdResult stepRuns();

@@ -12,7 +12,11 @@ size_t ItemTags::position(uint32_t index, uint32_t tag) const
     while (low < high) {
         const size_t middle = low + (high - low) / 2;
         const TagRecord& probe = _tags[middle];
-        if (probe.item.index < index || (probe.item.index == index && probe.tag < tag)) { low = middle + 1; } else { high = middle; }
+        if (probe.item.index < index || (probe.item.index == index && probe.tag < tag)) {
+            low = middle + 1;
+        } else {
+            high = middle;
+        }
     }
     return low;
 }
@@ -28,7 +32,10 @@ Span<const TagRecord> ItemTags::of(ItemHandle handle) const
 uint64_t ItemTags::value(ItemHandle handle, uint32_t tag) const
 {
     const size_t found = position(handle.index, tag);
-    if (found < _tags.length() && _tags[found].item.index == handle.index && _tags[found].tag == tag) { return _tags[found].value; }
+    if (found < _tags.length() && _tags[found].item.index == handle.index &&
+        _tags[found].tag == tag) {
+        return _tags[found].value;
+    }
     return 0;
 }
 

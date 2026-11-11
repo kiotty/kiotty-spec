@@ -26,22 +26,29 @@ impl::Span<const char> echoOf(KiottySpecText text, Echo echo)
 {
     if (echo == Echo::HIDDEN || text.data == nullptr) { return impl::Span<const char>(); }
     const impl::Span<const char> span(text.data, text.length);
-    const impl::Span<const char> shown = entity::cutAtCharacter(span, entity::MAX_FAILURE_TEXT_LENGTH);
+    const impl::Span<const char> shown =
+        entity::cutAtCharacter(span, entity::MAX_FAILURE_TEXT_LENGTH);
     if (hasNul(shown) || !impl::isValidUtf8(shown)) { return impl::Span<const char>(); }
     return shown;
 }
 
-TextResult parseField(impl::Context& context, KiottySpecText text, size_t max_length, KiottySpecSubject subject, Echo echo)
+TextResult parseField(impl::Context& context, KiottySpecText text, size_t max_length,
+                      KiottySpecSubject subject, Echo echo)
 {
     const TextResult parsed = parseText(text, max_length);
-    if (!parsed) { return TextResult::failure(context.failure().raise(parsed.code, subject, echoOf(text, echo))); }
+    if (!parsed) {
+        return TextResult::failure(
+            context.failure().raise(parsed.code, subject, echoOf(text, echo)));
+    }
     return parsed;
 }
 
 CountResult parseCount(size_t value, size_t fallback, size_t minimum, size_t maximum)
 {
     if (value == 0) { return CountResult::success(fallback); }
-    if (value < minimum || value > maximum) { return CountResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    if (value < minimum || value > maximum) {
+        return CountResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
+    }
     return CountResult::success(value);
 }
 
@@ -49,8 +56,12 @@ CountResult parseCount(size_t value, size_t fallback, size_t minimum, size_t max
 
 TextResult parseText(KiottySpecText text, size_t max_length)
 {
-    if (text.data == nullptr && text.length > 0) { return TextResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    if (text.length > max_length) { return TextResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
+    if (text.data == nullptr && text.length > 0) {
+        return TextResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
+    }
+    if (text.length > max_length) {
+        return TextResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED);
+    }
     const impl::Span<const char> span(text.data, text.length);
     if (hasNul(span)) { return TextResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     if (!impl::isValidUtf8(span)) { return TextResult::failure(KIOTTY_SPEC_STATUS_INVALID_UTF8); }
@@ -64,54 +75,72 @@ TextResult parseId(impl::Context& context, KiottySpecText id)
 
 TextResult parseTitle(impl::Context& context, KiottySpecText title)
 {
-    return parseField(context, title, KIOTTY_SPEC_MAX_TITLE_LENGTH, KIOTTY_SPEC_SUBJECT_TITLE, Echo::HIDDEN);
+    return parseField(context, title, KIOTTY_SPEC_MAX_TITLE_LENGTH, KIOTTY_SPEC_SUBJECT_TITLE,
+                      Echo::HIDDEN);
 }
 
 TextResult parseSummary(impl::Context& context, KiottySpecText summary)
 {
-    return parseField(context, summary, KIOTTY_SPEC_MAX_SUMMARY_LENGTH, KIOTTY_SPEC_SUBJECT_SUMMARY, Echo::HIDDEN);
+    return parseField(context, summary, KIOTTY_SPEC_MAX_SUMMARY_LENGTH, KIOTTY_SPEC_SUBJECT_SUMMARY,
+                      Echo::HIDDEN);
 }
 
 TextResult parseBody(impl::Context& context, KiottySpecText body)
 {
-    return parseField(context, body, KIOTTY_SPEC_MAX_BODY_LENGTH, KIOTTY_SPEC_SUBJECT_BODY, Echo::HIDDEN);
+    return parseField(context, body, KIOTTY_SPEC_MAX_BODY_LENGTH, KIOTTY_SPEC_SUBJECT_BODY,
+                      Echo::HIDDEN);
 }
 
 TextResult parseDecision(impl::Context& context, KiottySpecText decision)
 {
-    return parseField(context, decision, KIOTTY_SPEC_MAX_DECISION_LENGTH, KIOTTY_SPEC_SUBJECT_DECISION, Echo::HIDDEN);
+    return parseField(context, decision, KIOTTY_SPEC_MAX_DECISION_LENGTH,
+                      KIOTTY_SPEC_SUBJECT_DECISION, Echo::HIDDEN);
 }
 
 TextResult parseDescription(impl::Context& context, KiottySpecText description)
 {
-    return parseField(context, description, KIOTTY_SPEC_MAX_DESCRIPTION_LENGTH, KIOTTY_SPEC_SUBJECT_DESCRIPTION, Echo::HIDDEN);
+    return parseField(context, description, KIOTTY_SPEC_MAX_DESCRIPTION_LENGTH,
+                      KIOTTY_SPEC_SUBJECT_DESCRIPTION, Echo::HIDDEN);
 }
 
 TextResult parsePath(impl::Context& context, KiottySpecText path)
 {
-    return parseField(context, path, impl::MAX_SYSTEM_PATH_LENGTH, KIOTTY_SPEC_SUBJECT_FILE, Echo::SHOWN);
+    return parseField(context, path, impl::MAX_SYSTEM_PATH_LENGTH, KIOTTY_SPEC_SUBJECT_FILE,
+                      Echo::SHOWN);
 }
 
 TextResult parseProjectName(impl::Context& context, KiottySpecText project_name)
 {
-    return parseField(context, project_name, KIOTTY_SPEC_MAX_PROJECT_NAME_LENGTH, KIOTTY_SPEC_SUBJECT_PROJECT_NAME, Echo::SHOWN);
+    return parseField(context, project_name, KIOTTY_SPEC_MAX_PROJECT_NAME_LENGTH,
+                      KIOTTY_SPEC_SUBJECT_PROJECT_NAME, Echo::SHOWN);
 }
 
 ConfigurationResult parseConfiguration(const KiottySpecConfiguration& input)
 {
-    const CountResult items = parseCount(input.max_items, impl::DEFAULT_MAX_ITEMS, MIN_COUNT, KIOTTY_SPEC_MAX_POOL_CAPACITY);
-    const CountResult relations = parseCount(input.max_relations, impl::DEFAULT_MAX_RELATIONS, MIN_COUNT, KIOTTY_SPEC_MAX_POOL_CAPACITY);
-    const CountResult tags = parseCount(input.max_tags, impl::DEFAULT_MAX_TAGS, MIN_COUNT, KIOTTY_SPEC_MAX_POOL_CAPACITY);
-    const CountResult checkpoints = parseCount(input.max_checkpoints, impl::DEFAULT_MAX_CHECKPOINTS, MIN_COUNT, KIOTTY_SPEC_MAX_POOL_CAPACITY);
-    const CountResult cursors = parseCount(input.max_cursors, impl::DEFAULT_MAX_CURSORS, MIN_COUNT, KIOTTY_SPEC_MAX_CURSOR_CAPACITY);
-    const CountResult rows = parseCount(input.max_cursor_rows, impl::DEFAULT_MAX_CURSOR_ROWS, MIN_COUNT, KIOTTY_SPEC_MAX_POOL_CAPACITY);
-    const CountResult work = parseCount(input.work_buffer_bytes, impl::DEFAULT_WORK_BUFFER_BYTES, KIOTTY_SPEC_MIN_WORK_BUFFER_BYTES, KIOTTY_SPEC_MAX_BUFFER_BYTES);
-    const CountResult body = parseCount(input.max_body_bytes, impl::DEFAULT_MAX_BODY_BYTES, MIN_COUNT, KIOTTY_SPEC_MAX_BUFFER_BYTES);
-    const bool counted = items && relations && tags && checkpoints && cursors && rows && work && body;
+    const CountResult items = parseCount(input.max_items, impl::DEFAULT_MAX_ITEMS, MIN_COUNT,
+                                         KIOTTY_SPEC_MAX_POOL_CAPACITY);
+    const CountResult relations = parseCount(input.max_relations, impl::DEFAULT_MAX_RELATIONS,
+                                             MIN_COUNT, KIOTTY_SPEC_MAX_POOL_CAPACITY);
+    const CountResult tags = parseCount(input.max_tags, impl::DEFAULT_MAX_TAGS, MIN_COUNT,
+                                        KIOTTY_SPEC_MAX_POOL_CAPACITY);
+    const CountResult checkpoints = parseCount(input.max_checkpoints, impl::DEFAULT_MAX_CHECKPOINTS,
+                                               MIN_COUNT, KIOTTY_SPEC_MAX_POOL_CAPACITY);
+    const CountResult cursors = parseCount(input.max_cursors, impl::DEFAULT_MAX_CURSORS, MIN_COUNT,
+                                           KIOTTY_SPEC_MAX_CURSOR_CAPACITY);
+    const CountResult rows = parseCount(input.max_cursor_rows, impl::DEFAULT_MAX_CURSOR_ROWS,
+                                        MIN_COUNT, KIOTTY_SPEC_MAX_POOL_CAPACITY);
+    const CountResult work =
+        parseCount(input.work_buffer_bytes, impl::DEFAULT_WORK_BUFFER_BYTES,
+                   KIOTTY_SPEC_MIN_WORK_BUFFER_BYTES, KIOTTY_SPEC_MAX_BUFFER_BYTES);
+    const CountResult body = parseCount(input.max_body_bytes, impl::DEFAULT_MAX_BODY_BYTES,
+                                        MIN_COUNT, KIOTTY_SPEC_MAX_BUFFER_BYTES);
+    const bool counted =
+        items && relations && tags && checkpoints && cursors && rows && work && body;
     if (!counted) { return ConfigurationResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     const CountResult item_versions = impl::checkedMultiply(items.value, impl::VERSION_FACTOR);
     const CountResult tag_versions = impl::checkedMultiply(tags.value, impl::VERSION_FACTOR);
-    const CountResult relation_versions = impl::checkedMultiply(relations.value, impl::VERSION_FACTOR);
+    const CountResult relation_versions =
+        impl::checkedMultiply(relations.value, impl::VERSION_FACTOR);
     const CountResult pool_rows = impl::checkedMultiply(cursors.value, rows.value);
     const bool derived = item_versions && tag_versions && relation_versions && pool_rows;
     if (!derived) { return ConfigurationResult::failure(KIOTTY_SPEC_STATUS_ARITHMETIC_OVERFLOW); }
@@ -164,7 +193,8 @@ KiottySpecCheckpoint toCheckpointRecord(const entity::CheckpointRecord& record)
     return checkpoint;
 }
 
-KiottySpecTag toTag(KiottySpecItemHandle item, KiottySpecItemKind model, uint32_t tag, uint64_t value)
+KiottySpecTag toTag(KiottySpecItemHandle item, KiottySpecItemKind model, uint32_t tag,
+                    uint64_t value)
 {
     KiottySpecTag record {};
     record.item = item;
@@ -206,16 +236,20 @@ KiottySpecNameResult nameResult(std::string_view name)
 {
     KiottySpecNameResult result {};
     result.code = name.empty() ? KIOTTY_SPEC_STATUS_INVALID_ARGUMENT : KIOTTY_SPEC_STATUS_SUCCESS;
-    copyTerminated(impl::Span<char>(result.value.value, sizeof(result.value.value)), impl::spanOf(name));
+    copyTerminated(impl::Span<char>(result.value.value, sizeof(result.value.value)),
+                   impl::spanOf(name));
     return result;
 }
 
 bool isKind(uint32_t kind) { return entity::isValidKind(kind); }
 
-impl::Result<entity::ItemHandle, KiottySpecStatus> resolve(impl::Context& context, KiottySpecText id)
+impl::Result<entity::ItemHandle, KiottySpecStatus> resolve(impl::Context& context,
+                                                           KiottySpecText id)
 {
     const TextResult parsed = parseId(context, id);
-    if (!parsed) { return impl::Result<entity::ItemHandle, KiottySpecStatus>::failure(parsed.code); }
+    if (!parsed) {
+        return impl::Result<entity::ItemHandle, KiottySpecStatus>::failure(parsed.code);
+    }
     return context.workspace().resolve(parsed.value);
 }
 

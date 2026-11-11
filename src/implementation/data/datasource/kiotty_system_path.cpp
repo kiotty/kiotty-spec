@@ -30,7 +30,8 @@ SystemPathResult joinPath(Span<const char> base, Span<const char> part)
     const KiottySpecStatus copied = appendSlashed(joined, base);
     if (copied != KIOTTY_SPEC_STATUS_SUCCESS) { return SystemPathResult::failure(copied); }
     if (part.length() == 0) { return SystemPathResult::success(joined); }
-    const bool needs_separator = joined.length() > 0 && !platform::isSeparator(base[base.length() - 1]);
+    const bool needs_separator =
+        joined.length() > 0 && !platform::isSeparator(base[base.length() - 1]);
     if (needs_separator) { joined.append(literalText(SEPARATOR)); }
     const KiottySpecStatus appended = appendSlashed(joined, part);
     if (appended != KIOTTY_SPEC_STATUS_SUCCESS) { return SystemPathResult::failure(appended); }

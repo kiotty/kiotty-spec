@@ -35,7 +35,8 @@ struct TagIdentity
     uint32_t key {};
     uint32_t tag {};
 
-    bool operator<(const TagIdentity& other) const { return key != other.key ? key < other.key : tag < other.tag; }
+    bool operator<(const TagIdentity& other) const
+    { return key != other.key ? key < other.key : tag < other.tag; }
     bool operator==(const TagIdentity& other) const { return key == other.key && tag == other.tag; }
 };
 
@@ -64,7 +65,8 @@ struct RelationIdentity
         if (relation != other.relation) { return relation < other.relation; }
         return to < other.to;
     }
-    bool operator==(const RelationIdentity& other) const { return from == other.from && relation == other.relation && to == other.to; }
+    bool operator==(const RelationIdentity& other) const
+    { return from == other.from && relation == other.relation && to == other.to; }
 };
 
 struct RelationVersion

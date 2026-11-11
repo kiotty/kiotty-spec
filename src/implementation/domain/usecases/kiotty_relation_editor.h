@@ -14,13 +14,16 @@ namespace kiotty::spec::implementation {
 class RelationEditor
 {
 public:
-    RelationEditor(Workspace& workspace, Lifecycle& lifecycle) : _w(workspace), _lifecycle(lifecycle) {}
+    RelationEditor(Workspace& workspace, Lifecycle& lifecycle)
+        : _w(workspace), _lifecycle(lifecycle)
+    {}
 
     KiottySpecStatus add(Span<const char> from_id, uint32_t relation, Span<const char> to_id);
     KiottySpecStatus remove(Span<const char> from_id, uint32_t relation, Span<const char> to_id);
 
 private:
-    Result<entity::RelationRecord, KiottySpecStatus> relationOf(Span<const char> from_id, uint32_t relation, Span<const char> to_id);
+    Result<entity::RelationRecord, KiottySpecStatus>
+    relationOf(Span<const char> from_id, uint32_t relation, Span<const char> to_id);
 
     Workspace& _w;
     Lifecycle& _lifecycle;
