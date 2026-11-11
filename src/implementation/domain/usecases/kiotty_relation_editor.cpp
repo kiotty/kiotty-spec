@@ -35,7 +35,8 @@ KiottySpecStatus RelationEditor::add(Span<const char> from_id, uint32_t relation
 {
     const auto record = relationOf(from_id, relation, to_id);
     if (!record) { return record.code; }
-    if (_w.relations.contains(record.value)) {
+    const bool has_relation = _w.relations.contains(record.value);
+    if (has_relation) {
         return _w.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_RELATION, from_id);
     }
     WriteScope scope(_w, _lifecycle);
@@ -49,7 +50,8 @@ KiottySpecStatus RelationEditor::remove(Span<const char> from_id, uint32_t relat
 {
     const auto record = relationOf(from_id, relation, to_id);
     if (!record) { return record.code; }
-    if (!_w.relations.contains(record.value)) {
+    const bool has_relation = _w.relations.contains(record.value);
+    if (!has_relation) {
         return _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_RELATION,
                                 from_id);
     }

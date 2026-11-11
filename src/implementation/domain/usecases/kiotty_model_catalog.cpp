@@ -196,7 +196,8 @@ KiottySpecStatus ModelCatalog::loadModel(size_t index)
 {
     const ModelSource& source = MODEL_SOURCES[index];
     entity::Model& model = _models[index];
-    if (entity::kindIndex(source.kind) != index) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
+    const size_t kind_index = entity::kindIndex(source.kind);
+    if (kind_index != index) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     model.kind = source.kind;
     model.created_in = source.created_in;
     const auto ofKind = [&](const auto& entry) { return entry.kind == source.kind; };
@@ -218,16 +219,20 @@ KiottySpecStatus ModelCatalog::loadModel(size_t index)
 KiottySpecStatus ModelCatalog::checkTagValue(ItemKind kind, uint32_t tag, uint64_t value) const
 {
     const Span<const entity::TagDefinition> tags = model(kind).tags;
-    if (tag >= tags.length()) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
+    const size_t tag_count = tags.length();
+    if (tag >= tag_count) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     if (value == 0) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     if ((value & ~entity::TAG_VALUE_MASK) != 0) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     const entity::TagDefinition& definition = tags[tag];
     for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
-        if ((value & (uint64_t { 1 } << bit)) != 0 && definition.bit_names[bit].empty()) {
+        const bool is_set = (value & (uint64_t { 1 } << bit)) != 0;
+        const bool is_unnamed = definition.bit_names[bit].empty();
+        if (is_set && is_unnamed) {
             return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
         }
     }
-    if (definition.cardinality == Cardinality::SINGLE && !hasSingleBit(value)) {
+    const bool has_single_bit = hasSingleBit(value);
+    if (definition.cardinality == Cardinality::SINGLE && !has_single_bit) {
         return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
@@ -236,7 +241,8 @@ KiottySpecStatus ModelCatalog::checkTagValue(ItemKind kind, uint32_t tag, uint64
 KiottySpecStatus ModelCatalog::checkRelation(ItemKind from, uint32_t relation, ItemKind to) const
 {
     const Span<const entity::RelationDefinition> relations = model(from).relations;
-    if (relation >= relations.length()) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
+    const size_t relation_count = relations.length();
+    if (relation >= relation_count) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     if (relations[relation].target_kind != to) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }

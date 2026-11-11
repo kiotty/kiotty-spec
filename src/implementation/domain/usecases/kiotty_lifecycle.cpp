@@ -43,7 +43,8 @@ SequenceResult Lifecycle::beginWrite()
 
 SequenceResult Lifecycle::start(entity::Step step, Span<const char> description)
 {
-    if (!entity::isValidStep(static_cast<uint32_t>(step))) {
+    const bool is_valid_step = entity::isValidStep(static_cast<uint32_t>(step));
+    if (!is_valid_step) {
         return SequenceResult::failure(
             _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_STEP));
     }
@@ -74,7 +75,8 @@ KiottySpecStatus Lifecycle::complete(KiottySpecActor actor)
     }
     if (record->state == CheckpointState::DONE) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     const Span<const UnmetCondition> unmet = _checker.collect(record->step);
-    if (unmet.length() > 0) {
+    const size_t unmet_count = unmet.length();
+    if (unmet_count > 0) {
         return _w.failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_COMPLETION);
     }
     return _w.finish(_w.checkpoints.writer().setState(latest, CheckpointState::DONE));

@@ -33,7 +33,8 @@ WorkAreas split(TextBuffer& work)
 bool isConflictMarker(std::string_view line)
 {
     for (const std::string_view marker : CONFLICT_MARKERS) {
-        if (line.substr(0, marker.size()) == marker) { return true; }
+        const std::string_view prefix = line.substr(0, marker.size());
+        if (prefix == marker) { return true; }
     }
     return false;
 }
@@ -90,16 +91,21 @@ KiottySpecStatus SpecFile::readLines(KispFileReader& reader)
 KiottySpecStatus SpecFile::readLine(KispFileReader& reader)
 {
     const std::string_view line = viewOf(reader.line());
-    if (reader.lineNumber() == 1 && line != KISP_HEADER) {
+    const size_t line_number = reader.lineNumber();
+    if (line_number == 1 && line != KISP_HEADER) {
         return _t.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
                                 KIOTTY_SPEC_SUBJECT_FILE_FORMAT, _database.view(),
                                 reader.lineNumber());
     }
-    if (isConflictMarker(line)) {
+    const bool is_conflict_marker = isConflictMarker(line);
+    if (is_conflict_marker) {
         return _t.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_MERGE_MARKER,
                                 _database.view(), reader.lineNumber());
     }
-    if (line.empty() || line[0] == COMMENT) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    const bool is_empty = line.empty();
+    if (is_empty) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    const char first = line.front();
+    if (first == COMMENT) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     const auto fields = reader.fields();
     if (!fields) {
         return _t.failure.raise(fields.code, KIOTTY_SPEC_SUBJECT_FILE_LINE,

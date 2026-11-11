@@ -27,7 +27,8 @@ constexpr std::string_view STATE_NAMES[] = {"started", "running", "done"};
 std::string_view kindName(ItemKind kind)
 {
     const uint32_t value = static_cast<uint32_t>(kind);
-    if (!isValidKind(value)) { return std::string_view(); }
+    const bool is_valid = isValidKind(value);
+    if (!is_valid) { return std::string_view(); }
     return KIND_NAMES[value - 1];
 }
 

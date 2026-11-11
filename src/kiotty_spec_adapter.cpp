@@ -28,7 +28,10 @@ impl::Span<const char> echoOf(KiottySpecText text, Echo echo)
     const impl::Span<const char> span(text.data, text.length);
     const impl::Span<const char> shown =
         entity::cutAtCharacter(span, entity::MAX_FAILURE_TEXT_LENGTH);
-    if (hasNul(shown) || !impl::isValidUtf8(shown)) { return impl::Span<const char>(); }
+    const bool has_nul = hasNul(shown);
+    if (has_nul) { return impl::Span<const char>(); }
+    const bool is_valid_utf8 = impl::isValidUtf8(shown);
+    if (!is_valid_utf8) { return impl::Span<const char>(); }
     return shown;
 }
 
@@ -63,8 +66,10 @@ TextResult parseText(KiottySpecText text, size_t max_length)
         return TextResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED);
     }
     const impl::Span<const char> span(text.data, text.length);
-    if (hasNul(span)) { return TextResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    if (!impl::isValidUtf8(span)) { return TextResult::failure(KIOTTY_SPEC_STATUS_INVALID_UTF8); }
+    const bool has_nul = hasNul(span);
+    if (has_nul) { return TextResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    const bool is_valid_utf8 = impl::isValidUtf8(span);
+    if (!is_valid_utf8) { return TextResult::failure(KIOTTY_SPEC_STATUS_INVALID_UTF8); }
     return TextResult::success(span);
 }
 
@@ -162,7 +167,8 @@ ConfigurationResult parseConfiguration(const KiottySpecConfiguration& input)
 
 KiottySpecItemHandle toHandle(entity::ItemHandle handle)
 {
-    if (!handle.isValid()) { return KIOTTY_SPEC_INVALID_ITEM_HANDLE; }
+    const bool is_valid = handle.isValid();
+    if (!is_valid) { return KIOTTY_SPEC_INVALID_ITEM_HANDLE; }
     return impl::packHandle(handle);
 }
 
@@ -255,7 +261,8 @@ impl::Result<entity::ItemHandle, KiottySpecStatus> resolve(impl::Context& contex
 
 void copyTerminated(impl::Span<char> target, impl::Span<const char> source)
 {
-    if (target.length() == 0) { return; }
+    const size_t target_length = target.length();
+    if (target_length == 0) { return; }
     const size_t length = source.length() < target.length() ? source.length() : target.length() - 1;
     for (size_t index = 0; index < length; ++index) { target[index] = source[index]; }
     target[length] = '\0';

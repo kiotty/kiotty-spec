@@ -122,8 +122,8 @@ KiottySpecStatus SpecWriter::writeMeta()
 {
     KiottySpecStatus status = writeHeader(META_HEADER);
     const auto& entries = _t.meta.all();
-    for (size_t index = 0; index < entries.length() && status == KIOTTY_SPEC_STATUS_SUCCESS;
-         ++index) {
+    const size_t entry_count = entries.length();
+    for (size_t index = 0; index < entry_count && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
         KispLineEncoder line = startLine(META_TABLE, 0);
         line.add(entries.keyAt(index).view());
         line.add(entries.valueAt(index).view());
@@ -135,13 +135,15 @@ KiottySpecStatus SpecWriter::writeMeta()
 KiottySpecStatus SpecWriter::writeCheckpoints()
 {
     KiottySpecStatus status = writeHeader(CHECKPOINT_HEADER);
-    for (uint32_t sequence = 1;
-         sequence <= _t.checkpoints.latest() && status == KIOTTY_SPEC_STATUS_SUCCESS; ++sequence) {
+    const uint32_t latest = _t.checkpoints.latest();
+    for (uint32_t sequence = 1; sequence <= latest && status == KIOTTY_SPEC_STATUS_SUCCESS;
+         ++sequence) {
         const CheckpointRecord* record = _t.checkpoints.at(sequence);
         if (record == nullptr) { continue; }
         KispLineEncoder line = startLine(CHECKPOINT_TABLE, 0);
         addDecimal(line, sequence);
-        if (record->previous.isValid()) {
+        const bool has_previous = record->previous.isValid();
+        if (has_previous) {
             addDecimal(line, record->previous.sequence);
         } else {
             line.add(spanOf(NONE_MARKER));
@@ -159,8 +161,8 @@ KiottySpecStatus SpecWriter::writeItems()
 {
     KiottySpecStatus status = writeHeader(ITEM_HEADER);
     const auto& names = _t.items.tables().names;
-    for (size_t index = 0; index < names.length() && status == KIOTTY_SPEC_STATUS_SUCCESS;
-         ++index) {
+    const size_t name_count = names.length();
+    for (size_t index = 0; index < name_count && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
         KispLineEncoder line = startLine(ITEM_TABLE, 0);
         addKey(line, names.keyAt(index));
         line.add(names.valueAt(index).view());
@@ -240,8 +242,8 @@ KiottySpecStatus SpecWriter::writeBodies()
 {
     KiottySpecStatus status = writeHeader(BODY_HEADER);
     const BodyStore& bodies = _t.items.tables().bodies;
-    for (size_t index = 0; index < bodies.length() && status == KIOTTY_SPEC_STATUS_SUCCESS;
-         ++index) {
+    const size_t body_count = bodies.length();
+    for (size_t index = 0; index < body_count && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
         KispLineEncoder line = startLine(BODY_TABLE, 0);
         addKey(line, bodies.keyAt(index));
         line.add(bodies.bodyAt(index));

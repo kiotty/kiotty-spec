@@ -181,7 +181,8 @@ KiottySpecTagResult KiottySpec_readItemTag(KiottySpecContext* context, KiottySpe
         result.code = record.code;
         return result;
     }
-    if (tag >= workspace.catalog.model(record.value->kind).tags.length()) {
+    const size_t tag_count = workspace.catalog.model(record.value->kind).tags.length();
+    if (tag >= tag_count) {
         result.code = context->context.failure().raise(
             KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_TAG, record.value->id.view());
         return result;

@@ -20,9 +20,11 @@ constexpr uint32_t MISSING = 0xFFFFFFFFu;
 bool startsWithKeyword(std::string_view text)
 {
     for (const std::string_view keyword : ACCEPTANCE_CRITERIA_KEYWORDS) {
-        if (text.find(keyword) != std::string_view::npos) { return true; }
+        const size_t position = text.find(keyword);
+        if (position != std::string_view::npos) { return true; }
     }
-    for (size_t index = 0; index + 10 <= text.size(); ++index) {
+    const size_t text_size = text.size();
+    for (size_t index = 0; index + 10 <= text_size; ++index) {
         bool same = true;
         const char word[] = "acceptance";
         for (size_t offset = 0; offset < 10; ++offset) {
@@ -40,16 +42,17 @@ bool startsWithKeyword(std::string_view text)
 
 bool isListLine(std::string_view line)
 {
+    const size_t line_size = line.size();
     size_t index = 0;
-    while (index < line.size() && (line[index] == ' ' || line[index] == '\t')) { ++index; }
-    if (index + 1 < line.size() &&
+    while (index < line_size && (line[index] == ' ' || line[index] == '\t')) { ++index; }
+    if (index + 1 < line_size &&
         (line[index] == '-' || line[index] == '*' || line[index] == '+') &&
         line[index + 1] == ' ') {
         return true;
     }
     size_t digits = index;
-    while (digits < line.size() && line[digits] >= '0' && line[digits] <= '9') { ++digits; }
-    return digits > index && digits + 1 < line.size() &&
+    while (digits < line_size && line[digits] >= '0' && line[digits] <= '9') { ++digits; }
+    return digits > index && digits + 1 < line_size &&
            (line[digits] == '.' || line[digits] == ')') && line[digits + 1] == ' ';
 }
 
@@ -127,11 +130,13 @@ bool Checker::isOpenChangeRequest(ItemHandle handle)
 size_t Checker::openChangeRequestCount()
 {
     size_t count = 0;
-    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+    const size_t capacity = _w.items.reader().capacity();
+    for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != ItemKind::CHANGE_REQUEST) { continue; }
-        if (isOpenChangeRequest(handle)) { ++count; }
+        const bool is_open = isOpenChangeRequest(handle);
+        if (is_open) { ++count; }
     }
     return count;
 }
@@ -142,12 +147,13 @@ uint32_t Checker::earliestEntryStep()
                                                    spanOf(CHANGE_REQUEST_ENTRY_STEP_TAG));
     if (!entry) { return 0; }
     uint32_t earliest = 0;
-    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+    const size_t capacity = _w.items.reader().capacity();
+    for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
-        if (!item || item.value->kind != ItemKind::CHANGE_REQUEST || !isOpenChangeRequest(handle)) {
-            continue;
-        }
+        if (!item || item.value->kind != ItemKind::CHANGE_REQUEST) { continue; }
+        const bool is_open = isOpenChangeRequest(handle);
+        if (!is_open) { continue; }
         const uint64_t value = _w.items.tags().value(handle, entry.value);
         for (uint32_t bit = 0; bit < entity::STEP_COUNT; ++bit) {
             if ((value & (uint64_t{1} << bit)) == 0) { continue; }
@@ -164,20 +170,25 @@ size_t Checker::countAcceptanceCriteria(Span<const char> body)
     size_t count = 0;
     size_t active_level = 0;
     size_t start = 0;
-    while (start <= text.size()) {
+    const size_t text_size = text.size();
+    while (start <= text_size) {
         size_t end = text.find('\n', start);
-        if (end == std::string_view::npos) { end = text.size(); }
+        if (end == std::string_view::npos) { end = text_size; }
         std::string_view line = text.substr(start, end - start);
-        if (!line.empty() && line.back() == '\r') { line.remove_suffix(1); }
+        const bool has_carriage_return = !line.empty() && line.back() == '\r';
+        if (has_carriage_return) { line.remove_suffix(1); }
+        const size_t line_size = line.size();
         size_t level = 0;
-        while (level < line.size() && line[level] == '#') { ++level; }
-        if (level > 0 && level <= 6 && level < line.size() && line[level] == ' ') {
+        while (level < line_size && line[level] == '#') { ++level; }
+        if (level > 0 && level <= 6 && level < line_size && line[level] == ' ') {
             if (active_level != 0 && level <= active_level) { active_level = 0; }
-            if (startsWithKeyword(line.substr(level))) { active_level = level; }
-        } else if (active_level != 0 && isListLine(line)) {
-            ++count;
+            const bool is_keyword = startsWithKeyword(line.substr(level));
+            if (is_keyword) { active_level = level; }
+        } else if (active_level != 0) {
+            const bool is_list = isListLine(line);
+            if (is_list) { ++count; }
         }
-        if (end == text.size()) { break; }
+        if (end == text_size) { break; }
         start = end + 1;
     }
     return count;
@@ -187,13 +198,15 @@ void Checker::checkEntrySteps()
 {
     const auto entry = _w.catalog.finder().findTag(ItemKind::CHANGE_REQUEST,
                                                    spanOf(CHANGE_REQUEST_ENTRY_STEP_TAG));
-    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+    const size_t capacity = _w.items.reader().capacity();
+    for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
-        if (!item || item.value->kind != ItemKind::CHANGE_REQUEST || !isOpenChangeRequest(handle)) {
-            continue;
-        }
-        if (entry && _w.items.tags().value(handle, entry.value) != 0) { continue; }
+        if (!item || item.value->kind != ItemKind::CHANGE_REQUEST) { continue; }
+        const bool is_open = isOpenChangeRequest(handle);
+        if (!is_open) { continue; }
+        const uint64_t entry_step = entry ? _w.items.tags().value(handle, entry.value) : 0;
+        if (entry_step != 0) { continue; }
         add(KIOTTY_SPEC_CONDITION_ENTRY_STEP, item.value->id);
     }
 }
@@ -204,18 +217,17 @@ void Checker::checkAcceptanceCriteria()
         tagBit(ItemKind::REQUIREMENT, REQUIREMENT_KIND_TAG, FUNCTIONAL_REQUIREMENT_BIT);
     if (functional.tag_index == MISSING) { return; }
     std::vector<char>& buffer = _body;
-    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+    const size_t capacity = _w.items.reader().capacity();
+    for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != ItemKind::REQUIREMENT) { continue; }
-        if ((_w.items.tags().value(handle, functional.tag_index) & functional.bit) == 0) {
-            continue;
-        }
+        const uint64_t kind_value = _w.items.tags().value(handle, functional.tag_index);
+        if ((kind_value & functional.bit) == 0) { continue; }
         const auto length = _w.items.reader().readBody(handle, buffer.data(), buffer.size());
-        if (!length ||
-            countAcceptanceCriteria(Span<const char>(buffer.data(), length.value)) == 0) {
-            add(KIOTTY_SPEC_CONDITION_ACCEPTANCE_CRITERIA, item.value->id);
-        }
+        const size_t criteria_count =
+            length ? countAcceptanceCriteria(Span<const char>(buffer.data(), length.value)) : 0;
+        if (criteria_count == 0) { add(KIOTTY_SPEC_CONDITION_ACCEPTANCE_CRITERIA, item.value->id); }
     }
 }
 
@@ -223,7 +235,8 @@ void Checker::checkMilestoneCoverage()
 {
     const uint32_t designs = relationIndex(ItemKind::MILESTONE, MILESTONE_DESIGN_RELATION);
     const uint32_t tests = relationIndex(ItemKind::MILESTONE, MILESTONE_UNIT_TEST_RELATION);
-    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+    const size_t capacity = _w.items.reader().capacity();
+    for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
         if (!item) { continue; }
@@ -231,9 +244,8 @@ void Checker::checkMilestoneCoverage()
         if (item.value->kind == ItemKind::DESIGN) { relation = designs; }
         if (item.value->kind == ItemKind::UNIT_TEST_PLAN) { relation = tests; }
         if (relation == MISSING) { continue; }
-        if (countRelations(ItemKind::MILESTONE, relation, handle, true) == 0) {
-            add(KIOTTY_SPEC_CONDITION_MILESTONE_COVERAGE, item.value->id);
-        }
+        const size_t count = countRelations(ItemKind::MILESTONE, relation, handle, true);
+        if (count == 0) { add(KIOTTY_SPEC_CONDITION_MILESTONE_COVERAGE, item.value->id); }
     }
 }
 
@@ -245,26 +257,24 @@ void Checker::checkOneToOne(ItemKind target_kind, ItemKind test_kind,
     const TagBit functional = functional_only ? tagBit(ItemKind::REQUIREMENT, REQUIREMENT_KIND_TAG,
                                                        FUNCTIONAL_REQUIREMENT_BIT)
                                               : TagBit {};
-    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+    const size_t capacity = _w.items.reader().capacity();
+    for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != target_kind) { continue; }
-        if (functional_only &&
-            (functional.tag_index == MISSING ||
-             (_w.items.tags().value(handle, functional.tag_index) & functional.bit) == 0)) {
-            continue;
-        }
-        if (countRelations(test_kind, relation, handle, true) != 1) {
-            add(pair_condition, item.value->id);
-        }
+        const bool can_read_tag = functional_only && functional.tag_index != MISSING;
+        const uint64_t kind_value =
+            can_read_tag ? _w.items.tags().value(handle, functional.tag_index) : 0;
+        if (functional_only && (kind_value & functional.bit) == 0) { continue; }
+        const size_t test_count = countRelations(test_kind, relation, handle, true);
+        if (test_count != 1) { add(pair_condition, item.value->id); }
     }
-    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+    for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != test_kind) { continue; }
-        if (countRelations(test_kind, relation, handle, false) != 1) {
-            add(KIOTTY_SPEC_CONDITION_SINGLE_TARGET, item.value->id);
-        }
+        const size_t target_count = countRelations(test_kind, relation, handle, false);
+        if (target_count != 1) { add(KIOTTY_SPEC_CONDITION_SINGLE_TARGET, item.value->id); }
     }
 }
 
@@ -272,31 +282,34 @@ void Checker::checkResults()
 {
     const ItemKind kinds[] = { ItemKind::SYSTEM_TEST_RESULT, ItemKind::END_TO_END_TEST_RESULT,
                                ItemKind::CODE_INSPECTION_RESULT };
-    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+    const size_t capacity = _w.items.reader().capacity();
+    for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
         if (!item) { continue; }
         for (const ItemKind kind : kinds) {
             if (item.value->kind != kind) { continue; }
             const TagBit pass = tagBit(kind, RESULT_TAG, PASS_BIT);
-            if (pass.tag_index == MISSING ||
-                _w.items.tags().value(handle, pass.tag_index) != pass.bit) {
+            const uint64_t result_value =
+                pass.tag_index == MISSING ? 0 : _w.items.tags().value(handle, pass.tag_index);
+            if (pass.tag_index == MISSING || result_value != pass.bit) {
                 add(KIOTTY_SPEC_CONDITION_PASSING_RESULT, item.value->id);
             }
         }
     }
-    for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
+    for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
-        if (item && item.value->kind == ItemKind::CHANGE_REQUEST && isOpenChangeRequest(handle)) {
-            add(KIOTTY_SPEC_CONDITION_CLOSED_CHANGE_REQUEST, item.value->id);
-        }
+        if (!item || item.value->kind != ItemKind::CHANGE_REQUEST) { continue; }
+        const bool is_open = isOpenChangeRequest(handle);
+        if (is_open) { add(KIOTTY_SPEC_CONDITION_CLOSED_CHANGE_REQUEST, item.value->id); }
     }
 }
 
 void Checker::add(KiottySpecCondition condition, entity::IdText id)
 {
-    if (_length == _rows.size()) { return; }
+    const size_t row_count = _rows.size();
+    if (_length == row_count) { return; }
     _rows[_length] = UnmetCondition{id, condition};
     ++_length;
 }

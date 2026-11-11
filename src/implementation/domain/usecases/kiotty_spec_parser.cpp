@@ -46,7 +46,8 @@ Result<uint32_t, KiottySpecStatus> parseKey(Span<const char> text)
 
 Result<uint32_t, KiottySpecStatus> parseOptionalKey(Span<const char> text)
 {
-    if (viewOf(text) == NONE_MARKER) {
+    const std::string_view value = viewOf(text);
+    if (value == NONE_MARKER) {
         return Result<uint32_t, KiottySpecStatus>::success(entity::NO_KEY);
     }
     return parseKey(text);
@@ -121,10 +122,10 @@ KiottySpecStatus SpecParser::parseCheckpoint(const KispFields& fields)
     record.previous = CheckpointHandle{previous.value, 0};
     record.step = static_cast<entity::Step>(step.value);
     record.state = static_cast<entity::CheckpointState>(state);
-    if (!fits(fields.values[7], entity::MAX_DESCRIPTION_LENGTH)) {
-        return invalid(_t.failure, CHECKPOINT_TABLE);
-    }
-    record.description.assign(fields.values[7]);
+    const Span<const char> description = fields.values[7];
+    const bool is_description_fitting = fits(description, entity::MAX_DESCRIPTION_LENGTH);
+    if (!is_description_fitting) { return invalid(_t.failure, CHECKPOINT_TABLE); }
+    record.description.assign(description);
     return _t.checkpoints.put(sequence.value, record);
 }
 
@@ -132,11 +133,12 @@ KiottySpecStatus SpecParser::parseItem(const KispFields& fields)
 {
     if (fields.count != ITEM_FIELDS) { return invalid(_t.failure, ITEM_TABLE); }
     const auto key = parseKey(fields.values[2]);
-    if (!key || entity::validateItemId(fields.values[3]) != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return invalid(_t.failure, ITEM_TABLE);
-    }
+    if (!key) { return invalid(_t.failure, ITEM_TABLE); }
+    const Span<const char> id_text = fields.values[3];
+    const KiottySpecStatus id_status = entity::validateItemId(id_text);
+    if (id_status != KIOTTY_SPEC_STATUS_SUCCESS) { return invalid(_t.failure, ITEM_TABLE); }
     entity::IdText id {};
-    id.assign(fields.values[3]);
+    id.assign(id_text);
     const KiottySpecStatus inserted = _t.items.tables().names.insert(key.value, id);
     if (inserted == KIOTTY_SPEC_STATUS_CONFLICT) {
         return _t.failure.raise(inserted, KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE, fields.values[2]);
@@ -168,12 +170,14 @@ KiottySpecStatus SpecParser::parseItemVersion(const KispFields& fields, uint32_t
     version.parent = parent.value;
     version.removed = removed;
     version.kind = kind.value;
-    if (!fits(fields.values[6], entity::MAX_TITLE_LENGTH) ||
-        !fits(fields.values[7], entity::MAX_SUMMARY_LENGTH)) {
-        return invalid(_t.failure, ITEM_VERSION_TABLE);
-    }
-    version.title.assign(fields.values[6]);
-    version.summary.assign(fields.values[7]);
+    const Span<const char> title = fields.values[6];
+    const Span<const char> summary = fields.values[7];
+    const bool is_title_fitting = fits(title, entity::MAX_TITLE_LENGTH);
+    if (!is_title_fitting) { return invalid(_t.failure, ITEM_VERSION_TABLE); }
+    const bool is_summary_fitting = fits(summary, entity::MAX_SUMMARY_LENGTH);
+    if (!is_summary_fitting) { return invalid(_t.failure, ITEM_VERSION_TABLE); }
+    version.title.assign(title);
+    version.summary.assign(summary);
     const KiottySpecStatus status = _t.items.tables().versions.append(version);
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _t.failure.raise(status, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
@@ -227,8 +231,9 @@ Result<uint64_t, KiottySpecStatus> SpecParser::parseTagValue(ItemKind kind, uint
 {
     uint64_t value = 0;
     size_t start = 0;
-    for (size_t index = 0; index <= names.length(); ++index) {
-        if (index < names.length() && names[index] != ',') { continue; }
+    const size_t length = names.length();
+    for (size_t index = 0; index <= length; ++index) {
+        if (index < length && names[index] != ',') { continue; }
         const auto bit = _t.catalog.finder().findTagBit(
             kind, tag, Span<const char>(names.data() + start, index - start));
         if (!bit) { return Result<uint64_t, KiottySpecStatus>::failure(bit.code); }
@@ -274,7 +279,8 @@ KiottySpecStatus SpecParser::parseDecision(const KispFields& fields)
         return _t.failure.raise(slot.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
                                 literalText("max_decision_versions"));
     }
-    if (slot.value->text.length() > 0) {
+    const size_t existing_length = slot.value->text.length();
+    if (existing_length > 0) {
         return _t.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE,
                                 fields.values[2]);
     }
@@ -291,8 +297,10 @@ KiottySpecStatus SpecParser::parseBody(const KispFields& fields)
         key && fields.values[3].length() > 0 && fits(fields.values[3], entity::MAX_BODY_LENGTH);
     if (!valid) { return invalid(_t.failure, BODY_TABLE); }
     ItemTables& tables = _t.items.tables();
-    if (!tables.names.find(key.value)) { return invalid(_t.failure, BODY_TABLE); }
-    if (tables.bodies.find(key.value).length() > 0) {
+    const auto known = tables.names.find(key.value);
+    if (!known) { return invalid(_t.failure, BODY_TABLE); }
+    const size_t existing_length = tables.bodies.find(key.value).length();
+    if (existing_length > 0) {
         return _t.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE,
                                 fields.values[2]);
     }

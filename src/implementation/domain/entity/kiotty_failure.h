@@ -25,9 +25,14 @@ static_assert(sizeof(FailureDetail) == 272, "unexpected padding");
 
 inline Span<const char> cutAtCharacter(Span<const char> text, size_t limit)
 {
-    if (text.length() <= limit) { return text; }
+    const size_t text_length = text.length();
+    if (text_length <= limit) { return text; }
     size_t length {limit};
-    while (length > 0 && isUtf8Continuation(text[length])) { --length; }
+    for (size_t index = limit; index > 0; --index) {
+        const bool is_continuation = isUtf8Continuation(text[index]);
+        if (!is_continuation) { break; }
+        --length;
+    }
     return Span<const char>(text.data(), length);
 }
 

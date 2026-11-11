@@ -115,7 +115,8 @@ KiottySpecCheckpointResult KiottySpec_readCheckpoint(KiottySpecContext* context,
 KiottySpecCursorResult KiottySpec_openCheckpointCursor(KiottySpecContext* context,
                                                        KiottySpecStep step)
 {
-    if (context == nullptr || (step != 0 && !entity::isValidStep(step))) {
+    const bool is_valid_step = entity::isValidStep(step);
+    if (context == nullptr || (step != 0 && !is_valid_step)) {
         return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
     return cursorResult(context->context, context->context.finder().history().checkpoints(step));
@@ -166,7 +167,8 @@ KiottySpecSizeResult KiottySpec_readDecision(KiottySpecContext* context, KiottyS
                                              KiottySpecBuffer buffer)
 {
     if (context == nullptr) { return sizeResult(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, 0); }
-    if (!hasDecisionKind(kind)) {
+    const bool has_decision = hasDecisionKind(kind);
+    if (!has_decision) {
         return sizeResult(context->context.failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
                                                            KIOTTY_SPEC_SUBJECT_KIND),
                           0);
@@ -179,7 +181,8 @@ KiottySpecSizeResult KiottySpec_readDecision(KiottySpecContext* context, KiottyS
 KiottySpecModelResult KiottySpec_readModel(KiottySpecContext* context, KiottySpecItemKind kind)
 {
     KiottySpecModelResult result {};
-    if (context == nullptr || !isKind(kind)) {
+    const bool is_valid_kind = isKind(kind);
+    if (context == nullptr || !is_valid_kind) {
         result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
         return result;
     }
@@ -199,12 +202,14 @@ KiottySpecStatusResult KiottySpec_readTagDefinition(KiottySpecContext* context,
                                                     KiottySpecItemKind kind, uint32_t index,
                                                     KiottySpecTagDefinition* definition)
 {
-    if (context == nullptr || definition == nullptr || !isKind(kind)) {
+    const bool is_valid_kind = isKind(kind);
+    if (context == nullptr || definition == nullptr || !is_valid_kind) {
         return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
     const entity::Model& model =
         context->context.catalog().model(static_cast<entity::ItemKind>(kind));
-    if (index >= model.tags.length()) { return status(KIOTTY_SPEC_STATUS_OUT_OF_RANGE); }
+    const size_t tag_count = model.tags.length();
+    if (index >= tag_count) { return status(KIOTTY_SPEC_STATUS_OUT_OF_RANGE); }
     const entity::TagDefinition& source = model.tags[index];
     copyText(definition->name, source.name);
     for (size_t bit = 0; bit < KIOTTY_SPEC_TAG_BIT_COUNT; ++bit) {
@@ -219,13 +224,15 @@ KiottySpecRelationDefinitionResult KiottySpec_readRelationDefinition(KiottySpecC
                                                                      uint32_t index)
 {
     KiottySpecRelationDefinitionResult result {};
-    if (context == nullptr || !isKind(kind)) {
+    const bool is_valid_kind = isKind(kind);
+    if (context == nullptr || !is_valid_kind) {
         result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
         return result;
     }
     const entity::Model& model =
         context->context.catalog().model(static_cast<entity::ItemKind>(kind));
-    if (index >= model.relations.length()) {
+    const size_t relation_count = model.relations.length();
+    if (index >= relation_count) {
         result.code = KIOTTY_SPEC_STATUS_OUT_OF_RANGE;
         return result;
     }

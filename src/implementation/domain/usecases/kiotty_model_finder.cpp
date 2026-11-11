@@ -24,12 +24,17 @@ Result<uint32_t, KiottySpecStatus> ModelFinder::findTagBit(ItemKind kind, uint32
                                                            Span<const char> name) const
 {
     const Span<const entity::TagDefinition> tags = model(kind).tags;
-    if (tag >= tags.length()) {
+    const size_t tag_count = tags.length();
+    if (tag >= tag_count) {
         return Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
+    const std::string_view wanted = viewOf(name);
     for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
         const entity::TagName& bit_name = tags[tag].bit_names[bit];
-        if (!bit_name.empty() && std::string_view(bit_name) == viewOf(name)) {
+        const bool is_empty = bit_name.empty();
+        if (is_empty) { continue; }
+        const std::string_view bit_text = bit_name;
+        if (bit_text == wanted) {
             return Result<uint32_t, KiottySpecStatus>::success(static_cast<uint32_t>(bit));
         }
     }

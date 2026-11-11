@@ -46,11 +46,13 @@ KiottySpecCursorResult KiottySpec_openRelationCursorByModel(KiottySpecContext* c
                                                             KiottySpecItemKind kind,
                                                             uint32_t relation)
 {
-    if (context == nullptr || !isKind(kind)) {
+    const bool is_valid_kind = isKind(kind);
+    if (context == nullptr || !is_valid_kind) {
         return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
-    if (relation >=
-        context->context.catalog().model(static_cast<entity::ItemKind>(kind)).relations.length()) {
+    const size_t relation_count =
+        context->context.catalog().model(static_cast<entity::ItemKind>(kind)).relations.length();
+    if (relation >= relation_count) {
         return cursorFailure(context->context.failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
                                                               KIOTTY_SPEC_SUBJECT_RELATION));
     }
@@ -86,13 +88,15 @@ KiottySpecCursorResult KiottySpec_openItemCursor(KiottySpecContext* context,
                                                  const KiottySpecTagQuery* tag_queries,
                                                  size_t count)
 {
-    if (context == nullptr || (kind != 0 && !isKind(kind)) || count > KIOTTY_SPEC_MAX_TAG_QUERIES ||
+    const bool is_kind = isKind(kind);
+    if (context == nullptr || (kind != 0 && !is_kind) || count > KIOTTY_SPEC_MAX_TAG_QUERIES ||
         (count > 0 && tag_queries == nullptr)) {
         return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
     impl::TagQuery queries[KIOTTY_SPEC_MAX_TAG_QUERIES] {};
     for (size_t index = 0; index < count; ++index) {
-        if (!isKind(tag_queries[index].kind)) {
+        const bool is_query_kind = isKind(tag_queries[index].kind);
+        if (!is_query_kind) {
             return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
         }
         queries[index] = impl::TagQuery { static_cast<entity::ItemKind>(tag_queries[index].kind),

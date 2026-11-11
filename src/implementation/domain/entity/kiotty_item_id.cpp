@@ -15,13 +15,14 @@ bool isAlphanumeric(char letter)
 
 KiottySpecStatus validateItemId(Span<const char> id)
 {
-    if (id.length() == 0) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
-    if (id.length() > MAX_ID_LENGTH) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-    if (!isAlphanumeric(id[0])) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
-    for (const char letter : id) {
-        if (!isAlphanumeric(letter) && letter != '-' && letter != '_') {
-            return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
-        }
+    const size_t length = id.length();
+    if (length == 0) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
+    if (length > MAX_ID_LENGTH) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+    for (size_t index = 0; index < length; ++index) {
+        const char letter = id[index];
+        const bool is_alphanumeric = isAlphanumeric(letter);
+        const bool is_separator = index > 0 && (letter == '-' || letter == '_');
+        if (!is_alphanumeric && !is_separator) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
