@@ -5,20 +5,10 @@ namespace kiotty::spec::implementation {
 using entity::ItemHandle;
 using entity::TagRecord;
 
-size_t ItemTags::position(uint32_t index, uint32_t tag) const
-{
-    size_t low = 0;
-    size_t high = _tags.length();
-    while (low < high) {
-        const size_t middle = low + (high - low) / 2;
-        const TagRecord& probe = _tags[middle];
-        if (probe.item.index < index || (probe.item.index == index && probe.tag < tag)) {
-            low = middle + 1;
-        } else {
-            high = middle;
-        }
-    }
-    return low;
+namespace {
+
+constexpr size_t BISECTION_DIVISOR = 2;
+
 }
 
 Span<const TagRecord> ItemTags::of(ItemHandle handle) const
@@ -39,6 +29,22 @@ uint64_t ItemTags::value(ItemHandle handle, uint32_t tag) const
         return _tags[found].value;
     }
     return 0;
+}
+
+size_t ItemTags::position(uint32_t index, uint32_t tag) const
+{
+    size_t low = 0;
+    size_t high = _tags.length();
+    while (low < high) {
+        const size_t middle = low + (high - low) / BISECTION_DIVISOR;
+        const TagRecord& probe = _tags[middle];
+        if (probe.item.index < index || (probe.item.index == index && probe.tag < tag)) {
+            low = middle + 1;
+        } else {
+            high = middle;
+        }
+    }
+    return low;
 }
 
 }

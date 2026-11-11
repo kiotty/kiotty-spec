@@ -10,16 +10,7 @@ namespace {
 
 constexpr char SEPARATOR[] = "/";
 
-KiottySpecStatus appendSlashed(SystemPath& out, Span<const char> text)
-{
-    const size_t length = text.length();
-    for (size_t index = 0; index < length; ++index) {
-        const char letter = platform::isSeparator(text[index]) ? '/' : text[index];
-        const KiottySpecStatus appended = out.append(Span<const char>(&letter, 1));
-        if (appended != KIOTTY_SPEC_STATUS_SUCCESS) { return appended; }
-    }
-    return KIOTTY_SPEC_STATUS_SUCCESS;
-}
+KiottySpecStatus appendSlashed(SystemPath& out, Span<const char> text);
 
 }
 
@@ -71,6 +62,21 @@ Span<const char> parentOf(Span<const char> path)
         --index;
     }
     return Span<const char>(path.data(), index);
+}
+
+namespace {
+
+KiottySpecStatus appendSlashed(SystemPath& out, Span<const char> text)
+{
+    const size_t length = text.length();
+    for (size_t index = 0; index < length; ++index) {
+        const char letter = platform::isSeparator(text[index]) ? '/' : text[index];
+        const KiottySpecStatus appended = out.append(Span<const char>(&letter, 1));
+        if (appended != KIOTTY_SPEC_STATUS_SUCCESS) { return appended; }
+    }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
 }
 
 }

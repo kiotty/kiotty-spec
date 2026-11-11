@@ -18,21 +18,10 @@ static_assert(sizeof(EscapePair) == 2, "unexpected padding");
 
 constexpr EscapePair ESCAPE_PAIRS[] = {{'\t', 't'}, {'\n', 'n'}, {'\r', 'r'}, {'\\', '\\'}};
 
-char unescape(char letter)
-{
-    for (const EscapePair& pair : ESCAPE_PAIRS) {
-        if (pair.escaped == letter) { return pair.original; }
-    }
-    return '\0';
-}
+constexpr size_t ESCAPE_SEQUENCE_LENGTH = 2;
 
-char escapeOf(char letter)
-{
-    for (const EscapePair& pair : ESCAPE_PAIRS) {
-        if (pair.original == letter) { return pair.escaped; }
-    }
-    return '\0';
-}
+char unescape(char letter);
+char escapeOf(char letter);
 
 }
 
@@ -88,10 +77,10 @@ void KispLineEncoder::extend(Span<const char> text)
 {
     const size_t length = text.length();
     for (size_t index = 0; index < length && _status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
-        const char escaped[2] = {ESCAPE, escapeOf(text[index])};
+        const char escaped[ESCAPE_SEQUENCE_LENGTH] = {ESCAPE, escapeOf(text[index])};
         const bool plain = escaped[1] == '\0';
         _status = plain ? _text.append(Span<const char>(&text[index], 1))
-                        : _text.append(Span<const char>(escaped, 2));
+                        : _text.append(Span<const char>(escaped, ESCAPE_SEQUENCE_LENGTH));
     }
 }
 
@@ -102,6 +91,26 @@ Result<Span<const char>, KiottySpecStatus> KispLineEncoder::finish()
         return Result<Span<const char>, KiottySpecStatus>::failure(_status);
     }
     return Result<Span<const char>, KiottySpecStatus>::success(_text.view());
+}
+
+namespace {
+
+char unescape(char letter)
+{
+    for (const EscapePair& pair : ESCAPE_PAIRS) {
+        if (pair.escaped == letter) { return pair.original; }
+    }
+    return '\0';
+}
+
+char escapeOf(char letter)
+{
+    for (const EscapePair& pair : ESCAPE_PAIRS) {
+        if (pair.original == letter) { return pair.escaped; }
+    }
+    return '\0';
+}
+
 }
 
 }

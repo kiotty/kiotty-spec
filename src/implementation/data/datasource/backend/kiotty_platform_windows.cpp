@@ -29,8 +29,109 @@ struct WidePath {
 
 using WidePathResult = Result<WidePath, KiottySpecStatus>;
 
-bool isLetter(char letter)
-{ return (letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z'); }
+constexpr size_t DOUBLE_SEPARATOR_ROOT_LENGTH = 2;
+constexpr size_t DRIVE_LENGTH = 2;
+constexpr size_t DRIVE_ROOT_LENGTH = 3;
+
+bool readStatus(Span<const char> path, struct _stat64& status);
+WidePathResult widen(Span<const char> path);
+SystemPathResult narrow(const wchar_t* wide);
+bool isLetter(char letter);
+
+}
+
+SystemPathResult absolutePath(Span<const char> path)
+{
+    const WidePathResult wide = widen(path);
+    if (!wide) { return SystemPathResult::failure(wide.code); }
+    wchar_t full[MAX_SYSTEM_PATH_LENGTH + 1] {};
+    const wchar_t* const resolved = _wfullpath(full, wide.value.text, MAX_SYSTEM_PATH_LENGTH);
+    if (resolved == nullptr) {
+        return SystemPathResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT);
+    }
+    return narrow(full);
+}
+
+size_t rootLength(Span<const char> path)
+{
+    const size_t length = path.length();
+    if (length >= DOUBLE_SEPARATOR_ROOT_LENGTH) {
+        const bool is_first_separator = isSeparator(path[0]);
+        const bool is_second_separator = isSeparator(path[1]);
+        if (is_first_separator && is_second_separator) { return DOUBLE_SEPARATOR_ROOT_LENGTH; }
+    }
+    const bool has_drive = length >= DRIVE_LENGTH && isLetter(path[0]) && path[1] == ':';
+    if (has_drive && length >= DRIVE_ROOT_LENGTH) {
+        const bool is_third_separator = isSeparator(path[DRIVE_LENGTH]);
+        if (is_third_separator) { return DRIVE_ROOT_LENGTH; }
+    }
+    if (has_drive) { return DRIVE_LENGTH; }
+    return length >= 1 && isSeparator(path[0]) ? 1 : 0;
+}
+
+int openFile(Span<const char> path, OpenMode mode)
+{
+    const WidePathResult wide = widen(path);
+    if (!wide) { return -1; }
+    const int flags = mode == OpenMode::READ ? _O_RDONLY : (_O_WRONLY | _O_CREAT | _O_TRUNC);
+    int descriptor = -1;
+    _wsopen_s(&descriptor, wide.value.text, flags | _O_BINARY, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    return descriptor;
+}
+
+int readSome(int descriptor, char* buffer, size_t length)
+{ return _read(descriptor, buffer, static_cast<unsigned int>(length)); }
+
+int writeSome(int descriptor, const char* buffer, size_t length)
+{ return _write(descriptor, buffer, static_cast<unsigned int>(length)); }
+
+void closeFile(int descriptor) { _close(descriptor); }
+
+bool makeDirectory(Span<const char> path)
+{
+    const WidePathResult wide = widen(path);
+    if (!wide) { return false; }
+    return _wmkdir(wide.value.text) == 0 || errno == EEXIST;
+}
+
+bool isDirectory(Span<const char> path)
+{
+    struct _stat64 status {};
+    return readStatus(path, status) && (status.st_mode & _S_IFDIR) != 0;
+}
+
+bool isFile(Span<const char> path)
+{
+    struct _stat64 status {};
+    return readStatus(path, status) && (status.st_mode & _S_IFREG) != 0;
+}
+
+KiottySpecStatus removeFile(Span<const char> path)
+{
+    const WidePathResult wide = widen(path);
+    if (!wide) { return wide.code; }
+    return _wremove(wide.value.text) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS
+                                          : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+}
+
+KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
+{
+    const WidePathResult source = widen(from);
+    const WidePathResult target = widen(to);
+    if (!source) { return source.code; }
+    if (!target) { return target.code; }
+    const BOOL moved = MoveFileExW(source.value.text, target.value.text,
+                                   MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+    return moved != 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+}
+
+namespace {
+
+bool readStatus(Span<const char> path, struct _stat64& status)
+{
+    const WidePathResult wide = widen(path);
+    return wide && _wstat64(wide.value.text, &status) == 0;
+}
 
 WidePathResult widen(Span<const char> path)
 {
@@ -63,100 +164,12 @@ SystemPathResult narrow(const wchar_t* wide)
     return SystemPathResult::success(path);
 }
 
-bool statOf(Span<const char> path, struct _stat64& status)
-{
-    const WidePathResult wide = widen(path);
-    return wide && _wstat64(wide.value.text, &status) == 0;
-}
+bool isLetter(char letter)
+{ return (letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z'); }
 
 }
 
 bool isSeparator(char letter) { return letter == '/' || letter == '\\'; }
-
-size_t rootLength(Span<const char> path)
-{
-    const size_t length = path.length();
-    if (length >= 2) {
-        const bool is_first_separator = isSeparator(path[0]);
-        const bool is_second_separator = isSeparator(path[1]);
-        if (is_first_separator && is_second_separator) { return 2; }
-    }
-    const bool has_drive = length >= 2 && isLetter(path[0]) && path[1] == ':';
-    if (has_drive && length >= 3) {
-        const bool is_third_separator = isSeparator(path[2]);
-        if (is_third_separator) { return 3; }
-    }
-    if (has_drive) { return 2; }
-    return length >= 1 && isSeparator(path[0]) ? 1 : 0;
-}
-
-SystemPathResult absolutePath(Span<const char> path)
-{
-    const WidePathResult wide = widen(path);
-    if (!wide) { return SystemPathResult::failure(wide.code); }
-    wchar_t full[MAX_SYSTEM_PATH_LENGTH + 1] {};
-    const wchar_t* const resolved = _wfullpath(full, wide.value.text, MAX_SYSTEM_PATH_LENGTH);
-    if (resolved == nullptr) {
-        return SystemPathResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT);
-    }
-    return narrow(full);
-}
-
-int openFile(Span<const char> path, OpenMode mode)
-{
-    const WidePathResult wide = widen(path);
-    if (!wide) { return -1; }
-    const int flags = mode == OpenMode::READ ? _O_RDONLY : (_O_WRONLY | _O_CREAT | _O_TRUNC);
-    int descriptor = -1;
-    _wsopen_s(&descriptor, wide.value.text, flags | _O_BINARY, _SH_DENYNO, _S_IREAD | _S_IWRITE);
-    return descriptor;
-}
-
-int readSome(int descriptor, char* buffer, size_t length)
-{ return _read(descriptor, buffer, static_cast<unsigned int>(length)); }
-
-int writeSome(int descriptor, const char* buffer, size_t length)
-{ return _write(descriptor, buffer, static_cast<unsigned int>(length)); }
-
-void closeFile(int descriptor) { _close(descriptor); }
-
-bool makeDirectory(Span<const char> path)
-{
-    const WidePathResult wide = widen(path);
-    if (!wide) { return false; }
-    return _wmkdir(wide.value.text) == 0 || errno == EEXIST;
-}
-
-bool isDirectory(Span<const char> path)
-{
-    struct _stat64 status {};
-    return statOf(path, status) && (status.st_mode & _S_IFDIR) != 0;
-}
-
-bool isFile(Span<const char> path)
-{
-    struct _stat64 status {};
-    return statOf(path, status) && (status.st_mode & _S_IFREG) != 0;
-}
-
-KiottySpecStatus removeFile(Span<const char> path)
-{
-    const WidePathResult wide = widen(path);
-    if (!wide) { return wide.code; }
-    return _wremove(wide.value.text) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS
-                                          : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
-}
-
-KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
-{
-    const WidePathResult source = widen(from);
-    const WidePathResult target = widen(to);
-    if (!source) { return source.code; }
-    if (!target) { return target.code; }
-    const BOOL moved = MoveFileExW(source.value.text, target.value.text,
-                                   MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
-    return moved != 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
-}
 
 }
 

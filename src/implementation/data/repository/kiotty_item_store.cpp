@@ -15,20 +15,8 @@ using entity::ItemVersion;
 using entity::TagRecord;
 using entity::TagVersion;
 
-bool lessTag(const TagRecord& left, const TagRecord& right)
-{
-    if (left.item.index != right.item.index) { return left.item.index < right.item.index; }
-    return left.tag < right.tag;
-}
+bool isTagBefore(const TagRecord& left, const TagRecord& right);
 
-}
-
-void ItemStore::clear()
-{
-    _t.names.clear();
-    _t.versions.clear();
-    _t.tag_versions.clear();
-    _t.bodies.clear();
 }
 
 KiottySpecStatus ItemStore::rebuild()
@@ -138,8 +126,26 @@ KiottySpecStatus ItemStore::loadTags()
         ++_t.tag_count;
     }
     std::sort(_t.tags.begin(), _t.tags.begin() + static_cast<std::ptrdiff_t>(_t.tag_count),
-              lessTag);
+              isTagBefore);
     return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+void ItemStore::clear()
+{
+    _t.names.clear();
+    _t.versions.clear();
+    _t.tag_versions.clear();
+    _t.bodies.clear();
+}
+
+namespace {
+
+bool isTagBefore(const TagRecord& left, const TagRecord& right)
+{
+    if (left.item.index != right.item.index) { return left.item.index < right.item.index; }
+    return left.tag < right.tag;
+}
+
 }
 
 }

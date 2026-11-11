@@ -23,8 +23,8 @@ public:
 
     KiottySpecStatus open(Span<const char> path);
     Result<bool, KiottySpecStatus> next();
-    Span<const char> line() const { return _file.line(); }
     Result<KispFields, KiottySpecStatus> fields() const { return _decoder.decode(_file.line()); }
+    Span<const char> line() const { return _file.line(); }
     size_t lineNumber() const { return _line_number; }
     uint64_t hash() const { return _hash; }
 

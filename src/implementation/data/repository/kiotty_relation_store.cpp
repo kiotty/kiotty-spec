@@ -12,18 +12,10 @@ using entity::ItemHandle;
 using entity::RelationRecord;
 using entity::RelationVersion;
 
-bool lessRelation(const RelationRecord& left, const RelationRecord& right)
-{
-    if (left.from.index != right.from.index) { return left.from.index < right.from.index; }
-    if (left.relation != right.relation) { return left.relation < right.relation; }
-    return left.to.index < right.to.index;
-}
+constexpr size_t BISECTION_DIVISOR = 2;
 
-bool sameRelation(const RelationRecord& left, const RelationRecord& right)
-{
-    return left.from.index == right.from.index && left.relation == right.relation &&
-           left.to.index == right.to.index;
-}
+bool isRelationBefore(const RelationRecord& left, const RelationRecord& right);
+bool isSameRelation(const RelationRecord& left, const RelationRecord& right);
 
 }
 
@@ -49,7 +41,7 @@ KiottySpecStatus RelationStore::rebuild()
         ++_length;
     }
     std::sort(_records.begin(), _records.begin() + static_cast<std::ptrdiff_t>(_length),
-              lessRelation);
+              isRelationBefore);
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
@@ -82,46 +74,17 @@ Span<const uint32_t> RelationStore::relationsInDiffOrder()
     return Span<const uint32_t>(_order.data(), count);
 }
 
-size_t RelationStore::lowerBound(const RelationRecord& relation) const
-{
-    size_t low = 0;
-    size_t high = _length;
-    while (low < high) {
-        const size_t middle = low + (high - low) / 2;
-        const bool is_less = lessRelation(_records[middle], relation);
-        if (is_less) { low = middle + 1; } else { high = middle; }
-    }
-    return low;
-}
-
 bool RelationStore::contains(const RelationRecord& relation) const
 {
     const size_t position = lowerBound(relation);
-    return position < _length && sameRelation(_records[position], relation);
-}
-
-KiottySpecStatus RelationStore::writeVersion(const RelationRecord& relation, uint32_t removed,
-                                             uint32_t sequence)
-{
-    const uint32_t from = _items.reader().key(relation.from);
-    const uint32_t to = _items.reader().key(relation.to);
-    if (from == entity::NO_KEY || to == entity::NO_KEY) {
-        return KIOTTY_SPEC_STATUS_INVALID_HANDLE;
-    }
-    const RelationVersion version {from, relation.relation, to, sequence, removed, relation.model};
-    const KiottySpecStatus written = _versions.write(version);
-    if (written != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
-                              literalText("max_relations"));
-    }
-    return KIOTTY_SPEC_STATUS_SUCCESS;
+    return position < _length && isSameRelation(_records[position], relation);
 }
 
 KiottySpecStatus RelationStore::add(const RelationRecord& relation, uint32_t sequence)
 {
     const size_t position = lowerBound(relation);
     bool is_duplicate = false;
-    if (position < _length) { is_duplicate = sameRelation(_records[position], relation); }
+    if (position < _length) { is_duplicate = isSameRelation(_records[position], relation); }
     if (is_duplicate) {
         return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_RELATION);
     }
@@ -144,7 +107,7 @@ KiottySpecStatus RelationStore::remove(const RelationRecord& relation, uint32_t 
 {
     const size_t position = lowerBound(relation);
     bool is_found = false;
-    if (position != _length) { is_found = sameRelation(_records[position], relation); }
+    if (position != _length) { is_found = isSameRelation(_records[position], relation); }
     if (!is_found) {
         return _failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_RELATION);
     }
@@ -172,6 +135,52 @@ KiottySpecStatus RelationStore::removeAllOf(ItemHandle item, uint32_t sequence)
     }
     _length = kept;
     return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+size_t RelationStore::lowerBound(const RelationRecord& relation) const
+{
+    size_t low = 0;
+    size_t high = _length;
+    while (low < high) {
+        const size_t middle = low + (high - low) / BISECTION_DIVISOR;
+        const bool is_less = isRelationBefore(_records[middle], relation);
+        if (is_less) { low = middle + 1; } else { high = middle; }
+    }
+    return low;
+}
+
+KiottySpecStatus RelationStore::writeVersion(const RelationRecord& relation, uint32_t removed,
+                                             uint32_t sequence)
+{
+    const uint32_t from = _items.reader().key(relation.from);
+    const uint32_t to = _items.reader().key(relation.to);
+    if (from == entity::NO_KEY || to == entity::NO_KEY) {
+        return KIOTTY_SPEC_STATUS_INVALID_HANDLE;
+    }
+    const RelationVersion version {from, relation.relation, to, sequence, removed, relation.model};
+    const KiottySpecStatus written = _versions.write(version);
+    if (written != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
+                              literalText("max_relations"));
+    }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+namespace {
+
+bool isRelationBefore(const RelationRecord& left, const RelationRecord& right)
+{
+    if (left.from.index != right.from.index) { return left.from.index < right.from.index; }
+    if (left.relation != right.relation) { return left.relation < right.relation; }
+    return left.to.index < right.to.index;
+}
+
+bool isSameRelation(const RelationRecord& left, const RelationRecord& right)
+{
+    return left.from.index == right.from.index && left.relation == right.relation &&
+           left.to.index == right.to.index;
+}
+
 }
 
 }

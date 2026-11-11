@@ -9,12 +9,24 @@ namespace {
 
 constexpr char TEMPORARY_SUFFIX[] = ".tmp";
 
-uint64_t hashLine(Span<const char> line, uint64_t hash)
-{
-    const uint64_t content = hash64(line, hash);
-    return hash64(literalText("\n"), content);
+uint64_t hashLine(Span<const char> line, uint64_t hash);
+
 }
 
+Result<uint64_t, KiottySpecStatus> hashKispFile(Span<const char> path, Span<char> buffer)
+{
+    KispFileReader reader(buffer, Span<char>());
+    const KiottySpecStatus opened = reader.open(path);
+    if (opened == KIOTTY_SPEC_STATUS_NOT_FOUND) {
+        return Result<uint64_t, KiottySpecStatus>::success(EMPTY_KISP_HASH);
+    }
+    if (opened != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return Result<uint64_t, KiottySpecStatus>::failure(opened);
+    }
+    Result<bool, KiottySpecStatus> next = reader.next();
+    while (next && next.value) { next = reader.next(); }
+    if (!next) { return Result<uint64_t, KiottySpecStatus>::failure(next.code); }
+    return Result<uint64_t, KiottySpecStatus>::success(reader.hash());
 }
 
 KiottySpecStatus KispFileReader::open(Span<const char> path)
@@ -73,20 +85,14 @@ KiottySpecStatus KispFileWriter::commit()
     return renamed;
 }
 
-Result<uint64_t, KiottySpecStatus> hashKispFile(Span<const char> path, Span<char> buffer)
+namespace {
+
+uint64_t hashLine(Span<const char> line, uint64_t hash)
 {
-    KispFileReader reader(buffer, Span<char>());
-    const KiottySpecStatus opened = reader.open(path);
-    if (opened == KIOTTY_SPEC_STATUS_NOT_FOUND) {
-        return Result<uint64_t, KiottySpecStatus>::success(EMPTY_KISP_HASH);
-    }
-    if (opened != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return Result<uint64_t, KiottySpecStatus>::failure(opened);
-    }
-    Result<bool, KiottySpecStatus> next = reader.next();
-    while (next && next.value) { next = reader.next(); }
-    if (!next) { return Result<uint64_t, KiottySpecStatus>::failure(next.code); }
-    return Result<uint64_t, KiottySpecStatus>::success(reader.hash());
+    const uint64_t content = hash64(line, hash);
+    return hash64(literalText("\n"), content);
+}
+
 }
 
 }

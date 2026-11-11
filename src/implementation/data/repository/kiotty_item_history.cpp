@@ -23,21 +23,7 @@ struct IdParts {
     uint32_t number {0};
 };
 
-IdParts splitId(Span<const char> id)
-{
-    const size_t length = id.length();
-    size_t dash = length;
-    for (size_t index = length; index > 0 && dash == length; --index) {
-        if (id[index - 1] == '-') { dash = index - 1; }
-    }
-    IdParts parts {};
-    parts.prefix = Span<const char>(id.data(), dash);
-    if (dash == length) { return parts; }
-    const auto number =
-        parseDecimal(Span<const char>(id.data() + dash + 1, length - dash - 1), MAX_ID_NUMBER);
-    parts.number = number ? static_cast<uint32_t>(number.value) : 0;
-    return parts;
-}
+IdParts splitId(Span<const char> id);
 
 }
 
@@ -57,6 +43,26 @@ Result<uint32_t, KiottySpecStatus> ItemHistory::keyOf(Span<const char> id) const
 Result<IdText, KiottySpecStatus> ItemHistory::idOf(uint32_t key) const
 { return _t.names.find(key); }
 
+uint32_t ItemHistory::lastWriteAt(uint32_t key, uint32_t checkpoint) const
+{
+    const ItemVersion* version = _t.versions.latest(key, checkpoint);
+    uint32_t last = version == nullptr ? 0 : version->checkpoint;
+    for (const TagVersion& tag : tagsOf(key)) {
+        if (tag.checkpoint <= checkpoint && tag.checkpoint > last) { last = tag.checkpoint; }
+    }
+    return last;
+}
+
+bool ItemHistory::tagsDiffer(uint32_t key, uint32_t from, uint32_t to) const
+{
+    for (const TagVersion& tag : tagsOf(key)) {
+        const uint64_t from_value = tagAt(key, tag.tag, from);
+        const uint64_t to_value = tagAt(key, tag.tag, to);
+        if (from_value != to_value) { return true; }
+    }
+    return false;
+}
+
 Span<const TagVersion> ItemHistory::tagsOf(uint32_t key) const
 {
     const Span<const TagVersion> all = _t.tag_versions.all();
@@ -69,31 +75,11 @@ Span<const TagVersion> ItemHistory::tagsOf(uint32_t key) const
     return Span<const TagVersion>(first, static_cast<size_t>(last - first));
 }
 
-uint32_t ItemHistory::lastWriteAt(uint32_t key, uint32_t checkpoint) const
-{
-    const ItemVersion* version = _t.versions.latest(key, checkpoint);
-    uint32_t last = version == nullptr ? 0 : version->checkpoint;
-    for (const TagVersion& tag : tagsOf(key)) {
-        if (tag.checkpoint <= checkpoint && tag.checkpoint > last) { last = tag.checkpoint; }
-    }
-    return last;
-}
-
 uint64_t ItemHistory::tagAt(uint32_t key, uint32_t tag, uint32_t checkpoint) const
 {
     const TagVersion* version = _t.tag_versions.latest(entity::TagIdentity{key, tag}, checkpoint);
     if (version == nullptr || version->removed != 0) { return 0; }
     return version->value;
-}
-
-bool ItemHistory::tagsDiffer(uint32_t key, uint32_t from, uint32_t to) const
-{
-    for (const TagVersion& tag : tagsOf(key)) {
-        const uint64_t from_value = tagAt(key, tag.tag, from);
-        const uint64_t to_value = tagAt(key, tag.tag, to);
-        if (from_value != to_value) { return true; }
-    }
-    return false;
 }
 
 Result<IdText, KiottySpecStatus> ItemHistory::nextId(Span<const char> prefix) const
@@ -153,6 +139,26 @@ void ItemHistory::prune(uint32_t base)
         _t.bodies.erase(key);
         _t.names.erase(key);
     }
+}
+
+namespace {
+
+IdParts splitId(Span<const char> id)
+{
+    const size_t length = id.length();
+    size_t dash = length;
+    for (size_t index = length; index > 0 && dash == length; --index) {
+        if (id[index - 1] == '-') { dash = index - 1; }
+    }
+    IdParts parts {};
+    parts.prefix = Span<const char>(id.data(), dash);
+    if (dash == length) { return parts; }
+    const auto number =
+        parseDecimal(Span<const char>(id.data() + dash + 1, length - dash - 1), MAX_ID_NUMBER);
+    parts.number = number ? static_cast<uint32_t>(number.value) : 0;
+    return parts;
+}
+
 }
 
 }

@@ -18,22 +18,10 @@ namespace {
 constexpr mode_t FILE_MODE = 0666;
 constexpr mode_t DIRECTORY_MODE = 0777;
 
-bool statOf(Span<const char> path, struct stat& status)
-{
-    SystemPath terminated {};
-    return terminated.assign(path) == KIOTTY_SPEC_STATUS_SUCCESS &&
-           ::stat(terminated.c_str(), &status) == 0;
-}
+constexpr size_t DOUBLE_SEPARATOR_ROOT_LENGTH = 2;
 
-}
+bool readStatus(Span<const char> path, struct stat& status);
 
-bool isSeparator(char letter) { return letter == '/'; }
-
-size_t rootLength(Span<const char> path)
-{
-    const size_t length = path.length();
-    if (length >= 2 && path[0] == '/' && path[1] == '/') { return 2; }
-    return length >= 1 && path[0] == '/' ? 1 : 0;
 }
 
 SystemPathResult absolutePath(Span<const char> path)
@@ -47,6 +35,17 @@ SystemPathResult absolutePath(Span<const char> path)
     }
     return joinPath(boundedText(current, MAX_SYSTEM_PATH_LENGTH), path);
 }
+
+size_t rootLength(Span<const char> path)
+{
+    const size_t length = path.length();
+    if (length >= DOUBLE_SEPARATOR_ROOT_LENGTH && path[0] == '/' && path[1] == '/') {
+        return DOUBLE_SEPARATOR_ROOT_LENGTH;
+    }
+    return length >= 1 && path[0] == '/' ? 1 : 0;
+}
+
+bool isSeparator(char letter) { return letter == '/'; }
 
 int openFile(Span<const char> path, OpenMode mode)
 {
@@ -76,13 +75,13 @@ bool makeDirectory(Span<const char> path)
 bool isDirectory(Span<const char> path)
 {
     struct stat status {};
-    return statOf(path, status) && S_ISDIR(status.st_mode);
+    return readStatus(path, status) && S_ISDIR(status.st_mode);
 }
 
 bool isFile(Span<const char> path)
 {
     struct stat status {};
-    return statOf(path, status) && S_ISREG(status.st_mode);
+    return readStatus(path, status) && S_ISREG(status.st_mode);
 }
 
 KiottySpecStatus removeFile(Span<const char> path)
@@ -110,6 +109,17 @@ KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
     }
     return ::rename(source.c_str(), target.c_str()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS
                                                          : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+}
+
+namespace {
+
+bool readStatus(Span<const char> path, struct stat& status)
+{
+    SystemPath terminated {};
+    return terminated.assign(path) == KIOTTY_SPEC_STATUS_SUCCESS &&
+           ::stat(terminated.c_str(), &status) == 0;
+}
+
 }
 
 }

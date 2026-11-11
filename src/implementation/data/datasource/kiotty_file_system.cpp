@@ -9,26 +9,10 @@ namespace {
 
 constexpr size_t READ_CHUNK_LENGTH = 65536;
 
-KiottySpecStatus writeAll(int descriptor, Span<const char> content)
-{
-    size_t written = 0;
-    const size_t length = content.length();
-    while (written < length) {
-        const int count =
-            platform::writeSome(descriptor, content.data() + written, content.length() - written);
-        if (count <= 0) { return KIOTTY_SPEC_STATUS_INPUT_OUTPUT; }
-        written += static_cast<size_t>(count);
-    }
-    return KIOTTY_SPEC_STATUS_SUCCESS;
-}
-
-size_t chunkOf(size_t room) { return room < READ_CHUNK_LENGTH ? room : READ_CHUNK_LENGTH; }
+size_t fitChunk(size_t room);
+KiottySpecStatus writeAll(int descriptor, Span<const char> content);
 
 }
-
-bool isDirectory(Span<const char> path) { return platform::isDirectory(path); }
-
-bool isFile(Span<const char> path) { return platform::isFile(path); }
 
 KiottySpecStatus createDirectories(Span<const char> path)
 {
@@ -45,6 +29,8 @@ KiottySpecStatus createDirectories(Span<const char> path)
                                        : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 }
 
+bool isDirectory(Span<const char> path) { return platform::isDirectory(path); }
+
 int openForReading(Span<const char> path)
 { return platform::openFile(path, platform::OpenMode::READ); }
 
@@ -52,7 +38,7 @@ int openForWriting(Span<const char> path)
 { return platform::openFile(path, platform::OpenMode::WRITE); }
 
 int readDescriptor(int descriptor, Span<char> buffer)
-{ return platform::readSome(descriptor, buffer.data(), chunkOf(buffer.length())); }
+{ return platform::readSome(descriptor, buffer.data(), fitChunk(buffer.length())); }
 
 KiottySpecStatus writeDescriptor(int descriptor, Span<const char> content)
 { return writeAll(descriptor, content); }
@@ -66,6 +52,28 @@ KiottySpecStatus removeFile(Span<const char> path)
     return platform::removeFile(path);
 }
 
+bool isFile(Span<const char> path) { return platform::isFile(path); }
+
 KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
 { return platform::renameFile(from, to); }
+
+namespace {
+
+size_t fitChunk(size_t room) { return room < READ_CHUNK_LENGTH ? room : READ_CHUNK_LENGTH; }
+
+KiottySpecStatus writeAll(int descriptor, Span<const char> content)
+{
+    size_t written = 0;
+    const size_t length = content.length();
+    while (written < length) {
+        const int count =
+            platform::writeSome(descriptor, content.data() + written, content.length() - written);
+        if (count <= 0) { return KIOTTY_SPEC_STATUS_INPUT_OUTPUT; }
+        written += static_cast<size_t>(count);
+    }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+}
+
 }
