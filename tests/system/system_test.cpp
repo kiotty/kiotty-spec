@@ -365,7 +365,8 @@ void st006(const fs::path& root)
 {
     writeAll(root / "version" / ".kiotty" / "spec.kisp", "#kisp 1 model 1\n");
     Spec version(root / "version");
-    check(version.opened == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "1 형식 버전이 다른 파일 거부");
+    check(version.opened == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT && version.lastError().subject == KIOTTY_SPEC_SUBJECT_FILE_FORMAT && version.lastError().line == 1,
+          "1 형식 버전이 다른 파일은 첫 줄의 형식 오류로 거부");
     writeAll(root / "tag" / ".kiotty" / "spec.kisp",
              "#kisp 2 model 1\nitem\tO\t0000abcd\tREQ-001\nitem_version\tO\t0000abcd\t1\trequirement\t-\t제목\t\t-\ntag\tO\t0000abcd\t없는 태그\t1\t기능 요구사항\n");
     Spec tag(root / "tag");
@@ -375,7 +376,6 @@ void st006(const fs::path& root)
     Spec escape(root / "escape");
     check(escape.opened == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT && escape.lastError().line == 2 && escape.lastError().subject == KIOTTY_SPEC_SUBJECT_FILE_LINE,
           "3 잘못된 이스케이프는 줄 번호로 거부");
-    check(version.lastError().subject == KIOTTY_SPEC_SUBJECT_FILE_FORMAT && version.lastError().line == 1, "4 형식 버전이 다르면 첫 줄의 형식 오류");
 }
 
 // ---------------------------------------------------------------- REQ-007 ~ 013
