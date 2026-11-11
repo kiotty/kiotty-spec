@@ -8,10 +8,12 @@ checkpoint	O	2	1	2	done	1794315809	개발수칙.md 를 개발 수칙 74개로
 checkpoint	O	3	2	3	done	1794315948	C API 외부 인터페이스 135개
 checkpoint	O	4	3	4	done	1794316304	구현에서 설계 도출 (85개)
 checkpoint	O	5	4	5	done	1794318126	tests/ 에서 유닛 테스트 도출 (54개)
-checkpoint	O	6	5	8	running	1794318201	기능 요구사항 31개의 시스템 테스트
+checkpoint	O	6	5	8	done	1794318201	기능 요구사항 31개의 시스템 테스트
+checkpoint	O	7	6	9	done	1794359510	시스템 테스트 31개 실행 (f7650c6, Debug)
 TABLE	item	O/X	key	id
 item	O	00ab1435	DSN-078
 item	O	011ed8df	DSN-016
+item	O	021f95cd	STR-014
 item	O	02360e37	DSN-068
 item	O	029979bf	RULE-044
 item	O	031f1260	UI-083
@@ -26,6 +28,7 @@ item	O	0673118d	DSN-059
 item	O	067ecec1	UI-077
 item	O	07728b44	DSN-043
 item	O	07e965d1	DSN-009
+item	O	0831a2e4	STR-028
 item	O	0857a7da	UI-035
 item	O	08fe2a2b	RULE-074
 item	O	094df44a	REQ-002
@@ -46,6 +49,7 @@ item	O	13e5e9f0	DSN-046
 item	O	14704b1a	UI-066
 item	O	14beca10	REQ-010
 item	O	153538c5	UI-128
+item	O	174932c2	STR-008
 item	O	1753b045	RULE-059
 item	O	17e806a6	RULE-025
 item	O	17ea5c8d	RULE-017
@@ -67,6 +71,7 @@ item	O	237b3313	RULE-006
 item	O	240282ef	RULE-013
 item	O	2459b200	UI-071
 item	O	253605c0	RULE-009
+item	O	25bc8395	STR-005
 item	O	2620cc06	UI-078
 item	O	2665e8cd	UI-006
 item	O	268326b5	UI-054
@@ -118,6 +123,7 @@ item	O	3bbfb856	UT-016
 item	O	3d2b2666	REQ-037
 item	O	3dd02f08	UI-007
 item	O	3e12d3ef	REQ-016
+item	O	3e2b90a7	STR-030
 item	O	3eda8983	UI-009
 item	O	3f02e2fb	UI-086
 item	O	3f1a7be0	UT-027
@@ -137,6 +143,7 @@ item	O	487fb454	ST-024
 item	O	48975878	RULE-012
 item	O	48a9ab3c	UI-016
 item	O	48f90d21	UI-130
+item	O	493cacd6	STR-012
 item	O	4a0c9ac5	RULE-027
 item	O	4a212847	UI-049
 item	O	4afacd52	RULE-035
@@ -151,6 +158,7 @@ item	O	4e547267	DSN-004
 item	O	4f46cf12	RULE-072
 item	O	4f804f78	ST-005
 item	O	504cb7db	UI-110
+item	O	508aa9ca	STR-019
 item	O	51781a9e	UI-111
 item	O	52022365	UT-039
 item	O	522dcd2d	REQ-012
@@ -180,6 +188,7 @@ item	O	5e09f960	DSN-081
 item	O	5e359c0e	DSN-015
 item	O	5e88a526	UI-099
 item	O	600c198b	RULE-058
+item	O	6127c512	STR-016
 item	O	6196c403	UI-135
 item	O	61ea97d0	DSN-040
 item	O	625023f9	UT-021
@@ -187,6 +196,7 @@ item	O	62a934ee	DSN-010
 item	O	62b091a0	RULE-031
 item	O	62e5e1c3	DSN-041
 item	O	63fa3db0	REQ-038
+item	O	64849230	STR-022
 item	O	64f97c96	UI-046
 item	O	660f57f4	ST-003
 item	O	667a0111	REQ-035
@@ -198,10 +208,12 @@ item	O	6aa51734	DSN-024
 item	O	6b79cd00	ST-017
 item	O	6b981e43	REQ-034
 item	O	6cfa52ce	ST-008
+item	O	6d2eb6d0	STR-011
 item	O	6d95d4a9	UI-082
 item	O	6dddb862	UI-115
 item	O	6ed41634	UT-041
 item	O	70f78fd9	UI-002
+item	O	719e2ccd	STR-027
 item	O	7305bd84	DSN-045
 item	O	744283ad	DSN-049
 item	O	74827f62	DSN-044
@@ -235,6 +247,7 @@ item	O	83f7146f	UI-001
 item	O	8492a76d	RULE-063
 item	O	8553ef57	DSN-056
 item	O	87374f9d	REQ-013
+item	O	87ad4047	STR-017
 item	O	87ddb0bb	DSN-022
 item	O	8874ff63	DSN-076
 item	O	888f7cff	UT-018
@@ -245,6 +258,7 @@ item	O	8c65cea7	UI-055
 item	O	8d1003b3	RULE-057
 item	O	8d630cfc	RULE-062
 item	O	8e48b100	UI-062
+item	O	8ed8a57c	STR-007
 item	O	8f5ae3ad	UT-046
 item	O	9019c5a7	UI-012
 item	O	90f6fa6c	RULE-051
@@ -260,6 +274,7 @@ item	O	9606f537	DSN-061
 item	O	9641e961	ST-025
 item	O	96534f5e	UT-019
 item	O	969657b8	RULE-032
+item	O	970bf723	STR-003
 item	O	971031e4	ST-030
 item	O	9734b840	UT-042
 item	O	975029f0	RULE-001
@@ -275,6 +290,8 @@ item	O	9db86b2a	DSN-077
 item	O	9ea5c49d	DSN-032
 item	O	a083cc54	ST-018
 item	O	a0e64b6b	UI-114
+item	O	a11e1470	STR-029
+item	O	a18ba151	STR-013
 item	O	a192b2b1	DSN-008
 item	O	a2cf62bf	UI-070
 item	O	a39102db	UT-037
@@ -282,9 +299,11 @@ item	O	a415fab7	UI-015
 item	O	a421ec5c	UT-034
 item	O	a43711c5	UT-020
 item	O	a44597b9	UT-030
+item	O	a51e1905	STR-024
 item	O	a5336127	UI-018
 item	O	a56b99fa	ST-028
 item	O	a5767c78	DSN-031
+item	O	a57995c2	STR-002
 item	O	a661a639	UT-050
 item	O	a6d9b5f8	DSN-017
 item	O	a8fbd9e6	RULE-043
@@ -295,6 +314,7 @@ item	O	a95c9671	ST-016
 item	O	a9677d5d	REQ-019
 item	O	a9827729	RULE-054
 item	O	a9cd2fb6	ST-021
+item	O	acb68f0e	STR-020
 item	O	ad7ef8fa	UI-090
 item	O	ad97a985	UI-030
 item	O	ae65f6f4	UI-039
@@ -302,6 +322,7 @@ item	O	ae6bdfec	RULE-056
 item	O	ae7d5455	UI-074
 item	O	aeb6dfe8	ST-002
 item	O	b01a9103	UI-105
+item	O	b09e2f21	STR-018
 item	O	b0d2a761	RULE-024
 item	O	b0edd068	UI-085
 item	O	b1581604	UI-081
@@ -317,15 +338,20 @@ item	O	b69ec9db	UI-103
 item	O	b77be631	UI-094
 item	O	b798d6af	UT-010
 item	O	b7bb9da8	UI-003
+item	O	b80b80cb	STR-015
 item	O	b92730c1	UI-040
 item	O	b943b917	ST-015
 item	O	b95d931a	UI-073
 item	O	b9a28d9f	UT-022
 item	O	b9eee54e	DSN-051
 item	O	b9f7ebe2	REQ-015
+item	O	ba0d2282	STR-026
 item	O	ba195442	RULE-010
+item	O	ba64f9e9	STR-001
 item	O	bba2eb54	UI-025
+item	O	bcc9e8cb	STR-031
 item	O	bccd6fab	ST-023
+item	O	bcef6936	STR-009
 item	O	bd204eb1	RULE-045
 item	O	bddc9f70	DSN-012
 item	O	be307c83	UI-043
@@ -333,6 +359,7 @@ item	O	bfb0369d	UI-037
 item	O	bfe01f9d	REQ-027
 item	O	c16dce92	DSN-037
 item	O	c20f6110	ST-027
+item	O	c245bcce	STR-010
 item	O	c27153d0	UT-009
 item	O	c2945a3c	UT-007
 item	O	c29acf52	RULE-011
@@ -342,6 +369,7 @@ item	O	c39b1670	RULE-030
 item	O	c3f906cb	RULE-069
 item	O	c4d3ef5c	DSN-014
 item	O	c5ae4dcd	UI-084
+item	O	c65b2d10	STR-025
 item	O	c67367ba	UI-107
 item	O	c6c00c78	UT-024
 item	O	c7511506	ST-007
@@ -359,8 +387,10 @@ item	O	ce6f920b	UT-033
 item	O	cedc19ca	RULE-049
 item	O	d0813f76	UT-032
 item	O	d1bd29bd	ST-026
+item	O	d212c1a7	STR-006
 item	O	d3dea456	REQ-004
 item	O	d5121133	ST-012
+item	O	d54f0477	STR-023
 item	O	d687f06a	UI-064
 item	O	d729b40d	UI-102
 item	O	d7d58524	DSN-028
@@ -380,6 +410,7 @@ item	O	de592f6c	UI-004
 item	O	de8d8c1d	UI-042
 item	O	def6c251	UT-001
 item	O	dfaa72c4	UI-093
+item	O	e21c507d	STR-021
 item	O	e22babae	DSN-066
 item	O	e27a4baf	UI-041
 item	O	e2c79e79	RULE-033
@@ -393,6 +424,7 @@ item	O	e99323f1	DSN-011
 item	O	ec7e95e7	REQ-008
 item	O	ee39cd69	ST-006
 item	O	ee4483d0	ST-014
+item	O	ef625fc7	STR-004
 item	O	efb50d45	UI-089
 item	O	f06a551b	UI-036
 item	O	f07f6055	UI-072
@@ -430,6 +462,7 @@ item	O	ff68f73e	ST-013
 TABLE	item_version	O/X	key	checkpoint	kind	parent	title	summary	body
 item_version	O	00ab1435	4	design	-	Differ (context/kiotty_differ.h)	체크포인트 사이 비교 (설계서 v1 5.4).	c4b32675bee87c38
 item_version	O	011ed8df	4	design	-	흐름 · 체크포인트 확정		71a5a5d373cf0615
+item_version	O	021f95cd	7	system_test_result	-	항목을 종류별 모델대로 분류하고 연결한다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	02360e37	4	design	-	SpecFile (domain/usecases/kiotty_spec_file.h)	.kisp 파일과 store 를 오간다.	fc7c57fb7cb13715
 item_version	O	029979bf	2	rule	969657b8	4.12 부정 조건을 피한다.	4.12 부정 조건을 피한다. if (!isEmpty()) 대신 if (hasItems()). 이중 부정 금지.	f034c410fad0dcb3
 item_version	O	031f1260	3	external_interface	fcda3877	KiottySpecItemKind	항목 13 종류. 값은 1 부터이며 kind_mask 의 비트 (kind - 1)	35a9d827637f99f3
@@ -444,6 +477,7 @@ item_version	O	0673118d	4	design	-	kind (domain/entity/kiotty_kind.h)	Kind · �
 item_version	O	067ecec1	3	external_interface	9019c5a7	KiottySpec_readDecisionAt	그 시점의 결정 기록	767853d159a15b13
 item_version	O	07728b44	4	design	-	kisp_file (data/datasource/kiotty_kisp_file.h)	.kisp 파일을 줄마다 읽으며 줄 해시를 쌓고, 임시 파일에 쓴 뒤 rename 으로 바꾼다.	afe8d370ac72bf34
 item_version	O	07e965d1	4	design	-	디렉토리 app/cli/		9eeb60b6ac0a4c18
+item_version	O	0831a2e4	7	system_test_result	-	지난 시점의 내용을 읽는다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	0857a7da	3	external_interface	b7bb9da8	KiottySpec_setItemParent	상위 항목을 정하거나 없앤다	ad56219ad5a6637c
 item_version	O	08fe2a2b	2	rule	-	9. 리뷰 체크리스트		a96a1a580d1af790
 item_version	O	094df44a	1	requirement	26e7649a	사양 파일을 열고 처음이면 만든다		cb3473cb3b1544d7
@@ -464,6 +498,7 @@ item_version	O	13e5e9f0	4	design	-	CheckpointStore (data/repository/kiotty_check
 item_version	O	14704b1a	3	external_interface	7ac5b218	KiottySpec_readPosition	현재 위치와 다음 단계	07f723a99ec65c13
 item_version	O	14beca10	1	requirement	f40870e2	항목을 상위 · 하위로 묶는다		a595266d40629ee9
 item_version	O	153538c5	3	external_interface	a5336127	KiottySpecCheckpointHandleResult	상태와 체크포인트 핸들	41ba061d9d3dc15f
+item_version	O	174932c2	7	system_test_result	-	항목을 만들고 ID 를 받는다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	1753b045	2	rule	-	6. 설계		3b8cfe84c784e226
 item_version	O	17e806a6	2	rule	-	3. 지역성		4ad4fd2921baf5c0
 item_version	O	17ea5c8d	2	rule	cbb5a614	2.3 금지 함수와 대체		3982553aa87d418f
@@ -485,6 +520,7 @@ item_version	O	237b3313	2	rule	b19d9182	1.3 반복 생성·소멸되는 인스�
 item_version	O	240282ef	2	rule	b19d9182	1.10 Raw pointer 는 쓰지 않는다.		a101099cf7c49237
 item_version	O	2459b200	3	external_interface	21ded3ba	KiottySpec_fetchItemDiffPage	항목 변화 커서의 다음 페이지	fe2bc4cadf8801bd
 item_version	O	253605c0	2	rule	b19d9182	1.6 컨테이너는 core/ 의 고정 크기 컨테이너만 쓴다.		be57f300ef392b77
+item_version	O	25bc8395	7	system_test_result	-	밖에서 바뀐 파일을 덮어쓰지 않는다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	2620cc06	3	external_interface	95e1f869	KiottySpec_openTextDiffCursor	글자 차이 커서를 연다	e3db650ace185403
 item_version	O	2665e8cd	3	external_interface	-	항목 목록과 커서	Kind · 태그 조건 · 하위 · 영향으로 항목 목록을 페이지로 받는다	2c0f5a356639ce79
 item_version	O	268326b5	3	external_interface	3dd02f08	KiottySpec_startCheckpoint	단계의 체크포인트를 시작한다	df7be11563bec8ee
@@ -536,6 +572,7 @@ item_version	O	3bbfb856	5	unit_test_plan	def6c251	utf8 invalid (testUtf8Invalid)
 item_version	O	3d2b2666	1	requirement	-	빌드 환경		1283000dfd39a488
 item_version	O	3dd02f08	3	external_interface	-	체크포인트	체크포인트를 시작 · 이어 하기 · 확정 · 정리하고 읽는다	716715b619d5bfb3
 item_version	O	3e12d3ef	1	requirement	29885efc	정해진 관계로만 연결한다		17dbfb6822e18bb4
+item_version	O	3e2b90a7	7	system_test_result	-	왜 그렇게 정했는지 남긴다 (결정 기록)	kiotty_system_test, f7650c6 Debug	-
 item_version	O	3eda8983	3	external_interface	-	모델	Kind 의 모델 · 태그 정의 · 관계 정의를 읽는다	e19be4e5fdb97469
 item_version	O	3f02e2fb	3	external_interface	fcda3877	KiottySpecCardinality	태그 · 관계 값 개수 제한 MANY · SINGLE	cb4a6eeb108909dc
 item_version	O	3f1a7be0	5	unit_test_plan	c6c00c78	line round trip (testLineRoundTrip)		3e45c2678df779c2
@@ -555,6 +592,7 @@ item_version	O	487fb454	6	system_test_plan	45a4ca49	오래된 기록을 정리�
 item_version	O	48975878	2	rule	b19d9182	1.9 모든 변수는 선언과 동시에 {} 로 초기화한다.		d4934d9819e25b55
 item_version	O	48a9ab3c	3	external_interface	-	레코드	포인터 없는 고정 크기 값 레코드	5590359e6d99ac64
 item_version	O	48f90d21	3	external_interface	a5336127	KiottySpecPositionResult	상태와 현재 위치	e73a9c1b730aa416
+item_version	O	493cacd6	7	system_test_result	-	항목 ID 를 바꾼다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	4a0c9ac5	2	rule	17e806a6	3.2 포인터로 연결된 자료구조는 쓰지 않는다.	3.2 포인터로 연결된 자료구조는 쓰지 않는다. 배열 + index 로 만든다.	74393a711ace59f2
 item_version	O	4a212847	3	external_interface	2665e8cd	KiottySpec_openChildCursor	하위 항목 커서를 연다	e61963f05623b09c
 item_version	O	4afacd52	2	rule	969657b8	4.3 early return 을 쓴다.	4.3 early return 을 쓴다. 에러 검사는 if (!res) { return ...; } 한 줄 블록으로 통일한다. return 뒤에 else 를 두지 않는다.	93244d58b4a6fd2a
@@ -569,6 +607,7 @@ item_version	O	4e547267	4	design	-	디렉토리 src/implementation/data/datasour
 item_version	O	4f46cf12	2	rule	dc2a5ab3	7.4 core/ 는 범용 자료구조와 유틸만 둔다.		bb9b6cf8c6f48d9f
 item_version	O	4f804f78	6	system_test_plan	39a38e52	밖에서 바뀐 파일을 덮어쓰지 않는다	REQ-005 의 인수 조건 2 개	0ac24e7393e45754
 item_version	O	504cb7db	3	external_interface	48a9ab3c	KiottySpecRelationDiff	관계 변화 하나	8aed059c32032c73
+item_version	O	508aa9ca	7	system_test_result	-	단계를 따라 체크포인트로 기록을 쌓고 확정한다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	51781a9e	3	external_interface	48a9ab3c	KiottySpecKindDiff	Kind 하나의 변화 수	8458db534330982a
 item_version	O	52022365	5	unit_test_plan	a39102db	cursor kind and handles (testCursorKindAndHandles)		96eaf05c15429f99
 item_version	O	522dcd2d	1	requirement	f40870e2	항목 ID 를 바꾼다		24cf8c59e1518f37
@@ -598,6 +637,7 @@ item_version	O	5e09f960	4	design	-	ItemDiffQuery (context/kiotty_item_diff_query
 item_version	O	5e359c0e	4	design	-	흐름 · 쓰기 한 번		6d101dfceb2990ae
 item_version	O	5e88a526	3	external_interface	a415fab7	KiottySpecConfiguration	컨텍스트 용량. 0 이면 기본값	99973664cca97269
 item_version	O	600c198b	2	rule	291c4670	5.5 에러 코드를 문장으로 바꾸는 일은 presentation 에서만 한다.		06d75ca86d228658
+item_version	O	6127c512	7	system_test_result	-	정해진 관계로만 연결한다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	6196c403	3	external_interface	a5336127	KiottySpecTextDiffResult	상태와 글자 조각	1d3debcb5e99298e
 item_version	O	61ea97d0	4	design	-	FileReader (data/datasource/kiotty_file_reader.h)	파일을 줄 단위로 읽는다.	18aae234e8280e80
 item_version	O	625023f9	5	unit_test_plan	def6c251	numbers (testNumbers)		5b11ec21a4771bdf
@@ -606,6 +646,7 @@ item_version	O	62b091a0	2	rule	17e806a6	3.6 16 바이트 이하의 trivially cop
 item_version	O	62e5e1c3	4	design	-	file_system (data/datasource/kiotty_file_system.h)	경로 계산(절대 · 결합 · 상위 · 파일 이름)과 파일 · 폴더 다루기.	8cdf0ea6ea07f821
 item_version	O	62e5e1c3	5	design	-	file_system (data/datasource/kiotty_file_system.h)	경로 계산(절대 · 결합 · 상위 · 파일 이름)과 파일 · 폴더 다루기.	89da378ee38f3876
 item_version	O	63fa3db0	1	requirement	-	문자 인코딩과 줄 끝		f2368a21ae59659f
+item_version	O	64849230	7	system_test_result	-	지금 어디에 있고 다음 단계가 무엇인지 안다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	64f97c96	3	external_interface	4d02ef15	KiottySpec_openRelationCursorByModel	관계 종류 하나의 모든 관계 커서를 연다	69d2d1be2786ffeb
 item_version	O	660f57f4	6	system_test_plan	39a38e52	프로젝트 이름과 만든 시각을 남긴다	REQ-003 의 인수 조건 2 개	d1c2a15dd4990d33
 item_version	O	667a0111	1	requirement	-	쓰기 한 번이 사람이 기다리지 않을 만큼 빠르다		fc4029302d4015d1
@@ -618,10 +659,12 @@ item_version	O	6aa51734	4	design	-	FixedString (core/kiotty_fixed_string.h)	길�
 item_version	O	6b79cd00	6	system_test_plan	ee4483d0	모델을 읽는다	REQ-017 의 인수 조건 3 개	a0fe439d66211394
 item_version	O	6b981e43	1	requirement	-	쓰기는 전부 되거나 하나도 안 된다		12a7bece4d615282
 item_version	O	6cfa52ce	6	system_test_plan	c7511506	항목을 만들고 ID 를 받는다	REQ-008 의 인수 조건 4 개	b58e7d9f7ee12cbe
+item_version	O	6d2eb6d0	7	system_test_result	-	항목을 지운다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	6d95d4a9	3	external_interface	fcda3877	KiottySpecActor	호출한 쪽. 확정 · 정리는 USER 만	54c09ac4df4dacb0
 item_version	O	6dddb862	3	external_interface	f0dc6547	KiottySpecRelationPage	관계 페이지	a5a007e28da3de45
 item_version	O	6ed41634	5	unit_test_plan	cd23d5c3	writes need checkpoint (testWritesNeedCheckpoint)		3a3d8818726f9672
 item_version	O	70f78fd9	3	external_interface	-	이름 표	Kind 와 체크포인트 상태를 영문 이름과 바꾼다	c6ef5dfd8131a9d0
+item_version	O	719e2ccd	7	system_test_result	-	바뀐 항목과 관계를 목록으로 본다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	7305bd84	4	design	-	BodyStore (data/repository/kiotty_body_store.h)	항목 key 마다 현재 본문을 초기화 때 확보한 영역에 둔다.	ab334233b8922013
 item_version	O	744283ad	4	design	-	ItemHistory (data/repository/kiotty_item_history.h)	항목의 버전 표를 읽고 정리한다.	a3b2234b8a447ee5
 item_version	O	74827f62	4	design	-	kisp_line (data/datasource/kiotty_kisp_line.h)	.kisp 한 줄을 탭으로 나누고, 탭 · 줄바꿈 · 역슬래시 이스케이프를 풀거나 붙인다.	408fb906fb9411c7
@@ -655,6 +698,7 @@ item_version	O	83f7146f	3	external_interface	-	컨텍스트와 사양 파일	라
 item_version	O	8492a76d	2	rule	1753b045	6.4 엣지 케이스는 흐름이 삼킨다.	6.4 엣지 케이스는 흐름이 삼킨다. 빈 입력·경계값도 같은 루프로 처리되게 설계하고, 조건 분기로 특수 처리하지 않는다.	83172df0e97931ed
 item_version	O	8553ef57	4	design	-	RelationStore (data/repository/kiotty_relation_store.h)	관계 버전 표와 현재 관계 풀 (설계서 v1 3.5, 10.1).	d1a2f084065c8fa3
 item_version	O	87374f9d	1	requirement	f40870e2	항목을 찾고 목록으로 본다		86f4a91142bad3d7
+item_version	O	87ad4047	7	system_test_result	-	모델을 읽는다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	87ddb0bb	4	design	-	Failure (core/kiotty_failure.h)	마지막 실패의 상태 코드와 이유 문장을 담는다.	658ff31823bf977c
 item_version	O	8874ff63	4	design	-	cursor_rows (context/kiotty_cursor_rows.h)	목록 질의가 결과 행을 커서에 담을 때 쓰는 도우미.	919cd6ac88d904fd
 item_version	O	888f7cff	5	unit_test_plan	def6c251	version table latest (testVersionTableLatest)		a67ce334c1918d03
@@ -665,6 +709,7 @@ item_version	O	8c65cea7	3	external_interface	3dd02f08	KiottySpec_resumeCheckpoin
 item_version	O	8d1003b3	2	rule	291c4670	5.4 스트림(파일, 소켓, USB) 읽기·쓰기만 Span 출력 인자를 허용한다.		658e1d57ca5643e3
 item_version	O	8d630cfc	2	rule	1753b045	6.3 한 흐름은 한 맥락만 다룬다.	6.3 한 흐름은 한 맥락만 다룬다. 여러 맥락이 필요하면 상위 맥락 함수가 조합한다.	66d913fa0b2f51a6
 item_version	O	8e48b100	3	external_interface	f1cd20c5	KiottySpec_readDecision	현재 결정 기록을 읽는다	c6acb9eecf5e0b1e
+item_version	O	8ed8a57c	7	system_test_result	-	단계 산출물을 항목으로 기록한다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	8f5ae3ad	5	unit_test_plan	cd23d5c3	given id and rename (testGivenIdAndRename)	ID 는 유일한 필드일 뿐이다. 관계 · 이력은 내부 키로 따라오므로 rename 뒤에도 그대로 이어진다.	af82d7e3811c120b
 item_version	O	9019c5a7	3	external_interface	-	지난 시점 읽기	체크포인트 시점의 항목 · 태그 · 본문 · 결정 기록을 읽는다	bb8de4370d7fbbef
 item_version	O	90f6fa6c	2	rule	969657b8	4.19 한 클래스의 기능이 너무 많아지면, 그 클래스의 멤버 변수 reference 를 생성자로 받는 세부…	4.19 한 클래스의 기능이 너무 많아지면, 그 클래스의 멤버 변수 reference 를 생성자로 받는 세부 클래스에 기능을 나눠 맡긴다.	ac2e1f6f26eda49e
@@ -681,6 +726,7 @@ item_version	O	9606f537	4	design	-	version_records (domain/entity/kiotty_version
 item_version	O	9641e961	6	system_test_plan	-	체크포인트 사이에 바뀐 것을 본다	REQ-025 의 인수 조건 1 개	b53a048ce69ac039
 item_version	O	96534f5e	5	unit_test_plan	def6c251	version table write (testVersionTableWrite)		e593d12de9ace3ea
 item_version	O	969657b8	2	rule	-	4. 가독성		4896d96fa72b1083
+item_version	O	970bf723	7	system_test_result	-	프로젝트 이름과 만든 시각을 남긴다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	971031e4	6	system_test_plan	-	왜 그렇게 정했는지 남긴다 (결정 기록)	REQ-030 의 인수 조건 3 개	1f6164b30dc9f6fb
 item_version	O	9734b840	5	unit_test_plan	cd23d5c3	items tags relations (testItemsTagsRelations)		e9673676d4a52e67
 item_version	O	975029f0	2	rule	-	0. 원칙		3d0c62cb729030df
@@ -696,6 +742,8 @@ item_version	O	9db86b2a	4	design	-	DiffRange (context/kiotty_diff_range.h)	비�
 item_version	O	9ea5c49d	4	design	-	Span (core/kiotty_span.h)	포인터와 길이를 함께 다니게 하는 Span<T> (개발수칙 2.2).	9d0d73c1ed2c047a
 item_version	O	a083cc54	6	system_test_plan	ee4483d0	변경의 영향을 따라간다	REQ-018 의 인수 조건 2 개	4c0ed2850dd9f78e
 item_version	O	a0e64b6b	3	external_interface	f0dc6547	KiottySpecTagPage	태그 페이지	2bd5abd0f426ac6d
+item_version	O	a11e1470	7	system_test_result	-	제목과 요약의 글자 차이를 본다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	a18ba151	7	system_test_result	-	항목을 찾고 목록으로 본다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	a192b2b1	4	design	-	디렉토리 src/implementation/context/		200c580a36eb2732
 item_version	O	a2cf62bf	3	external_interface	21ded3ba	KiottySpec_openItemDiffCursor	바뀐 항목 커서를 연다	bc37ed2a2e1c8b1d
 item_version	O	a39102db	5	unit_test_plan	-	context 단위 테스트 (kiotty_context_test)		2c7363bf10efdee8
@@ -703,9 +751,11 @@ item_version	O	a415fab7	3	external_interface	-	핸들과 입력 값	컨텍스트
 item_version	O	a421ec5c	5	unit_test_plan	a44597b9	tag lookup (testTagLookup)		c2358799dc99250f
 item_version	O	a43711c5	5	unit_test_plan	def6c251	version table prune (testVersionTablePrune)		4a0f4633dfc6de00
 item_version	O	a44597b9	5	unit_test_plan	-	model 단위 테스트 (kiotty_model_test)		f119873c358681ef
+item_version	O	a51e1905	7	system_test_result	-	오래된 기록을 정리한다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	a5336127	3	external_interface	-	결과 구조체	상태 코드와 값을 함께 돌려주는 구조체	b9043c320c2148e9
 item_version	O	a56b99fa	6	system_test_plan	9641e961	지난 시점의 내용을 읽는다	REQ-028 의 인수 조건 4 개	1bdddd63b05b085d
 item_version	O	a5767c78	4	design	-	SpanText (core/kiotty_span_text.h)	남이 준 영역에 null 종료 글을 쌓는다.	e0a88a713317bf48
+item_version	O	a57995c2	7	system_test_result	-	사양 파일을 열고 처음이면 만든다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	a661a639	5	unit_test_plan	cd23d5c3	결정 기록 쓰기 · 읽기 · 지난 시점	결정 기록을 다시 쓰고 지금 · 지난 시점으로 읽는다	7a692f0389b50652
 item_version	O	a6d9b5f8	4	design	-	흐름 · 목록 질의와 페이지		36e5cadfe1bad5a3
 item_version	O	a8fbd9e6	2	rule	969657b8	4.11 멤버 변수를 쓰는 계산은 멤버를 인자로 받는 보조 함수로 뺀다.	4.11 멤버 변수를 쓰는 계산은 멤버를 인자로 받는 보조 함수로 뺀다. 메서드는 멤버를 모아 넘기고 결과를 저장하는 일만 한다.	23ff9f89478aecfa
@@ -716,6 +766,7 @@ item_version	O	a95c9671	6	system_test_plan	ee4483d0	정해진 관계로만 연�
 item_version	O	a9677d5d	1	requirement	-	단계를 따라 체크포인트로 기록을 쌓고 확정한다	라운드마다 체크포인트, 사용자가 조건을 만족한 체크포인트를 확정	33e2522cacbea3f4
 item_version	O	a9827729	2	rule	291c4670	5.6 에러 코드는 include/ 에서만 정의한다.		f7026a360c4443ae
 item_version	O	a9cd2fb6	6	system_test_plan	45a4ca49	사용자만 체크포인트를 확정하고, 단계별 조건을 검사한다	REQ-021 의 인수 조건 7 개	7994611023647f01
+item_version	O	acb68f0e	7	system_test_result	-	체크포인트를 시작하고 쓰기를 묶는다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	ad7ef8fa	3	external_interface	fcda3877	KiottySpecTextField	글자 차이를 볼 필드	f81a30a7ec55dc9f
 item_version	O	ad97a985	3	external_interface	b7bb9da8	KiottySpec_renameItem	항목 ID 만 바꾼다	5acd7e5a5ed0a852
 item_version	O	ae65f6f4	3	external_interface	de592f6c	KiottySpec_setItemTag	태그 값을 쓴다	9ad4dc4aea62f64d
@@ -723,6 +774,7 @@ item_version	O	ae6bdfec	2	rule	291c4670	5.3 스택에 담기 큰 결과는 Conte
 item_version	O	ae7d5455	3	external_interface	9019c5a7	KiottySpec_readItemAt	그 시점의 항목 버전	7ad464f2f79985be
 item_version	O	aeb6dfe8	6	system_test_plan	39a38e52	사양 파일을 열고 처음이면 만든다	REQ-002 의 인수 조건 4 개	12588e0b7c02b7b7
 item_version	O	b01a9103	3	external_interface	48a9ab3c	KiottySpecModel	Kind 의 모델	58d2b9f7ac3afe84
+item_version	O	b09e2f21	7	system_test_result	-	변경의 영향을 따라간다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	b0d2a761	2	rule	cbb5a614	2.10 모든 parse* 함수는 다음 다섯 입력을 테스트한다.		a3a27d1206cc21a0
 item_version	O	b0edd068	3	external_interface	fcda3877	KiottySpecCheckpointState	STARTED · RUNNING · DONE	614ecbde7160346a
 item_version	O	b1581604	3	external_interface	fcda3877	KiottySpecStatus	모든 함수의 결과 상태. 0 이 SUCCESS	d34847667a65cf71
@@ -738,15 +790,20 @@ item_version	O	b69ec9db	3	external_interface	48a9ab3c	KiottySpecCheckpoint	체�
 item_version	O	b77be631	3	external_interface	a415fab7	KiottySpecCheckpointHandle	체크포인트 핸들 (하위 32 비트가 순번)	caa7ae3d85c40191
 item_version	O	b798d6af	5	unit_test_plan	def6c251	fixed vector (testFixedVector)		a89edeeab4de9622
 item_version	O	b7bb9da8	3	external_interface	-	항목	항목을 만들고 읽고 고치고 지운다	abf06b763a793f5e
+item_version	O	b80b80cb	7	system_test_result	-	항목에 태그를 붙여 분류한다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	b92730c1	3	external_interface	de592f6c	KiottySpec_readItemTag	태그 값을 읽는다	3b555b9cb00ebbbc
 item_version	O	b943b917	6	system_test_plan	ee4483d0	항목에 태그를 붙여 분류한다	REQ-015 의 인수 조건 4 개	0b67d2864883b27a
 item_version	O	b95d931a	3	external_interface	21ded3ba	KiottySpec_fetchRelationDiffPage	관계 변화 커서의 다음 페이지	2072004641e2b75e
 item_version	O	b9a28d9f	5	unit_test_plan	def6c251	span text (testSpanText)		b383d35deb9bb371
 item_version	O	b9eee54e	4	design	-	ItemStore (data/repository/kiotty_item_store.h)	항목 버전 표와 현재 뷰 (항목 풀 + 태그 풀 + ID 색인, 설계서 v1 10.1).	3148c7b7d25c05fc
 item_version	O	b9f7ebe2	1	requirement	29885efc	항목에 태그를 붙여 분류한다		378dd52b23f3de2f
+item_version	O	ba0d2282	7	system_test_result	-	바뀐 것을 종류별로 요약한다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	ba195442	2	rule	b19d9182	1.7 스택 지역 버퍼는 1024 바이트 이하다.	1.7 스택 지역 버퍼는 1024 바이트 이하다. 더 크면 호출자가 넘긴 작업 Context 의 버퍼를 쓴다.	b76ec8ec1f82f5b6
+item_version	O	ba64f9e9	7	system_test_result	-	프로젝트의 사양 기록을 파일 하나로 열고 보관한다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	bba2eb54	3	external_interface	83f7146f	KiottySpec_statusName	상태 코드의 이름	72095649d29d9f7a
+item_version	O	bcc9e8cb	7	system_test_result	-	변경 요청으로 흐름을 다시 시작한다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	bccd6fab	6	system_test_plan	45a4ca49	체크포인트 목록과 이력을 본다	REQ-023 의 인수 조건 2 개	d213873281da0d67
+item_version	O	bcef6936	7	system_test_result	-	항목의 제목 · 요약 · 본문을 고친다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	bd204eb1	2	rule	969657b8	4.13 삼항 연산자는 값 선택 한 단만 쓴다.	4.13 삼항 연산자는 값 선택 한 단만 쓴다. 중첩하지 않는다.	d763004bb31c3b7f
 item_version	O	bddc9f70	4	design	-	메모리 정책 · 본문 영역		c7bf802fe412ee81
 item_version	O	be307c83	3	external_interface	4d02ef15	KiottySpec_addRelation	관계를 만든다	9530ffc720f82601
@@ -755,6 +812,7 @@ item_version	O	bfe01f9d	1	requirement	2deab145	바뀐 항목과 관계를 목록
 item_version	O	c16dce92	4	design	-	utf8 (core/kiotty_utf8.h)	UTF-8 검사와 글자 경계에서 자르기.	68b1324fbb9763ee
 item_version	O	c16dce92	5	design	-	utf8 (core/kiotty_utf8.h)	UTF-8 검사와 글자 경계에서 자르기.	6facab98430bd19f
 item_version	O	c20f6110	6	system_test_plan	9641e961	바뀐 항목과 관계를 목록으로 본다	REQ-027 의 인수 조건 2 개	1baa8077b298af1c
+item_version	O	c245bcce	7	system_test_result	-	항목을 상위 · 하위로 묶는다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	c27153d0	5	unit_test_plan	def6c251	fixed map (testFixedMap)		1aa9f120891ac0d2
 item_version	O	c2945a3c	5	unit_test_plan	def6c251	fixed string overflow clears (testFixedStringOverflowClears)		4bd4dd7aea680e89
 item_version	O	c29acf52	2	rule	b19d9182	1.8 재귀는 쓰지 않는다.	1.8 재귀는 쓰지 않는다. 깊이 제한이 있는 명시적 스택(FixedVector)으로 바꾼다.	c0cfdf1156b2cc3c
@@ -764,6 +822,7 @@ item_version	O	c39b1670	2	rule	17e806a6	3.5 다른 스레드가 쓰는 데이터
 item_version	O	c3f906cb	2	rule	dc2a5ab3	7.1 C++ 라이브러리		1a57055844d4adce
 item_version	O	c4d3ef5c	4	design	-	흐름 · 사양 파일 열기		9582def86526a750
 item_version	O	c5ae4dcd	3	external_interface	fcda3877	KiottySpecStep	12 단계	813450077d6459d0
+item_version	O	c65b2d10	7	system_test_result	-	체크포인트 사이에 바뀐 것을 본다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	c67367ba	3	external_interface	48a9ab3c	KiottySpecRelationDefinition	관계 정의	ab33c7a21a35d1c1
 item_version	O	c6c00c78	5	unit_test_plan	-	datasource 단위 테스트 (kiotty_datasource_test)		f83fe3ae11f2b0e5
 item_version	O	c7511506	6	system_test_plan	-	단계 산출물을 항목으로 기록한다	REQ-007 의 인수 조건 2 개	e7670b07ecd80d0b
@@ -781,8 +840,10 @@ item_version	O	ce6f920b	5	unit_test_plan	a44597b9	models (testModels)		88fe78a36
 item_version	O	cedc19ca	2	rule	969657b8	4.17 const 가 기본이다.	4.17 const 가 기본이다. 바뀌는 변수만 non-const 로 둔다.	46afe059e3ac030b
 item_version	O	d0813f76	5	unit_test_plan	a44597b9	item id (testItemId)		e87e59b63f74fde8
 item_version	O	d1bd29bd	6	system_test_plan	9641e961	바뀐 것을 종류별로 요약한다	REQ-026 의 인수 조건 3 개	8dd07bb4a67477b0
+item_version	O	d212c1a7	7	system_test_result	-	형식이 다른 파일은 열지 않는다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	d3dea456	1	requirement	26e7649a	기록을 git 으로 보관하고 병합한다		751cd8f9d0285914
 item_version	O	d5121133	6	system_test_plan	c7511506	항목 ID 를 바꾼다	REQ-012 의 인수 조건 2 개	f0511f1f2b40b3f5
+item_version	O	d54f0477	7	system_test_result	-	체크포인트 목록과 이력을 본다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	d687f06a	3	external_interface	3eda8983	KiottySpec_readTagDefinition	태그 정의 하나를 읽는다	d345c23e1fc2491e
 item_version	O	d729b40d	3	external_interface	48a9ab3c	KiottySpecRelation	관계 레코드	3992cc800a85d4d8
 item_version	O	d7d58524	4	design	-	number (core/kiotty_number.h)	10진수 글자 전체를 수로 바꾼다.	9f0c7da85f27add0
@@ -802,6 +863,7 @@ item_version	O	de592f6c	3	external_interface	-	태그	항목의 태그 값을 �
 item_version	O	de8d8c1d	3	external_interface	de592f6c	KiottySpec_fetchTagPage	태그 커서의 다음 페이지	7849af9af36064de
 item_version	O	def6c251	5	unit_test_plan	-	core 단위 테스트 (kiotty_core_test)		04c2d09210baf513
 item_version	O	dfaa72c4	3	external_interface	a415fab7	KiottySpecItemHandle	항목 풀 핸들 (generation << 32 | index)	4552c271b4dfdd5d
+item_version	O	e21c507d	7	system_test_result	-	사용자만 체크포인트를 확정하고, 단계별 조건을 검사한다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	e22babae	4	design	-	ModelFinder (domain/usecases/kiotty_model_finder.h)	모델 표에서 이름으로 Kind · 태그 · 태그 비트 · 관계의 index 를 찾는다.	d63d62e637ad9c6d
 item_version	O	e27a4baf	3	external_interface	de592f6c	KiottySpec_openTagCursor	항목의 태그 목록 커서를 연다	61d08a580fb731b6
 item_version	O	e2c79e79	2	rule	969657b8	4.1 수치 한계.	4.1 수치 한계. 넘으면 나눈다.	f8787b24bb8673cc
@@ -815,6 +877,7 @@ item_version	O	e99323f1	4	design	-	메모리 정책 · 버전 표		62c234c7f4c9c
 item_version	O	ec7e95e7	1	requirement	f40870e2	항목을 만들고 ID 를 받는다		6f7babdf63e8d919
 item_version	O	ee39cd69	6	system_test_plan	39a38e52	형식이 다른 파일은 열지 않는다	REQ-006 의 인수 조건 3 개	0c25dccf6f617598
 item_version	O	ee4483d0	6	system_test_plan	-	항목을 종류별 모델대로 분류하고 연결한다	REQ-014 의 인수 조건 2 개	ae28e3ad4e36478a
+item_version	O	ef625fc7	7	system_test_result	-	기록을 git 으로 보관하고 병합한다	kiotty_system_test, f7650c6 Debug	-
 item_version	O	efb50d45	3	external_interface	fcda3877	KiottySpecChangedField	수정된 필드 비트	1bb0a4e53715d943
 item_version	O	f06a551b	3	external_interface	b7bb9da8	KiottySpec_removeItem	항목을 지운다	c1df45326c77a8e5
 item_version	O	f07f6055	3	external_interface	21ded3ba	KiottySpec_openRelationDiffCursor	바뀐 관계 커서를 연다	1e8548b3b5dd4b67
@@ -854,6 +917,7 @@ tag	O	00ab1435	설계 종류	4	모듈
 tag	O	00ab1435	구현 상태	4	구현 완료
 tag	O	011ed8df	설계 종류	4	동작 흐름
 tag	O	011ed8df	구현 상태	4	구현 완료
+tag	O	021f95cd	결과	7	PASS
 tag	O	02360e37	설계 종류	4	모듈
 tag	O	02360e37	구현 상태	4	구현 완료
 tag	O	029979bf	수칙 종류	2	컨벤션
@@ -871,6 +935,7 @@ tag	O	07728b44	설계 종류	4	모듈
 tag	O	07728b44	구현 상태	4	구현 완료
 tag	O	07e965d1	설계 종류	4	디렉토리
 tag	O	07e965d1	구현 상태	4	구현 완료
+tag	O	0831a2e4	결과	7	PASS
 tag	O	0857a7da	인터페이스 종류	3	C 함수
 tag	O	08fe2a2b	수칙 종류	2	테스트
 tag	O	094df44a	요구사항 종류	1	기능 요구사항
@@ -894,6 +959,7 @@ tag	O	13e5e9f0	구현 상태	4	구현 완료
 tag	O	14704b1a	인터페이스 종류	3	C 함수
 tag	O	14beca10	요구사항 종류	1	기능 요구사항
 tag	O	153538c5	인터페이스 종류	3	C 타입
+tag	O	174932c2	결과	7	PASS
 tag	O	1753b045	수칙 종류	2	아키텍처
 tag	O	17e806a6	수칙 종류	2	코딩 제약
 tag	O	17ea5c8d	수칙 종류	2	코딩 제약
@@ -914,6 +980,7 @@ tag	O	237b3313	수칙 종류	2	코딩 제약
 tag	O	240282ef	수칙 종류	2	코딩 제약
 tag	O	2459b200	인터페이스 종류	3	C 함수
 tag	O	253605c0	수칙 종류	2	코딩 제약
+tag	O	25bc8395	결과	7	PASS
 tag	O	2620cc06	인터페이스 종류	3	C 함수
 tag	O	2665e8cd	인터페이스 종류	3	C 함수
 tag	O	268326b5	인터페이스 종류	3	C 함수
@@ -971,6 +1038,7 @@ tag	O	3bbfb856	구현 상태	5	구현 완료
 tag	O	3d2b2666	요구사항 종류	1	환경 요구사항
 tag	O	3dd02f08	인터페이스 종류	3	C 함수
 tag	O	3e12d3ef	요구사항 종류	1	기능 요구사항
+tag	O	3e2b90a7	결과	7	PASS
 tag	O	3eda8983	인터페이스 종류	3	C 함수
 tag	O	3f02e2fb	인터페이스 종류	3	C 타입
 tag	O	3f1a7be0	구현 상태	5	구현 완료
@@ -990,6 +1058,7 @@ tag	O	47954855	구현 상태	4	구현 완료
 tag	O	48975878	수칙 종류	2	코딩 제약
 tag	O	48a9ab3c	인터페이스 종류	3	C 타입
 tag	O	48f90d21	인터페이스 종류	3	C 타입
+tag	O	493cacd6	결과	7	PASS
 tag	O	4a0c9ac5	수칙 종류	2	코딩 제약
 tag	O	4a212847	인터페이스 종류	3	C 함수
 tag	O	4afacd52	수칙 종류	2	컨벤션
@@ -1005,6 +1074,7 @@ tag	O	4e547267	설계 종류	4	디렉토리
 tag	O	4e547267	구현 상태	4	구현 완료
 tag	O	4f46cf12	수칙 종류	2	아키텍처
 tag	O	504cb7db	인터페이스 종류	3	C 타입
+tag	O	508aa9ca	결과	7	PASS
 tag	O	51781a9e	인터페이스 종류	3	C 타입
 tag	O	52022365	구현 상태	5	구현 완료
 tag	O	522dcd2d	요구사항 종류	1	기능 요구사항
@@ -1037,6 +1107,7 @@ tag	O	5e359c0e	설계 종류	4	동작 흐름
 tag	O	5e359c0e	구현 상태	4	구현 완료
 tag	O	5e88a526	인터페이스 종류	3	C 타입
 tag	O	600c198b	수칙 종류	2	아키텍처
+tag	O	6127c512	결과	7	PASS
 tag	O	6196c403	인터페이스 종류	3	C 타입
 tag	O	61ea97d0	설계 종류	4	모듈
 tag	O	61ea97d0	구현 상태	4	구현 완료
@@ -1048,6 +1119,7 @@ tag	O	62e5e1c3	설계 종류	4	모듈
 tag	O	62e5e1c3	구현 상태	4	구현 완료
 tag	O	62e5e1c3	구현 상태	5	구현 완료
 tag	O	63fa3db0	요구사항 종류	1	환경 요구사항
+tag	O	64849230	결과	7	PASS
 tag	O	64f97c96	인터페이스 종류	3	C 함수
 tag	O	667a0111	요구사항 종류	1	품질 요구사항
 tag	O	66c490ea	인터페이스 종류	3	C 타입
@@ -1058,10 +1130,12 @@ tag	O	68e15acf	구현 상태	5	변경 필요
 tag	O	6aa51734	설계 종류	4	모듈
 tag	O	6aa51734	구현 상태	4	구현 완료
 tag	O	6b981e43	요구사항 종류	1	품질 요구사항
+tag	O	6d2eb6d0	결과	7	PASS
 tag	O	6d95d4a9	인터페이스 종류	3	C 타입
 tag	O	6dddb862	인터페이스 종류	3	C 타입
 tag	O	6ed41634	구현 상태	5	구현 완료
 tag	O	70f78fd9	인터페이스 종류	3	C 함수
+tag	O	719e2ccd	결과	7	PASS
 tag	O	7305bd84	설계 종류	4	모듈
 tag	O	7305bd84	구현 상태	4	구현 완료
 tag	O	744283ad	설계 종류	4	모듈
@@ -1108,6 +1182,7 @@ tag	O	8492a76d	수칙 종류	2	아키텍처
 tag	O	8553ef57	설계 종류	4	모듈
 tag	O	8553ef57	구현 상태	4	구현 완료
 tag	O	87374f9d	요구사항 종류	1	기능 요구사항
+tag	O	87ad4047	결과	7	PASS
 tag	O	87ddb0bb	설계 종류	4	모듈
 tag	O	87ddb0bb	구현 상태	4	구현 완료
 tag	O	8874ff63	설계 종류	4	모듈
@@ -1122,6 +1197,7 @@ tag	O	8c65cea7	인터페이스 종류	3	C 함수
 tag	O	8d1003b3	수칙 종류	2	아키텍처
 tag	O	8d630cfc	수칙 종류	2	아키텍처
 tag	O	8e48b100	인터페이스 종류	3	C 함수
+tag	O	8ed8a57c	결과	7	PASS
 tag	O	8f5ae3ad	구현 상태	5	구현 완료
 tag	O	9019c5a7	인터페이스 종류	3	C 함수
 tag	O	90f6fa6c	수칙 종류	2	컨벤션
@@ -1140,6 +1216,7 @@ tag	O	9606f537	설계 종류	4	모듈
 tag	O	9606f537	구현 상태	4	구현 완료
 tag	O	96534f5e	구현 상태	5	구현 완료
 tag	O	969657b8	수칙 종류	2	컨벤션
+tag	O	970bf723	결과	7	PASS
 tag	O	9734b840	구현 상태	5	구현 완료
 tag	O	975029f0	수칙 종류	2	코딩 제약
 tag	O	98765333	구현 상태	5	구현 완료
@@ -1157,6 +1234,8 @@ tag	O	9db86b2a	구현 상태	4	구현 완료
 tag	O	9ea5c49d	설계 종류	4	모듈
 tag	O	9ea5c49d	구현 상태	4	구현 완료
 tag	O	a0e64b6b	인터페이스 종류	3	C 타입
+tag	O	a11e1470	결과	7	PASS
+tag	O	a18ba151	결과	7	PASS
 tag	O	a192b2b1	설계 종류	4	디렉토리
 tag	O	a192b2b1	구현 상태	4	구현 완료
 tag	O	a2cf62bf	인터페이스 종류	3	C 함수
@@ -1165,9 +1244,11 @@ tag	O	a415fab7	인터페이스 종류	3	C 타입
 tag	O	a421ec5c	구현 상태	5	구현 완료
 tag	O	a43711c5	구현 상태	5	구현 완료
 tag	O	a44597b9	구현 상태	5	구현 완료
+tag	O	a51e1905	결과	7	PASS
 tag	O	a5336127	인터페이스 종류	3	C 타입
 tag	O	a5767c78	설계 종류	4	모듈
 tag	O	a5767c78	구현 상태	4	구현 완료
+tag	O	a57995c2	결과	7	PASS
 tag	O	a661a639	구현 상태	5	미구현
 tag	O	a6d9b5f8	설계 종류	4	동작 흐름
 tag	O	a6d9b5f8	구현 상태	4	구현 완료
@@ -1179,12 +1260,14 @@ tag	O	a942eff9	설계 종류	4	모듈
 tag	O	a942eff9	구현 상태	4	구현 완료
 tag	O	a9677d5d	요구사항 종류	1	기능 요구사항
 tag	O	a9827729	수칙 종류	2	컨벤션
+tag	O	acb68f0e	결과	7	PASS
 tag	O	ad7ef8fa	인터페이스 종류	3	C 타입
 tag	O	ad97a985	인터페이스 종류	3	C 함수
 tag	O	ae65f6f4	인터페이스 종류	3	C 함수
 tag	O	ae6bdfec	수칙 종류	2	아키텍처
 tag	O	ae7d5455	인터페이스 종류	3	C 함수
 tag	O	b01a9103	인터페이스 종류	3	C 타입
+tag	O	b09e2f21	결과	7	PASS
 tag	O	b0d2a761	수칙 종류	2	테스트
 tag	O	b0edd068	인터페이스 종류	3	C 타입
 tag	O	b1581604	인터페이스 종류	3	C 타입
@@ -1203,14 +1286,19 @@ tag	O	b69ec9db	인터페이스 종류	3	C 타입
 tag	O	b77be631	인터페이스 종류	3	C 타입
 tag	O	b798d6af	구현 상태	5	구현 완료
 tag	O	b7bb9da8	인터페이스 종류	3	C 함수
+tag	O	b80b80cb	결과	7	PASS
 tag	O	b92730c1	인터페이스 종류	3	C 함수
 tag	O	b95d931a	인터페이스 종류	3	C 함수
 tag	O	b9a28d9f	구현 상태	5	구현 완료
 tag	O	b9eee54e	설계 종류	4	모듈
 tag	O	b9eee54e	구현 상태	4	구현 완료
 tag	O	b9f7ebe2	요구사항 종류	1	기능 요구사항
+tag	O	ba0d2282	결과	7	PASS
 tag	O	ba195442	수칙 종류	2	코딩 제약
+tag	O	ba64f9e9	결과	7	PASS
 tag	O	bba2eb54	인터페이스 종류	3	C 함수
+tag	O	bcc9e8cb	결과	7	PASS
+tag	O	bcef6936	결과	7	PASS
 tag	O	bd204eb1	수칙 종류	2	컨벤션
 tag	O	bddc9f70	설계 종류	4	메모리 정책
 tag	O	bddc9f70	구현 상태	4	구현 완료
@@ -1220,6 +1308,7 @@ tag	O	bfe01f9d	요구사항 종류	1	기능 요구사항
 tag	O	c16dce92	설계 종류	4	모듈
 tag	O	c16dce92	구현 상태	4	구현 완료
 tag	O	c16dce92	구현 상태	5	구현 완료
+tag	O	c245bcce	결과	7	PASS
 tag	O	c27153d0	구현 상태	5	구현 완료
 tag	O	c2945a3c	구현 상태	5	구현 완료
 tag	O	c29acf52	수칙 종류	2	코딩 제약
@@ -1232,6 +1321,7 @@ tag	O	c3f906cb	수칙 종류	2	아키텍처
 tag	O	c4d3ef5c	설계 종류	4	동작 흐름
 tag	O	c4d3ef5c	구현 상태	4	구현 완료
 tag	O	c5ae4dcd	인터페이스 종류	3	C 타입
+tag	O	c65b2d10	결과	7	PASS
 tag	O	c67367ba	인터페이스 종류	3	C 타입
 tag	O	c6c00c78	구현 상태	5	구현 완료
 tag	O	c7ebd6c1	설계 종류	4	모듈
@@ -1249,7 +1339,9 @@ tag	O	ce66c051	요구사항 종류	1	기능 요구사항
 tag	O	ce6f920b	구현 상태	5	구현 완료
 tag	O	cedc19ca	수칙 종류	2	컨벤션
 tag	O	d0813f76	구현 상태	5	구현 완료
+tag	O	d212c1a7	결과	7	PASS
 tag	O	d3dea456	요구사항 종류	1	기능 요구사항
+tag	O	d54f0477	결과	7	PASS
 tag	O	d687f06a	인터페이스 종류	3	C 함수
 tag	O	d729b40d	인터페이스 종류	3	C 타입
 tag	O	d7d58524	설계 종류	4	모듈
@@ -1272,6 +1364,7 @@ tag	O	de592f6c	인터페이스 종류	3	C 함수
 tag	O	de8d8c1d	인터페이스 종류	3	C 함수
 tag	O	def6c251	구현 상태	5	구현 완료
 tag	O	dfaa72c4	인터페이스 종류	3	C 타입
+tag	O	e21c507d	결과	7	PASS
 tag	O	e22babae	설계 종류	4	모듈
 tag	O	e22babae	구현 상태	4	구현 완료
 tag	O	e27a4baf	인터페이스 종류	3	C 함수
@@ -1285,6 +1378,7 @@ tag	O	e972389a	수칙 종류	2	아키텍처
 tag	O	e99323f1	설계 종류	4	메모리 정책
 tag	O	e99323f1	구현 상태	4	구현 완료
 tag	O	ec7e95e7	요구사항 종류	1	기능 요구사항
+tag	O	ef625fc7	결과	7	PASS
 tag	O	efb50d45	인터페이스 종류	3	C 타입
 tag	O	f06a551b	인터페이스 종류	3	C 함수
 tag	O	f07f6055	인터페이스 종류	3	C 함수
@@ -1342,6 +1436,7 @@ relation	O	00ab1435	design	의존 설계 사항	f5762d28	4
 relation	O	00ab1435	design	의존 설계 사항	f7fffbc9	4
 relation	O	011ed8df	design	관련 요구사항	f9e66987	4
 relation	O	011ed8df	design	관련 외부 인터페이스	3dd02f08	4
+relation	O	021f95cd	system_test_result	대상 시스템 테스트	ee4483d0	7
 relation	O	02360e37	design	관련 요구사항	094df44a	4
 relation	O	02360e37	design	관련 요구사항	53bb7345	4
 relation	O	02360e37	design	관련 요구사항	cd2da8cb	4
@@ -1372,6 +1467,7 @@ relation	O	07728b44	design	의존 설계 사항	74827f62	4
 relation	O	07728b44	design	의존 설계 사항	7f44dc49	4
 relation	O	07728b44	design	의존 설계 사항	9ea5c49d	4
 relation	O	07e965d1	design	관련 요구사항	26e7649a	4
+relation	O	0831a2e4	system_test_result	대상 시스템 테스트	a56b99fa	7
 relation	O	0a97bb84	design	관련 요구사항	214d9c30	4
 relation	O	0a97bb84	design	의존 설계 사항	434b35f3	4
 relation	O	0d4fa52d	unit_test_plan	검증 설계 사항	c7ebd6c1	5
@@ -1409,6 +1505,7 @@ relation	O	13e5e9f0	design	의존 설계 사항	87ddb0bb	4
 relation	O	13e5e9f0	design	의존 설계 사항	89f09ead	4
 relation	O	13e5e9f0	design	의존 설계 사항	9ac20d4f	4
 relation	O	13e5e9f0	design	의존 설계 사항	9ea5c49d	4
+relation	O	174932c2	system_test_result	대상 시스템 테스트	6cfa52ce	7
 relation	O	19ad759d	unit_test_plan	검증 설계 사항	562b0381	5
 relation	O	19ad759d	unit_test_plan	검증 설계 사항	74a4990f	5
 relation	O	1a781f4c	unit_test_plan	검증 설계 사항	f6b74667	5
@@ -1417,6 +1514,7 @@ relation	O	205b72b0	system_test_plan	검증 요구사항	7821230f	6
 relation	O	21ded3ba	external_interface	관련 요구사항	2deab145	3
 relation	O	21ded3ba	external_interface	관련 요구사항	9a4dab28	3
 relation	O	21ded3ba	external_interface	관련 요구사항	bfe01f9d	3
+relation	O	25bc8395	system_test_result	대상 시스템 테스트	4f804f78	7
 relation	O	2665e8cd	external_interface	관련 요구사항	14beca10	3
 relation	O	2665e8cd	external_interface	관련 요구사항	3b4ade38	3
 relation	O	2665e8cd	external_interface	관련 요구사항	87374f9d	3
@@ -1494,6 +1592,7 @@ relation	O	3dd02f08	external_interface	관련 요구사항	a9677d5d	3
 relation	O	3dd02f08	external_interface	관련 요구사항	f3a039ea	3
 relation	O	3dd02f08	external_interface	관련 요구사항	f9e66987	3
 relation	O	3dd02f08	external_interface	관련 요구사항	fc13027d	3
+relation	O	3e2b90a7	system_test_result	대상 시스템 테스트	971031e4	7
 relation	O	3eda8983	external_interface	관련 요구사항	29885efc	3
 relation	O	3eda8983	external_interface	관련 요구사항	ce280297	3
 relation	O	3f1a7be0	unit_test_plan	검증 설계 사항	74827f62	5
@@ -1527,6 +1626,7 @@ relation	O	48a9ab3c	external_interface	관련 요구사항	a9677d5d	3
 relation	O	48a9ab3c	external_interface	관련 요구사항	bfe01f9d	3
 relation	O	48a9ab3c	external_interface	관련 요구사항	f40870e2	3
 relation	O	48a9ab3c	external_interface	관련 요구사항	fa77317d	3
+relation	O	493cacd6	system_test_result	대상 시스템 테스트	d5121133	7
 relation	O	4c940f50	design	관련 요구사항	29885efc	4
 relation	O	4c940f50	design	관련 요구사항	ce280297	4
 relation	O	4c940f50	design	관련 외부 인터페이스	3eda8983	4
@@ -1540,6 +1640,7 @@ relation	O	4e547267	design	관련 요구사항	094df44a	4
 relation	O	4e547267	design	관련 요구사항	63fa3db0	4
 relation	O	4e547267	design	관련 요구사항	d3dea456	4
 relation	O	4f804f78	system_test_plan	검증 요구사항	53bb7345	6
+relation	O	508aa9ca	system_test_result	대상 시스템 테스트	45a4ca49	7
 relation	O	52022365	unit_test_plan	검증 설계 사항	f7fffbc9	5
 relation	O	5406acfb	system_test_plan	검증 요구사항	fc13027d	6
 relation	O	562b0381	design	관련 요구사항	214d9c30	4
@@ -1561,6 +1662,7 @@ relation	O	5e359c0e	design	관련 요구사항	53bb7345	4
 relation	O	5e359c0e	design	관련 요구사항	6b981e43	4
 relation	O	5e359c0e	design	관련 요구사항	fc13027d	4
 relation	O	5e359c0e	design	관련 외부 인터페이스	b7bb9da8	4
+relation	O	6127c512	system_test_result	대상 시스템 테스트	a95c9671	7
 relation	O	61ea97d0	design	관련 요구사항	094df44a	4
 relation	O	61ea97d0	design	관련 요구사항	cd2da8cb	4
 relation	O	61ea97d0	design	의존 설계 사항	434b35f3	4
@@ -1573,6 +1675,7 @@ relation	O	62e5e1c3	design	관련 요구사항	63fa3db0	4
 relation	O	62e5e1c3	design	의존 설계 사항	434b35f3	4
 relation	O	62e5e1c3	design	의존 설계 사항	6aa51734	4
 relation	O	62e5e1c3	design	의존 설계 사항	9ea5c49d	4
+relation	O	64849230	system_test_result	대상 시스템 테스트	69e351fa	7
 relation	O	660f57f4	system_test_plan	검증 요구사항	416925b2	6
 relation	O	68e15acf	design	관련 요구사항	63fa3db0	4
 relation	O	69e351fa	system_test_plan	검증 요구사항	fa77317d	6
@@ -1580,12 +1683,14 @@ relation	O	6aa51734	design	관련 요구사항	214d9c30	4
 relation	O	6aa51734	design	의존 설계 사항	9ea5c49d	4
 relation	O	6b79cd00	system_test_plan	검증 요구사항	ce280297	6
 relation	O	6cfa52ce	system_test_plan	검증 요구사항	ec7e95e7	6
+relation	O	6d2eb6d0	system_test_result	대상 시스템 테스트	0d50b948	7
 relation	O	6ed41634	unit_test_plan	검증 설계 사항	13e5e9f0	5
 relation	O	6ed41634	unit_test_plan	검증 설계 사항	33c7d59e	5
 relation	O	6ed41634	unit_test_plan	검증 설계 사항	82791019	5
 relation	O	6ed41634	unit_test_plan	검증 설계 사항	c2e66a3f	5
 relation	O	6ed41634	unit_test_plan	검증 설계 사항	d899d5c4	5
 relation	O	70f78fd9	external_interface	관련 요구사항	ce280297	3
+relation	O	719e2ccd	system_test_result	대상 시스템 테스트	c20f6110	7
 relation	O	7305bd84	design	관련 요구사항	214d9c30	4
 relation	O	7305bd84	design	관련 요구사항	ce66c051	4
 relation	O	7305bd84	design	의존 설계 사항	0a97bb84	4
@@ -1688,6 +1793,7 @@ relation	O	8553ef57	design	의존 설계 사항	89f09ead	4
 relation	O	8553ef57	design	의존 설계 사항	9606f537	4
 relation	O	8553ef57	design	의존 설계 사항	9ea5c49d	4
 relation	O	8553ef57	design	의존 설계 사항	b9eee54e	4
+relation	O	87ad4047	system_test_result	대상 시스템 테스트	6b79cd00	7
 relation	O	87ddb0bb	design	관련 요구사항	1f9bd33c	4
 relation	O	87ddb0bb	design	관련 외부 인터페이스	83f7146f	4
 relation	O	87ddb0bb	design	의존 설계 사항	6aa51734	4
@@ -1706,6 +1812,7 @@ relation	O	89f09ead	design	관련 요구사항	f40870e2	4
 relation	O	89f09ead	design	의존 설계 사항	0673118d	4
 relation	O	89f09ead	design	의존 설계 사항	6aa51734	4
 relation	O	89f09ead	design	의존 설계 사항	74a4990f	4
+relation	O	8ed8a57c	system_test_result	대상 시스템 테스트	c7511506	7
 relation	O	8f5ae3ad	unit_test_plan	검증 설계 사항	1084ebd3	5
 relation	O	8f5ae3ad	unit_test_plan	검증 설계 사항	744283ad	5
 relation	O	8f5ae3ad	unit_test_plan	검증 설계 사항	b2ee85aa	5
@@ -1731,6 +1838,7 @@ relation	O	9606f537	design	의존 설계 사항	0673118d	4
 relation	O	9606f537	design	의존 설계 사항	89f09ead	4
 relation	O	9641e961	system_test_plan	검증 요구사항	2deab145	6
 relation	O	96534f5e	unit_test_plan	검증 설계 사항	778e3a58	5
+relation	O	970bf723	system_test_result	대상 시스템 테스트	660f57f4	7
 relation	O	971031e4	system_test_plan	검증 요구사항	581c4cbc	6
 relation	O	9734b840	unit_test_plan	검증 설계 사항	1084ebd3	5
 relation	O	9734b840	unit_test_plan	검증 설계 사항	33eb04e1	5
@@ -1756,6 +1864,8 @@ relation	O	9db86b2a	design	관련 외부 인터페이스	21ded3ba	4
 relation	O	9ea5c49d	design	관련 요구사항	39921859	4
 relation	O	9ea5c49d	design	의존 설계 사항	434b35f3	4
 relation	O	a083cc54	system_test_plan	검증 요구사항	3b4ade38	6
+relation	O	a11e1470	system_test_result	대상 시스템 테스트	45a6b4e8	7
+relation	O	a18ba151	system_test_result	대상 시스템 테스트	ff68f73e	7
 relation	O	a192b2b1	design	관련 요구사항	26e7649a	4
 relation	O	a192b2b1	design	관련 요구사항	2deab145	4
 relation	O	a192b2b1	design	관련 요구사항	87374f9d	4
@@ -1766,10 +1876,12 @@ relation	O	a415fab7	external_interface	관련 요구사항	87374f9d	3
 relation	O	a415fab7	external_interface	관련 요구사항	9a4dab28	3
 relation	O	a421ec5c	unit_test_plan	검증 설계 사항	e22babae	5
 relation	O	a43711c5	unit_test_plan	검증 설계 사항	778e3a58	5
+relation	O	a51e1905	system_test_result	대상 시스템 테스트	487fb454	7
 relation	O	a5336127	external_interface	관련 요구사항	1f9bd33c	3
 relation	O	a56b99fa	system_test_plan	검증 요구사항	54fe9b64	6
 relation	O	a5767c78	design	관련 요구사항	214d9c30	4
 relation	O	a5767c78	design	의존 설계 사항	9ea5c49d	4
+relation	O	a57995c2	system_test_result	대상 시스템 테스트	aeb6dfe8	7
 relation	O	a661a639	unit_test_plan	검증 설계 사항	46567ed8	5
 relation	O	a661a639	unit_test_plan	검증 설계 사항	d899d5c4	5
 relation	O	a661a639	unit_test_plan	검증 설계 사항	fa997aaf	5
@@ -1788,7 +1900,9 @@ relation	O	a942eff9	design	관련 요구사항	214d9c30	4
 relation	O	a942eff9	design	의존 설계 사항	434b35f3	4
 relation	O	a95c9671	system_test_plan	검증 요구사항	3e12d3ef	6
 relation	O	a9cd2fb6	system_test_plan	검증 요구사항	f9e66987	6
+relation	O	acb68f0e	system_test_result	대상 시스템 테스트	5406acfb	7
 relation	O	aeb6dfe8	system_test_plan	검증 요구사항	094df44a	6
+relation	O	b09e2f21	system_test_result	대상 시스템 테스트	a083cc54	7
 relation	O	b1955034	design	관련 요구사항	39921859	4
 relation	O	b1955034	design	의존 설계 사항	434b35f3	4
 relation	O	b2ee85aa	design	관련 요구사항	ec7e95e7	4
@@ -1803,6 +1917,7 @@ relation	O	b7bb9da8	external_interface	관련 요구사항	ce66c051	3
 relation	O	b7bb9da8	external_interface	관련 요구사항	ec7e95e7	3
 relation	O	b7bb9da8	external_interface	관련 요구사항	f40870e2	3
 relation	O	b7bb9da8	external_interface	관련 요구사항	fac19df1	3
+relation	O	b80b80cb	system_test_result	대상 시스템 테스트	b943b917	7
 relation	O	b943b917	system_test_plan	검증 요구사항	b9f7ebe2	6
 relation	O	b9a28d9f	unit_test_plan	검증 설계 사항	a5767c78	5
 relation	O	b9eee54e	design	관련 요구사항	214d9c30	4
@@ -1814,13 +1929,18 @@ relation	O	b9eee54e	design	의존 설계 사항	7ee22562	4
 relation	O	b9eee54e	design	의존 설계 사항	87ddb0bb	4
 relation	O	b9eee54e	design	의존 설계 사항	9ea5c49d	4
 relation	O	b9eee54e	design	의존 설계 사항	b5d0f058	4
+relation	O	ba0d2282	system_test_result	대상 시스템 테스트	d1bd29bd	7
+relation	O	ba64f9e9	system_test_result	대상 시스템 테스트	39a38e52	7
+relation	O	bcc9e8cb	system_test_result	대상 시스템 테스트	205b72b0	7
 relation	O	bccd6fab	system_test_plan	검증 요구사항	f3a039ea	6
+relation	O	bcef6936	system_test_result	대상 시스템 테스트	d9035721	7
 relation	O	bddc9f70	design	관련 요구사항	214d9c30	4
 relation	O	bddc9f70	design	관련 요구사항	ce66c051	4
 relation	O	c16dce92	design	관련 요구사항	39921859	4
 relation	O	c16dce92	design	관련 요구사항	63fa3db0	4
 relation	O	c16dce92	design	의존 설계 사항	9ea5c49d	4
 relation	O	c20f6110	system_test_plan	검증 요구사항	bfe01f9d	6
+relation	O	c245bcce	system_test_result	대상 시스템 테스트	41a04be8	7
 relation	O	c27153d0	unit_test_plan	검증 설계 사항	0a97bb84	5
 relation	O	c2945a3c	unit_test_plan	검증 설계 사항	6aa51734	5
 relation	O	c2ac95b5	design	관련 요구사항	094df44a	4
@@ -1874,6 +1994,7 @@ relation	O	c4d3ef5c	design	관련 요구사항	094df44a	4
 relation	O	c4d3ef5c	design	관련 요구사항	cd2da8cb	4
 relation	O	c4d3ef5c	design	관련 요구사항	d3dea456	4
 relation	O	c4d3ef5c	design	관련 외부 인터페이스	83f7146f	4
+relation	O	c65b2d10	system_test_result	대상 시스템 테스트	9641e961	7
 relation	O	c7511506	system_test_plan	검증 요구사항	f40870e2	6
 relation	O	c7ebd6c1	design	관련 요구사항	39921859	4
 relation	O	c7ebd6c1	design	의존 설계 사항	9ea5c49d	4
@@ -1890,7 +2011,9 @@ relation	O	ce6f920b	unit_test_plan	검증 설계 사항	4c940f50	5
 relation	O	ce6f920b	unit_test_plan	검증 설계 사항	f0da28a2	5
 relation	O	d0813f76	unit_test_plan	검증 설계 사항	b2ee85aa	5
 relation	O	d1bd29bd	system_test_plan	검증 요구사항	9a4dab28	6
+relation	O	d212c1a7	system_test_result	대상 시스템 테스트	ee39cd69	7
 relation	O	d5121133	system_test_plan	검증 요구사항	522dcd2d	6
+relation	O	d54f0477	system_test_result	대상 시스템 테스트	bccd6fab	7
 relation	O	d7d58524	design	관련 요구사항	39921859	4
 relation	O	d7d58524	design	의존 설계 사항	434b35f3	4
 relation	O	d7d58524	design	의존 설계 사항	9ea5c49d	4
@@ -1915,6 +2038,7 @@ relation	O	daa20269	design	관련 요구사항	214d9c30	4
 relation	O	dd75aac2	design	관련 요구사항	214d9c30	4
 relation	O	dd75aac2	design	관련 요구사항	f40870e2	4
 relation	O	de592f6c	external_interface	관련 요구사항	b9f7ebe2	3
+relation	O	e21c507d	system_test_result	대상 시스템 테스트	a9cd2fb6	7
 relation	O	e22babae	design	관련 요구사항	29885efc	4
 relation	O	e22babae	design	관련 요구사항	ce280297	4
 relation	O	e22babae	design	관련 외부 인터페이스	3eda8983	4
@@ -1932,6 +2056,7 @@ relation	O	e99323f1	design	관련 요구사항	1a205b6c	4
 relation	O	e99323f1	design	관련 요구사항	214d9c30	4
 relation	O	ee39cd69	system_test_plan	검증 요구사항	cd2da8cb	6
 relation	O	ee4483d0	system_test_plan	검증 요구사항	29885efc	6
+relation	O	ef625fc7	system_test_result	대상 시스템 테스트	065fa99a	7
 relation	O	f0da28a2	design	관련 요구사항	29885efc	4
 relation	O	f0da28a2	design	관련 요구사항	ce280297	4
 relation	O	f0da28a2	design	의존 설계 사항	0673118d	4
