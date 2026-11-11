@@ -20,8 +20,8 @@ void CheckpointStore::clear()
 
 KiottySpecStatus CheckpointStore::put(uint32_t sequence, const CheckpointRecord& record)
 {
-    const Span<CheckpointRecord> records(_records.data(), _records.size());
-    const Span<uint8_t> exists(_exists.data(), _exists.size());
+    const Span<CheckpointRecord> records = viewVector(_records);
+    const Span<uint8_t> exists = viewVector(_exists);
     const Result<CheckpointRecord&, KiottySpecStatus> slot = records.at(sequence - 1);
     const Result<uint8_t&, KiottySpecStatus> flag = exists.at(sequence - 1);
     const bool is_out_of_range = !slot || !flag;
@@ -51,8 +51,8 @@ Result<const CheckpointRecord*, KiottySpecStatus> CheckpointStore::get(uint32_t 
 
 const CheckpointRecord* CheckpointStore::at(uint32_t sequence) const
 {
-    const Span<const CheckpointRecord> records(_records.data(), _records.size());
-    const Span<const uint8_t> exists(_exists.data(), _exists.size());
+    const Span<const CheckpointRecord> records = viewVector(_records);
+    const Span<const uint8_t> exists = viewVector(_exists);
     const Result<const CheckpointRecord&, KiottySpecStatus> record = records.at(sequence - 1);
     const Result<const uint8_t&, KiottySpecStatus> flag = exists.at(sequence - 1);
     const bool is_present = record && flag && *flag.value != 0;

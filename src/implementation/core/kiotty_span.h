@@ -49,4 +49,8 @@ template <typename Element>
 Span<Element> viewVector(std::vector<Element>& values)
 { return Span<Element>(values.data(), values.size()); }
 
+template <typename Element>
+Span<const Element> viewVector(const std::vector<Element>& values)
+{ return Span<const Element>(values.data(), values.size()); }
+
 }

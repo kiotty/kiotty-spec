@@ -66,7 +66,7 @@ namespace {
 
 uint32_t readKey(const std::vector<uint32_t>& keys, uint32_t index)
 {
-    const Span<const uint32_t> all(keys.data(), keys.size());
+    const Span<const uint32_t> all = viewVector(keys);
     const Result<const uint32_t&, KiottySpecStatus> key = all.at(index);
     return key ? *key.value : entity::NO_KEY;
 }

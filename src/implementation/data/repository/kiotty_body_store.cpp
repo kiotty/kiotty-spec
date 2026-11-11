@@ -41,7 +41,7 @@ Span<const char> BodyStore::find(uint32_t key) const
 {
     const auto slice = _slices.find(key);
     if (!slice) { return Span<const char>(); }
-    const Span<const char> bytes(_bytes.data(), _bytes.size());
+    const Span<const char> bytes = viewVector(_bytes);
     return viewSlice(bytes, slice.value);
 }
 
@@ -56,7 +56,7 @@ void BodyStore::clear()
 Span<const char> BodyStore::bodyAt(size_t index) const
 {
     const BodySlice& slice = _slices.valueAt(index);
-    const Span<const char> bytes(_bytes.data(), _bytes.size());
+    const Span<const char> bytes = viewVector(_bytes);
     return viewSlice(bytes, slice);
 }
 
@@ -65,7 +65,7 @@ void BodyStore::compact()
     const size_t count = _slices.length();
     const Span<uint32_t> order(_order.data(), count);
     sortByOffset(order, _slices);
-    const Span<char> bytes(_bytes.data(), _bytes.size());
+    const Span<char> bytes = viewVector(_bytes);
     size_t used = 0;
     for (size_t position = 0; position < count; ++position) {
         BodySlice& slice = _slices.valueAt(order[position]);

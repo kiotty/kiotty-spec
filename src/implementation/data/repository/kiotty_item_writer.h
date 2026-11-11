@@ -41,11 +41,11 @@ private:
                               uint64_t value);
     void dropTags(entity::ItemHandle handle);
     Span<uint32_t> viewKeys() const
-    { return Span<uint32_t>(_tables.keys.data(), _tables.keys.size()); }
+    { return viewVector(_tables.keys); }
     Span<uint32_t> viewParents() const
-    { return Span<uint32_t>(_tables.parents.data(), _tables.parents.size()); }
+    { return viewVector(_tables.parents); }
     Span<entity::TagRecord> viewTags() const
-    { return Span<entity::TagRecord>(_tables.tags.data(), _tables.tags.size()); }
+    { return viewVector(_tables.tags); }
 
     ItemTables& _tables;
     entity::Failure& _failure;

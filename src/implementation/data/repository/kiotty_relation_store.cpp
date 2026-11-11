@@ -61,7 +61,7 @@ KiottySpecStatus RelationStore::rebuild()
 Span<const uint32_t> RelationStore::relationsInDiffOrder()
 {
     const Span<const RelationVersion> versions = _versions.all();
-    const Span<uint32_t> order(_order.data(), _order.size());
+    const Span<uint32_t> order = viewVector(_order);
     const Span<uint32_t> firsts(order.begin(), collectFirstRelations(order, versions));
     sortForDiff(firsts, versions, _items.tables());
     return firsts;

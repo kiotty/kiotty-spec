@@ -108,7 +108,7 @@ Result<IdText, KiottySpecStatus> ItemHistory::nextId(Span<const char> prefix) co
 
 Span<const uint32_t> ItemHistory::keysByKindAndId()
 {
-    const Span<uint32_t> order(_tables.order.data(), _tables.order.size());
+    const Span<uint32_t> order = viewVector(_tables.order);
     const size_t count = collectKeys(order, _tables.versions.all());
     const Span<uint32_t> keys(order.begin(), count);
     sortByKindId(keys, _tables);

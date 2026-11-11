@@ -28,8 +28,8 @@ public:
 
 private:
     Span<entity::CheckpointRecord> viewRecords() const
-    { return Span<entity::CheckpointRecord>(_records.data(), _records.size()); }
-    Span<uint8_t> viewFlags() const { return Span<uint8_t>(_exists.data(), _exists.size()); }
+    { return viewVector(_records); }
+    Span<uint8_t> viewFlags() const { return viewVector(_exists); }
 
     entity::Failure& _failure;
     std::vector<entity::CheckpointRecord>& _records;

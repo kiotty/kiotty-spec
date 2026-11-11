@@ -50,7 +50,7 @@ KiottySpecStatus ItemStore::rebuild()
 Span<const uint32_t> ItemStore::collectLatest()
 {
     const Span<const ItemVersion> versions = _tables.versions.all();
-    const Span<uint32_t> order(_tables.order.data(), _tables.order.size());
+    const Span<uint32_t> order = viewVector(_tables.order);
     const Span<uint32_t> latest(order.begin(), collectLatestItems(order, versions));
     sortById(latest, versions, _tables);
     return latest;
@@ -71,8 +71,8 @@ KiottySpecStatus ItemStore::place(const ItemVersion& version)
     }
     ItemRecord& record = *_tables.items.get(handle).value;
     record = buildRecord(version, id.value);
-    const Span<uint32_t> keys(_tables.keys.data(), _tables.keys.size());
-    const Span<uint32_t> parents(_tables.parents.data(), _tables.parents.size());
+    const Span<uint32_t> keys = viewVector(_tables.keys);
+    const Span<uint32_t> parents = viewVector(_tables.parents);
     const KiottySpecStatus linked = writeLinks(keys, parents, handle.index, version);
     if (linked != KIOTTY_SPEC_STATUS_SUCCESS) { return linked; }
     _tables.key_index.insert(version.key, handle.index);
@@ -104,7 +104,7 @@ KiottySpecStatus ItemStore::loadTags()
 {
     const Span<const TagVersion> versions = _tables.tag_versions.all();
     const size_t length = versions.length();
-    const Span<TagRecord> tags(_tables.tags.data(), _tables.tags.size());
+    const Span<TagRecord> tags = viewVector(_tables.tags);
     for (size_t index = 0; index < length; ++index) {
         const TagVersion& tag = versions[index];
         const bool is_last = isLastTag(versions, index + 1, tag);

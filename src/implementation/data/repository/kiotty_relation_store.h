@@ -38,7 +38,7 @@ public:
 
 private:
     Span<entity::RelationRecord> viewRecords()
-    { return Span<entity::RelationRecord>(_records.data(), _records.size()); }
+    { return viewVector(_records); }
     size_t lowerBound(const entity::RelationRecord& relation) const;
     KiottySpecStatus writeVersion(const entity::RelationRecord& relation, uint32_t removed,
                                   uint32_t sequence);
