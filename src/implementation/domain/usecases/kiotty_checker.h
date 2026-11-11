@@ -20,6 +20,15 @@ struct UnmetCondition {
 
 static_assert(sizeof(UnmetCondition) == 20, "unexpected padding");
 
+struct TagBit {
+    static constexpr uint32_t MISSING = 0xFFFFFFFFu;
+
+    uint64_t bit {0};
+    uint32_t tag_index {MISSING};
+};
+
+static_assert(sizeof(TagBit) == 16, "unexpected padding");
+
 // 단계별 확정 조건 (설계서 v1 5.2, 정의서 R-3 ~ R-5, R-10). 태그 · 관계 이름은 모델 표에서 찾는다.
 class Checker
 {
@@ -37,7 +46,7 @@ public:
     static size_t countAcceptanceCriteria(Span<const char> body);
 
 private:
-    uint64_t tagBit(entity::ItemKind kind, std::string_view tag, std::string_view bit, uint32_t& tag_index);
+    TagBit tagBit(entity::ItemKind kind, std::string_view tag, std::string_view bit);
     uint32_t relationIndex(entity::ItemKind kind, std::string_view name);
     size_t countRelations(entity::ItemKind model, uint32_t relation, entity::ItemHandle item, bool as_target);
     void add(KiottySpecCondition condition, entity::IdText id);

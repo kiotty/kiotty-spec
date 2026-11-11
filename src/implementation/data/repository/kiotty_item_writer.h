@@ -29,13 +29,13 @@ public:
     KiottySpecStatus writeBody(entity::ItemHandle handle, Span<const char> body, uint32_t sequence);
     KiottySpecStatus remove(entity::ItemHandle handle, uint32_t sequence);
     // ID 만 바꾼다. 버전은 key 로 가리키므로 고치지 않는다. 지난 시점도 새 ID 로 보인다.
-    KiottySpecStatus rename(entity::ItemHandle handle, const entity::IdText& id);
+    KiottySpecStatus rename(entity::ItemHandle handle, entity::IdText id);
 
 private:
     ItemReader reader() const { return ItemReader(_t); }
     ItemTags tags() const { return ItemTags(Span<const entity::TagRecord>(_t.tags.data(), _t.tag_count)); }
-    KiottySpecStatus checkUnused(const entity::IdText& id);
-    Result<uint32_t, KiottySpecStatus> newKey(const entity::IdText& id) const;
+    KiottySpecStatus checkUnused(entity::IdText id);
+    Result<uint32_t, KiottySpecStatus> newKey(entity::IdText id) const;
     // 현재 버전을 sequence 에 다시 쓴다. change 가 바꿀 필드를 채운다.
     KiottySpecStatus writeVersion(entity::ItemHandle handle, const entity::ItemVersion& version);
     Result<entity::ItemVersion, KiottySpecStatus> currentVersion(entity::ItemHandle handle) const;

@@ -29,7 +29,7 @@ bool colorTerminal()
 {
 #ifdef _WIN32
     if (_isatty(_fileno(stdout)) == 0) { return false; }
-    HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+    const HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD mode = 0;
     if (output == INVALID_HANDLE_VALUE || GetConsoleMode(output, &mode) == 0) { return false; }
     return SetConsoleMode(output, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
@@ -64,6 +64,17 @@ std::optional<KiottySpecCheckpointHandle> checkpointArgument(std::string_view te
 
 struct Painter {
     bool color {};
+
+    std::string paint(const KiottySpecTextDiff& diff) const
+    {
+        const std::string_view part(diff.text, diff.length);
+        switch (diff.change) {
+        case KIOTTY_SPEC_TEXT_CHANGE_UNCHANGED: return plain(part);
+        case KIOTTY_SPEC_TEXT_CHANGE_ADDED: return added(part);
+        case KIOTTY_SPEC_TEXT_CHANGE_REMOVED: return removed(part);
+        }
+        return plain(part);
+    }
 
     std::string added(std::string_view text) const
     {
@@ -116,17 +127,7 @@ std::string summaryDiff(Session& session, const KiottySpecItemDiff& diff, const 
     std::string text {};
     KiottySpecTextDiffPage page {};
     while (KiottySpec_fetchTextDiffPage(session.context, cursor.value, &page).code == KIOTTY_SPEC_STATUS_SUCCESS && page.length > 0) {
-        for (size_t index = 0; index < page.length; ++index) {
-            const KiottySpecTextDiff& piece = page.elements[index];
-            const std::string_view part(piece.text, piece.length);
-            if (piece.change == KIOTTY_SPEC_TEXT_CHANGE_ADDED) {
-                text += painter.added(part);
-            } else if (piece.change == KIOTTY_SPEC_TEXT_CHANGE_REMOVED) {
-                text += painter.removed(part);
-            } else {
-                text += plain(part);
-            }
-        }
+        for (size_t index = 0; index < page.length; ++index) { text += painter.paint(page.elements[index]); }
     }
     KiottySpec_closeCursor(session.context, cursor.value);
     return text.empty() ? "-" : text;

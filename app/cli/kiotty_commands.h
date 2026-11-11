@@ -15,7 +15,11 @@ namespace kiotty::cli {
 int check(Session& session, KiottySpecStatus status);
 const std::string* positional(Session& session, size_t index);
 std::string stepName(uint32_t step);
-std::optional<std::string> bodyOption(Session& session, const char* text_name, const char* file_name, bool& failed);
+struct BodyOption {
+    std::optional<std::string> text {};
+    bool is_unreadable {false};
+};
+BodyOption bodyOption(Session& session, const char* text_name, const char* file_name);
 
 // 항목 목록의 선택 열 (설계서 v1 8.4)
 struct Column {

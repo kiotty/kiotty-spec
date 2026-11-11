@@ -38,11 +38,6 @@ public:
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
 
-    void fill(Element value) const
-    {
-        for (size_t index = 0; index < _length; ++index) { _data[index] = value; }
-    }
-
 private:
     Element* _data;
     size_t _length;

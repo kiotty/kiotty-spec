@@ -77,15 +77,13 @@ Span<const UnmetCondition> Checker::collect(entity::Step step)
     return Span<const UnmetCondition>(_rows.data(), _length);
 }
 
-uint64_t Checker::tagBit(ItemKind kind, std::string_view tag, std::string_view bit, uint32_t& tag_index)
+TagBit Checker::tagBit(ItemKind kind, std::string_view tag, std::string_view bit)
 {
-    tag_index = MISSING;
     const auto found = _w.catalog.finder().findTag(kind, spanOf(tag));
-    if (!found) { return 0; }
+    if (!found) { return TagBit{}; }
     const auto position = _w.catalog.finder().findTagBit(kind, found.value, spanOf(bit));
-    if (!position) { return 0; }
-    tag_index = found.value;
-    return uint64_t{1} << position.value;
+    if (!position) { return TagBit{}; }
+    return TagBit{uint64_t{1} << position.value, found.value};
 }
 
 uint32_t Checker::relationIndex(ItemKind kind, std::string_view name)
@@ -107,13 +105,11 @@ size_t Checker::countRelations(ItemKind model, uint32_t relation, ItemHandle ite
 
 bool Checker::isOpenChangeRequest(ItemHandle handle)
 {
-    uint32_t state = MISSING;
-    const uint64_t open = tagBit(ItemKind::CHANGE_REQUEST, CHANGE_REQUEST_STATE_TAG, CHANGE_REQUEST_OPEN_BIT, state);
-    uint32_t ignored = MISSING;
-    const uint64_t in_progress = tagBit(ItemKind::CHANGE_REQUEST, CHANGE_REQUEST_STATE_TAG, CHANGE_REQUEST_IN_PROGRESS_BIT, ignored);
-    if (state == MISSING) { return true; }
-    const uint64_t value = _w.items.tags().value(handle, state);
-    return value == 0 || (value & (open | in_progress)) != 0;
+    const TagBit open = tagBit(ItemKind::CHANGE_REQUEST, CHANGE_REQUEST_STATE_TAG, CHANGE_REQUEST_OPEN_BIT);
+    const TagBit in_progress = tagBit(ItemKind::CHANGE_REQUEST, CHANGE_REQUEST_STATE_TAG, CHANGE_REQUEST_IN_PROGRESS_BIT);
+    if (open.tag_index == MISSING) { return true; }
+    const uint64_t value = _w.items.tags().value(handle, open.tag_index);
+    return value == 0 || (value & (open.bit | in_progress.bit)) != 0;
 }
 
 size_t Checker::openChangeRequestCount()
@@ -186,15 +182,14 @@ void Checker::checkEntrySteps()
 
 void Checker::checkAcceptanceCriteria()
 {
-    uint32_t kind_tag = MISSING;
-    const uint64_t functional = tagBit(ItemKind::REQUIREMENT, REQUIREMENT_KIND_TAG, FUNCTIONAL_REQUIREMENT_BIT, kind_tag);
-    if (kind_tag == MISSING) { return; }
+    const TagBit functional = tagBit(ItemKind::REQUIREMENT, REQUIREMENT_KIND_TAG, FUNCTIONAL_REQUIREMENT_BIT);
+    if (functional.tag_index == MISSING) { return; }
     std::vector<char>& buffer = _body;
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != ItemKind::REQUIREMENT) { continue; }
-        if ((_w.items.tags().value(handle, kind_tag) & functional) == 0) { continue; }
+        if ((_w.items.tags().value(handle, functional.tag_index) & functional.bit) == 0) { continue; }
         const auto length = _w.items.reader().readBody(handle, buffer.data(), buffer.size());
         if (!length || countAcceptanceCriteria(Span<const char>(buffer.data(), length.value)) == 0) {
             add(KIOTTY_SPEC_CONDITION_ACCEPTANCE_CRITERIA, item.value->id);
@@ -222,13 +217,12 @@ void Checker::checkOneToOne(ItemKind target_kind, ItemKind test_kind, std::strin
                             bool functional_only)
 {
     const uint32_t relation = relationIndex(test_kind, relation_name);
-    uint32_t kind_tag = MISSING;
-    const uint64_t functional = functional_only ? tagBit(ItemKind::REQUIREMENT, REQUIREMENT_KIND_TAG, FUNCTIONAL_REQUIREMENT_BIT, kind_tag) : 0;
+    const TagBit functional = functional_only ? tagBit(ItemKind::REQUIREMENT, REQUIREMENT_KIND_TAG, FUNCTIONAL_REQUIREMENT_BIT) : TagBit{};
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
         const ItemHandle handle = _w.items.reader().handleAt(index);
         const auto item = _w.items.reader().get(handle);
         if (!item || item.value->kind != target_kind) { continue; }
-        if (functional_only && (kind_tag == MISSING || (_w.items.tags().value(handle, kind_tag) & functional) == 0)) { continue; }
+        if (functional_only && (functional.tag_index == MISSING || (_w.items.tags().value(handle, functional.tag_index) & functional.bit) == 0)) { continue; }
         if (countRelations(test_kind, relation, handle, true) != 1) { add(pair_condition, item.value->id); }
     }
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {
@@ -248,9 +242,8 @@ void Checker::checkResults()
         if (!item) { continue; }
         for (const ItemKind kind : kinds) {
             if (item.value->kind != kind) { continue; }
-            uint32_t result = MISSING;
-            const uint64_t pass = tagBit(kind, RESULT_TAG, PASS_BIT, result);
-            if (result == MISSING || _w.items.tags().value(handle, result) != pass) { add(KIOTTY_SPEC_CONDITION_PASSING_RESULT, item.value->id); }
+            const TagBit pass = tagBit(kind, RESULT_TAG, PASS_BIT);
+            if (pass.tag_index == MISSING || _w.items.tags().value(handle, pass.tag_index) != pass.bit) { add(KIOTTY_SPEC_CONDITION_PASSING_RESULT, item.value->id); }
         }
     }
     for (size_t index = 0; index < _w.items.reader().capacity(); ++index) {

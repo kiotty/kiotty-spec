@@ -127,11 +127,10 @@ int setDecision(Session& session)
 {
     const std::string* name = positional(session, 0);
     const auto kind = name == nullptr ? std::nullopt : kindArgument(session, *name);
-    bool failed = false;
-    const auto text = bodyOption(session, "text", "file", failed);
-    if (failed) { return 2; }
-    if (!kind || !text) { return usage("ks decision set KIND (--text T | --file F)"); }
-    return check(session, KiottySpec_writeDecision(session.context, *kind, textOf(*text)).code);
+    const BodyOption text = bodyOption(session, "text", "file");
+    if (text.is_unreadable) { return 2; }
+    if (!kind || !text.text) { return usage("ks decision set KIND (--text T | --file F)"); }
+    return check(session, KiottySpec_writeDecision(session.context, *kind, textOf(*text.text)).code);
 }
 
 int showModel(Session& session)

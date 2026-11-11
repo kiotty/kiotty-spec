@@ -9,28 +9,31 @@ namespace {
 constexpr char TAB = '\t';
 constexpr char ESCAPE = '\\';
 
+struct EscapePair {
+    char original {'\0'};
+    char escaped {'\0'};
+};
+
+static_assert(sizeof(EscapePair) == 2, "unexpected padding");
+
+constexpr EscapePair ESCAPE_PAIRS[] = {{'\t', 't'}, {'\n', 'n'}, {'\r', 'r'}, {'\\', '\\'}};
+
 // 이스케이프 뒤 글자를 원래 글자로. 모르는 글자면 '\0'
 char unescape(char letter)
 {
-    switch (letter) {
-    case 't': return '\t';
-    case 'n': return '\n';
-    case 'r': return '\r';
-    case '\\': return '\\';
-    default: return '\0';
+    for (const EscapePair& pair : ESCAPE_PAIRS) {
+        if (pair.escaped == letter) { return pair.original; }
     }
+    return '\0';
 }
 
 // 원래 글자를 이스케이프 뒤 글자로. 이스케이프할 글자가 아니면 '\0'
 char escapeOf(char letter)
 {
-    switch (letter) {
-    case '\t': return 't';
-    case '\n': return 'n';
-    case '\r': return 'r';
-    case '\\': return '\\';
-    default: return '\0';
+    for (const EscapePair& pair : ESCAPE_PAIRS) {
+        if (pair.original == letter) { return pair.escaped; }
     }
+    return '\0';
 }
 
 }

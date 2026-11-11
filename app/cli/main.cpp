@@ -16,10 +16,11 @@ using namespace kiotty::cli;
 std::string environment(const char* name)
 {
 #ifdef _WIN32
-    char* value = nullptr;
+    const std::wstring wide_name = pathFromUtf8(name).wstring();
+    wchar_t* value = nullptr;
     size_t size = 0;
-    if (_dupenv_s(&value, &size, name) != 0 || value == nullptr) { return ""; }
-    std::string result(value);
+    if (_wdupenv_s(&value, &size, wide_name.c_str()) != 0 || value == nullptr) { return ""; }
+    const std::string result = utf8FromWide(std::wstring_view(value));
     std::free(value);
     return result;
 #else

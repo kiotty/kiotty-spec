@@ -56,7 +56,7 @@ Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record
     return HandleResult::success(handle);
 }
 
-KiottySpecStatus ItemWriter::checkUnused(const IdText& id)
+KiottySpecStatus ItemWriter::checkUnused(IdText id)
 {
     if (_t.id_index.find(id)) { return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_ID, id.view()); }
     const auto removed = ItemHistory(_t).keyOf(id.view());
@@ -65,7 +65,7 @@ KiottySpecStatus ItemWriter::checkUnused(const IdText& id)
 }
 
 // 두 브랜치가 따로 만들어도 겹치지 않도록 ID · 시각 · 시도 횟수로 섞는다.
-Result<uint32_t, KiottySpecStatus> ItemWriter::newKey(const IdText& id) const
+Result<uint32_t, KiottySpecStatus> ItemWriter::newKey(IdText id) const
 {
     const uint64_t moment = static_cast<uint64_t>(nowEpochSeconds()) ^ (static_cast<uint64_t>(_t.names.length()) << KEY_SHIFT);
     for (uint32_t attempt = 0; attempt < MAX_KEY_ATTEMPTS; ++attempt) {
@@ -181,7 +181,7 @@ KiottySpecStatus ItemWriter::remove(ItemHandle handle, uint32_t sequence)
     return _t.items.release(handle);
 }
 
-KiottySpecStatus ItemWriter::rename(ItemHandle handle, const IdText& id)
+KiottySpecStatus ItemWriter::rename(ItemHandle handle, IdText id)
 {
     const auto stored = _t.items.get(handle);
     if (!stored) { return stored.code; }

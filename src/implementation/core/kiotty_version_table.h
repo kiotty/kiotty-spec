@@ -47,7 +47,7 @@ public:
 
     // (identity, checkpoint) 버전이 있으면 그 자리를, 없으면 정렬 위치에 빈 레코드를 넣어 돌려준다.
     // 호출자는 정체성 필드를 identity 와 같게 채운다.
-    Result<Record&, KiottySpecStatus> slot(const Identity& identity, uint32_t checkpoint)
+    Result<Record&, KiottySpecStatus> slot(Identity identity, uint32_t checkpoint)
     {
         const size_t position = lowerBound(identity, checkpoint);
         const bool found = position < _length && _records[position].identity() == identity && _records[position].checkpoint == checkpoint;
@@ -69,7 +69,7 @@ public:
     }
 
     // 정체성이 identity 이고 checkpoint 이하인 마지막 버전. 없으면 nullptr
-    const Record* latest(const Identity& identity, uint32_t checkpoint) const
+    const Record* latest(Identity identity, uint32_t checkpoint) const
     {
         const size_t after = lowerBound(identity, static_cast<uint64_t>(checkpoint) + 1);
         if (after == 0 || !(_records[after - 1].identity() == identity)) { return nullptr; }
@@ -125,7 +125,7 @@ private:
         return EMPTY;
     }
 
-    size_t lowerBound(const Identity& identity, uint64_t checkpoint) const
+    size_t lowerBound(Identity identity, uint64_t checkpoint) const
     {
         size_t low = 0;
         size_t high = _length;

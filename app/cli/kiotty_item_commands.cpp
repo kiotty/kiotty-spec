@@ -57,9 +57,8 @@ int addItem(Session& session)
     if (kind_name == nullptr || !title) { return usage("ks item add KIND --title T"); }
     const auto kind = kindArgument(session, *kind_name);
     if (!kind) { return 2; }
-    bool failed = false;
-    const auto body = bodyOption(session, "body", "body-file", failed);
-    if (failed) { return 2; }
+    const BodyOption body = bodyOption(session, "body", "body-file");
+    if (body.is_unreadable) { return 2; }
     const std::string summary = session.args.option("summary").value_or("");
     const std::string given = session.args.option("id").value_or("");
     KiottySpecItemDraft draft {};
@@ -74,8 +73,8 @@ int addItem(Session& session)
         const KiottySpecStatusResult set = KiottySpec_setItemParent(session.context, textOf(id), textOf(*parent));
         if (set.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, set.code); }
     }
-    if (body) {
-        const KiottySpecStatusResult written = KiottySpec_writeItemBody(session.context, textOf(id), textOf(*body));
+    if (body.text) {
+        const KiottySpecStatusResult written = KiottySpec_writeItemBody(session.context, textOf(id), textOf(*body.text));
         if (written.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, written.code); }
     }
     const int tagged = setTags(session, id, *kind);
@@ -103,11 +102,10 @@ int setItem(Session& session)
         const KiottySpecStatusResult set = KiottySpec_setItemParent(session.context, textOf(*id), textOf(target));
         if (set.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, set.code); }
     }
-    bool failed = false;
-    const auto body = bodyOption(session, "body", "body-file", failed);
-    if (failed) { return 2; }
-    if (body) {
-        const KiottySpecStatusResult written = KiottySpec_writeItemBody(session.context, textOf(*id), textOf(*body));
+    const BodyOption body = bodyOption(session, "body", "body-file");
+    if (body.is_unreadable) { return 2; }
+    if (body.text) {
+        const KiottySpecStatusResult written = KiottySpec_writeItemBody(session.context, textOf(*id), textOf(*body.text));
         if (written.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, written.code); }
     }
     return setTags(session, *id, item.value.kind);

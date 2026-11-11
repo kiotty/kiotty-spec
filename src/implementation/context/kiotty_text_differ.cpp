@@ -17,6 +17,8 @@ constexpr size_t TEXT_SLOT_BYTES = 256;
 constexpr size_t SEGMENT_OFFSET = TEXT_SLOT_BYTES * 2;
 constexpr size_t MAX_SEGMENTS = MAX_DIFF_TEXT_BYTES * 2 + 1;
 
+Span<const char> selectText(const Result<ItemVersionView, KiottySpecStatus>& version, uint32_t field);
+
 }
 
 CursorIdResult TextDiffer::open(entity::ItemHandle item, uint32_t field, DiffRange range)
@@ -27,14 +29,13 @@ CursorIdResult TextDiffer::open(entity::ItemHandle item, uint32_t field, DiffRan
     const auto before = PastReader(_w).itemAt(id.view(), range.from);
     const auto after = PastReader(_w).itemAt(id.view(), range.to);
     if (!before && !after) { return CursorIdResult::failure(_w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_ITEM, id.view())); }
-    const bool title = field == KIOTTY_SPEC_TEXT_FIELD_TITLE;
-    const Span<const char> before_text = !before ? Span<const char>() : title ? before.value.record.title.view() : before.value.record.summary.view();
-    const Span<const char> after_text = !after ? Span<const char>() : title ? after.value.record.title.view() : after.value.record.summary.view();
+    const Span<const char> before_text = selectText(before, field);
+    const Span<const char> after_text = selectText(after, field);
 
     const auto cursor = _cursors.open(CursorKind::TEXT_DIFF);
     if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
     const auto space = _cursors.space(cursor.value, CursorKind::TEXT_DIFF);
-    char* bytes = reinterpret_cast<char*>(space.value.rows.data());
+    char* const bytes = reinterpret_cast<char*>(space.value.rows.data());
     const size_t room = space.value.rows.length() * sizeof(CursorRow);
     const size_t segment_room = room > SEGMENT_OFFSET ? (room - SEGMENT_OFFSET) / sizeof(TextSegment) : 0;
     if (segment_room == 0) {
@@ -69,6 +70,17 @@ Result<TextPiece, KiottySpecStatus> TextDiffer::next(CursorId cursor)
     ++slot.position;
     const char* base = bytes + (segment.source == TextSource::AFTER ? TEXT_SLOT_BYTES : 0);
     return PieceResult::success(TextPiece{Span<const char>(base + segment.offset, segment.length), static_cast<uint32_t>(segment.change)});
+}
+
+namespace {
+
+Span<const char> selectText(const Result<ItemVersionView, KiottySpecStatus>& version, uint32_t field)
+{
+    if (!version) { return Span<const char>(); }
+    const entity::ItemRecord& record = version.value.record;
+    return field == KIOTTY_SPEC_TEXT_FIELD_TITLE ? record.title.view() : record.summary.view();
+}
+
 }
 
 }

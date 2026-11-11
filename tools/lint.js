@@ -48,7 +48,7 @@ const isLibrary = (f) => f.startsWith('src/');
 const pointerExempt = (f) => isCore(f) || isBackend(f) || isAdapter(f) || isPublicHeader(f) || isCliInfra(f);
 // docs/deviations.md: the CLI may allocate (1.1); raw pointers are allowed where the CLI crosses the C ABI (1.10).
 const allocationExempt = (f) => isCli(f);
-const C_ABI_LINE = /\bKiottySpec_?[A-Z]\w*|\b(?:std::)?(?:fwrite|fread|fputs|fflush|fopen|fclose|strtoul|strtoull|strtol)\s*\(|\b(?:_dupenv_s|free|MultiByteToWideChar|WideCharToMultiByte|GetCommandLineW|CommandLineToArgvW|LocalFree|SetConsoleOutputCP|GetStdHandle|GetConsoleMode|SetConsoleMode)\s*\(/;
+const C_ABI_LINE = /\bKiottySpec_?[A-Z]\w*|\b(?:std::)?(?:fwrite|fread|fputs|fflush|fopen|fclose|strtoul|strtoull|strtol)\s*\(|\b(?:_dupenv_s|_wdupenv_s|free|MultiByteToWideChar|WideCharToMultiByte|GetCommandLineW|CommandLineToArgvW|LocalFree|SetConsoleOutputCP|GetStdHandle|GetConsoleMode|SetConsoleMode)\s*\(/;
 const cAbiBoundary = (f, line) => isCli(f) && C_ABI_LINE.test(line);
 
 // ---------------------------------------------------------------- lexing
@@ -421,7 +421,7 @@ function declarationOf(statementText) {
   if (KEYWORDS.has(type) || /^(if|for|while|switch|return)$/.test(type)) return null;
   const init = m[7] || '';
   if (init.startsWith('(') && !/^\([^)]*\)\s*$/.test(init) && /[=]/.test(init) === false && /\)\s*$/.test(init) === false) return null;
-  return { qualifiers: m[1], type, ref: m[3].trim(), name: m[5], array: m[6] || '', init, isConst: /\bconst\b|\bconstexpr\b/.test(m[1]) };
+  return { qualifiers: m[1], type, ref: m[3].trim(), name: m[5], array: m[6] || '', init, isConst: /\bconst\b|\bconstexpr\b/.test(m[1]) || (m[3].includes('*') && /\bconst\b/.test(m[4])) };
 }
 
 const resultFunctions = new Set();

@@ -21,13 +21,17 @@ inline std::filesystem::path pathFromUtf8(std::string_view text)
     return std::filesystem::path(wide);
 }
 
-inline std::string pathToUtf8(const std::filesystem::path &path)
+inline std::string utf8FromWide(std::wstring_view wide)
 {
-    const std::wstring wide = path.generic_wstring();
     const int length = WideCharToMultiByte(CP_UTF8, 0, wide.data(), static_cast<int>(wide.size()), nullptr, 0, nullptr, nullptr);
     std::string utf8(static_cast<size_t>(length), '\0');
     WideCharToMultiByte(CP_UTF8, 0, wide.data(), static_cast<int>(wide.size()), utf8.data(), length, nullptr, nullptr);
     return utf8;
+}
+
+inline std::string pathToUtf8(const std::filesystem::path &path)
+{
+    return utf8FromWide(path.generic_wstring());
 }
 #else
 inline std::filesystem::path pathFromUtf8(std::string_view text)
