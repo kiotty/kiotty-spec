@@ -12,9 +12,9 @@ SortIncludes: Never
 AlignAfterOpenBracket: Align
 BinPackArguments: true
 BinPackParameters: true
-AllowShortBlocksOnASingleLine: Always
-AllowShortIfStatementsOnASingleLine: AllIfsAndElse
-AllowShortLoopsOnASingleLine: true
+AllowShortBlocksOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortLambdasOnASingleLine: All
 BreakBeforeBraces: Custom

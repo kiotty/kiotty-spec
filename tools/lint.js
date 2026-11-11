@@ -408,8 +408,8 @@ function words(name) {
 function checkName(file, line, name, what) {
   if (/^(KiottySpec|KIOTTY_SPEC_)/.test(name)) return;
   const ws = words(name);
-  for (const w of ws) if (ABBREVIATIONS.has(w)) report('4.5', file.rel, line, `${what} '${name}' uses abbreviation '${w}'`);
-  if (ws.length > 4) report('4.5', file.rel, line, `${what} '${name}' has more than four words`);
+  for (const w of ws) if (ABBREVIATIONS.has(w)) report('4.4', file.rel, line, `${what} '${name}' uses abbreviation '${w}'`);
+  if (ws.length > 4) report('4.4', file.rel, line, `${what} '${name}' has more than four words`);
 }
 
 const NON_TYPES = /^(return|break|continue|goto|delete|throw|case|using|typedef|else|do|co_return|namespace|template|friend|public|private|protected|static_assert)\b/;
@@ -446,7 +446,7 @@ function checkFile(file) {
   if (rawLines.length > 400 && !templateHeader) report('4.1', rel, rawLines.length, `file has ${rawLines.length} lines`);
 
   // 4.9 comments
-  for (const line of file.lex.comments) report('4.9', rel, line, 'comment');
+  for (const line of file.lex.comments) report('4.8', rel, line, 'comment');
 
   // 4.14 macros
   rawLines.forEach((t, i) => {
@@ -454,14 +454,14 @@ function checkFile(file) {
     if (!m) return;
     const directive = m[1];
     if (isPublicHeader(rel)) return;
-    if (directive === 'define' || directive === 'undef') report('4.14', rel, i + 1, `#${directive}`);
+    if (directive === 'define' || directive === 'undef') report('4.13', rel, i + 1, `#${directive}`);
     if (/^(if|ifdef|ifndef|elif)$/.test(directive) && !/^!?\s*(defined\s*\(?\s*)?(_WIN32|_WIN64|__APPLE__|__linux__|__ANDROID__|__unix__)\b/.test(m[2])) {
-      report('4.14', rel, i + 1, `#${directive} ${m[2]} is not a platform selection`);
+      report('4.13', rel, i + 1, `#${directive} ${m[2]} is not a platform selection`);
     }
   });
 
   // 4.15 templates outside core
-  if (!isCore(rel)) bodyLines.forEach((t, i) => { if (/\btemplate\s*</.test(t)) report('4.15', rel, i + 1, 'template outside core/'); });
+  if (!isCore(rel)) bodyLines.forEach((t, i) => { if (/\btemplate\s*</.test(t)) report('4.14', rel, i + 1, 'template outside core/'); });
 
   // 2.3 forbidden functions
   const FORBIDDEN = [
@@ -532,7 +532,7 @@ function checkFile(file) {
       for (const m of stripped.matchAll(/(?<![\w.])(0[xX][0-9a-fA-F']+|\d[\d']*(?:\.\d+)?)[uUlLfF]*\b/g)) {
         const v = m[1].replace(/'/g, '');
         if (v === '0' || v === '1' || v === '0.0' || v === '1.0') continue;
-        report('4.8', rel, i + 1, `magic number ${m[1]}`);
+        report('4.7', rel, i + 1, `magic number ${m[1]}`);
       }
     });
   }
@@ -554,11 +554,11 @@ function checkFile(file) {
     if (!isCtor && !isOperator && new RegExp(`(^|[^\\w.>:])${fn.bare}\\s*\\(`).test(bodyText)) report('1.8', rel, fn.headerLine, `function '${fn.name}' calls itself`);
     // 4.5 / 4.18 function names
     if (!isCtor && !isDtor && !isOperator && !isCApi) {
-      if (!/^[a-z][A-Za-z0-9]*$/.test(fn.bare)) report('4.5', rel, fn.headerLine, `function '${fn.bare}' is not camelCase`);
+      if (!/^[a-z][A-Za-z0-9]*$/.test(fn.bare)) report('4.4', rel, fn.headerLine, `function '${fn.bare}' is not camelCase`);
       checkName(file, fn.headerLine, fn.bare, 'function');
       const first = words(fn.bare)[0];
       const accessor = isCore(rel) && CORE_ACCESSORS.has(fn.bare);
-      if (!accessor && (!VERBS.has(first) || /^(get|do|handle)[A-Z]/.test(fn.bare))) report('4.18', rel, fn.headerLine, `function '${fn.bare}' does not start with a verb`);
+      if (!accessor && (!VERBS.has(first) || /^(get|do|handle)[A-Z]/.test(fn.bare))) report('4.17', rel, fn.headerLine, `function '${fn.bare}' does not start with a verb`);
     }
     // 4.6 bool and output arguments, 5.4 Span<char> outputs, 3.6 passing
     if (!isCApi) for (const p of fn.params) checkParameter(file, fn, p, isCtor || isOperator);
@@ -572,11 +572,11 @@ function checkFile(file) {
       const isCtor = m.name === cls.name || m.name.startsWith('~') || m.name.startsWith('operator');
       if (m.params.length > 4) report('4.1', rel, m.line, `method '${m.name}' takes ${m.params.length} arguments`);
       if (!isCtor) {
-        if (!/^[a-z][A-Za-z0-9]*$/.test(m.name)) report('4.5', rel, m.line, `method '${m.name}' is not camelCase`);
+        if (!/^[a-z][A-Za-z0-9]*$/.test(m.name)) report('4.4', rel, m.line, `method '${m.name}' is not camelCase`);
         checkName(file, m.line, m.name, 'method');
         const first = words(m.name)[0];
         const accessor = isCore(rel) && CORE_ACCESSORS.has(m.name);
-        if (!accessor && (!VERBS.has(first) || /^(get|do|handle)[A-Z]/.test(m.name))) report('4.18', rel, m.line, `method '${m.name}' does not start with a verb`);
+        if (!accessor && (!VERBS.has(first) || /^(get|do|handle)[A-Z]/.test(m.name))) report('4.17', rel, m.line, `method '${m.name}' does not start with a verb`);
       }
       for (const p of m.params) checkParameter(file, { name: m.name, headerLine: m.line, params: m.params }, p, isCtor);
     }
@@ -588,29 +588,29 @@ function checkFile(file) {
     for (const [name, defs] of definedNames) {
       if (name === fn.bare || name.startsWith('operator') || name.startsWith('~')) continue;
       if (!new RegExp(`(^|[^\\w])${name}\\s*\\(`).test(body)) continue;
-      for (const d of defs) if (d.headerLine < fn.headerLine && d.cls === fn.cls) { report('4.10', rel, d.headerLine, `'${name}' is defined above its caller '${fn.bare}'`); break; }
+      for (const d of defs) if (d.headerLine < fn.headerLine && d.cls === fn.cls) { report('4.9', rel, d.headerLine, `'${name}' is defined above its caller '${fn.bare}'`); break; }
     }
   }
   for (const cls of file.classes) {
     const firstPrivate = cls.sections.indexOf('private');
     const firstPublic = cls.sections.indexOf('public');
-    if (firstPrivate >= 0 && firstPublic > firstPrivate) report('4.10', rel, cls.openLine, `class '${cls.name}' has private before public`);
+    if (firstPrivate >= 0 && firstPublic > firstPrivate) report('4.9', rel, cls.openLine, `class '${cls.name}' has private before public`);
   }
 
   // classes: 4.1 public methods, 4.5 member names, 1.9 member init, 3.4 static_assert, 1.4 entities
   for (const cls of file.classes) {
     const publicMethods = new Set(cls.methods.filter((m) => m.access === 'public' && m.name !== cls.name && !m.name.startsWith('~') && !m.name.startsWith('operator') && !/=\s*(delete|default)/.test(m.rest || '')).map((m) => m.name));
     if (publicMethods.size > 7) report('4.1', rel, cls.openLine, `class '${cls.name}' has ${publicMethods.size} public methods`);
-    if (publicMethods.size > 7) report('4.19', rel, cls.openLine, `class '${cls.name}' has ${publicMethods.size} public methods`);
-    if (!/^[A-Z][A-Za-z0-9]*$/.test(cls.name) && !/^KiottySpec/.test(cls.name) && cls.name !== '(anonymous)') report('4.5', rel, cls.openLine, `type '${cls.name}' is not PascalCase`);
+    if (publicMethods.size > 7) report('4.18', rel, cls.openLine, `class '${cls.name}' has ${publicMethods.size} public methods`);
+    if (!/^[A-Z][A-Za-z0-9]*$/.test(cls.name) && !/^KiottySpec/.test(cls.name) && cls.name !== '(anonymous)') report('4.4', rel, cls.openLine, `type '${cls.name}' is not PascalCase`);
     checkName(file, cls.openLine, cls.name, 'type');
     for (const mem of cls.members) {
       if (mem.isStatic && /\bconstexpr\b/.test(mem.type)) continue;
       checkName(file, mem.line, mem.name, 'member');
       const isPrivate = mem.access !== 'public';
-      if (isPrivate && !/^_[a-z][a-z0-9_]*$/.test(mem.name)) report('4.5', rel, mem.line, `private member '${mem.name}' is not _snake_case`);
-      if (!isPrivate && !/^[a-z][a-z0-9_]*$/.test(mem.name) && !isPublicHeader(rel)) report('4.5', rel, mem.line, `public field '${mem.name}' is not snake_case`);
-      if (/^bool$/.test(mem.type.replace(/\b(const|mutable)\b/g, '').trim()) && !/^_?(is|has|can)_/.test(mem.name)) report('4.5', rel, mem.line, `bool '${mem.name}' lacks is_/has_/can_`);
+      if (isPrivate && !/^_[a-z][a-z0-9_]*$/.test(mem.name)) report('4.4', rel, mem.line, `private member '${mem.name}' is not _snake_case`);
+      if (!isPrivate && !/^[a-z][a-z0-9_]*$/.test(mem.name) && !isPublicHeader(rel)) report('4.4', rel, mem.line, `public field '${mem.name}' is not snake_case`);
+      if (/^bool$/.test(mem.type.replace(/\b(const|mutable)\b/g, '').trim()) && !/^_?(is|has|can)_/.test(mem.name)) report('4.4', rel, mem.line, `bool '${mem.name}' lacks is_/has_/can_`);
       if (mem.init === '' && !/&\s*$/.test(mem.type) && !isPublicHeader(rel) && !mem.isStatic && !initializedInConstructor(cls, mem.name)) report('1.9', rel, mem.line, `member '${mem.name}' has no initializer`);
       if (!pointerExempt(rel) && /\*\s*$/.test(mem.type)) report('1.10', rel, mem.line, `pointer member '${mem.name}'`);
     }
@@ -659,10 +659,10 @@ function checkParameter(file, fn, p, isCtorLike) {
   const type = m[1].trim();
   const name = m[2];
   if (type === '') return;
-  if (/^(const\s+)?bool$/.test(type)) report('4.6', rel, fn.headerLine, `bool argument '${name}' of '${fn.name}'`);
-  if (/&$/.test(type) && !/\bconst\b/.test(type) && !/&&$/.test(type) && !isCtorLike) report('4.6', rel, fn.headerLine, `output argument '${name}' of '${fn.name}'`);
+  if (/^(const\s+)?bool$/.test(type)) report('4.5', rel, fn.headerLine, `bool argument '${name}' of '${fn.name}'`);
+  if (/&$/.test(type) && !/\bconst\b/.test(type) && !/&&$/.test(type) && !isCtorLike) report('4.5', rel, fn.headerLine, `output argument '${name}' of '${fn.name}'`);
   if (/\bSpan\s*<\s*char\s*>/.test(type) && !/^(read|write|copy|fill|format|append)/.test(fn.name.split('::').pop()) && !isCore(rel) && !isAdapter(rel)) report('5.4', rel, fn.headerLine, `Span<char> output '${name}' of '${fn.name}'`);
-  if (!/^[a-z][a-z0-9_]*$/.test(name)) report('4.5', rel, fn.headerLine, `argument '${name}' is not snake_case`);
+  if (!/^[a-z][a-z0-9_]*$/.test(name)) report('4.4', rel, fn.headerLine, `argument '${name}' is not snake_case`);
   checkName(file, fn.headerLine, name, 'argument');
   const bare = type.replace(/\bconst\b/g, '').replace(/&$/, '').trim();
   const size = sizeOf(bare);
@@ -696,21 +696,10 @@ function checkBody(file, fn, bodyText) {
     if (cond) {
       const t = cond.text;
       const call = /(^|[^\w])([A-Za-z_]\w*)\s*\(/.exec(t);
-      if (call && !KEYWORDS.has(call[2])) report('4.4', rel, b.headerLine, `call '${call[2]}' inside a condition`);
-      if (/[^=!<>]=[^=]/.test(t.replace(/->/g, ''))) report('4.4', rel, b.headerLine, 'assignment inside a condition');
-      if (/!(?!=)/.test(t) && !/^!\s*[A-Za-z_]\w*$/.test(t)) report('4.12', rel, b.headerLine, `negated condition '${t.slice(0, 40)}'`);
-      if (/!\s*!/.test(t)) report('4.12', rel, b.headerLine, 'double negation');
-    }
-    if (/^(else\s+)?if\b/.test(b.header)) {
-      const stmts = b.statements.filter((s) => s.text.trim() !== '');
-      if (stmts.length === 1 && /^\s*return\b/.test(stmts[0].text) && b.closeLine !== b.headerLine) report('4.3', rel, b.headerLine, 'error check is not a one-line block');
-    }
-    if (/^else\b/.test(b.header)) {
-      const prev = b.parent.children[b.parent.children.indexOf(b) - 1];
-      if (prev) {
-        const last = prev.statements[prev.statements.length - 1];
-        if (last && /^\s*return\b/.test(last.text)) report('4.3', rel, b.headerLine, 'else after return');
-      }
+      if (call && !KEYWORDS.has(call[2])) report('4.3', rel, b.headerLine, `call '${call[2]}' inside a condition`);
+      if (/[^=!<>]=[^=]/.test(t.replace(/->/g, ''))) report('4.3', rel, b.headerLine, 'assignment inside a condition');
+      if (/!(?!=)/.test(t) && !/^!\s*[A-Za-z_]\w*$/.test(t)) report('4.11', rel, b.headerLine, `negated condition '${t.slice(0, 40)}'`);
+      if (/!\s*!/.test(t)) report('4.11', rel, b.headerLine, 'double negation');
     }
     if (/^for\s*\(/.test(b.header)) {
       const m = /^for\s*\(\s*(?:const\s+)?[\w:<>]+\s+([A-Za-z_]\w*)\s*=/.exec(b.header);
@@ -729,22 +718,22 @@ function checkBody(file, fn, bodyText) {
   for (const s of statements) {
     const text = s.text.replace(/^\s*(case\s+[^:]+:|default\s*:)/, '').trim();
     // 4.13 nested ternary
-    if ((text.match(/\?/g) || []).length > 1) report('4.13', rel, s.line, 'nested ternary');
+    if ((text.match(/\?/g) || []).length > 1) report('4.12', rel, s.line, 'nested ternary');
     const d = declarationOf(text);
     if (d) {
       locals.push({ ...d, line: s.line, start: s.start });
       if (d.init === '' && !/&/.test(d.ref)) report('1.9', rel, s.line, `local '${d.name}' has no initializer`);
       if (/^\[/.test(d.name)) continue;
-      if (!d.qualifiers.includes('constexpr') && !/^[a-z][a-z0-9_]*$/.test(d.name)) report('4.5', rel, s.line, `variable '${d.name}' is not snake_case`);
-      if (d.qualifiers.includes('constexpr') && !/^[A-Z][A-Z0-9_]*$/.test(d.name)) report('4.5', rel, s.line, `constant '${d.name}' is not UPPER_SNAKE`);
+      if (!d.qualifiers.includes('constexpr') && !/^[a-z][a-z0-9_]*$/.test(d.name)) report('4.4', rel, s.line, `variable '${d.name}' is not snake_case`);
+      if (d.qualifiers.includes('constexpr') && !/^[A-Z][A-Z0-9_]*$/.test(d.name)) report('4.4', rel, s.line, `constant '${d.name}' is not UPPER_SNAKE`);
       checkName(file, s.line, d.name, 'variable');
-      if (/^bool$/.test(d.type) && !/^(is|has|can)_/.test(d.name)) report('4.5', rel, s.line, `bool '${d.name}' lacks is_/has_/can_`);
+      if (/^bool$/.test(d.type) && !/^(is|has|can)_/.test(d.name)) report('4.4', rel, s.line, `bool '${d.name}' lacks is_/has_/can_`);
       if (d.type === 'auto') {
         const rhs = d.init.replace(/^[={]\s*/, '');
         const ctor = /^[A-Z]\w*(<[^;]*?>)?(::[A-Za-z_]\w*)*\s*[({]/.test(rhs);
         const lastCall = [...rhs.matchAll(/([A-Za-z_]\w*)\s*\(/g)].map((x) => x[1]).filter((x) => !KEYWORDS.has(x));
         const resultCall = lastCall.length > 0 && resultFunctions.has(lastCall[lastCall.length - 1]);
-        if (!ctor && !resultCall) report('4.7', rel, s.line, `auto '${d.name}' without a visible type`);
+        if (!ctor && !resultCall) report('4.6', rel, s.line, `auto '${d.name}' without a visible type`);
       }
       // 1.7 stack buffers
       let size = sizeOf(d.type);
@@ -776,19 +765,19 @@ function checkBody(file, fn, bodyText) {
     const after = file.text.slice(local.start, fn.close).slice(local.init.length + local.name.length);
     const n = local.name;
     const changed = new RegExp(`(^|[^\\w.])${n}\\s*(=[^=]|[+\\-*/%&|^]=|<<=|>>=|\\+\\+|--|\\.|\\[|->)|(\\+\\+|--|&)\\s*${n}\\b`).test(after);
-    if (!changed) report('4.17', rel, local.line, `'${n}' never changes but is not const`);
+    if (!changed) report('4.16', rel, local.line, `'${n}' never changes but is not const`);
   }
   // 4.11 member computation inside methods
   if (fn.cls || /::/.test(fn.name)) {
     for (const s of statements) {
       const t = s.text;
       if (/\b_[a-z]\w*/.test(t) && /(\b_[a-z]\w*(\.\w+\(\))?\s*([+\-*/%<>]|==|!=|<=|>=|&&|\|\|)\s*\w)|(\w\s*([+\-*/%<>]|==|!=|<=|>=|&&|\|\|)\s*\b_[a-z]\w*)/.test(t.replace(/->/g, '.').replace(/<<|>>/g, ' '))) {
-        report('4.11', rel, s.line, 'method computes on members');
+        report('4.10', rel, s.line, 'method computes on members');
       }
     }
     for (const b of blocks) {
       const cond = conditionOf(b.header);
-      if (cond && /\b_[a-z]\w*/.test(cond.text)) report('4.11', rel, b.headerLine, 'method branches on members');
+      if (cond && /\b_[a-z]\w*/.test(cond.text)) report('4.10', rel, b.headerLine, 'method branches on members');
     }
   }
 }
@@ -810,11 +799,11 @@ for (const f of files) checkFile(f);
   for (const [name, places] of declared) {
     if (/^(KiottySpec_|main$|wmain$|operator|~)/.test(name) || classNames.has(name)) continue;
     const uses = (counts.get(name) || 0) - places.length;
-    if (uses <= 0) report('4.16', places[0].f.rel, places[0].line, `'${name}' has no caller`);
+    if (uses <= 0) report('4.15', places[0].f.rel, places[0].line, `'${name}' has no caller`);
   }
   for (const f of files) for (const c of f.classes) {
     const names = new Set(c.methods.map((m) => m.name));
-    for (const n of names) if (names.has('set' + n[0].toUpperCase() + n.slice(1))) report('4.16', f.rel, c.openLine, `getter/setter pair '${n}' in '${c.name}'`);
+    for (const n of names) if (names.has('set' + n[0].toUpperCase() + n.slice(1))) report('4.15', f.rel, c.openLine, `getter/setter pair '${n}' in '${c.name}'`);
   }
 }
 
@@ -966,7 +955,7 @@ for (const f of files) for (const fn of f.functions) {
 
 // ---------------------------------------------------------------- 9 checklist (derived) and output
 const CHECKLIST = { 1: ['1.1'], 2: [], 3: ['2.1'], 4: ['1.10', '2.2'], 5: ['2.3'], 6: ['2.4'], 7: ['3.4', '3.1'], 8: ['4.1'], 9: ['2.8'], 10: ['2.10'],
-  11: ['5.2'], 12: ['4.9'], 13: ['4.18'], 14: ['7.4'], 15: ['5.6'] };
+  11: ['5.2'], 12: ['4.8'], 13: ['4.17'], 14: ['7.4'], 15: ['5.6'] };
 const byRule = new Map();
 for (const v of violations) byRule.set(v.rule, (byRule.get(v.rule) || 0) + 1);
 for (const [item, rules] of Object.entries(CHECKLIST)) {
@@ -975,8 +964,8 @@ for (const [item, rules] of Object.entries(CHECKLIST)) {
 }
 byRule.set('9', violations.filter((v) => v.rule === '9').length);
 
-const RULES = ['0', '0.1', '1.1', '1.4', '1.6', '1.7', '1.8', '1.9', '1.10', '2.2', '2.3', '2.4', '2.5', '2.8', '2.9', '3.4', '3.6', '4.1', '4.3', '4.4',
-  '4.5', '4.6', '4.7', '4.8', '4.9', '4.10', '4.11', '4.12', '4.13', '4.14', '4.15', '4.16', '4.17', '4.18', '4.19', '5.1', '5.3', '5.4', '5.5', '5.7', '6.2',
+const RULES = ['0', '0.1', '1.1', '1.4', '1.6', '1.7', '1.8', '1.9', '1.10', '2.2', '2.3', '2.4', '2.5', '2.8', '2.9', '3.4', '3.6', '4.1', '4.3',
+  '4.4', '4.5', '4.6', '4.7', '4.8', '4.9', '4.10', '4.11', '4.12', '4.13', '4.14', '4.15', '4.16', '4.17', '4.18', '5.1', '5.3', '5.4', '5.5', '5.7', '6.2',
   '6.5', '7.1', '7.2', '7.3', '7.4', '8', '9'];
 const shown = violations.filter((v) => onlyRule === null || v.rule === onlyRule);
 if (asJson) {
