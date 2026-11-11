@@ -23,7 +23,8 @@ KiottySpecStatus writeMergeAttributes(Span<const char> directory)
 {
     const SystemPathResult path = joinPath(directory, literalText(".gitattributes"));
     if (!path) { return path.code; }
-    if (isFile(path.value.view())) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    const bool is_file = isFile(path.value.view());
+    if (is_file) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     FileWriter writer {};
     const KiottySpecStatus opened = writer.open(path.value.view());
     if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return opened; }
@@ -56,10 +57,12 @@ KiottySpecStatus Context::open(Span<const char> database)
     if (_opened) {
         return _failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_FILE, database);
     }
-    if (database.length() == 0) {
+    const size_t database_length = database.length();
+    if (database_length == 0) {
         return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_FILE);
     }
-    if (isDirectory(database)) {
+    const bool is_directory = isDirectory(database);
+    if (is_directory) {
         return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_FILE,
                               database);
     }
@@ -73,8 +76,9 @@ KiottySpecStatus Context::open(Span<const char> database)
     const bool exists = isFile(absolute.value.view());
     const KiottySpecStatus loaded = _file.open(absolute.value.view());
     if (loaded != KIOTTY_SPEC_STATUS_SUCCESS) { return loaded; }
-    if (!exists &&
-        createDirectories(parentOf(absolute.value.view())) != KIOTTY_SPEC_STATUS_SUCCESS) {
+    const KiottySpecStatus prepared =
+        exists ? KIOTTY_SPEC_STATUS_SUCCESS : createDirectories(parentOf(absolute.value.view()));
+    if (prepared != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE,
                               parentOf(absolute.value.view()));
     }

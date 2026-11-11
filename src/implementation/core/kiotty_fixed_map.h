@@ -19,7 +19,8 @@ public:
     {
         const size_t position = lowerBound(key);
         if (position < _length && !(key < _keys[position])) { return KIOTTY_SPEC_STATUS_CONFLICT; }
-        if (_length == _keys.size()) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+        const size_t slot_count = _keys.size();
+        if (_length == slot_count) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
         for (size_t index = _length; index > position; --index) {
             _keys[index] = _keys[index - 1];
             _values[index] = std::move(_values[index - 1]);

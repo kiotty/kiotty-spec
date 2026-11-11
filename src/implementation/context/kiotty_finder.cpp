@@ -31,18 +31,19 @@ CursorIdResult Finder::items(uint32_t kind, Span<const TagQuery> queries)
 {
     const auto cursor = _cursors.open(CursorKind::ITEM);
     if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
-    for (size_t position = 0; position < _w.items.reader().count(); ++position) {
+    const size_t item_count = _w.items.reader().count();
+    for (size_t position = 0; position < item_count; ++position) {
         const ItemHandle handle = _w.items.reader().handleInIdOrder(position);
         const auto item = _w.items.reader().get(handle);
         if (!item) { continue; }
         if (kind != 0 && static_cast<uint32_t>(item.value->kind) != kind) { continue; }
         bool selected = true;
         for (const TagQuery& query : queries) {
-            if (query.kind != item.value->kind ||
-                (_w.items.tags().value(handle, query.tag) & query.mask) == 0) {
-                selected = false;
-                break;
-            }
+            selected = query.kind == item.value->kind;
+            if (!selected) { break; }
+            const uint64_t tag_value = _w.items.tags().value(handle, query.tag);
+            selected = (tag_value & query.mask) != 0;
+            if (!selected) { break; }
         }
         if (!selected) { continue; }
         CursorRow row {};
@@ -59,12 +60,14 @@ CursorIdResult Finder::children(ItemHandle parent)
 {
     const auto cursor = _cursors.open(CursorKind::ITEM);
     if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
-    for (size_t position = 0; position < _w.items.reader().count(); ++position) {
+    const size_t item_count = _w.items.reader().count();
+    for (size_t position = 0; position < item_count; ++position) {
         const ItemHandle handle = _w.items.reader().handleInIdOrder(position);
         const auto item = _w.items.reader().get(handle);
-        if (!item || !item.value->parent.isValid() || item.value->parent.index != parent.index) {
-            continue;
-        }
+        if (!item) { continue; }
+        const ItemHandle item_parent = item.value->parent;
+        const bool has_parent = item_parent.isValid();
+        if (!has_parent || item_parent.index != parent.index) { continue; }
         CursorRow row {};
         row.first = packHandle(handle);
         const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
@@ -97,7 +100,8 @@ CursorIdResult Finder::impact(ItemHandle item, uint32_t depth)
             }
         }
     }
-    for (size_t position = 0; position < _w.items.reader().count(); ++position) {
+    const size_t item_count = _w.items.reader().count();
+    for (size_t position = 0; position < item_count; ++position) {
         const ItemHandle handle = _w.items.reader().handleInIdOrder(position);
         if (handle.index == item.index || _visited[handle.index] == 0) { continue; }
         CursorRow row {};
@@ -140,7 +144,8 @@ CursorIdResult Finder::relationsByModel(ItemKind kind, uint32_t relation_index)
 {
     const auto cursor = _cursors.open(CursorKind::RELATION);
     if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
-    for (size_t position = 0; position < _w.items.reader().count(); ++position) {
+    const size_t item_count = _w.items.reader().count();
+    for (size_t position = 0; position < item_count; ++position) {
         const ItemHandle from = _w.items.reader().handleInIdOrder(position);
         for (const RelationRecord& relation : _w.relations.all()) {
             if (relation.from.index != from.index || relation.model != kind ||

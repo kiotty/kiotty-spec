@@ -34,7 +34,8 @@ public:
 
     Result<Element&, KiottySpecStatus> get(Handle handle)
     {
-        if (!isLive(handle)) {
+        const bool is_live = isLive(handle);
+        if (!is_live) {
             return Result<Element&, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_HANDLE);
         }
         return Result<Element&, KiottySpecStatus>::success(_values[handle.index]);
@@ -42,7 +43,8 @@ public:
 
     KiottySpecStatus release(Handle handle)
     {
-        if (!isLive(handle)) { return KIOTTY_SPEC_STATUS_INVALID_HANDLE; }
+        const bool is_live = isLive(handle);
+        if (!is_live) { return KIOTTY_SPEC_STATUS_INVALID_HANDLE; }
         _in_use[handle.index] = 0;
         ++_generations[handle.index];
         _free_indices[_free_count] = handle.index;
@@ -54,7 +56,8 @@ public:
 
     Handle handleAt(size_t index) const
     {
-        if (index >= _values.size() || _in_use[index] == 0) {
+        const size_t value_count = _values.size();
+        if (index >= value_count || _in_use[index] == 0) {
             return Handle { Handle::INVALID_INDEX, 0 };
         }
         return Handle{static_cast<uint32_t>(index), _generations[index]};
@@ -72,7 +75,8 @@ public:
 private:
     bool isLive(Handle handle) const
     {
-        if (handle.index >= _values.size()) { return false; }
+        const size_t value_count = _values.size();
+        if (handle.index >= value_count) { return false; }
         return _in_use[handle.index] != 0 && _generations[handle.index] == handle.generation;
     }
 

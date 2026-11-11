@@ -44,7 +44,8 @@ Result<uint32_t, KiottySpecStatus> Differ::point(uint64_t checkpoint)
     const uint32_t sequence = checkpoint == KIOTTY_SPEC_CHECKPOINT_CURRENT
                                   ? _w.checkpoints.latest()
                                   : static_cast<uint32_t>(checkpoint & 0xFFFFFFFFu);
-    if (_w.checkpoints.at(sequence) == nullptr) {
+    const bool has_checkpoint = _w.checkpoints.at(sequence) != nullptr;
+    if (!has_checkpoint) {
         return PointResult::failure(
             _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
@@ -105,7 +106,8 @@ KiottySpecStatus Differ::countRelations(DiffRange range, uint32_t kind_mask,
     Result<bool, KiottySpecStatus> next = query.next();
     for (; next && next.value; next = query.next()) {
         KindCounts& count = counts[query.current().model - 1];
-        if (query.current().change == KIOTTY_SPEC_CHANGE_ADDED) {
+        const uint32_t change = query.current().change;
+        if (change == KIOTTY_SPEC_CHANGE_ADDED) {
             ++count.relations_added;
         } else {
             ++count.relations_removed;
@@ -121,7 +123,8 @@ KiottySpecStatus Differ::countDecisions(DiffRange range, uint32_t kind_mask,
         const entity::DecisionVersion* before = _w.decisions.versions().latest(kind, range.from);
         const entity::DecisionVersion* after = _w.decisions.versions().latest(kind, range.to);
         const bool changed = before != after;
-        if (inMask(kind_mask, kind) && changed) { counts[kind - 1].has_decision_change = true; }
+        const bool is_in_mask = inMask(kind_mask, kind);
+        if (is_in_mask && changed) { counts[kind - 1].has_decision_change = true; }
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }

@@ -21,11 +21,13 @@ public:
 
     KiottySpecStatus append(Span<const char> text)
     {
-        if (text.length() > capacity() - _length) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-        for (size_t index = 0; index < text.length(); ++index) {
+        const size_t text_length = text.length();
+        const size_t available = capacity() - _length;
+        if (text_length > available) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+        for (size_t index = 0; index < text_length; ++index) {
             _data[_length + index] = text[index];
         }
-        _length += text.length();
+        _length += text_length;
         _data[_length] = '\0';
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }

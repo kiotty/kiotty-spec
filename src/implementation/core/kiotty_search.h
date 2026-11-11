@@ -19,8 +19,10 @@ Result<IndexRange, KiottySpecStatus> contiguousRange(Span<const Element> element
 {
     IndexRange range {};
     bool found = false;
-    for (size_t index = 0; index < elements.length(); ++index) {
-        if (!match(elements[index])) { continue; }
+    const size_t element_count = elements.length();
+    for (size_t index = 0; index < element_count; ++index) {
+        const bool is_match = match(elements[index]);
+        if (!is_match) { continue; }
         if (found && index != range.first + range.length) {
             return Result<IndexRange, KiottySpecStatus>::failure(
                 KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
@@ -35,8 +37,10 @@ Result<IndexRange, KiottySpecStatus> contiguousRange(Span<const Element> element
 template <typename Element, typename Match>
 Result<uint32_t, KiottySpecStatus> findIndex(Span<const Element> elements, Match match)
 {
-    for (size_t index = 0; index < elements.length(); ++index) {
-        if (match(elements[index])) {
+    const size_t element_count = elements.length();
+    for (size_t index = 0; index < element_count; ++index) {
+        const bool is_match = match(elements[index]);
+        if (is_match) {
             return Result<uint32_t, KiottySpecStatus>::success(static_cast<uint32_t>(index));
         }
     }

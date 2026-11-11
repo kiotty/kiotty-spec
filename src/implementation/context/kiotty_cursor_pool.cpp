@@ -35,7 +35,8 @@ Span<CursorRow> CursorPool::rowsOf(Handle handle)
 CursorIdResult CursorPool::open(CursorKind kind)
 {
     const Handle handle = _slots.acquire();
-    if (!handle.isValid()) { return CursorIdResult::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL); }
+    const bool is_valid = handle.isValid();
+    if (!is_valid) { return CursorIdResult::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL); }
     const auto slot = _slots.get(handle);
     *slot.value = CursorSlot{kind, 0, 0};
     return CursorIdResult::success(encode(handle));

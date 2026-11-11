@@ -35,7 +35,8 @@ inline uint32_t utf8CodePointAt(Span<const char> text, size_t index, size_t leng
 inline bool isUtf8SequenceWellFormed(Span<const char> text, size_t index, size_t length)
 {
     for (size_t offset = 1; offset < length; ++offset) {
-        if (!isUtf8Continuation(text[index + offset])) { return false; }
+        const bool is_continuation = isUtf8Continuation(text[index + offset]);
+        if (!is_continuation) { return false; }
     }
     const uint32_t point = utf8CodePointAt(text, index, length);
     if (length == 3 && (point < 0x800 || (point >= 0xD800 && point <= 0xDFFF))) { return false; }
@@ -46,10 +47,12 @@ inline bool isUtf8SequenceWellFormed(Span<const char> text, size_t index, size_t
 inline bool isValidUtf8(Span<const char> text)
 {
     size_t index = 0;
-    while (index < text.length()) {
+    const size_t text_length = text.length();
+    while (index < text_length) {
         const size_t length = utf8SequenceLength(static_cast<unsigned char>(text[index]));
-        if (length == 0 || index + length > text.length()) { return false; }
-        if (!isUtf8SequenceWellFormed(text, index, length)) { return false; }
+        if (length == 0 || index + length > text_length) { return false; }
+        const bool is_well_formed = isUtf8SequenceWellFormed(text, index, length);
+        if (!is_well_formed) { return false; }
         index += length;
     }
     return true;

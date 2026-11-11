@@ -26,7 +26,8 @@ inline Span<const char> spanOf(std::string_view text)
 
 inline std::string_view viewOf(Span<const char> text)
 {
-    if (text.data() == nullptr) { return std::string_view(); }
+    const bool has_data = text.data() != nullptr;
+    if (!has_data) { return std::string_view(); }
     return std::string_view(text.data(), text.length());
 }
 

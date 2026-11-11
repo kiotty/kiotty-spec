@@ -22,11 +22,12 @@ public:
     KiottySpecStatus append(Span<const char> text)
     {
         const size_t current = length();
-        if (text.length() > Capacity - current) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-        for (size_t index = 0; index < text.length(); ++index) {
+        const size_t text_length = text.length();
+        if (text_length > Capacity - current) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+        for (size_t index = 0; index < text_length; ++index) {
             _data[current + index] = text[index];
         }
-        _data[current + text.length()] = '\0';
+        _data[current + text_length] = '\0';
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
 

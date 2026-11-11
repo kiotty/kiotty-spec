@@ -18,13 +18,14 @@ bool splitPoints(Span<const char> text, Points& points)
 {
     points.count = 0;
     size_t index = 0;
-    while (index < text.length()) {
+    const size_t text_length = text.length();
+    while (index < text_length) {
         size_t length = utf8SequenceLength(static_cast<unsigned char>(text[index]));
-        if (length == 0 || index + length > text.length()) { length = 1; }
+        if (length == 0 || index + length > text_length) { length = 1; }
         points.starts[points.count++] = static_cast<uint16_t>(index);
         index += length;
     }
-    points.starts[points.count] = static_cast<uint16_t>(text.length());
+    points.starts[points.count] = static_cast<uint16_t>(text_length);
     return true;
 }
 
@@ -90,7 +91,9 @@ void mergeShortEqualities(Hunks& hunks)
             const Hunk& right = hunks.items[index + 1];
             if (equal.edit || !left.edit || !right.edit) { continue; }
             const size_t length = static_cast<size_t>(equal.before_end) - equal.before_start;
-            if (length > largerSide(left) || length > largerSide(right)) { continue; }
+            const size_t left_side = largerSide(left);
+            const size_t right_side = largerSide(right);
+            if (length > left_side || length > right_side) { continue; }
             hunks.items[index - 1] = Hunk { true, left.before_start, right.before_end,
                                             left.after_start, right.after_end };
             hunks.erase(index);
@@ -107,14 +110,23 @@ bool isSpace(char letter)
 size_t previousPointStart(Span<const char> text, size_t end)
 {
     size_t start = end - 1;
-    while (start > 0 && isUtf8Continuation(text[start])) { --start; }
+    while (start > 0) {
+        const bool is_continuation = isUtf8Continuation(text[start]);
+        if (!is_continuation) { break; }
+        --start;
+    }
     return start;
 }
 
 size_t nextPointEnd(Span<const char> text, size_t start)
 {
     size_t end = start + 1;
-    while (end < text.length() && isUtf8Continuation(text[end])) { ++end; }
+    const size_t text_length = text.length();
+    while (end < text_length) {
+        const bool is_continuation = isUtf8Continuation(text[end]);
+        if (!is_continuation) { break; }
+        ++end;
+    }
     return end;
 }
 
@@ -129,7 +141,9 @@ void alignToWords(Hunks& hunks, Span<const char> before, Span<const char> after)
                                      !isSpace(before[static_cast<size_t>(edit.before_end) - 1]);
             const bool after_open = edit.after_end > edit.after_start &&
                                     !isSpace(after[static_cast<size_t>(edit.after_end) - 1]);
-            if ((!before_open && !after_open) || isSpace(after[equal.after_start])) { break; }
+            if (!before_open && !after_open) { break; }
+            const bool is_space_after = isSpace(after[equal.after_start]);
+            if (is_space_after) { break; }
             const size_t width = nextPointEnd(after, equal.after_start) - equal.after_start;
             edit.before_end = static_cast<uint16_t>(edit.before_end + width);
             edit.after_end = static_cast<uint16_t>(edit.after_end + width);
@@ -151,10 +165,9 @@ void alignToWords(Hunks& hunks, Span<const char> before, Span<const char> after)
                 edit.before_end > edit.before_start && !isSpace(before[edit.before_start]);
             const bool after_open =
                 edit.after_end > edit.after_start && !isSpace(after[edit.after_start]);
-            if ((!before_open && !after_open) ||
-                isSpace(after[static_cast<size_t>(equal.after_end) - 1])) {
-                break;
-            }
+            if (!before_open && !after_open) { break; }
+            const bool is_space_before = isSpace(after[static_cast<size_t>(equal.after_end) - 1]);
+            if (is_space_before) { break; }
             const size_t width = equal.after_end - previousPointStart(after, equal.after_end);
             edit.before_start = static_cast<uint16_t>(edit.before_start - width);
             edit.after_start = static_cast<uint16_t>(edit.after_start - width);
@@ -180,7 +193,9 @@ Result<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const ch
                                           Span<uint8_t> table, Span<TextSegment> out)
 {
     using CountResult = Result<size_t, KiottySpecStatus>;
-    if (before.length() > MAX_DIFF_TEXT_BYTES || after.length() > MAX_DIFF_TEXT_BYTES) {
+    const size_t before_length = before.length();
+    const size_t after_length = after.length();
+    if (before_length > MAX_DIFF_TEXT_BYTES || after_length > MAX_DIFF_TEXT_BYTES) {
         return CountResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED);
     }
     Points a {};
@@ -188,7 +203,8 @@ Result<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const ch
     splitPoints(before, a);
     splitPoints(after, b);
     const size_t width = b.count + 1;
-    if (table.length() < (a.count + 1) * width) {
+    const size_t table_length = table.length();
+    if (table_length < (a.count + 1) * width) {
         return CountResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED);
     }
 
@@ -198,7 +214,8 @@ Result<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const ch
             const size_t column = j - 1;
             uint8_t value = 0;
             if (row < a.count && column < b.count) {
-                if (samePoint(before, a, row, after, b, column)) {
+                const bool is_same = samePoint(before, a, row, after, b, column);
+                if (is_same) {
                     value = static_cast<uint8_t>(table[(row + 1) * width + column + 1] + 1);
                 } else {
                     const uint8_t down = table[(row + 1) * width + column];
@@ -214,7 +231,10 @@ Result<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const ch
     size_t i = 0;
     size_t j = 0;
     while (i < a.count || j < b.count) {
-        if (i < a.count && j < b.count && samePoint(before, a, i, after, b, j)) {
+        const bool has_both_points = i < a.count && j < b.count;
+        bool is_same = false;
+        if (has_both_points) { is_same = samePoint(before, a, i, after, b, j); }
+        if (is_same) {
             hunks.add(false, a.starts[i], a.starts[i + 1], b.starts[j], b.starts[j + 1]);
             ++i;
             ++j;
@@ -233,7 +253,8 @@ Result<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const ch
     size_t count = 0;
     auto emit = [&](TextChange change, TextSource source, size_t start, size_t end) {
         if (end == start) { return true; }
-        if (count == out.length()) { return false; }
+        const size_t out_length = out.length();
+        if (count == out_length) { return false; }
         out[count++] = TextSegment { change, source, static_cast<uint16_t>(start),
                                      static_cast<uint16_t>(end - start), 0 };
         return true;

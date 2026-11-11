@@ -23,7 +23,8 @@ public:
 
     KiottySpecStatus append(const Record& record)
     {
-        if (_length == _records.size()) { return KIOTTY_SPEC_STATUS_POOL_IS_FULL; }
+        const size_t record_capacity = _records.size();
+        if (_length == record_capacity) { return KIOTTY_SPEC_STATUS_POOL_IS_FULL; }
         _records[_length] = record;
         ++_length;
         return KIOTTY_SPEC_STATUS_SUCCESS;
@@ -49,7 +50,8 @@ public:
         const bool found = position < _length && _records[position].identity() == identity &&
                            _records[position].checkpoint == checkpoint;
         if (found) { return Result<Record&, KiottySpecStatus>::success(_records[position]); }
-        if (_length == _records.size()) {
+        const size_t record_capacity = _records.size();
+        if (_length == record_capacity) {
             return Result<Record&, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL);
         }
         for (size_t index = _length; index > position; --index) {
@@ -72,7 +74,9 @@ public:
     const Record* latest(Identity identity, uint32_t checkpoint) const
     {
         const size_t after = lowerBound(identity, static_cast<uint64_t>(checkpoint) + 1);
-        if (after == 0 || !(_records[after - 1].identity() == identity)) { return nullptr; }
+        if (after == 0) { return nullptr; }
+        const Identity last_identity = _records[after - 1].identity();
+        if (!(last_identity == identity)) { return nullptr; }
         return &_records[after - 1];
     }
 
@@ -104,7 +108,8 @@ public:
     {
         size_t kept = 0;
         for (size_t index = 0; index < _length; ++index) {
-            if (!keep(_records[index])) { continue; }
+            const bool is_kept = keep(_records[index]);
+            if (!is_kept) { continue; }
             if (kept != index) { _records[kept] = _records[index]; }
             ++kept;
         }
@@ -114,8 +119,10 @@ public:
 private:
     static bool less(const Record& left, const Record& right)
     {
-        if (left.identity() < right.identity()) { return true; }
-        if (right.identity() < left.identity()) { return false; }
+        const Identity left_identity = left.identity();
+        const Identity right_identity = right.identity();
+        if (left_identity < right_identity) { return true; }
+        if (right_identity < left_identity) { return false; }
         return left.checkpoint < right.checkpoint;
     }
 
@@ -142,7 +149,12 @@ private:
     size_t groupEnd(size_t first) const
     {
         size_t end = first + 1;
-        while (end < _length && _records[end].identity() == _records[first].identity()) { ++end; }
+        const Identity group_identity = _records[first].identity();
+        while (end < _length) {
+            const Identity end_identity = _records[end].identity();
+            if (!(end_identity == group_identity)) { break; }
+            ++end;
+        }
         return end;
     }
 

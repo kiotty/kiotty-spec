@@ -11,7 +11,8 @@ namespace kiotty::spec::implementation {
 
 inline Result<uint64_t, KiottySpecStatus> parseDecimal(Span<const char> text, uint64_t maximum)
 {
-    if (text.length() == 0) {
+    const size_t length = text.length();
+    if (length == 0) {
         return Result<uint64_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
     uint64_t number = 0;
@@ -28,7 +29,8 @@ inline Result<uint64_t, KiottySpecStatus> parseDecimal(Span<const char> text, ui
 
 inline Result<uint64_t, KiottySpecStatus> parseHex(Span<const char> text, size_t digits)
 {
-    if (text.length() != digits || digits > 16) {
+    const size_t length = text.length();
+    if (length != digits || digits > 16) {
         return Result<uint64_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
     uint64_t number = 0;
