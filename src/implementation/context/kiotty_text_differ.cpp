@@ -19,6 +19,7 @@ constexpr size_t MAX_SEGMENTS = MAX_DIFF_TEXT_BYTES * 2 + 1;
 
 Span<const char> selectText(const Result<ItemVersionView, KiottySpecStatus>& version,
                             uint32_t field);
+KiottySpecStatus storeTexts(Span<char> area, Span<const char> before, Span<const char> after);
 }
 
 CursorIdResult TextDiffer::open(entity::ItemHandle item, uint32_t field, DiffRange range)
@@ -54,8 +55,13 @@ CursorIdResult TextDiffer::open(entity::ItemHandle item, uint32_t field, DiffRan
             KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, KIOTTY_SPEC_SUBJECT_CURSOR_ROWS,
             literalText("max_cursor_rows")));
     }
-    std::memcpy(bytes, before_text.data(), before_text.length());
-    std::memcpy(bytes + TEXT_SLOT_BYTES, after_text.data(), after_text.length());
+    const Span<char> text_area(bytes, room);
+    const KiottySpecStatus stored = storeTexts(text_area, before_text, after_text);
+    if (stored != KIOTTY_SPEC_STATUS_SUCCESS) {
+        _cursors.close(cursor.value);
+        return CursorIdResult::failure(_workspace.failure.raise(
+            stored, KIOTTY_SPEC_SUBJECT_CURSOR_ROWS, literalText("max_cursor_rows")));
+    }
     Span<char> scratch = _work.scratch();
     const auto count =
         diffText(Span<const char>(bytes, before_text.length()),
@@ -98,6 +104,18 @@ Span<const char> selectText(const Result<ItemVersionView, KiottySpecStatus>& ver
     if (!version) { return Span<const char>(); }
     const entity::ItemRecord& record = version.value.record;
     return field == KIOTTY_SPEC_TEXT_FIELD_TITLE ? record.title.view() : record.summary.view();
+}
+
+KiottySpecStatus storeTexts(Span<char> area, Span<const char> before, Span<const char> after)
+{
+    const Result<Span<char>, KiottySpecStatus> before_slot = area.subspan(0, TEXT_SLOT_BYTES);
+    if (!before_slot) { return before_slot.code; }
+    const Result<Span<char>, KiottySpecStatus> after_slot =
+        area.subspan(TEXT_SLOT_BYTES, TEXT_SLOT_BYTES);
+    if (!after_slot) { return after_slot.code; }
+    const KiottySpecStatus before_copied = before_slot.value.copyFrom(before);
+    if (before_copied != KIOTTY_SPEC_STATUS_SUCCESS) { return before_copied; }
+    return after_slot.value.copyFrom(after);
 }
 
 }

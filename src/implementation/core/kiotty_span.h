@@ -37,9 +37,28 @@ public:
         return Result<Element&, KiottySpecStatus>::success(_data[index]);
     }
 
+    Result<Span<Element>, KiottySpecStatus> subspan(size_t offset, size_t length) const
+    {
+        using SubspanResult = Result<Span<Element>, KiottySpecStatus>;
+        const bool is_outside = isOutsideRange(offset, length, _length);
+        if (is_outside) { return SubspanResult::failure(KIOTTY_SPEC_STATUS_OUT_OF_RANGE); }
+        const Span<Element> window(advance(_data, offset), length);
+        return SubspanResult::success(window);
+    }
+
+    KiottySpecStatus copyFrom(Span<const Element> source) const
+    {
+        const size_t source_length = source.length();
+        if (source_length > _length) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+        for (size_t index = 0; index < source_length; ++index) { _data[index] = source[index]; }
+        return KIOTTY_SPEC_STATUS_SUCCESS;
+    }
+
 private:
     static Element* advance(Element* data, size_t length) { return data + length; }
     static bool isOutside(size_t index, size_t length) { return index >= length; }
+    static bool isOutsideRange(size_t offset, size_t length, size_t total)
+    { return offset > total || length > total - offset; }
 
     Element* _data;
     size_t _length;

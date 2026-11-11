@@ -73,6 +73,24 @@ bool testSpanAccess()
     return ok;
 }
 
+bool testSpanCopy()
+{
+    char source[3] = {'x', 'y', 'z'};
+    char target[4] = {};
+    const core::Span<char> destination(target, 4);
+    bool ok = true;
+    ok = expectTrue(destination.copyFrom(core::Span<const char>(source, 3)) == KIOTTY_SPEC_STATUS_SUCCESS, "copy fits") && ok;
+    ok = expectTrue(target[2] == 'z', "copy writes bytes") && ok;
+    const core::Span<char> small(target, 2);
+    ok = expectTrue(small.copyFrom(core::Span<const char>(source, 3)) == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "copy too large fails") && ok;
+    const auto window = destination.subspan(1, 3);
+    ok = expectTrue(window.code == KIOTTY_SPEC_STATUS_SUCCESS && window.value.length() == 3, "subspan inside") && ok;
+    ok = expectTrue(destination.subspan(4, 0).code == KIOTTY_SPEC_STATUS_SUCCESS, "subspan empty at end") && ok;
+    ok = expectTrue(destination.subspan(2, 3).code == KIOTTY_SPEC_STATUS_OUT_OF_RANGE, "subspan past end fails") && ok;
+    ok = expectTrue(destination.subspan(5, 0).code == KIOTTY_SPEC_STATUS_OUT_OF_RANGE, "subspan start past end fails") && ok;
+    return ok;
+}
+
 
 bool testFixedStringAssign()
 {
@@ -374,6 +392,7 @@ int main()
         {"result", testResult},
         {"result reference", testResultReference},
         {"span access", testSpanAccess},
+        {"span copy", testSpanCopy},
         {"fixed string assign", testFixedStringAssign},
         {"fixed string overflow clears", testFixedStringOverflowClears},
         {"fixed string is compact", testFixedStringIsCompact},

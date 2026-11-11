@@ -7,9 +7,10 @@ namespace kiotty::spec::implementation {
 namespace {
 
 using SliceMap = FixedMap<uint32_t, BodySlice>;
+using SliceResult = Result<BodySlice, KiottySpecStatus>;
 
 bool isShortOfSpace(size_t capacity, size_t used, size_t length);
-BodySlice writeBody(Span<char> bytes, Span<const char> body, size_t offset);
+SliceResult writeBody(Span<char> bytes, Span<const char> body, size_t offset);
 Span<const char> viewSlice(Span<const char> bytes, BodySlice slice);
 void sortByOffset(Span<uint32_t> order, const SliceMap& slices);
 BodySlice copySlice(Span<char> bytes, BodySlice slice, size_t offset);
@@ -30,8 +31,9 @@ KiottySpecStatus BodyStore::put(uint32_t key, Span<const char> body)
     const bool is_still_short = isShortOfSpace(byte_capacity, _used, length);
     if (is_still_short) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
     const Span<char> bytes(_bytes.data(), byte_capacity);
-    const BodySlice slice = writeBody(bytes, body, _used);
-    const KiottySpecStatus inserted = _slices.insert(key, slice);
+    const SliceResult written = writeBody(bytes, body, _used);
+    if (!written) { return written.code; }
+    const KiottySpecStatus inserted = _slices.insert(key, written.value);
     if (inserted != KIOTTY_SPEC_STATUS_SUCCESS) { return inserted; }
     _used += length;
     return KIOTTY_SPEC_STATUS_SUCCESS;
@@ -83,7 +85,8 @@ Result<size_t, KiottySpecStatus> copyBody(Span<const char> body, char* buffer, s
         return SizeResult { KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, length + 1 };
     }
     const Span<char> target(buffer, capacity);
-    std::copy(body.begin(), body.end(), target.begin());
+    const KiottySpecStatus copied = target.copyFrom(body);
+    if (copied != KIOTTY_SPEC_STATUS_SUCCESS) { return SizeResult { copied, length + 1 }; }
     const Result<char&, KiottySpecStatus> terminator = target.at(length);
     if (!terminator) { return SizeResult { KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, length + 1 }; }
     *terminator.value = '\0';
@@ -95,10 +98,13 @@ namespace {
 bool isShortOfSpace(size_t capacity, size_t used, size_t length)
 { return length > capacity - used; }
 
-BodySlice writeBody(Span<char> bytes, Span<const char> body, size_t offset)
+SliceResult writeBody(Span<char> bytes, Span<const char> body, size_t offset)
 {
-    std::copy(body.begin(), body.end(), bytes.begin() + offset);
-    return BodySlice{offset, body.length()};
+    const Result<Span<char>, KiottySpecStatus> target = bytes.subspan(offset, body.length());
+    if (!target) { return SliceResult::failure(target.code); }
+    const KiottySpecStatus copied = target.value.copyFrom(body);
+    if (copied != KIOTTY_SPEC_STATUS_SUCCESS) { return SliceResult::failure(copied); }
+    return SliceResult::success(BodySlice{offset, body.length()});
 }
 
 Span<const char> viewSlice(Span<const char> bytes, BodySlice slice)
