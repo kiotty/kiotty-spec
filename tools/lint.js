@@ -399,7 +399,9 @@ const VERBS = new Set(('acquire release open close fetch append parse read write
   'measure locate lookup query describe explain translate quote escape unescape trace log fail succeed recover reopen replace extend reserve ' +
   'drop keep pick choose order rank tally total sum need wrap unwrap name label tag untag group ungroup page fold unfold peek view expose ' +
   'export import serialize deserialize stamp compose combine flatten clone mirror prepare plan propose accept reject approve deny allow ' +
-  'require ensure guard verify test probe sense detect reach return yield send receive transfer upload download issue assemble').split(/\s+/));
+  'require ensure guard verify test probe sense detect reach return yield send receive transfer upload download issue assemble ' +
+  'get pack unpack summarize erase retain reload widen narrow paint echo commit compact align fit fits start starts contain contains mix ' +
+  'use make').split(/\s+/));
 const CORE_ACCESSORS = new Set(['length', 'capacity', 'data', 'view', 'size', 'begin', 'end', 'empty', 'value', 'code', 'scratch', 'at', 'count']);
 
 function words(name) {
