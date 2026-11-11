@@ -8,27 +8,10 @@ using namespace kiotty::spec::adapter;
 
 namespace {
 
-KiottySpecStepRun toStepRun(const impl::CursorRow& row)
-{
-    KiottySpecStepRun run {};
-    run.first = row.first;
-    run.last = row.second;
-    run.count = static_cast<uint64_t>(row.number);
-    run.step = static_cast<KiottySpecStep>(row.third & LOW_MASK);
-    run.state = static_cast<KiottySpecCheckpointState>(row.third >> SHIFT);
-    return run;
-}
+KiottySpecStepRun convertStepRun(const impl::CursorRow& row);
+KiottySpecUnmetCondition convertUnmetCondition(const impl::CursorRow& row);
+bool hasDecisionKind(KiottySpecItemKind kind);
 
-KiottySpecUnmetCondition toUnmetCondition(const impl::CursorRow& row)
-{
-    KiottySpecUnmetCondition unmet {};
-    copyText(unmet.id, impl::unpackId(row.first, row.second));
-    unmet.condition = static_cast<KiottySpecCondition>(row.third);
-    return unmet;
-}
-
-bool hasDecisionKind(KiottySpecItemKind kind)
-{ return isKind(kind) && entity::hasDecision(static_cast<entity::ItemKind>(kind)); }
 }
 
 extern "C" {
@@ -82,7 +65,7 @@ KiottySpecStatusResult KiottySpec_fetchUnmetConditionPage(KiottySpecContext* con
                                                        KIOTTY_SPEC_PAGE_CAPACITY);
     if (!rows) { return status(rows.code); }
     for (const impl::CursorRow& row : rows.value) {
-        page->elements[page->length] = toUnmetCondition(row);
+        page->elements[page->length] = convertUnmetCondition(row);
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);
@@ -280,10 +263,36 @@ KiottySpecStatusResult KiottySpec_fetchStepRunPage(KiottySpecContext* context,
                                                        KIOTTY_SPEC_PAGE_CAPACITY);
     if (!rows) { return status(rows.code); }
     for (const impl::CursorRow& row : rows.value) {
-        page->elements[page->length] = toStepRun(row);
+        page->elements[page->length] = convertStepRun(row);
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);
 }
+
+}
+
+namespace {
+
+KiottySpecStepRun convertStepRun(const impl::CursorRow& row)
+{
+    KiottySpecStepRun run {};
+    run.first = row.first;
+    run.last = row.second;
+    run.count = static_cast<uint64_t>(row.number);
+    run.step = static_cast<KiottySpecStep>(row.third & LOW_MASK);
+    run.state = static_cast<KiottySpecCheckpointState>(row.third >> SHIFT);
+    return run;
+}
+
+KiottySpecUnmetCondition convertUnmetCondition(const impl::CursorRow& row)
+{
+    KiottySpecUnmetCondition unmet {};
+    copyText(unmet.id, impl::unpackId(row.first, row.second));
+    unmet.condition = static_cast<KiottySpecCondition>(row.third);
+    return unmet;
+}
+
+bool hasDecisionKind(KiottySpecItemKind kind)
+{ return isKind(kind) && entity::hasDecision(static_cast<entity::ItemKind>(kind)); }
 
 }

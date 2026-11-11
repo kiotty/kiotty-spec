@@ -145,7 +145,7 @@ static_assert(std::size(MODEL_SOURCES) == entity::ITEM_KIND_COUNT, "one model pe
 static_assert(std::size(TAG_SOURCES) == ModelCatalog::TAG_COUNT, "tag table size");
 static_assert(std::size(RELATION_SOURCES) == ModelCatalog::RELATION_COUNT, "relation table size");
 
-bool hasSingleBit(uint64_t value) { return value != 0 && (value & (value - 1)) == 0; }
+bool hasSingleBit(uint64_t value);
 
 }
 
@@ -245,6 +245,12 @@ KiottySpecStatus ModelCatalog::checkRelation(ItemKind from, uint32_t relation, I
     if (relation >= relation_count) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     if (relations[relation].target_kind != to) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+namespace {
+
+bool hasSingleBit(uint64_t value) { return value != 0 && (value & (value - 1)) == 0; }
+
 }
 
 }

@@ -15,34 +15,6 @@ using entity::ItemRecord;
 
 }
 
-KiottySpecStatus Editor::markNeedsChange(ItemHandle item, uint32_t sequence)
-{
-    const auto record = _w.items.reader().get(item);
-    if (!record) { return record.code; }
-    const ItemKind kind = record.value->kind;
-    if (kind != ItemKind::DESIGN && kind != ItemKind::UNIT_TEST_PLAN) {
-        return KIOTTY_SPEC_STATUS_SUCCESS;
-    }
-    const auto state = _w.catalog.finder().findTag(kind, spanOf(IMPLEMENTATION_STATE_TAG));
-    if (!state) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    const auto done = _w.catalog.finder().findTagBit(kind, state.value, spanOf(IMPLEMENTED_BIT));
-    const auto changed =
-        _w.catalog.finder().findTagBit(kind, state.value, spanOf(NEEDS_CHANGE_BIT));
-    if (!done || !changed) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    const uint64_t current = _w.items.tags().value(item, state.value);
-    if (current != (uint64_t { 1 } << done.value)) {
-        return KIOTTY_SPEC_STATUS_SUCCESS;
-    }
-    return _w.items.writer().setTag(item, state.value, uint64_t{1} << changed.value, sequence);
-}
-
-KiottySpecStatus Editor::checkId(Span<const char> id)
-{
-    const KiottySpecStatus valid = entity::validateItemId(id);
-    if (valid == KIOTTY_SPEC_STATUS_SUCCESS) { return valid; }
-    return _w.failure.raise(valid, KIOTTY_SPEC_SUBJECT_ID, id);
-}
-
 Result<IdText, KiottySpecStatus> Editor::createItem(ItemKind kind, Span<const char> id,
                                                     Span<const char> title,
                                                     Span<const char> summary)
@@ -106,6 +78,13 @@ KiottySpecStatus Editor::renameItem(Span<const char> id, Span<const char> new_id
     IdText next {};
     next.assign(new_id);
     return _w.finish(_w.items.writer().rename(item.value, next));
+}
+
+KiottySpecStatus Editor::checkId(Span<const char> id)
+{
+    const KiottySpecStatus valid = entity::validateItemId(id);
+    if (valid == KIOTTY_SPEC_STATUS_SUCCESS) { return valid; }
+    return _w.failure.raise(valid, KIOTTY_SPEC_SUBJECT_ID, id);
 }
 
 KiottySpecStatus Editor::updateItem(Span<const char> id, Span<const char> title,
@@ -202,6 +181,27 @@ KiottySpecStatus Editor::writeBody(Span<const char> id, Span<const char> body)
         status = markNeedsChange(item.value, sequence.value);
     }
     return scope.finish(status);
+}
+
+KiottySpecStatus Editor::markNeedsChange(ItemHandle item, uint32_t sequence)
+{
+    const auto record = _w.items.reader().get(item);
+    if (!record) { return record.code; }
+    const ItemKind kind = record.value->kind;
+    if (kind != ItemKind::DESIGN && kind != ItemKind::UNIT_TEST_PLAN) {
+        return KIOTTY_SPEC_STATUS_SUCCESS;
+    }
+    const auto state = _w.catalog.finder().findTag(kind, spanOf(IMPLEMENTATION_STATE_TAG));
+    if (!state) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    const auto done = _w.catalog.finder().findTagBit(kind, state.value, spanOf(IMPLEMENTED_BIT));
+    const auto changed =
+        _w.catalog.finder().findTagBit(kind, state.value, spanOf(NEEDS_CHANGE_BIT));
+    if (!done || !changed) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    const uint64_t current = _w.items.tags().value(item, state.value);
+    if (current != (uint64_t { 1 } << done.value)) {
+        return KIOTTY_SPEC_STATUS_SUCCESS;
+    }
+    return _w.items.writer().setTag(item, state.value, uint64_t{1} << changed.value, sequence);
 }
 
 KiottySpecStatus Editor::setTag(ItemHandle item, uint32_t tag, uint64_t value)

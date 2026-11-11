@@ -5,11 +5,7 @@ namespace kiotty::spec::implementation::entity {
 
 namespace {
 
-bool isAlphanumeric(char letter)
-{
-    return (letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z') ||
-           (letter >= '0' && letter <= '9');
-}
+bool isAlphanumeric(char letter);
 
 }
 
@@ -25,6 +21,16 @@ KiottySpecStatus validateItemId(Span<const char> id)
         if (!is_alphanumeric && !is_separator) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+namespace {
+
+bool isAlphanumeric(char letter)
+{
+    return (letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z') ||
+           (letter >= '0' && letter <= '9');
+}
+
 }
 
 }

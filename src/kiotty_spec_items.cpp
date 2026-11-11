@@ -9,15 +9,7 @@ namespace {
 
 using RecordResult = impl::Result<const entity::ItemRecord*, KiottySpecStatus>;
 
-RecordResult recordOf(impl::Context& context, KiottySpecItemHandle item)
-{
-    const RecordResult record = context.workspace().items.reader().get(fromHandle(item));
-    if (!record) {
-        return RecordResult::failure(
-            context.failure().raise(record.code, KIOTTY_SPEC_SUBJECT_ITEM));
-    }
-    return record;
-}
+RecordResult recordOf(impl::Context& context, KiottySpecItemHandle item);
 
 }
 
@@ -62,6 +54,21 @@ KiottySpecStatusResult KiottySpec_renameItem(KiottySpecContext* context, KiottyS
     return status(context->context.editor().renameItem(current.value, next.value));
 }
 
+KiottySpecItemResult KiottySpec_readItem(KiottySpecContext* context, KiottySpecText id)
+{
+    KiottySpecItemResult result {};
+    if (context == nullptr) {
+        result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
+        return result;
+    }
+    const auto handle = resolve(context->context, id);
+    if (!handle) {
+        result.code = handle.code;
+        return result;
+    }
+    return KiottySpec_readItemByHandle(context, toHandle(handle.value));
+}
+
 KiottySpecItemResult KiottySpec_readItemByHandle(KiottySpecContext* context,
                                                  KiottySpecItemHandle item)
 {
@@ -76,21 +83,6 @@ KiottySpecItemResult KiottySpec_readItemByHandle(KiottySpecContext* context,
     result.handle = item;
     result.value = toItem(*record.value);
     return result;
-}
-
-KiottySpecItemResult KiottySpec_readItem(KiottySpecContext* context, KiottySpecText id)
-{
-    KiottySpecItemResult result {};
-    if (context == nullptr) {
-        result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
-        return result;
-    }
-    const auto handle = resolve(context->context, id);
-    if (!handle) {
-        result.code = handle.code;
-        return result;
-    }
-    return KiottySpec_readItemByHandle(context, toHandle(handle.value));
 }
 
 KiottySpecItemHandleResult KiottySpec_findItem(KiottySpecContext* context, KiottySpecText id)
@@ -219,6 +211,20 @@ KiottySpecStatusResult KiottySpec_fetchTagPage(KiottySpecContext* context, Kiott
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);
+}
+
+}
+
+namespace {
+
+RecordResult recordOf(impl::Context& context, KiottySpecItemHandle item)
+{
+    const RecordResult record = context.workspace().items.reader().get(fromHandle(item));
+    if (!record) {
+        return RecordResult::failure(
+            context.failure().raise(record.code, KIOTTY_SPEC_SUBJECT_ITEM));
+    }
+    return record;
 }
 
 }

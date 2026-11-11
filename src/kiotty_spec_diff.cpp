@@ -7,26 +7,10 @@ using namespace kiotty::spec::adapter;
 
 namespace {
 
-KiottySpecKindDiff toKindDiff(const impl::KindCounts& count)
-{
-    KiottySpecKindDiff kind {};
-    kind.added = count.added;
-    kind.modified = count.modified;
-    kind.removed = count.removed;
-    kind.relations_added = count.relations_added;
-    kind.relations_removed = count.relations_removed;
-    kind.decision_changed = count.has_decision_change ? KIOTTY_SPEC_TRUE : KIOTTY_SPEC_FALSE;
-    return kind;
-}
+KiottySpecKindDiff convertKindDiff(const impl::KindCounts& count);
+KiottySpecItemHandle findCurrentHandle(impl::Context& context, impl::Span<const char> id);
+bool isTextField(KiottySpecTextField field);
 
-KiottySpecItemHandle currentHandle(impl::Context& context, impl::Span<const char> id)
-{
-    const auto handle = context.workspace().items.reader().find(id);
-    return handle ? toHandle(handle.value) : KIOTTY_SPEC_INVALID_ITEM_HANDLE;
-}
-
-bool isTextField(KiottySpecTextField field)
-{ return field == KIOTTY_SPEC_TEXT_FIELD_TITLE || field == KIOTTY_SPEC_TEXT_FIELD_SUMMARY; }
 }
 
 extern "C" {
@@ -48,7 +32,7 @@ KiottySpecDiffSummaryResult KiottySpec_summarizeDiff(KiottySpecContext* context,
     result.from = range.value.from;
     result.to = range.value.to;
     for (size_t index = 0; index < entity::ITEM_KIND_COUNT; ++index) {
-        result.kinds[index] = toKindDiff(counts[index]);
+        result.kinds[index] = convertKindDiff(counts[index]);
     }
     return result;
 }
@@ -81,7 +65,7 @@ KiottySpecStatusResult KiottySpec_fetchItemDiffPage(KiottySpecContext* context,
         element = KiottySpecItemDiff{};
         element.before = diff.before;
         element.after = diff.after;
-        element.item = currentHandle(context->context, diff.id.view());
+        element.item = findCurrentHandle(context->context, diff.id.view());
         element.kind = static_cast<KiottySpecItemKind>(diff.kind);
         element.change = static_cast<KiottySpecChange>(diff.change);
         element.changed_fields = diff.fields;
@@ -148,7 +132,7 @@ KiottySpecItemResult KiottySpec_readItemAt(KiottySpecContext* context, KiottySpe
     const auto version = differ.past().itemAt(parsed.value, point.value);
     result.code = version.code;
     if (!version) { return result; }
-    result.handle = currentHandle(context->context, parsed.value);
+    result.handle = findCurrentHandle(context->context, parsed.value);
     result.value = toItem(version.value.record);
     return result;
 }
@@ -184,7 +168,7 @@ KiottySpecTagResult KiottySpec_readItemTagAt(KiottySpecContext* context, KiottyS
     }
     const auto value = differ.past().tagAt(parsed.value, tag, point.value);
     result.code = value.code;
-    result.value = toTag(currentHandle(context->context, parsed.value),
+    result.value = toTag(findCurrentHandle(context->context, parsed.value),
                          static_cast<KiottySpecItemKind>(kind), tag, value ? value.value : 0);
     return result;
 }
@@ -272,5 +256,30 @@ KiottySpecStatusResult KiottySpec_fetchTextDiffPage(KiottySpecContext* context,
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);
 }
+
+}
+
+namespace {
+
+KiottySpecKindDiff convertKindDiff(const impl::KindCounts& count)
+{
+    KiottySpecKindDiff kind {};
+    kind.added = count.added;
+    kind.modified = count.modified;
+    kind.removed = count.removed;
+    kind.relations_added = count.relations_added;
+    kind.relations_removed = count.relations_removed;
+    kind.decision_changed = count.has_decision_change ? KIOTTY_SPEC_TRUE : KIOTTY_SPEC_FALSE;
+    return kind;
+}
+
+KiottySpecItemHandle findCurrentHandle(impl::Context& context, impl::Span<const char> id)
+{
+    const auto handle = context.workspace().items.reader().find(id);
+    return handle ? toHandle(handle.value) : KIOTTY_SPEC_INVALID_ITEM_HANDLE;
+}
+
+bool isTextField(KiottySpecTextField field)
+{ return field == KIOTTY_SPEC_TEXT_FIELD_TITLE || field == KIOTTY_SPEC_TEXT_FIELD_SUMMARY; }
 
 }

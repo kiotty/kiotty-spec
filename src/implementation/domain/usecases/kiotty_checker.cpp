@@ -16,45 +16,11 @@ using entity::ItemRecord;
 using entity::RelationRecord;
 
 constexpr uint32_t MISSING = 0xFFFFFFFFu;
+constexpr size_t MAX_HEADING_LEVEL = 6;
+constexpr size_t ACCEPTANCE_WORD_LENGTH = 10;
 
-bool startsWithKeyword(std::string_view text)
-{
-    for (const std::string_view keyword : ACCEPTANCE_CRITERIA_KEYWORDS) {
-        const size_t position = text.find(keyword);
-        if (position != std::string_view::npos) { return true; }
-    }
-    const size_t text_size = text.size();
-    for (size_t index = 0; index + 10 <= text_size; ++index) {
-        bool same = true;
-        const char word[] = "acceptance";
-        for (size_t offset = 0; offset < 10; ++offset) {
-            char letter = text[index + offset];
-            if (letter >= 'A' && letter <= 'Z') { letter = static_cast<char>(letter - 'A' + 'a'); }
-            if (letter != word[offset]) {
-                same = false;
-                break;
-            }
-        }
-        if (same) { return true; }
-    }
-    return false;
-}
-
-bool isListLine(std::string_view line)
-{
-    const size_t line_size = line.size();
-    size_t index = 0;
-    while (index < line_size && (line[index] == ' ' || line[index] == '\t')) { ++index; }
-    if (index + 1 < line_size &&
-        (line[index] == '-' || line[index] == '*' || line[index] == '+') &&
-        line[index + 1] == ' ') {
-        return true;
-    }
-    size_t digits = index;
-    while (digits < line_size && line[digits] >= '0' && line[digits] <= '9') { ++digits; }
-    return digits > index && digits + 1 < line_size &&
-           (line[digits] == '.' || line[digits] == ')') && line[digits + 1] == ' ';
-}
+bool startsWithKeyword(std::string_view text);
+bool isListLine(std::string_view line);
 
 }
 
@@ -88,43 +54,6 @@ Span<const UnmetCondition> Checker::collect(entity::Step step)
     case entity::Step::SYSTEM_TEST_RUN: break;
     }
     return Span<const UnmetCondition>(_rows.data(), _length);
-}
-
-TagBit Checker::tagBit(ItemKind kind, std::string_view tag, std::string_view bit)
-{
-    const auto found = _w.catalog.finder().findTag(kind, spanOf(tag));
-    if (!found) { return TagBit{}; }
-    const auto position = _w.catalog.finder().findTagBit(kind, found.value, spanOf(bit));
-    if (!position) { return TagBit{}; }
-    return TagBit{uint64_t{1} << position.value, found.value};
-}
-
-uint32_t Checker::relationIndex(ItemKind kind, std::string_view name)
-{
-    const auto found = _w.catalog.finder().findRelation(kind, spanOf(name));
-    return found ? found.value : MISSING;
-}
-
-size_t Checker::countRelations(ItemKind model, uint32_t relation, ItemHandle item, bool as_target)
-{
-    size_t count = 0;
-    for (const RelationRecord& record : _w.relations.all()) {
-        if (record.model != model || record.relation != relation) { continue; }
-        const ItemHandle side = as_target ? record.to : record.from;
-        if (side.index == item.index) { ++count; }
-    }
-    return count;
-}
-
-bool Checker::isOpenChangeRequest(ItemHandle handle)
-{
-    const TagBit open =
-        tagBit(ItemKind::CHANGE_REQUEST, CHANGE_REQUEST_STATE_TAG, CHANGE_REQUEST_OPEN_BIT);
-    const TagBit in_progress =
-        tagBit(ItemKind::CHANGE_REQUEST, CHANGE_REQUEST_STATE_TAG, CHANGE_REQUEST_IN_PROGRESS_BIT);
-    if (open.tag_index == MISSING) { return true; }
-    const uint64_t value = _w.items.tags().value(handle, open.tag_index);
-    return value == 0 || (value & (open.bit | in_progress.bit)) != 0;
 }
 
 size_t Checker::openChangeRequestCount()
@@ -164,36 +93,6 @@ uint32_t Checker::earliestEntryStep()
     return earliest;
 }
 
-size_t Checker::countAcceptanceCriteria(Span<const char> body)
-{
-    const std::string_view text = viewOf(body);
-    size_t count = 0;
-    size_t active_level = 0;
-    size_t start = 0;
-    const size_t text_size = text.size();
-    while (start <= text_size) {
-        size_t end = text.find('\n', start);
-        if (end == std::string_view::npos) { end = text_size; }
-        std::string_view line = text.substr(start, end - start);
-        const bool has_carriage_return = !line.empty() && line.back() == '\r';
-        if (has_carriage_return) { line.remove_suffix(1); }
-        const size_t line_size = line.size();
-        size_t level = 0;
-        while (level < line_size && line[level] == '#') { ++level; }
-        if (level > 0 && level <= 6 && level < line_size && line[level] == ' ') {
-            if (active_level != 0 && level <= active_level) { active_level = 0; }
-            const bool is_keyword = startsWithKeyword(line.substr(level));
-            if (is_keyword) { active_level = level; }
-        } else if (active_level != 0) {
-            const bool is_list = isListLine(line);
-            if (is_list) { ++count; }
-        }
-        if (end == text_size) { break; }
-        start = end + 1;
-    }
-    return count;
-}
-
 void Checker::checkEntrySteps()
 {
     const auto entry = _w.catalog.finder().findTag(ItemKind::CHANGE_REQUEST,
@@ -229,6 +128,36 @@ void Checker::checkAcceptanceCriteria()
             length ? countAcceptanceCriteria(Span<const char>(buffer.data(), length.value)) : 0;
         if (criteria_count == 0) { add(KIOTTY_SPEC_CONDITION_ACCEPTANCE_CRITERIA, item.value->id); }
     }
+}
+
+size_t Checker::countAcceptanceCriteria(Span<const char> body)
+{
+    const std::string_view text = viewOf(body);
+    size_t count = 0;
+    size_t active_level = 0;
+    size_t start = 0;
+    const size_t text_size = text.size();
+    while (start <= text_size) {
+        size_t end = text.find('\n', start);
+        if (end == std::string_view::npos) { end = text_size; }
+        std::string_view line = text.substr(start, end - start);
+        const bool has_carriage_return = !line.empty() && line.back() == '\r';
+        if (has_carriage_return) { line.remove_suffix(1); }
+        const size_t line_size = line.size();
+        size_t level = 0;
+        while (level < line_size && line[level] == '#') { ++level; }
+        if (level > 0 && level <= MAX_HEADING_LEVEL && level < line_size && line[level] == ' ') {
+            if (active_level != 0 && level <= active_level) { active_level = 0; }
+            const bool is_keyword = startsWithKeyword(line.substr(level));
+            if (is_keyword) { active_level = level; }
+        } else if (active_level != 0) {
+            const bool is_list = isListLine(line);
+            if (is_list) { ++count; }
+        }
+        if (end == text_size) { break; }
+        start = end + 1;
+    }
+    return count;
 }
 
 void Checker::checkMilestoneCoverage()
@@ -278,6 +207,23 @@ void Checker::checkOneToOne(ItemKind target_kind, ItemKind test_kind,
     }
 }
 
+uint32_t Checker::relationIndex(ItemKind kind, std::string_view name)
+{
+    const auto found = _w.catalog.finder().findRelation(kind, spanOf(name));
+    return found ? found.value : MISSING;
+}
+
+size_t Checker::countRelations(ItemKind model, uint32_t relation, ItemHandle item, bool as_target)
+{
+    size_t count = 0;
+    for (const RelationRecord& record : _w.relations.all()) {
+        if (record.model != model || record.relation != relation) { continue; }
+        const ItemHandle side = as_target ? record.to : record.from;
+        if (side.index == item.index) { ++count; }
+    }
+    return count;
+}
+
 void Checker::checkResults()
 {
     const ItemKind kinds[] = { ItemKind::SYSTEM_TEST_RESULT, ItemKind::END_TO_END_TEST_RESULT,
@@ -306,12 +252,75 @@ void Checker::checkResults()
     }
 }
 
+bool Checker::isOpenChangeRequest(ItemHandle handle)
+{
+    const TagBit open =
+        tagBit(ItemKind::CHANGE_REQUEST, CHANGE_REQUEST_STATE_TAG, CHANGE_REQUEST_OPEN_BIT);
+    const TagBit in_progress =
+        tagBit(ItemKind::CHANGE_REQUEST, CHANGE_REQUEST_STATE_TAG, CHANGE_REQUEST_IN_PROGRESS_BIT);
+    if (open.tag_index == MISSING) { return true; }
+    const uint64_t value = _w.items.tags().value(handle, open.tag_index);
+    return value == 0 || (value & (open.bit | in_progress.bit)) != 0;
+}
+
+TagBit Checker::tagBit(ItemKind kind, std::string_view tag, std::string_view bit)
+{
+    const auto found = _w.catalog.finder().findTag(kind, spanOf(tag));
+    if (!found) { return TagBit{}; }
+    const auto position = _w.catalog.finder().findTagBit(kind, found.value, spanOf(bit));
+    if (!position) { return TagBit{}; }
+    return TagBit{uint64_t{1} << position.value, found.value};
+}
+
 void Checker::add(KiottySpecCondition condition, entity::IdText id)
 {
     const size_t row_count = _rows.size();
     if (_length == row_count) { return; }
     _rows[_length] = UnmetCondition{id, condition};
     ++_length;
+}
+
+namespace {
+
+bool startsWithKeyword(std::string_view text)
+{
+    for (const std::string_view keyword : ACCEPTANCE_CRITERIA_KEYWORDS) {
+        const size_t position = text.find(keyword);
+        if (position != std::string_view::npos) { return true; }
+    }
+    const size_t text_size = text.size();
+    for (size_t index = 0; index + ACCEPTANCE_WORD_LENGTH <= text_size; ++index) {
+        bool same = true;
+        const char word[] = "acceptance";
+        for (size_t offset = 0; offset < ACCEPTANCE_WORD_LENGTH; ++offset) {
+            char letter = text[index + offset];
+            if (letter >= 'A' && letter <= 'Z') { letter = static_cast<char>(letter - 'A' + 'a'); }
+            if (letter != word[offset]) {
+                same = false;
+                break;
+            }
+        }
+        if (same) { return true; }
+    }
+    return false;
+}
+
+bool isListLine(std::string_view line)
+{
+    const size_t line_size = line.size();
+    size_t index = 0;
+    while (index < line_size && (line[index] == ' ' || line[index] == '\t')) { ++index; }
+    if (index + 1 < line_size &&
+        (line[index] == '-' || line[index] == '*' || line[index] == '+') &&
+        line[index + 1] == ' ') {
+        return true;
+    }
+    size_t digits = index;
+    while (digits < line_size && line[digits] >= '0' && line[digits] <= '9') { ++digits; }
+    return digits > index && digits + 1 < line_size &&
+           (line[digits] == '.' || line[digits] == ')') && line[digits + 1] == ' ';
+}
+
 }
 
 }

@@ -10,28 +10,7 @@ using namespace kiotty::spec::adapter;
 
 namespace {
 
-std::string_view statusText(KiottySpecStatus code)
-{
-    switch (code) {
-    case KIOTTY_SPEC_STATUS_SUCCESS: return "SUCCESS";
-    case KIOTTY_SPEC_STATUS_NOT_FOUND: return "NOT_FOUND";
-    case KIOTTY_SPEC_STATUS_INVALID_ARGUMENT: return "INVALID_ARGUMENT";
-    case KIOTTY_SPEC_STATUS_CONFIRMED: return "CONFIRMED";
-    case KIOTTY_SPEC_STATUS_PERMISSION: return "PERMISSION";
-    case KIOTTY_SPEC_STATUS_PRECONDITION: return "PRECONDITION";
-    case KIOTTY_SPEC_STATUS_CONFLICT: return "CONFLICT";
-    case KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE: return "WRONG_CURSOR_TYPE";
-    case KIOTTY_SPEC_STATUS_INPUT_OUTPUT: return "INPUT_OUTPUT";
-    case KIOTTY_SPEC_STATUS_DATABASE: return "DATABASE";
-    case KIOTTY_SPEC_STATUS_OUT_OF_RANGE: return "OUT_OF_RANGE";
-    case KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED: return "CAPACITY_EXCEEDED";
-    case KIOTTY_SPEC_STATUS_ARITHMETIC_OVERFLOW: return "ARITHMETIC_OVERFLOW";
-    case KIOTTY_SPEC_STATUS_POOL_IS_FULL: return "POOL_IS_FULL";
-    case KIOTTY_SPEC_STATUS_INVALID_HANDLE: return "INVALID_HANDLE";
-    case KIOTTY_SPEC_STATUS_INVALID_UTF8: return "INVALID_UTF8";
-    }
-    return std::string_view();
-}
+std::string_view describeStatus(KiottySpecStatus code);
 
 }
 
@@ -91,7 +70,7 @@ KiottySpecStatusResult KiottySpec_initializeProject(KiottySpecContext* context,
 }
 
 KiottySpecNameResult KiottySpec_formatStatus(KiottySpecStatus status_code)
-{ return nameResult(statusText(status_code)); }
+{ return nameResult(describeStatus(status_code)); }
 
 KiottySpecNameResult KiottySpec_formatKind(KiottySpecItemKind kind)
 { return nameResult(entity::kindName(static_cast<entity::ItemKind>(kind))); }
@@ -106,6 +85,33 @@ KiottySpecItemKind KiottySpec_parseKind(KiottySpecText name)
 KiottySpecNameResult KiottySpec_formatCheckpointState(KiottySpecCheckpointState state)
 {
     return nameResult(entity::stateName(static_cast<entity::CheckpointState>(state)));
+}
+
+}
+
+namespace {
+
+std::string_view describeStatus(KiottySpecStatus code)
+{
+    switch (code) {
+    case KIOTTY_SPEC_STATUS_SUCCESS: return "SUCCESS";
+    case KIOTTY_SPEC_STATUS_NOT_FOUND: return "NOT_FOUND";
+    case KIOTTY_SPEC_STATUS_INVALID_ARGUMENT: return "INVALID_ARGUMENT";
+    case KIOTTY_SPEC_STATUS_CONFIRMED: return "CONFIRMED";
+    case KIOTTY_SPEC_STATUS_PERMISSION: return "PERMISSION";
+    case KIOTTY_SPEC_STATUS_PRECONDITION: return "PRECONDITION";
+    case KIOTTY_SPEC_STATUS_CONFLICT: return "CONFLICT";
+    case KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE: return "WRONG_CURSOR_TYPE";
+    case KIOTTY_SPEC_STATUS_INPUT_OUTPUT: return "INPUT_OUTPUT";
+    case KIOTTY_SPEC_STATUS_DATABASE: return "DATABASE";
+    case KIOTTY_SPEC_STATUS_OUT_OF_RANGE: return "OUT_OF_RANGE";
+    case KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED: return "CAPACITY_EXCEEDED";
+    case KIOTTY_SPEC_STATUS_ARITHMETIC_OVERFLOW: return "ARITHMETIC_OVERFLOW";
+    case KIOTTY_SPEC_STATUS_POOL_IS_FULL: return "POOL_IS_FULL";
+    case KIOTTY_SPEC_STATUS_INVALID_HANDLE: return "INVALID_HANDLE";
+    case KIOTTY_SPEC_STATUS_INVALID_UTF8: return "INVALID_UTF8";
+    }
+    return std::string_view();
 }
 
 }

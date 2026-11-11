@@ -13,10 +13,25 @@ using SequenceResult = Result<uint32_t, KiottySpecStatus>;
 
 }
 
-KiottySpecStatus Lifecycle::requireUser(KiottySpecActor actor)
+SequenceResult Lifecycle::start(entity::Step step, Span<const char> description)
 {
-    if (actor == KIOTTY_SPEC_ACTOR_USER) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    return _w.failure.raise(KIOTTY_SPEC_STATUS_PERMISSION, KIOTTY_SPEC_SUBJECT_ACTOR);
+    const bool is_valid_step = entity::isValidStep(static_cast<uint32_t>(step));
+    if (!is_valid_step) {
+        return SequenceResult::failure(
+            _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_STEP));
+    }
+    const KiottySpecStatus fresh = _w.refresh();
+    if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(fresh); }
+    const auto created = _w.checkpoints.writer().create(step, description, nowEpochSeconds());
+    const KiottySpecStatus finished = _w.finish(created.code);
+    if (finished != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(finished); }
+    return created;
+}
+
+KiottySpecStatus Lifecycle::resume()
+{
+    const auto sequence = beginWrite();
+    return _w.finish(sequence.code);
 }
 
 SequenceResult Lifecycle::beginWrite()
@@ -39,27 +54,6 @@ SequenceResult Lifecycle::beginWrite()
         if (running != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(running); }
     }
     return SequenceResult::success(latest);
-}
-
-SequenceResult Lifecycle::start(entity::Step step, Span<const char> description)
-{
-    const bool is_valid_step = entity::isValidStep(static_cast<uint32_t>(step));
-    if (!is_valid_step) {
-        return SequenceResult::failure(
-            _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_STEP));
-    }
-    const KiottySpecStatus fresh = _w.refresh();
-    if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(fresh); }
-    const auto created = _w.checkpoints.writer().create(step, description, nowEpochSeconds());
-    const KiottySpecStatus finished = _w.finish(created.code);
-    if (finished != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(finished); }
-    return created;
-}
-
-KiottySpecStatus Lifecycle::resume()
-{
-    const auto sequence = beginWrite();
-    return _w.finish(sequence.code);
 }
 
 KiottySpecStatus Lifecycle::complete(KiottySpecActor actor)
@@ -107,6 +101,12 @@ Result<size_t, KiottySpecStatus> Lifecycle::prune(KiottySpecActor actor, uint32_
     const KiottySpecStatus reloaded = _w.reload();
     if (reloaded != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(reloaded); }
     return dropped;
+}
+
+KiottySpecStatus Lifecycle::requireUser(KiottySpecActor actor)
+{
+    if (actor == KIOTTY_SPEC_ACTOR_USER) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    return _w.failure.raise(KIOTTY_SPEC_STATUS_PERMISSION, KIOTTY_SPEC_SUBJECT_ACTOR);
 }
 
 }

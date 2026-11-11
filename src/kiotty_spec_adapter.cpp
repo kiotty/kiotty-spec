@@ -14,68 +14,12 @@ constexpr size_t MIN_COUNT = 1;
 
 enum class Echo : uint8_t { HIDDEN, SHOWN };
 
-bool hasNul(impl::Span<const char> text)
-{
-    for (const char letter : text) {
-        if (letter == '\0') { return true; }
-    }
-    return false;
-}
-
-impl::Span<const char> echoOf(KiottySpecText text, Echo echo)
-{
-    if (echo == Echo::HIDDEN || text.data == nullptr) { return impl::Span<const char>(); }
-    const impl::Span<const char> span(text.data, text.length);
-    const impl::Span<const char> shown =
-        entity::cutAtCharacter(span, entity::MAX_FAILURE_TEXT_LENGTH);
-    const bool has_nul = hasNul(shown);
-    if (has_nul) { return impl::Span<const char>(); }
-    const bool is_valid_utf8 = impl::isValidUtf8(shown);
-    if (!is_valid_utf8) { return impl::Span<const char>(); }
-    return shown;
-}
-
+bool hasNul(impl::Span<const char> text);
+impl::Span<const char> echoOf(KiottySpecText text, Echo echo);
 TextResult parseField(impl::Context& context, KiottySpecText text, size_t max_length,
-                      KiottySpecSubject subject, Echo echo)
-{
-    const TextResult parsed = parseText(text, max_length);
-    if (!parsed) {
-        return TextResult::failure(
-            context.failure().raise(parsed.code, subject, echoOf(text, echo)));
-    }
-    return parsed;
-}
+                      KiottySpecSubject subject, Echo echo);
+CountResult parseCount(size_t value, size_t fallback, size_t minimum, size_t maximum);
 
-CountResult parseCount(size_t value, size_t fallback, size_t minimum, size_t maximum)
-{
-    if (value == 0) { return CountResult::success(fallback); }
-    if (value < minimum || value > maximum) {
-        return CountResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
-    }
-    return CountResult::success(value);
-}
-
-}
-
-TextResult parseText(KiottySpecText text, size_t max_length)
-{
-    if (text.data == nullptr && text.length > 0) {
-        return TextResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
-    }
-    if (text.length > max_length) {
-        return TextResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED);
-    }
-    const impl::Span<const char> span(text.data, text.length);
-    const bool has_nul = hasNul(span);
-    if (has_nul) { return TextResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    const bool is_valid_utf8 = impl::isValidUtf8(span);
-    if (!is_valid_utf8) { return TextResult::failure(KIOTTY_SPEC_STATUS_INVALID_UTF8); }
-    return TextResult::success(span);
-}
-
-TextResult parseId(impl::Context& context, KiottySpecText id)
-{
-    return parseField(context, id, KIOTTY_SPEC_MAX_ID_LENGTH, KIOTTY_SPEC_SUBJECT_ID, Echo::SHOWN);
 }
 
 TextResult parseTitle(impl::Context& context, KiottySpecText title)
@@ -165,16 +109,7 @@ ConfigurationResult parseConfiguration(const KiottySpecConfiguration& input)
     return ConfigurationResult::success(configuration);
 }
 
-KiottySpecItemHandle toHandle(entity::ItemHandle handle)
-{
-    const bool is_valid = handle.isValid();
-    if (!is_valid) { return KIOTTY_SPEC_INVALID_ITEM_HANDLE; }
-    return impl::packHandle(handle);
-}
-
 entity::ItemHandle fromHandle(KiottySpecItemHandle handle) { return impl::unpackHandle(handle); }
-
-KiottySpecCheckpointHandle toCheckpoint(entity::CheckpointHandle handle) { return handle.sequence; }
 
 KiottySpecItem toItem(const entity::ItemRecord& record)
 {
@@ -188,6 +123,13 @@ KiottySpecItem toItem(const entity::ItemRecord& record)
     return item;
 }
 
+KiottySpecItemHandle toHandle(entity::ItemHandle handle)
+{
+    const bool is_valid = handle.isValid();
+    if (!is_valid) { return KIOTTY_SPEC_INVALID_ITEM_HANDLE; }
+    return impl::packHandle(handle);
+}
+
 KiottySpecCheckpoint toCheckpointRecord(const entity::CheckpointRecord& record)
 {
     KiottySpecCheckpoint checkpoint {};
@@ -198,6 +140,8 @@ KiottySpecCheckpoint toCheckpointRecord(const entity::CheckpointRecord& record)
     copyText(checkpoint.description, record.description);
     return checkpoint;
 }
+
+KiottySpecCheckpointHandle toCheckpoint(entity::CheckpointHandle handle) { return handle.sequence; }
 
 KiottySpecTag toTag(KiottySpecItemHandle item, KiottySpecItemKind model, uint32_t tag,
                     uint64_t value)
@@ -220,13 +164,6 @@ KiottySpecSizeResult sizeResult(KiottySpecStatus code, size_t value)
     return result;
 }
 
-KiottySpecCursorResult cursorFailure(KiottySpecStatus code)
-{
-    KiottySpecCursorResult result {};
-    result.code = code;
-    return result;
-}
-
 KiottySpecCursorResult cursorResult(impl::Context& context, const impl::CursorIdResult& opened)
 {
     if (!opened) { return cursorFailure(opened.code); }
@@ -235,6 +172,13 @@ KiottySpecCursorResult cursorResult(impl::Context& context, const impl::CursorId
     result.value = opened.value;
     result.total = total ? total.value : 0;
     result.code = KIOTTY_SPEC_STATUS_SUCCESS;
+    return result;
+}
+
+KiottySpecCursorResult cursorFailure(KiottySpecStatus code)
+{
+    KiottySpecCursorResult result {};
+    result.code = code;
     return result;
 }
 
@@ -259,6 +203,11 @@ impl::Result<entity::ItemHandle, KiottySpecStatus> resolve(impl::Context& contex
     return context.workspace().resolve(parsed.value);
 }
 
+TextResult parseId(impl::Context& context, KiottySpecText id)
+{
+    return parseField(context, id, KIOTTY_SPEC_MAX_ID_LENGTH, KIOTTY_SPEC_SUBJECT_ID, Echo::SHOWN);
+}
+
 void copyTerminated(impl::Span<char> target, impl::Span<const char> source)
 {
     const size_t target_length = target.length();
@@ -266,6 +215,71 @@ void copyTerminated(impl::Span<char> target, impl::Span<const char> source)
     const size_t length = source.length() < target.length() ? source.length() : target.length() - 1;
     for (size_t index = 0; index < length; ++index) { target[index] = source[index]; }
     target[length] = '\0';
+}
+
+namespace {
+
+TextResult parseField(impl::Context& context, KiottySpecText text, size_t max_length,
+                      KiottySpecSubject subject, Echo echo)
+{
+    const TextResult parsed = parseText(text, max_length);
+    if (!parsed) {
+        return TextResult::failure(
+            context.failure().raise(parsed.code, subject, echoOf(text, echo)));
+    }
+    return parsed;
+}
+
+}
+
+TextResult parseText(KiottySpecText text, size_t max_length)
+{
+    if (text.data == nullptr && text.length > 0) {
+        return TextResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
+    }
+    if (text.length > max_length) {
+        return TextResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED);
+    }
+    const impl::Span<const char> span(text.data, text.length);
+    const bool has_nul = hasNul(span);
+    if (has_nul) { return TextResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    const bool is_valid_utf8 = impl::isValidUtf8(span);
+    if (!is_valid_utf8) { return TextResult::failure(KIOTTY_SPEC_STATUS_INVALID_UTF8); }
+    return TextResult::success(span);
+}
+
+namespace {
+
+impl::Span<const char> echoOf(KiottySpecText text, Echo echo)
+{
+    if (echo == Echo::HIDDEN || text.data == nullptr) { return impl::Span<const char>(); }
+    const impl::Span<const char> span(text.data, text.length);
+    const impl::Span<const char> shown =
+        entity::cutAtCharacter(span, entity::MAX_FAILURE_TEXT_LENGTH);
+    const bool has_nul = hasNul(shown);
+    if (has_nul) { return impl::Span<const char>(); }
+    const bool is_valid_utf8 = impl::isValidUtf8(shown);
+    if (!is_valid_utf8) { return impl::Span<const char>(); }
+    return shown;
+}
+
+bool hasNul(impl::Span<const char> text)
+{
+    for (const char letter : text) {
+        if (letter == '\0') { return true; }
+    }
+    return false;
+}
+
+CountResult parseCount(size_t value, size_t fallback, size_t minimum, size_t maximum)
+{
+    if (value == 0) { return CountResult::success(fallback); }
+    if (value < minimum || value > maximum) {
+        return CountResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
+    }
+    return CountResult::success(value);
+}
+
 }
 
 }

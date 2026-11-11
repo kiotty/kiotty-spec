@@ -12,24 +12,6 @@ using entity::RelationRecord;
 
 }
 
-Result<RelationRecord, KiottySpecStatus>
-RelationEditor::relationOf(Span<const char> from_id, uint32_t relation, Span<const char> to_id)
-{
-    using RelationResult = Result<RelationRecord, KiottySpecStatus>;
-    const auto from = _w.resolve(from_id);
-    if (!from) { return RelationResult::failure(from.code); }
-    const auto to = _w.resolve(to_id);
-    if (!to) { return RelationResult::failure(to.code); }
-    const ItemKind from_kind = _w.items.reader().get(from.value).value->kind;
-    const ItemKind to_kind = _w.items.reader().get(to.value).value->kind;
-    const KiottySpecStatus allowed = _w.catalog.checkRelation(from_kind, relation, to_kind);
-    if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return RelationResult::failure(
-            _w.failure.raise(allowed, KIOTTY_SPEC_SUBJECT_RELATION, from_id));
-    }
-    return RelationResult::success(RelationRecord{from.value, to.value, from_kind, relation});
-}
-
 KiottySpecStatus RelationEditor::add(Span<const char> from_id, uint32_t relation,
                                      Span<const char> to_id)
 {
@@ -59,6 +41,24 @@ KiottySpecStatus RelationEditor::remove(Span<const char> from_id, uint32_t relat
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }
     return scope.finish(_w.relations.remove(record.value, sequence.value));
+}
+
+Result<RelationRecord, KiottySpecStatus>
+RelationEditor::relationOf(Span<const char> from_id, uint32_t relation, Span<const char> to_id)
+{
+    using RelationResult = Result<RelationRecord, KiottySpecStatus>;
+    const auto from = _w.resolve(from_id);
+    if (!from) { return RelationResult::failure(from.code); }
+    const auto to = _w.resolve(to_id);
+    if (!to) { return RelationResult::failure(to.code); }
+    const ItemKind from_kind = _w.items.reader().get(from.value).value->kind;
+    const ItemKind to_kind = _w.items.reader().get(to.value).value->kind;
+    const KiottySpecStatus allowed = _w.catalog.checkRelation(from_kind, relation, to_kind);
+    if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return RelationResult::failure(
+            _w.failure.raise(allowed, KIOTTY_SPEC_SUBJECT_RELATION, from_id));
+    }
+    return RelationResult::success(RelationRecord{from.value, to.value, from_kind, relation});
 }
 
 }

@@ -20,7 +20,9 @@ constexpr std::string_view KIND_NAMES[ITEM_KIND_COUNT] = {
     "e2e_test_result",
 };
 
-constexpr std::string_view STATE_NAMES[] = {"started", "running", "done"};
+constexpr uint32_t CHECKPOINT_STATE_COUNT = 3;
+
+constexpr std::string_view STATE_NAMES[CHECKPOINT_STATE_COUNT] = {"started", "running", "done"};
 
 }
 
@@ -43,13 +45,13 @@ uint32_t parseKind(std::string_view name)
 std::string_view stateName(CheckpointState state)
 {
     const uint32_t value = static_cast<uint32_t>(state);
-    if (value < 1 || value > 3) { return std::string_view(); }
+    if (value < 1 || value > CHECKPOINT_STATE_COUNT) { return std::string_view(); }
     return STATE_NAMES[value - 1];
 }
 
 uint32_t parseState(std::string_view name)
 {
-    for (uint32_t index = 0; index < 3; ++index) {
+    for (uint32_t index = 0; index < CHECKPOINT_STATE_COUNT; ++index) {
         if (STATE_NAMES[index] == name) { return index + 1; }
     }
     return 0;

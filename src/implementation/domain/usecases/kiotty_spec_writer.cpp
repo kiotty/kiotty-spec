@@ -35,50 +35,10 @@ constexpr size_t HASH_DIGITS = 16;
 constexpr size_t MAX_NUMBER_DIGITS = 20;
 using NumberText = FixedString<MAX_NUMBER_DIGITS>;
 
-void addDecimal(KispLineEncoder& line, uint64_t number)
-{
-    NumberText text {};
-    appendDecimal(text, number);
-    line.add(text.view());
-}
-
-void addKey(KispLineEncoder& line, uint32_t key)
-{
-    if (key == entity::NO_KEY) {
-        line.add(spanOf(NONE_MARKER));
-        return;
-    }
-    NumberText text {};
-    appendHex(text, key, KEY_DIGITS);
-    line.add(text.view());
-}
-
-void addHash(KispLineEncoder& line, uint64_t hash)
-{
-    if (hash == 0) {
-        line.add(spanOf(NONE_MARKER));
-        return;
-    }
-    NumberText text {};
-    appendHex(text, hash, HASH_DIGITS);
-    line.add(text.view());
-}
-
-void addTagValue(KispLineEncoder& line, const entity::TagDefinition& definition, uint64_t value)
-{
-    if (value == 0) {
-        line.add(spanOf(NONE_MARKER));
-        return;
-    }
-    line.add(Span<const char>());
-    bool first = true;
-    for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
-        if ((value & (uint64_t{1} << bit)) == 0) { continue; }
-        if (!first) { line.extend(literalText(",")); }
-        line.extend(definition.bit_names[bit].view());
-        first = false;
-    }
-}
+void addDecimal(KispLineEncoder& line, uint64_t number);
+void addKey(KispLineEncoder& line, uint32_t key);
+void addHash(KispLineEncoder& line, uint64_t hash);
+void addTagValue(KispLineEncoder& line, const entity::TagDefinition& definition, uint64_t value);
 
 }
 
@@ -95,27 +55,6 @@ KiottySpecStatus SpecWriter::write()
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = writeDecisions(); }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = writeBodies(); }
     return status;
-}
-
-KiottySpecStatus SpecWriter::writeHeader(std::string_view columns)
-{ return _file.write(spanOf(columns)); }
-
-KispLineEncoder SpecWriter::startLine(std::string_view table, uint32_t removed)
-{
-    KispLineEncoder line(_area);
-    line.add(spanOf(table));
-    line.add(spanOf(removed != 0 ? REMOVED_MARKER : LIVE_MARKER));
-    return line;
-}
-
-KiottySpecStatus SpecWriter::emit(KispLineEncoder& line)
-{
-    const auto finished = line.finish();
-    if (!finished) {
-        return _t.failure.raise(finished.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
-                                literalText("work_buffer_bytes"));
-    }
-    return _file.write(finished.value);
 }
 
 KiottySpecStatus SpecWriter::writeMeta()
@@ -250,6 +189,76 @@ KiottySpecStatus SpecWriter::writeBodies()
         status = emit(line);
     }
     return status;
+}
+
+KiottySpecStatus SpecWriter::writeHeader(std::string_view columns)
+{ return _file.write(spanOf(columns)); }
+
+KispLineEncoder SpecWriter::startLine(std::string_view table, uint32_t removed)
+{
+    KispLineEncoder line(_area);
+    line.add(spanOf(table));
+    line.add(spanOf(removed != 0 ? REMOVED_MARKER : LIVE_MARKER));
+    return line;
+}
+
+KiottySpecStatus SpecWriter::emit(KispLineEncoder& line)
+{
+    const auto finished = line.finish();
+    if (!finished) {
+        return _t.failure.raise(finished.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
+                                literalText("work_buffer_bytes"));
+    }
+    return _file.write(finished.value);
+}
+
+namespace {
+
+void addDecimal(KispLineEncoder& line, uint64_t number)
+{
+    NumberText text {};
+    appendDecimal(text, number);
+    line.add(text.view());
+}
+
+void addKey(KispLineEncoder& line, uint32_t key)
+{
+    if (key == entity::NO_KEY) {
+        line.add(spanOf(NONE_MARKER));
+        return;
+    }
+    NumberText text {};
+    appendHex(text, key, KEY_DIGITS);
+    line.add(text.view());
+}
+
+void addHash(KispLineEncoder& line, uint64_t hash)
+{
+    if (hash == 0) {
+        line.add(spanOf(NONE_MARKER));
+        return;
+    }
+    NumberText text {};
+    appendHex(text, hash, HASH_DIGITS);
+    line.add(text.view());
+}
+
+void addTagValue(KispLineEncoder& line, const entity::TagDefinition& definition, uint64_t value)
+{
+    if (value == 0) {
+        line.add(spanOf(NONE_MARKER));
+        return;
+    }
+    line.add(Span<const char>());
+    bool first = true;
+    for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
+        if ((value & (uint64_t{1} << bit)) == 0) { continue; }
+        if (!first) { line.extend(literalText(",")); }
+        line.extend(definition.bit_names[bit].view());
+        first = false;
+    }
+}
+
 }
 
 }
