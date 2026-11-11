@@ -18,8 +18,8 @@ constexpr size_t GROUP_AND_VERB_TOKENS = 2;
 int run(const std::vector<std::string>& tokens);
 void printHelp();
 const CommandEntry* findCommand(const std::vector<std::string>& tokens, size_t& consumed);
-KiottySpecActor findActor(const Arguments& args);
-std::string findRoot(const Arguments& args);
+KiottySpecActor findActor(const Arguments& arguments);
+std::string findRoot(const Arguments& arguments);
 std::string makeDatabasePath(const std::string& root);
 std::string readEnvironment(const char* name);
 
@@ -51,25 +51,29 @@ namespace {
 
 int run(const std::vector<std::string>& tokens)
 {
-    const bool is_empty = tokens.empty();
-    if (is_empty || tokens[0] == "help" || tokens[0] == "--help" || tokens[0] == "-h") {
+    const std::string first_token = tokens.empty() ? std::string() : tokens.front();
+    const bool is_help = tokens.empty() || first_token == "help" || first_token == "--help" ||
+                         first_token == "-h";
+    if (is_help) {
         printHelp();
         return 0;
     }
     size_t consumed = 0;
     const CommandEntry* command = findCommand(tokens, consumed);
     if (command == nullptr) {
-        return usage("알 수 없는 명령 '" + tokens[0] + (tokens.size() > 1 ? " " + tokens[1] : "") +
-                     "'. `ks help` 참고");
+        const bool has_verb_token = tokens.size() > 1;
+        const std::string verb_token = has_verb_token ? " " + tokens.at(1) : std::string();
+        return usage(formatMessage(MessageKey::UNKNOWN_COMMAND, {first_token + verb_token}));
     }
     Session session {};
-    const bool diff = std::string_view(command->group) == "diff";
+    const bool is_diff = command->group == "diff";
     session.args =
-        parseArguments(tokens, consumed, diff ? DIFF_FLAGS : std::vector<std::string_view>());
+        parseArguments(tokens, consumed, is_diff ? DIFF_FLAGS : std::vector<std::string_view>());
     const bool has_help_flag = session.args.flag("help");
     if (has_help_flag) {
-        std::cout << "ks " << command->group << (command->verb[0] != '\0' ? " " : "")
-                  << command->verb << " " << command->usage << "\n  " << command->summary << "\n";
+        std::cout << "ks " << command->group << (command->verb.empty() ? "" : " ")
+                  << command->verb << " " << findMessage(command->usage) << "\n  "
+                  << findMessage(command->summary) << "\n";
         return 0;
     }
     session.actor = findActor(session.args);
@@ -88,31 +92,27 @@ int run(const std::vector<std::string>& tokens)
 
 void printHelp()
 {
-    std::cout << "사용법: ks <그룹> [동사] [인자...] [--root DIR] [--actor ai|user]\n"
-                 "출력은 TSV 이며 첫 줄이 머리글이다. 쓰기 명령은 성공하면 아무것도 찍지 않는다 "
-                 "(만든 ID 는 찍는다).\n"
-                 "Kind: change_request requirement rule external_interface design unit_test_plan "
-                 "milestone unit_test_result\n"
-                 "      system_test_plan system_test_result code_inspection_result e2e_test_plan "
-                 "e2e_test_result\n"
-                 "      한글 모델 이름도 받는다 (`ks model` 의 name 열).\n"
-                 "DB: <루트>/.kiotty/spec.kisp\n\n";
+    std::cout << findMessage(MessageKey::HELP_TEXT);
     for (const CommandEntry& command : commands()) {
-        std::cout << "  ks " << command.group << (command.verb[0] != '\0' ? " " : "")
-                  << command.verb << " " << command.usage << "\n      " << command.summary << "\n";
+        std::cout << "  ks " << command.group << (command.verb.empty() ? "" : " ")
+                  << command.verb << " " << findMessage(command.usage) << "\n      "
+                  << findMessage(command.summary) << "\n";
     }
 }
 
 const CommandEntry* findCommand(const std::vector<std::string>& tokens, size_t& consumed)
 {
+    const std::string_view group = tokens.front();
+    const bool has_verb_token = tokens.size() > 1;
+    const std::string_view verb = has_verb_token ? std::string_view(tokens.at(1)) : "";
     for (const CommandEntry& command : commands()) {
-        if (tokens[0] != command.group) { continue; }
-        if (command.verb[0] == '\0') {
+        if (group != command.group) { continue; }
+        const bool is_group_only = command.verb.empty();
+        if (is_group_only) {
             consumed = 1;
             return &command;
         }
-        const bool has_verb_token = tokens.size() > 1;
-        if (has_verb_token && tokens[1] == command.verb) {
+        if (has_verb_token && verb == command.verb) {
             consumed = GROUP_AND_VERB_TOKENS;
             return &command;
         }
@@ -120,15 +120,16 @@ const CommandEntry* findCommand(const std::vector<std::string>& tokens, size_t& 
     return nullptr;
 }
 
-KiottySpecActor findActor(const Arguments& args)
+KiottySpecActor findActor(const Arguments& arguments)
 {
-    const std::string name = args.option("actor").value_or(readEnvironment("KIOTTY_SPEC_ACTOR"));
+    const std::string name =
+        arguments.option("actor").value_or(readEnvironment("KIOTTY_SPEC_ACTOR"));
     return name == "user" ? KIOTTY_SPEC_ACTOR_USER : KIOTTY_SPEC_ACTOR_AI;
 }
 
-std::string findRoot(const Arguments& args)
+std::string findRoot(const Arguments& arguments)
 {
-    const std::optional<std::string> root = args.option("root");
+    const std::optional<std::string> root = arguments.option("root");
     if (root) { return *root; }
     const std::string environment_root = readEnvironment("KIOTTY_SPEC_ROOT");
     const bool has_environment_root = !environment_root.empty();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "kiotty_spec.h"
+#include "src/i18n/kiotty_messages.h"
 
 #include <cstdint>
 #include <optional>
@@ -34,7 +35,7 @@ constexpr int USAGE_EXIT_CODE = 2;
 constexpr int DECIMAL_BASE = 10;
 
 int fail(Session& session, KiottySpecStatus status);
-int usage(const std::string& message);
+int usage(std::string_view message);
 
 KiottySpecText textOf(std::string_view text);
 std::string kindName(KiottySpecItemKind kind);
@@ -63,10 +64,10 @@ std::string bitNames(const KiottySpecTagDefinition& definition, uint64_t value);
 using Command = int (*)(Session&);
 
 struct CommandEntry {
-    const char* group {};
-    const char* verb {};
-    const char* usage {};
-    const char* summary {};
+    std::string_view group {};
+    std::string_view verb {};
+    MessageKey usage {};
+    MessageKey summary {};
     Command run {};
 };
 

@@ -27,7 +27,9 @@ std::optional<ColumnPlan> planColumns(Session& session, KiottySpecItemKind kind)
             if (!mask) { return std::nullopt; }
             const bool is_full = plan.queries.size() == KIOTTY_SPEC_MAX_TAG_QUERIES;
             if (is_full) {
-                std::cerr << "error: 태그 조건은 " << KIOTTY_SPEC_MAX_TAG_QUERIES << " 개까지\n";
+                const std::string limit = std::to_string(KIOTTY_SPEC_MAX_TAG_QUERIES);
+                std::cerr << "error: " << formatMessage(MessageKey::TAG_QUERY_LIMIT, {limit})
+                          << "\n";
                 return std::nullopt;
             }
             plan.queries.push_back(KiottySpecTagQuery{*mask, kind, tag->index});
@@ -72,7 +74,9 @@ std::optional<ColumnPlan> planColumns(Session& session, KiottySpecItemKind kind)
                 KiottySpec_fetchRelationPage(session.context, cursor.value, &page);
             if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
             for (size_t index = 0; index < page.length; ++index) {
-                std::string& targets = column.targets[itemId(session, page.elements[index].from)];
+                const std::string from_id = itemId(session, page.elements[index].from);
+                column.targets.try_emplace(from_id);
+                std::string& targets = column.targets.at(from_id);
                 const bool has_targets = !targets.empty();
                 if (has_targets) { targets += ','; }
                 targets += itemId(session, page.elements[index].to);

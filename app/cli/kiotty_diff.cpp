@@ -1,5 +1,5 @@
 
-#include "kiotty_session.h"
+#include "kiotty_commands.h"
 
 #include <cstdio>
 #include <iostream>
@@ -25,9 +25,6 @@ constexpr const char* BLUE = "\x1b[94m";
 constexpr const char* RED = "\x1b[31m";
 constexpr const char* RESET = "\x1b[0m";
 constexpr int DIFF_GROUP_COUNT = 3;
-constexpr int ADDED_GROUP = 0;
-constexpr int REMOVED_GROUP = 1;
-constexpr int MODIFIED_GROUP = 2;
 
 struct Painter;
 
@@ -41,7 +38,7 @@ std::string diffSummary(Session& session, const KiottySpecItemDiff& diff,
                         const std::string& before, const std::string& after);
 
 struct Painter {
-    bool color {};
+    bool is_colored {};
 
     std::string paint(const KiottySpecTextDiff& diff) const
     {
@@ -56,24 +53,24 @@ struct Painter {
 
     std::string added(std::string_view text) const
     {
-        return color ? std::string(BLUE) + escape(text) + RESET : "{+" + escape(text) + "+}";
+        return is_colored ? std::string(BLUE) + escape(text) + RESET : "{+" + escape(text) + "+}";
     }
 
     std::string removed(std::string_view text) const
     {
-        return color ? std::string(RED) + escape(text) + RESET : "[-" + escape(text) + "-]";
+        return is_colored ? std::string(RED) + escape(text) + RESET : "[-" + escape(text) + "-]";
     }
 
     std::string mark(bool add, const std::string& id) const
     {
         const std::string text = (add ? "+" : "-") + id;
-        if (!color) { return text; }
+        if (!is_colored) { return text; }
         return std::string(add ? BLUE : RED) + text + RESET;
     }
 };
 
 struct RelationChange {
-    bool added {};
+    bool is_added {};
     std::string to_id {};
 };
 
@@ -83,25 +80,27 @@ using RelationKey = std::pair<std::string, uint32_t>;
 
 int runDiff(Session& session)
 {
-    const auto& positional = session.args.positional;
-    const auto from = positional.size() > 0 ? parseCheckpointArgument(positional[0]) : std::nullopt;
-    const auto to = positional.size() > 1 ? parseCheckpointArgument(positional[1]) : std::nullopt;
-    if (!from || !to) {
-        return usage("ks diff FROM TO [--kind K (--added|--removed|--modified)...]. 체크포인트는 "
-                     "CP-0003, 3, current");
-    }
+    const std::string* from_name = positional(session, 0);
+    const std::string* to_name = positional(session, 1);
+    const std::optional<KiottySpecCheckpointHandle> from =
+        from_name == nullptr ? std::nullopt : parseCheckpointArgument(*from_name);
+    const std::optional<KiottySpecCheckpointHandle> to =
+        to_name == nullptr ? std::nullopt : parseCheckpointArgument(*to_name);
+    const bool has_range = from.has_value() && to.has_value();
+    if (!has_range) { return usage(findMessage(MessageKey::DIFF_USAGE)); }
     KiottySpecDiffQuery query {*from, *to, 0, 0};
     const auto kind_name = session.args.option("kind");
     if (!kind_name) { return printSummary(session, query); }
 
     const auto kind = kindArgument(session, *kind_name);
     if (!kind) { return USAGE_EXIT_CODE; }
-    const bool groups[DIFF_GROUP_COUNT] = { session.args.flag("added"),
-                                            session.args.flag("removed"),
-                                            session.args.flag("modified") };
-    if (!groups[ADDED_GROUP] && !groups[REMOVED_GROUP] && !groups[MODIFIED_GROUP]) {
-        return usage("--added · --removed · --modified 중 하나 이상");
-    }
+    const bool has_added_flag = session.args.flag("added");
+    const bool has_removed_flag = session.args.flag("removed");
+    const bool has_modified_flag = session.args.flag("modified");
+    const bool has_group_flag = has_added_flag || has_removed_flag || has_modified_flag;
+    if (!has_group_flag) { return usage(findMessage(MessageKey::DIFF_GROUP_USAGE)); }
+    const bool is_group_shown[DIFF_GROUP_COUNT] = { has_added_flag, has_removed_flag,
+                                                    has_modified_flag };
     query.kind_mask = 1u << (*kind - 1);
     const KiottySpecDiffSummaryResult range = KiottySpec_summarizeDiff(session.context, &query);
     if (range.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, range.code); }
@@ -150,7 +149,9 @@ int runDiff(Session& session)
             if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
             for (size_t index = 0; index < page.length; ++index) {
                 const KiottySpecRelationDiff& diff = page.elements[index];
-                changes[{ diff.from_id, diff.relation }].push_back(
+                const RelationKey key { diff.from_id, diff.relation };
+                changes.try_emplace(key);
+                changes.at(key).push_back(
                     RelationChange { diff.change == KIOTTY_SPEC_CHANGE_ADDED, diff.to_id });
             }
         }
@@ -181,49 +182,51 @@ int runDiff(Session& session)
                                                        KIOTTY_SPEC_CHANGE_REMOVED,
                                                        KIOTTY_SPEC_CHANGE_MODIFIED };
     const char* labels[DIFF_GROUP_COUNT] = {"# added", "# removed", "# modified"};
-    bool first_group = true;
+    bool has_printed_group = false;
     for (int group = 0; group < DIFF_GROUP_COUNT; ++group) {
-        if (!groups[group]) { continue; }
-        if (!first_group) { std::fputc('\n', stdout); }
-        first_group = false;
+        const bool is_shown = is_group_shown[group];
+        if (!is_shown) { continue; }
+        if (has_printed_group) { std::fputc('\n', stdout); }
+        has_printed_group = true;
         std::printf("%s\n", labels[group]);
         printRow(header);
         for (const KiottySpecItemDiff& diff : diffs) {
             if (diff.change != order[group]) { continue; }
-            const bool added = diff.change == KIOTTY_SPEC_CHANGE_ADDED;
+            const bool is_added = diff.change == KIOTTY_SPEC_CHANGE_ADDED;
             const KiottySpecItemResult before =
                 KiottySpec_readItemAt(session.context, textOf(diff.id), range.from);
             const KiottySpecItemResult after =
                 KiottySpec_readItemAt(session.context, textOf(diff.id), range.to);
             const KiottySpecItem& shown =
-                added || diff.change == KIOTTY_SPEC_CHANGE_MODIFIED ? after.value : before.value;
+                is_added || diff.change == KIOTTY_SPEC_CHANGE_MODIFIED ? after.value : before.value;
             const KiottySpecCheckpointHandle shown_at =
-                added || diff.change == KIOTTY_SPEC_CHANGE_MODIFIED ? range.to : range.from;
+                is_added || diff.change == KIOTTY_SPEC_CHANGE_MODIFIED ? range.to : range.from;
             std::vector<std::string> row = {diff.id, kindName(diff.kind)};
-            const bool modified = diff.change == KIOTTY_SPEC_CHANGE_MODIFIED;
+            const bool is_modified = diff.change == KIOTTY_SPEC_CHANGE_MODIFIED;
             if (has_title) {
-                const bool changed =
-                    modified && (diff.changed_fields & KIOTTY_SPEC_CHANGED_FIELD_TITLE) != 0;
-                row.push_back(changed
+                const bool is_title_changed =
+                    is_modified && (diff.changed_fields & KIOTTY_SPEC_CHANGED_FIELD_TITLE) != 0;
+                row.push_back(is_title_changed
                                   ? quote(before.value.title) + " -> " + quote(after.value.title)
                                   : cell(shown.title));
             }
             if (has_summary) {
-                const bool changed =
-                    modified && (diff.changed_fields & KIOTTY_SPEC_CHANGED_FIELD_SUMMARY) != 0;
-                row.push_back(changed ? diffSummary(session, diff, range, painter,
-                                                    before.value.summary, after.value.summary)
-                                      : cell(shown.summary));
+                const bool is_summary_changed =
+                    is_modified && (diff.changed_fields & KIOTTY_SPEC_CHANGED_FIELD_SUMMARY) != 0;
+                row.push_back(is_summary_changed
+                                  ? diffSummary(session, diff, range, painter,
+                                                before.value.summary, after.value.summary)
+                                  : cell(shown.summary));
             }
             for (const TagColumn& tag : tags) {
                 const uint64_t now =
                     KiottySpec_readItemTagAt(session.context, textOf(diff.id), tag.index, shown_at)
                         .value.value;
                 const uint64_t old =
-                    modified ? KiottySpec_readItemTagAt(session.context, textOf(diff.id), tag.index,
-                                                        range.from)
-                                   .value.value
-                             : now;
+                    is_modified ? KiottySpec_readItemTagAt(session.context, textOf(diff.id),
+                                                           tag.index, range.from)
+                                      .value.value
+                                : now;
                 row.push_back(old != now ? quote(bitNames(tag.definition, old)) + " -> " +
                                                quote(bitNames(tag.definition, now))
                                          : bitNames(tag.definition, now));
@@ -234,11 +237,11 @@ int runDiff(Session& session)
                 const bool has_changes = found != changes.end();
                 if (has_changes) {
                     for (const RelationChange& change : found->second) {
-                        if (!modified) {
-                            text += (text.empty() ? "" : ",") + change.to_id;
-                        } else {
+                        if (is_modified) {
                             text += (text.empty() ? "" : " ") +
-                                    painter.mark(change.added, change.to_id);
+                                    painter.mark(change.is_added, change.to_id);
+                        } else {
+                            text += (text.empty() ? "" : ",") + change.to_id;
                         }
                     }
                 }

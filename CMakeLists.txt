@@ -62,7 +62,8 @@ kiotty_no_exceptions(kiotty_spec)
 # ---------------------------------------------------------------------------
 # CLI: AI 가 질의하는 실행 파일 (이름: ks)
 # ---------------------------------------------------------------------------
-file(GLOB KIOTTY_CLI_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/app/cli/*.cpp)
+file(GLOB KIOTTY_CLI_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/app/cli/*.cpp
+     ${CMAKE_CURRENT_SOURCE_DIR}/app/cli/src/i18n/*.cpp)
 add_executable(ks ${KIOTTY_CLI_SOURCES})
 target_link_libraries(ks PRIVATE kiotty_spec)
 kiotty_warnings(ks)

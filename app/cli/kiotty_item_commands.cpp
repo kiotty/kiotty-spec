@@ -27,7 +27,8 @@ int addItem(Session& session)
 {
     const std::string* kind_name = positional(session, 0);
     const auto title = session.args.option("title");
-    if (kind_name == nullptr || !title) { return usage("ks item add KIND --title T"); }
+    const bool has_arguments = kind_name != nullptr && title.has_value();
+    if (!has_arguments) { return usage(findMessage(MessageKey::ITEM_ADD_USAGE)); }
     const auto kind = kindArgument(session, *kind_name);
     if (!kind) { return USAGE_EXIT_CODE; }
     const BodyOption body = bodyOption(session, "body", "body-file");
@@ -63,8 +64,7 @@ int setItem(Session& session)
 {
     const std::string* id = positional(session, 0);
     if (id == nullptr) {
-        return usage("ks item set ID [--title T] [--summary S] [--parent ID|-] [--body "
-                     "T|--body-file F] [--tag 이름=값]");
+        return usage(findMessage(MessageKey::ITEM_SET_USAGE));
     }
     const KiottySpecItemResult item = KiottySpec_readItem(session.context, textOf(*id));
     if (item.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, item.code); }
@@ -98,7 +98,7 @@ int showItem(Session& session)
 {
     const std::string* id = positional(session, 0);
     if (id == nullptr) {
-        return usage("ks item show ID [--tag 이름]... [--tags] [--relation 이름]... [--relations]");
+        return usage(findMessage(MessageKey::ITEM_SHOW_USAGE));
     }
     const KiottySpecItemResult item = KiottySpec_readItem(session.context, textOf(*id));
     if (item.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, item.code); }
@@ -113,7 +113,9 @@ int renameItem(Session& session)
 {
     const std::string* id = positional(session, 0);
     const std::string* next = positional(session, 1);
-    if (id == nullptr || next == nullptr) { return usage("ks item rename ID 새ID"); }
+    if (id == nullptr || next == nullptr) {
+        return usage(findMessage(MessageKey::ITEM_RENAME_USAGE));
+    }
     return check(session, KiottySpec_renameItem(session.context, textOf(*id), textOf(*next)).code);
 }
 
@@ -126,10 +128,12 @@ int listItems(Session& session)
         if (!parsed) { return USAGE_EXIT_CODE; }
         kind = *parsed;
     }
-    const bool wants_columns = !session.args.all("tag").empty() ||
-                               !session.args.all("relation").empty() || session.args.flag("tags") ||
-                               session.args.flag("relations");
-    if (kind == 0 && wants_columns) { return usage("--tag · --relation 은 --kind 와 함께 쓴다"); }
+    const bool has_column_options =
+        !session.args.all("tag").empty() || !session.args.all("relation").empty() ||
+        session.args.flag("tags") || session.args.flag("relations");
+    if (kind == 0 && has_column_options) {
+        return usage(findMessage(MessageKey::ITEM_LIST_COLUMNS_NEED_KIND));
+    }
     std::optional<ColumnPlan> plan {};
     if (kind != 0) {
         plan = planColumns(session, kind);
@@ -146,7 +150,7 @@ int listItems(Session& session)
 int listChildren(Session& session)
 {
     const std::string* id = positional(session, 0);
-    if (id == nullptr) { return usage("ks item children ID"); }
+    if (id == nullptr) { return usage(findMessage(MessageKey::ITEM_CHILDREN_USAGE)); }
     return printItemCursor(session, KiottySpec_openChildCursor(session.context, textOf(*id)),
                            nullptr);
 }
@@ -154,7 +158,7 @@ int listChildren(Session& session)
 int showBody(Session& session)
 {
     const std::string* id = positional(session, 0);
-    if (id == nullptr) { return usage("ks item body ID"); }
+    if (id == nullptr) { return usage(findMessage(MessageKey::ITEM_BODY_USAGE)); }
     std::vector<char> buffer(KIOTTY_SPEC_MAX_BODY_LENGTH + 1);
     const KiottySpecSizeResult read = KiottySpec_readItemBody(
         session.context, textOf(*id), KiottySpecBuffer { buffer.data(), buffer.size() });
@@ -167,14 +171,14 @@ int showBody(Session& session)
 int removeItem(Session& session)
 {
     const std::string* id = positional(session, 0);
-    if (id == nullptr) { return usage("ks item remove ID"); }
+    if (id == nullptr) { return usage(findMessage(MessageKey::ITEM_REMOVE_USAGE)); }
     return check(session, KiottySpec_removeItem(session.context, textOf(*id)).code);
 }
 
 int showTags(Session& session)
 {
     const std::string* id = positional(session, 0);
-    if (id == nullptr) { return usage("ks tag show ID"); }
+    if (id == nullptr) { return usage(findMessage(MessageKey::TAG_SHOW_USAGE)); }
     const KiottySpecItemResult item = KiottySpec_readItem(session.context, textOf(*id));
     if (item.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, item.code); }
     const KiottySpecModelResult model = KiottySpec_readModel(session.context, item.value.kind);
@@ -198,7 +202,7 @@ int setTag(Session& session)
     const std::string* name = positional(session, 1);
     const std::string* bits = positional(session, TAG_VALUE_POSITION);
     if (id == nullptr || name == nullptr || bits == nullptr) {
-        return usage("ks tag set ID 태그이름 값[,값]|-");
+        return usage(findMessage(MessageKey::TAG_SET_USAGE));
     }
     const KiottySpecItemResult item = KiottySpec_readItem(session.context, textOf(*id));
     if (item.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, item.code); }
@@ -216,7 +220,7 @@ int removeRelation(Session& session) { return applyRelationChange(session, false
 int listRelations(Session& session)
 {
     const std::string* id = positional(session, 0);
-    if (id == nullptr) { return usage("ks relation list ID [--up|--down]"); }
+    if (id == nullptr) { return usage(findMessage(MessageKey::RELATION_LIST_USAGE)); }
     KiottySpecDirection direction = KIOTTY_SPEC_DIRECTION_BOTH;
     const bool has_up_flag = session.args.flag("up");
     const bool has_down_flag = session.args.flag("down");
@@ -246,7 +250,7 @@ int listRelations(Session& session)
 int showImpact(Session& session)
 {
     const std::string* id = positional(session, 0);
-    if (id == nullptr) { return usage("ks impact ID [--depth N]"); }
+    if (id == nullptr) { return usage(findMessage(MessageKey::IMPACT_USAGE)); }
     uint32_t depth = DEFAULT_IMPACT_DEPTH;
     const std::optional<std::string> text = session.args.option("depth");
     if (text) {
@@ -273,7 +277,7 @@ int setTags(Session& session, const std::string& id, KiottySpecItemKind kind)
 {
     for (const std::string& spec : session.args.all("tag")) {
         const size_t equal = spec.find('=');
-        if (equal == std::string::npos) { return usage("--tag 이름=값[,값]"); }
+        if (equal == std::string::npos) { return usage(findMessage(MessageKey::TAG_OPTION_USAGE)); }
         const auto tag = findTag(session, kind, spec.substr(0, equal));
         if (!tag) { return USAGE_EXIT_CODE; }
         const auto value = parseBits(tag->definition, spec.substr(equal + 1));
@@ -293,7 +297,7 @@ int applyRelationChange(Session& session, bool add)
     const std::string* name = positional(session, 1);
     const std::string* to = positional(session, RELATION_TARGET_POSITION);
     if (from == nullptr || name == nullptr || to == nullptr) {
-        return usage("ks relation add|remove FROM 관계이름 TO");
+        return usage(findMessage(MessageKey::RELATION_CHANGE_USAGE));
     }
     const KiottySpecItemResult item = KiottySpec_readItem(session.context, textOf(*from));
     if (item.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, item.code); }

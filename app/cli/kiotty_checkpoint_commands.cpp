@@ -20,7 +20,7 @@ void printCheckpoint(KiottySpecCheckpointHandle handle, const KiottySpecCheckpoi
 int startCheckpoint(Session& session)
 {
     const std::string* step = positional(session, 0);
-    if (step == nullptr) { return usage("ks checkpoint start STEP(1~12) [--description D]"); }
+    if (step == nullptr) { return usage(findMessage(MessageKey::CHECKPOINT_START_USAGE)); }
     const unsigned long value = std::strtoul(step->c_str(), nullptr, DECIMAL_BASE);
     const std::string description = session.args.option("description").value_or("");
     const KiottySpecCheckpointHandleResult started = KiottySpec_startCheckpoint(
@@ -42,7 +42,7 @@ int showCheckpoint(Session& session)
     const std::string* name = positional(session, 0);
     if (name) {
         const auto parsed = parseCheckpoint(*name);
-        if (!parsed) { return usage("체크포인트는 CP-0003 또는 3"); }
+        if (!parsed) { return usage(findMessage(MessageKey::CHECKPOINT_NAME_USAGE)); }
         handle = *parsed;
     }
     const KiottySpecCheckpointResult checkpoint =
@@ -81,7 +81,7 @@ int pruneCheckpoints(Session& session)
 {
     const std::string* name = positional(session, 0);
     const auto base = name == nullptr ? std::nullopt : parseCheckpoint(*name);
-    if (!base) { return usage("ks checkpoint prune CP --actor user"); }
+    if (!base) { return usage(findMessage(MessageKey::CHECKPOINT_PRUNE_USAGE)); }
     const KiottySpecSizeResult pruned =
         KiottySpec_pruneCheckpoints(session.context, session.actor, *base);
     if (pruned.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, pruned.code); }
@@ -108,7 +108,7 @@ int showHistory(Session& session)
         const unsigned long value =
             *text == "all" ? 0 : std::strtoul(text->c_str(), &end, DECIMAL_BASE);
         if (*text != "all" && (value == 0 || end == nullptr || *end != '\0')) {
-            return usage("--depth 는 1 이상의 수나 all");
+            return usage(findMessage(MessageKey::HISTORY_DEPTH_USAGE));
         }
         depth = *text == "all" ? UINT32_MAX : static_cast<uint32_t>(value);
     }
@@ -132,7 +132,7 @@ int showDecision(Session& session)
 {
     const std::string* name = positional(session, 0);
     const auto kind = name == nullptr ? std::nullopt : kindArgument(session, *name);
-    if (!kind) { return usage("ks decision show KIND"); }
+    if (!kind) { return usage(findMessage(MessageKey::DECISION_SHOW_USAGE)); }
     std::vector<char> buffer(KIOTTY_SPEC_MAX_DECISION_LENGTH + 1);
     const KiottySpecSizeResult read = KiottySpec_readDecision(
         session.context, *kind, KiottySpecBuffer { buffer.data(), buffer.size() });
@@ -148,7 +148,8 @@ int setDecision(Session& session)
     const auto kind = name == nullptr ? std::nullopt : kindArgument(session, *name);
     const BodyOption text = bodyOption(session, "text", "file");
     if (text.is_unreadable) { return USAGE_EXIT_CODE; }
-    if (!kind || !text.text) { return usage("ks decision set KIND (--text T | --file F)"); }
+    const bool has_arguments = kind.has_value() && text.text.has_value();
+    if (!has_arguments) { return usage(findMessage(MessageKey::DECISION_SET_USAGE)); }
     return check(session,
                  KiottySpec_writeDecision(session.context, *kind, textOf(*text.text)).code);
 }
