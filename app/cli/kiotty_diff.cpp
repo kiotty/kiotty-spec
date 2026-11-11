@@ -24,45 +24,21 @@ namespace {
 constexpr const char* BLUE = "\x1b[94m";
 constexpr const char* RED = "\x1b[31m";
 constexpr const char* RESET = "\x1b[0m";
+constexpr int DIFF_GROUP_COUNT = 3;
+constexpr int ADDED_GROUP = 0;
+constexpr int REMOVED_GROUP = 1;
+constexpr int MODIFIED_GROUP = 2;
 
-bool colorTerminal()
-{
-#ifdef _WIN32
-    const bool is_terminal = _isatty(_fileno(stdout)) != 0;
-    if (!is_terminal) { return false; }
-    const HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
-    DWORD mode = 0;
-    if (output == INVALID_HANDLE_VALUE) { return false; }
-    const bool has_console_mode = GetConsoleMode(output, &mode) != 0;
-    if (!has_console_mode) { return false; }
-    return SetConsoleMode(output, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
-#else
-    return isatty(fileno(stdout)) != 0;
-#endif
-}
+struct Painter;
 
-std::string plain(std::string_view text)
-{
-    std::string value = cell(text);
-    return text.empty() ? std::string() : value;
-}
-
-std::string quoted(std::string_view text)
-{
-    std::string value = "\"";
-    for (const char letter : plain(text)) {
-        if (letter == '"') { value += '\\'; }
-        value += letter;
-    }
-    return value + "\"";
-}
-
-std::optional<KiottySpecCheckpointHandle> checkpointArgument(std::string_view text)
-{
-    const KiottySpecCheckpointHandle current {KIOTTY_SPEC_CHECKPOINT_CURRENT};
-    if (text == "current" || text == "-") { return current; }
-    return parseCheckpoint(text);
-}
+bool detectColorTerminal();
+std::string escape(std::string_view text);
+std::string quote(std::string_view text);
+std::optional<KiottySpecCheckpointHandle> parseCheckpointArgument(std::string_view text);
+int printSummary(Session& session, const KiottySpecDiffQuery& query);
+std::string diffSummary(Session& session, const KiottySpecItemDiff& diff,
+                        const KiottySpecDiffSummaryResult& range, const Painter& painter,
+                        const std::string& before, const std::string& after);
 
 struct Painter {
     bool color {};
@@ -71,21 +47,21 @@ struct Painter {
     {
         const std::string_view part(diff.text, diff.length);
         switch (diff.change) {
-        case KIOTTY_SPEC_TEXT_CHANGE_UNCHANGED: return plain(part);
+        case KIOTTY_SPEC_TEXT_CHANGE_UNCHANGED: return escape(part);
         case KIOTTY_SPEC_TEXT_CHANGE_ADDED: return added(part);
         case KIOTTY_SPEC_TEXT_CHANGE_REMOVED: return removed(part);
         }
-        return plain(part);
+        return escape(part);
     }
 
     std::string added(std::string_view text) const
     {
-        return color ? std::string(BLUE) + plain(text) + RESET : "{+" + plain(text) + "+}";
+        return color ? std::string(BLUE) + escape(text) + RESET : "{+" + escape(text) + "+}";
     }
 
     std::string removed(std::string_view text) const
     {
-        return color ? std::string(RED) + plain(text) + RESET : "[-" + plain(text) + "-]";
+        return color ? std::string(RED) + escape(text) + RESET : "[-" + escape(text) + "-]";
     }
 
     std::string mark(bool add, const std::string& id) const
@@ -103,59 +79,13 @@ struct RelationChange {
 
 using RelationKey = std::pair<std::string, uint32_t>;
 
-int printSummary(Session& session, const KiottySpecDiffQuery& query)
-{
-    const KiottySpecDiffSummaryResult summary = KiottySpec_summarizeDiff(session.context, &query);
-    if (summary.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, summary.code); }
-    printRow({ "kind", "added", "modified", "removed", "relations_added", "relations_removed",
-               "decision" });
-    for (uint32_t index = 0; index < KIOTTY_SPEC_ITEM_KIND_COUNT; ++index) {
-        const KiottySpecKindDiff& kind = summary.kinds[index];
-        const uint32_t changes = kind.added + kind.modified + kind.removed + kind.relations_added +
-                                 kind.relations_removed;
-        if (changes == 0 && kind.decision_changed == KIOTTY_SPEC_FALSE) { continue; }
-        printRow({ kindName(static_cast<KiottySpecItemKind>(index + 1)), std::to_string(kind.added),
-                   std::to_string(kind.modified), std::to_string(kind.removed),
-                   std::to_string(kind.relations_added), std::to_string(kind.relations_removed),
-                   kind.decision_changed == KIOTTY_SPEC_TRUE ? "changed" : "-" });
-    }
-    return 0;
-}
-
-std::string summaryDiff(Session& session, const KiottySpecItemDiff& diff,
-                        const KiottySpecDiffSummaryResult& range, const Painter& painter,
-                        const std::string& before, const std::string& after)
-{
-    if (diff.item == KIOTTY_SPEC_INVALID_ITEM_HANDLE) {
-        return quoted(before) + " -> " + quoted(after);
-    }
-    const KiottySpecDiffQuery points {range.from, range.to, 0, 0};
-    const KiottySpecCursorResult cursor = KiottySpec_openTextDiffCursor(
-        session.context, diff.item, KIOTTY_SPEC_TEXT_FIELD_SUMMARY, &points);
-    if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return quoted(before) + " -> " + quoted(after);
-    }
-    std::string text {};
-    KiottySpecTextDiffPage page {};
-    while (true) {
-        const KiottySpecStatusResult fetched =
-            KiottySpec_fetchTextDiffPage(session.context, cursor.value, &page);
-        if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
-        for (size_t index = 0; index < page.length; ++index) {
-            text += painter.paint(page.elements[index]);
-        }
-    }
-    KiottySpec_closeCursor(session.context, cursor.value);
-    return text.empty() ? "-" : text;
-}
-
 }
 
 int runDiff(Session& session)
 {
     const auto& positional = session.args.positional;
-    const auto from = positional.size() > 0 ? checkpointArgument(positional[0]) : std::nullopt;
-    const auto to = positional.size() > 1 ? checkpointArgument(positional[1]) : std::nullopt;
+    const auto from = positional.size() > 0 ? parseCheckpointArgument(positional[0]) : std::nullopt;
+    const auto to = positional.size() > 1 ? parseCheckpointArgument(positional[1]) : std::nullopt;
     if (!from || !to) {
         return usage("ks diff FROM TO [--kind K (--added|--removed|--modified)...]. 체크포인트는 "
                      "CP-0003, 3, current");
@@ -165,21 +95,22 @@ int runDiff(Session& session)
     if (!kind_name) { return printSummary(session, query); }
 
     const auto kind = kindArgument(session, *kind_name);
-    if (!kind) { return 2; }
-    const bool groups[3] = { session.args.flag("added"), session.args.flag("removed"),
-                             session.args.flag("modified") };
-    if (!groups[0] && !groups[1] && !groups[2]) {
+    if (!kind) { return USAGE_EXIT_CODE; }
+    const bool groups[DIFF_GROUP_COUNT] = { session.args.flag("added"),
+                                            session.args.flag("removed"),
+                                            session.args.flag("modified") };
+    if (!groups[ADDED_GROUP] && !groups[REMOVED_GROUP] && !groups[MODIFIED_GROUP]) {
         return usage("--added · --removed · --modified 중 하나 이상");
     }
     query.kind_mask = 1u << (*kind - 1);
     const KiottySpecDiffSummaryResult range = KiottySpec_summarizeDiff(session.context, &query);
     if (range.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, range.code); }
-    const Painter painter {!session.args.flag("no-color") && colorTerminal()};
+    const Painter painter {!session.args.flag("no-color") && detectColorTerminal()};
 
     std::vector<TagColumn> tags {};
     for (const std::string& name : session.args.all("tag")) {
         const auto tag = findTag(session, *kind, name);
-        if (!tag) { return 2; }
+        if (!tag) { return USAGE_EXIT_CODE; }
         tags.push_back(*tag);
     }
     const KiottySpecModelResult model = KiottySpec_readModel(session.context, *kind);
@@ -195,7 +126,7 @@ int runDiff(Session& session)
     std::vector<std::pair<uint32_t, std::string>> relations {};
     for (const std::string& name : session.args.all("relation")) {
         const auto relation = findRelation(session, *kind, name);
-        if (!relation) { return 2; }
+        if (!relation) { return USAGE_EXIT_CODE; }
         relations.emplace_back(*relation, name);
     }
     const bool has_relations_flag = session.args.flag("relations");
@@ -246,11 +177,12 @@ int runDiff(Session& session)
     for (const TagColumn& tag : tags) { header.push_back(tag.definition.name); }
     for (const auto& relation : relations) { header.push_back(relation.second); }
 
-    const KiottySpecChange order[3] = { KIOTTY_SPEC_CHANGE_ADDED, KIOTTY_SPEC_CHANGE_REMOVED,
-                                        KIOTTY_SPEC_CHANGE_MODIFIED };
-    const char* labels[3] = {"# added", "# removed", "# modified"};
+    const KiottySpecChange order[DIFF_GROUP_COUNT] = { KIOTTY_SPEC_CHANGE_ADDED,
+                                                       KIOTTY_SPEC_CHANGE_REMOVED,
+                                                       KIOTTY_SPEC_CHANGE_MODIFIED };
+    const char* labels[DIFF_GROUP_COUNT] = {"# added", "# removed", "# modified"};
     bool first_group = true;
-    for (int group = 0; group < 3; ++group) {
+    for (int group = 0; group < DIFF_GROUP_COUNT; ++group) {
         if (!groups[group]) { continue; }
         if (!first_group) { std::fputc('\n', stdout); }
         first_group = false;
@@ -273,13 +205,13 @@ int runDiff(Session& session)
                 const bool changed =
                     modified && (diff.changed_fields & KIOTTY_SPEC_CHANGED_FIELD_TITLE) != 0;
                 row.push_back(changed
-                                  ? quoted(before.value.title) + " -> " + quoted(after.value.title)
+                                  ? quote(before.value.title) + " -> " + quote(after.value.title)
                                   : cell(shown.title));
             }
             if (has_summary) {
                 const bool changed =
                     modified && (diff.changed_fields & KIOTTY_SPEC_CHANGED_FIELD_SUMMARY) != 0;
-                row.push_back(changed ? summaryDiff(session, diff, range, painter,
+                row.push_back(changed ? diffSummary(session, diff, range, painter,
                                                     before.value.summary, after.value.summary)
                                       : cell(shown.summary));
             }
@@ -292,8 +224,8 @@ int runDiff(Session& session)
                                                         range.from)
                                    .value.value
                              : now;
-                row.push_back(old != now ? quoted(bitNames(tag.definition, old)) + " -> " +
-                                               quoted(bitNames(tag.definition, now))
+                row.push_back(old != now ? quote(bitNames(tag.definition, old)) + " -> " +
+                                               quote(bitNames(tag.definition, now))
                                          : bitNames(tag.definition, now));
             }
             for (const auto& relation : relations) {
@@ -316,6 +248,95 @@ int runDiff(Session& session)
         }
     }
     return 0;
+}
+
+namespace {
+
+std::optional<KiottySpecCheckpointHandle> parseCheckpointArgument(std::string_view text)
+{
+    const KiottySpecCheckpointHandle current {KIOTTY_SPEC_CHECKPOINT_CURRENT};
+    if (text == "current" || text == "-") { return current; }
+    return parseCheckpoint(text);
+}
+
+int printSummary(Session& session, const KiottySpecDiffQuery& query)
+{
+    const KiottySpecDiffSummaryResult summary = KiottySpec_summarizeDiff(session.context, &query);
+    if (summary.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, summary.code); }
+    printRow({ "kind", "added", "modified", "removed", "relations_added", "relations_removed",
+               "decision" });
+    for (uint32_t index = 0; index < KIOTTY_SPEC_ITEM_KIND_COUNT; ++index) {
+        const KiottySpecKindDiff& kind = summary.kinds[index];
+        const uint32_t changes = kind.added + kind.modified + kind.removed + kind.relations_added +
+                                 kind.relations_removed;
+        if (changes == 0 && kind.decision_changed == KIOTTY_SPEC_FALSE) { continue; }
+        printRow({ kindName(static_cast<KiottySpecItemKind>(index + 1)), std::to_string(kind.added),
+                   std::to_string(kind.modified), std::to_string(kind.removed),
+                   std::to_string(kind.relations_added), std::to_string(kind.relations_removed),
+                   kind.decision_changed == KIOTTY_SPEC_TRUE ? "changed" : "-" });
+    }
+    return 0;
+}
+
+bool detectColorTerminal()
+{
+#ifdef _WIN32
+    const bool is_terminal = _isatty(_fileno(stdout)) != 0;
+    if (!is_terminal) { return false; }
+    const HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD mode = 0;
+    if (output == INVALID_HANDLE_VALUE) { return false; }
+    const bool has_console_mode = GetConsoleMode(output, &mode) != 0;
+    if (!has_console_mode) { return false; }
+    return SetConsoleMode(output, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
+#else
+    return isatty(fileno(stdout)) != 0;
+#endif
+}
+
+std::string diffSummary(Session& session, const KiottySpecItemDiff& diff,
+                        const KiottySpecDiffSummaryResult& range, const Painter& painter,
+                        const std::string& before, const std::string& after)
+{
+    if (diff.item == KIOTTY_SPEC_INVALID_ITEM_HANDLE) {
+        return quote(before) + " -> " + quote(after);
+    }
+    const KiottySpecDiffQuery points {range.from, range.to, 0, 0};
+    const KiottySpecCursorResult cursor = KiottySpec_openTextDiffCursor(
+        session.context, diff.item, KIOTTY_SPEC_TEXT_FIELD_SUMMARY, &points);
+    if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return quote(before) + " -> " + quote(after);
+    }
+    std::string text {};
+    KiottySpecTextDiffPage page {};
+    while (true) {
+        const KiottySpecStatusResult fetched =
+            KiottySpec_fetchTextDiffPage(session.context, cursor.value, &page);
+        if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
+        for (size_t index = 0; index < page.length; ++index) {
+            text += painter.paint(page.elements[index]);
+        }
+    }
+    KiottySpec_closeCursor(session.context, cursor.value);
+    return text.empty() ? "-" : text;
+}
+
+std::string quote(std::string_view text)
+{
+    std::string value = "\"";
+    for (const char letter : escape(text)) {
+        if (letter == '"') { value += '\\'; }
+        value += letter;
+    }
+    return value + "\"";
+}
+
+std::string escape(std::string_view text)
+{
+    std::string value = cell(text);
+    return text.empty() ? std::string() : value;
+}
+
 }
 
 }

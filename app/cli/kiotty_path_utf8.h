@@ -13,6 +13,8 @@
 #endif
 #include <windows.h>
 
+inline std::string utf8FromWide(std::wstring_view wide);
+
 inline std::filesystem::path pathFromUtf8(std::string_view text)
 {
     const int length =
@@ -23,6 +25,11 @@ inline std::filesystem::path pathFromUtf8(std::string_view text)
     return std::filesystem::path(wide);
 }
 
+inline std::string pathToUtf8(const std::filesystem::path &path)
+{
+    return utf8FromWide(path.generic_wstring());
+}
+
 inline std::string utf8FromWide(std::wstring_view wide)
 {
     const int length = WideCharToMultiByte(CP_UTF8, 0, wide.data(), static_cast<int>(wide.size()),
@@ -31,11 +38,6 @@ inline std::string utf8FromWide(std::wstring_view wide)
     WideCharToMultiByte(CP_UTF8, 0, wide.data(), static_cast<int>(wide.size()), utf8.data(), length,
                         nullptr, nullptr);
     return utf8;
-}
-
-inline std::string pathToUtf8(const std::filesystem::path &path)
-{
-    return utf8FromWide(path.generic_wstring());
 }
 #else
 inline std::filesystem::path pathFromUtf8(std::string_view text)

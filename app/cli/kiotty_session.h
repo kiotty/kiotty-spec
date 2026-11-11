@@ -30,6 +30,9 @@ struct Session {
     Arguments args {};
 };
 
+constexpr int USAGE_EXIT_CODE = 2;
+constexpr int DECIMAL_BASE = 10;
+
 int fail(Session& session, KiottySpecStatus status);
 int usage(const std::string& message);
 

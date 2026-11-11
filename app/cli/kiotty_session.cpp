@@ -13,155 +13,20 @@ namespace kiotty::cli {
 namespace {
 
 constexpr std::string_view FLAG_NAMES[] = {"tags", "relations", "up", "down", "help"};
+constexpr size_t OPTION_PREFIX_LENGTH = 2;
+constexpr size_t CHECKPOINT_NAME_CAPACITY = 32;
+constexpr uint32_t CHECKPOINT_NUMBER_MASK = 0xFFFFFFFFu;
+constexpr size_t CHECKPOINT_PREFIX_LENGTH = 3;
+constexpr size_t MAX_CHECKPOINT_DIGITS = 9;
 
-bool isFlag(std::string_view name)
-{
-    for (const std::string_view flag : FLAG_NAMES) {
-        if (flag == name) { return true; }
-    }
-    return false;
-}
-
-std::vector<std::string> split(std::string_view text, char separator)
-{
-    std::vector<std::string> parts {};
-    size_t start = 0;
-    const size_t length = text.size();
-    while (start <= length) {
-        size_t end = text.find(separator, start);
-        if (end == std::string_view::npos) { end = text.size(); }
-        parts.emplace_back(text.substr(start, end - start));
-        start = end + 1;
-    }
-    return parts;
-}
-
-std::string textProblem(const std::string& field, KiottySpecStatus status)
-{
-    if (status == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED) { return field + " 이 상한을 넘음"; }
-    if (status == KIOTTY_SPEC_STATUS_INVALID_UTF8) { return field + " 이 UTF-8 이 아님"; }
-    return field + " 이 비었거나 null 바이트가 있음";
-}
-
-std::string withText(const std::string& sentence, const char* text)
-{ return text[0] == '\0' ? sentence : sentence + ": " + text; }
-
-std::string conditionHeading(KiottySpecCondition condition)
-{
-    switch (condition) {
-    case KIOTTY_SPEC_CONDITION_ENTRY_STEP: return "진입 단계가 정해지지 않은 열린 변경 요청";
-    case KIOTTY_SPEC_CONDITION_ACCEPTANCE_CRITERIA: return "인수 조건이 없는 기능 요구사항 (R-4)";
-    case KIOTTY_SPEC_CONDITION_MILESTONE_COVERAGE: return "어떤 마일스톤에도 포함되지 않은 설계 사항 · 유닛 테스트 (R-5)";
-    case KIOTTY_SPEC_CONDITION_SYSTEM_TEST_PAIR: return "시스템 테스트와 1:1 이 아닌 기능 요구사항 (R-3)";
-    case KIOTTY_SPEC_CONDITION_END_TO_END_TEST_PAIR: return "E2E 테스트와 1:1 이 아닌 외부 인터페이스 (R-3)";
-    case KIOTTY_SPEC_CONDITION_CODE_INSPECTION_PAIR: return "코드 검사 결과와 1:1 이 아닌 개발 수칙";
-    case KIOTTY_SPEC_CONDITION_SINGLE_TARGET: return "대상이 하나가 아닌 테스트 · 검사 항목";
-    case KIOTTY_SPEC_CONDITION_PASSING_RESULT: return "PASS 가 아닌 결과 (R-10)";
-    case KIOTTY_SPEC_CONDITION_CLOSED_CHANGE_REQUEST: return "열린 변경 요청 (R-10)";
-    }
-    return std::to_string(static_cast<int>(condition));
-}
-
-std::string unmetConditions(Session& session)
-{
-    const KiottySpecCursorResult cursor = KiottySpec_openUnmetConditionCursor(session.context);
-    if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return std::string(); }
-    std::string text {};
-    bool first = true;
-    KiottySpecCondition current = KIOTTY_SPEC_CONDITION_ENTRY_STEP;
-    KiottySpecUnmetConditionPage page {};
-    while (true) {
-        const KiottySpecStatusResult fetched =
-            KiottySpec_fetchUnmetConditionPage(session.context, cursor.value, &page);
-        if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
-        for (size_t index = 0; index < page.length; ++index) {
-            const KiottySpecUnmetCondition& unmet = page.elements[index];
-            if (first || unmet.condition != current) {
-                text += "\n- " + conditionHeading(unmet.condition) + ":";
-            }
-            first = false;
-            current = unmet.condition;
-            text += std::string(" ") + unmet.id;
-        }
-    }
-    KiottySpec_closeCursor(session.context, cursor.value);
-    return text;
-}
-
-std::string completionFailure(Session& session)
-{
-    const KiottySpecCheckpointResult checkpoint =
-        KiottySpec_readCheckpoint(session.context, KIOTTY_SPEC_CHECKPOINT_CURRENT);
-    const std::string step =
-        checkpoint.code == KIOTTY_SPEC_STATUS_SUCCESS
-            ? "Step " + std::to_string(static_cast<int>(checkpoint.value.step)) + " "
-            : "";
-    return step + "확정 조건 미충족" + unmetConditions(session);
-}
-
-std::string describeFailure(Session& session, const KiottySpecError& error)
-{
-    const std::string line = error.line > 0 ? "줄 " + std::to_string(error.line) + ": " : "";
-    const KiottySpecStatus status = error.status;
-    switch (error.subject) {
-    case KIOTTY_SPEC_SUBJECT_NONE: return std::string();
-    case KIOTTY_SPEC_SUBJECT_FILE: return line + withText(".kisp 파일이나 디렉토리를 다룰 수 없음", error.text);
-    case KIOTTY_SPEC_SUBJECT_FILE_LINE:
-        return line + withText("잘못된 줄 (열 수, 값, 이스케이프, 표 이름)", error.text);
-    case KIOTTY_SPEC_SUBJECT_MERGE_MARKER: return line + "병합 충돌 표시가 남아 있음";
-    case KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE:
-        return line + withText("같은 기록이 두 줄 (병합을 확인할 것)", error.text);
-    case KIOTTY_SPEC_SUBJECT_FILE_CHANGED:
-        return withText(".kisp 가 연 뒤에 밖에서 바뀜 (git pull, 다른 ks). 다시 열고 쓸 것",
-                        error.text);
-    case KIOTTY_SPEC_SUBJECT_FILE_FORMAT:
-        return line + "첫 줄이 이 ks 의 .kisp 머리줄이 아님 (형식이나 모델 버전이 다름)";
-    case KIOTTY_SPEC_SUBJECT_CONFIGURATION:
-        return line + withText("용량 상한에 닿음. 정리하거나 설정을 늘릴 것", error.text);
-    case KIOTTY_SPEC_SUBJECT_MODEL: return "모델 표를 적재할 수 없음";
-    case KIOTTY_SPEC_SUBJECT_KIND: return "알 수 없거나 결정 기록이 없는 Kind";
-    case KIOTTY_SPEC_SUBJECT_ITEM:
-        return error.text[0] == '\0' ? "항목 핸들이 무효임" : withText("없는 항목", error.text);
-    case KIOTTY_SPEC_SUBJECT_ID:
-        if (status == KIOTTY_SPEC_STATUS_CONFLICT) { return withText("이미 있는 ID", error.text); }
-        return withText("ID 는 [A-Za-z0-9] 로 시작하고 [A-Za-z0-9_-] 만 쓰며 15자 이하", error.text);
-    case KIOTTY_SPEC_SUBJECT_ID_IN_HISTORY:
-        return withText("지운 항목이 이력에 쓰고 있는 ID (정리 전까지 못 씀)", error.text);
-    case KIOTTY_SPEC_SUBJECT_TITLE: return textProblem("제목", status);
-    case KIOTTY_SPEC_SUBJECT_SUMMARY: return textProblem("요약", status);
-    case KIOTTY_SPEC_SUBJECT_BODY: return textProblem("본문", status);
-    case KIOTTY_SPEC_SUBJECT_PAST_BODY: return withText("그 시점의 본문은 지금과 달라 git 이력에만 있음", error.text);
-    case KIOTTY_SPEC_SUBJECT_PARENT: return withText("상위 항목이 순환함", error.text);
-    case KIOTTY_SPEC_SUBJECT_CHILD: return withText("하위 항목이 있어 지울 수 없음", error.text);
-    case KIOTTY_SPEC_SUBJECT_TAG: return line + withText("모델에 없는 태그", error.text);
-    case KIOTTY_SPEC_SUBJECT_TAG_VALUE:
-        return line + withText("태그 값이 모델의 태그 정의에 맞지 않음", error.text);
-    case KIOTTY_SPEC_SUBJECT_RELATION:
-        if (status == KIOTTY_SPEC_STATUS_CONFLICT) { return withText("이미 있는 관계", error.text); }
-        if (status == KIOTTY_SPEC_STATUS_NOT_FOUND) { return withText("없는 관계", error.text); }
-        return line + withText("모델의 관계 정의에 없는 관계", error.text);
-    case KIOTTY_SPEC_SUBJECT_DECISION: return textProblem("결정 기록", status);
-    case KIOTTY_SPEC_SUBJECT_CHECKPOINT:
-        if (status == KIOTTY_SPEC_STATUS_CONFIRMED) {
-            return "가장 최근 체크포인트가 DONE 임. 새 체크포인트를 시작할 것";
-        }
-        if (status == KIOTTY_SPEC_STATUS_PRECONDITION) {
-            return "체크포인트가 없거나 기준 체크포인트가 DONE 이 아님. 먼저 체크포인트를 "
-                   "시작하거나 확정할 것";
-        }
-        return "없는 체크포인트 (정리로 지워졌거나 아직 없음)";
-    case KIOTTY_SPEC_SUBJECT_DESCRIPTION: return textProblem("체크포인트 설명", status);
-    case KIOTTY_SPEC_SUBJECT_STEP: return "단계는 1 ~ 12";
-    case KIOTTY_SPEC_SUBJECT_ACTOR: return "사용자만 할 수 있음 (R-2)";
-    case KIOTTY_SPEC_SUBJECT_CURSOR: return "커서 수가 max_cursors 에 닿음";
-    case KIOTTY_SPEC_SUBJECT_CURSOR_ROWS: return "결과 행이 max_cursor_rows 를 넘음. 조건을 좁힐 것";
-    case KIOTTY_SPEC_SUBJECT_DIFF_RANGE: return "구간이 거꾸로이거나 비어 있음 (from < to, 시작은 체크포인트)";
-    case KIOTTY_SPEC_SUBJECT_TEXT_FIELD: return "글자 diff 는 제목이나 요약 하나에만 쓴다";
-    case KIOTTY_SPEC_SUBJECT_PROJECT_NAME: return textProblem("프로젝트 이름", status);
-    case KIOTTY_SPEC_SUBJECT_COMPLETION: return completionFailure(session);
-    }
-    return std::string();
-}
+bool isFlag(std::string_view name);
+std::vector<std::string> split(std::string_view text, char separator);
+std::string describeTextProblem(const std::string& field, KiottySpecStatus status);
+std::string appendText(const std::string& sentence, const char* text);
+std::string describeCondition(KiottySpecCondition condition);
+std::string listUnmetConditions(Session& session);
+std::string describeCompletionFailure(Session& session);
+std::string describeFailure(Session& session, const KiottySpecError& error);
 
 }
 
@@ -198,9 +63,10 @@ Arguments parseArguments(const std::vector<std::string>& tokens, size_t first,
     const size_t count = tokens.size();
     for (size_t index = first; index < count; ++index) {
         const std::string& token = tokens[index];
-        const bool is_option = token.size() > 2 && token.compare(0, 2, "--") == 0;
+        const bool is_option = token.size() > OPTION_PREFIX_LENGTH &&
+                               token.compare(0, OPTION_PREFIX_LENGTH, "--") == 0;
         if (is_option) {
-            const std::string name = token.substr(2);
+            const std::string name = token.substr(OPTION_PREFIX_LENGTH);
             bool extra = false;
             for (const std::string_view flag : extra_flags) { extra = extra || flag == name; }
             const bool is_flag = isFlag(name) || extra || index + 1 >= count;
@@ -230,7 +96,61 @@ int fail(Session& session, KiottySpecStatus status)
 int usage(const std::string& message)
 {
     std::cerr << "error: usage: " << message << "\n";
-    return 2;
+    return USAGE_EXIT_CODE;
+}
+
+std::optional<KiottySpecItemKind> kindArgument(Session& session, std::string_view text)
+{
+    const KiottySpecItemKind kind = KiottySpec_parseKind(textOf(text));
+    if (kind != 0) { return kind; }
+    std::string names {};
+    for (uint32_t value = 1;; ++value) {
+        const KiottySpecItemKind candidate = static_cast<KiottySpecItemKind>(value);
+        const bool has_kind = !kindName(candidate).empty();
+        if (!has_kind) { break; }
+        const KiottySpecModelResult model = KiottySpec_readModel(session.context, candidate);
+        if (model.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
+        if (text == model.value.name) { return candidate; }
+        names += (names.empty() ? "" : ", ") + kindName(candidate) + "(" + model.value.name + ")";
+    }
+    std::cerr << "error: 알 수 없는 Kind '" << text << "'. 받는 값: " << names << "\n";
+    return std::nullopt;
+}
+
+std::optional<TagColumn> findTag(Session& session, KiottySpecItemKind kind, std::string_view name)
+{
+    const KiottySpecModelResult model = KiottySpec_readModel(session.context, kind);
+    std::string names {};
+    for (uint32_t index = 0;
+         model.code == KIOTTY_SPEC_STATUS_SUCCESS && index < model.value.tag_count; ++index) {
+        TagColumn column {index, {}};
+        const KiottySpecStatusResult read =
+            KiottySpec_readTagDefinition(session.context, kind, index, &column.definition);
+        if (read.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
+        if (column.definition.name == name) { return column; }
+        names += (names.empty() ? "" : ", ") + std::string(column.definition.name);
+    }
+    std::cerr << "error: " << kindName(kind) << " 에 그런 태그가 없다 (" << name
+              << "). 있는 것: " << (names.empty() ? "없음" : names) << "\n";
+    return std::nullopt;
+}
+
+std::optional<uint32_t> findRelation(Session& session, KiottySpecItemKind kind,
+                                     std::string_view name)
+{
+    const KiottySpecModelResult model = KiottySpec_readModel(session.context, kind);
+    std::string names {};
+    for (uint32_t index = 0;
+         model.code == KIOTTY_SPEC_STATUS_SUCCESS && index < model.value.relation_count; ++index) {
+        const KiottySpecRelationDefinitionResult definition =
+            KiottySpec_readRelationDefinition(session.context, kind, index);
+        if (definition.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
+        if (definition.value.name == name) { return index; }
+        names += (names.empty() ? "" : ", ") + std::string(definition.value.name);
+    }
+    std::cerr << "error: " << kindName(kind) << " 에 그런 관계가 없다 (" << name
+              << "). 있는 것: " << (names.empty() ? "없음" : names) << "\n";
+    return std::nullopt;
 }
 
 KiottySpecText textOf(std::string_view text) { return KiottySpecText{text.data(), text.size()}; }
@@ -271,23 +191,24 @@ void printRow(const std::vector<std::string>& cells)
 std::string checkpointName(KiottySpecCheckpointHandle handle)
 {
     if (handle == 0) { return "-"; }
-    char text[32] {};
+    char text[CHECKPOINT_NAME_CAPACITY] {};
     std::snprintf(text, sizeof(text), "CP-%04llu",
-                  static_cast<unsigned long long>(handle & 0xFFFFFFFFu));
+                  static_cast<unsigned long long>(handle & CHECKPOINT_NUMBER_MASK));
     return text;
 }
 
 std::optional<KiottySpecCheckpointHandle> parseCheckpoint(std::string_view text)
 {
+    const std::string_view prefix = text.substr(0, CHECKPOINT_PREFIX_LENGTH);
     const bool has_prefix =
-        text.size() > 3 && (text.substr(0, 3) == "CP-" || text.substr(0, 3) == "cp-");
-    if (has_prefix) { text.remove_prefix(3); }
-    const bool is_wrong_length = text.empty() || text.size() > 9;
+        text.size() > CHECKPOINT_PREFIX_LENGTH && (prefix == "CP-" || prefix == "cp-");
+    if (has_prefix) { text.remove_prefix(CHECKPOINT_PREFIX_LENGTH); }
+    const bool is_wrong_length = text.empty() || text.size() > MAX_CHECKPOINT_DIGITS;
     if (is_wrong_length) { return std::nullopt; }
     uint64_t value = 0;
     for (const char letter : text) {
         if (letter < '0' || letter > '9') { return std::nullopt; }
-        value = value * 10 + static_cast<uint64_t>(letter - '0');
+        value = value * DECIMAL_BASE + static_cast<uint64_t>(letter - '0');
     }
     if (value == 0) { return std::nullopt; }
     return value;
@@ -302,66 +223,12 @@ std::optional<std::string> readFileText(const std::string& path)
     return content.str();
 }
 
-std::optional<KiottySpecItemKind> kindArgument(Session& session, std::string_view text)
-{
-    const KiottySpecItemKind kind = KiottySpec_parseKind(textOf(text));
-    if (kind != 0) { return kind; }
-    std::string names {};
-    for (uint32_t value = 1;; ++value) {
-        const KiottySpecItemKind candidate = static_cast<KiottySpecItemKind>(value);
-        const bool has_kind = !kindName(candidate).empty();
-        if (!has_kind) { break; }
-        const KiottySpecModelResult model = KiottySpec_readModel(session.context, candidate);
-        if (model.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
-        if (text == model.value.name) { return candidate; }
-        names += (names.empty() ? "" : ", ") + kindName(candidate) + "(" + model.value.name + ")";
-    }
-    std::cerr << "error: 알 수 없는 Kind '" << text << "'. 받는 값: " << names << "\n";
-    return std::nullopt;
-}
-
 std::string itemId(Session& session, KiottySpecItemHandle handle)
 {
     if (handle == KIOTTY_SPEC_INVALID_ITEM_HANDLE) { return "-"; }
     const KiottySpecItemResult item = KiottySpec_readItemByHandle(session.context, handle);
     if (item.code != KIOTTY_SPEC_STATUS_SUCCESS) { return "-"; }
     return item.value.id;
-}
-
-std::optional<TagColumn> findTag(Session& session, KiottySpecItemKind kind, std::string_view name)
-{
-    const KiottySpecModelResult model = KiottySpec_readModel(session.context, kind);
-    std::string names {};
-    for (uint32_t index = 0;
-         model.code == KIOTTY_SPEC_STATUS_SUCCESS && index < model.value.tag_count; ++index) {
-        TagColumn column {index, {}};
-        const KiottySpecStatusResult read =
-            KiottySpec_readTagDefinition(session.context, kind, index, &column.definition);
-        if (read.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
-        if (column.definition.name == name) { return column; }
-        names += (names.empty() ? "" : ", ") + std::string(column.definition.name);
-    }
-    std::cerr << "error: " << kindName(kind) << " 에 그런 태그가 없다 (" << name
-              << "). 있는 것: " << (names.empty() ? "없음" : names) << "\n";
-    return std::nullopt;
-}
-
-std::optional<uint32_t> findRelation(Session& session, KiottySpecItemKind kind,
-                                     std::string_view name)
-{
-    const KiottySpecModelResult model = KiottySpec_readModel(session.context, kind);
-    std::string names {};
-    for (uint32_t index = 0;
-         model.code == KIOTTY_SPEC_STATUS_SUCCESS && index < model.value.relation_count; ++index) {
-        const KiottySpecRelationDefinitionResult definition =
-            KiottySpec_readRelationDefinition(session.context, kind, index);
-        if (definition.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
-        if (definition.value.name == name) { return index; }
-        names += (names.empty() ? "" : ", ") + std::string(definition.value.name);
-    }
-    std::cerr << "error: " << kindName(kind) << " 에 그런 관계가 없다 (" << name
-              << "). 있는 것: " << (names.empty() ? "없음" : names) << "\n";
-    return std::nullopt;
 }
 
 std::optional<uint64_t> parseBits(const KiottySpecTagDefinition& definition, std::string_view names)
@@ -402,6 +269,160 @@ std::string bitNames(const KiottySpecTagDefinition& definition, uint64_t value)
             definition.bit_names[bit][0] != '\0' ? definition.bit_names[bit] : std::to_string(bit);
     }
     return text.empty() ? "-" : text;
+}
+
+namespace {
+
+bool isFlag(std::string_view name)
+{
+    for (const std::string_view flag : FLAG_NAMES) {
+        if (flag == name) { return true; }
+    }
+    return false;
+}
+
+std::string describeFailure(Session& session, const KiottySpecError& error)
+{
+    const std::string line = error.line > 0 ? "줄 " + std::to_string(error.line) + ": " : "";
+    const KiottySpecStatus status = error.status;
+    switch (error.subject) {
+    case KIOTTY_SPEC_SUBJECT_NONE: return std::string();
+    case KIOTTY_SPEC_SUBJECT_FILE: return line + appendText(".kisp 파일이나 디렉토리를 다룰 수 없음", error.text);
+    case KIOTTY_SPEC_SUBJECT_FILE_LINE:
+        return line + appendText("잘못된 줄 (열 수, 값, 이스케이프, 표 이름)", error.text);
+    case KIOTTY_SPEC_SUBJECT_MERGE_MARKER: return line + "병합 충돌 표시가 남아 있음";
+    case KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE:
+        return line + appendText("같은 기록이 두 줄 (병합을 확인할 것)", error.text);
+    case KIOTTY_SPEC_SUBJECT_FILE_CHANGED:
+        return appendText(".kisp 가 연 뒤에 밖에서 바뀜 (git pull, 다른 ks). 다시 열고 쓸 것",
+                          error.text);
+    case KIOTTY_SPEC_SUBJECT_FILE_FORMAT:
+        return line + "첫 줄이 이 ks 의 .kisp 머리줄이 아님 (형식이나 모델 버전이 다름)";
+    case KIOTTY_SPEC_SUBJECT_CONFIGURATION:
+        return line + appendText("용량 상한에 닿음. 정리하거나 설정을 늘릴 것", error.text);
+    case KIOTTY_SPEC_SUBJECT_MODEL: return "모델 표를 적재할 수 없음";
+    case KIOTTY_SPEC_SUBJECT_KIND: return "알 수 없거나 결정 기록이 없는 Kind";
+    case KIOTTY_SPEC_SUBJECT_ITEM:
+        return error.text[0] == '\0' ? "항목 핸들이 무효임" : appendText("없는 항목", error.text);
+    case KIOTTY_SPEC_SUBJECT_ID:
+        if (status == KIOTTY_SPEC_STATUS_CONFLICT) { return appendText("이미 있는 ID", error.text); }
+        return appendText("ID 는 [A-Za-z0-9] 로 시작하고 [A-Za-z0-9_-] 만 쓰며 15자 이하", error.text);
+    case KIOTTY_SPEC_SUBJECT_ID_IN_HISTORY:
+        return appendText("지운 항목이 이력에 쓰고 있는 ID (정리 전까지 못 씀)", error.text);
+    case KIOTTY_SPEC_SUBJECT_TITLE: return describeTextProblem("제목", status);
+    case KIOTTY_SPEC_SUBJECT_SUMMARY: return describeTextProblem("요약", status);
+    case KIOTTY_SPEC_SUBJECT_BODY: return describeTextProblem("본문", status);
+    case KIOTTY_SPEC_SUBJECT_PAST_BODY:
+        return appendText("그 시점의 본문은 지금과 달라 git 이력에만 있음", error.text);
+    case KIOTTY_SPEC_SUBJECT_PARENT: return appendText("상위 항목이 순환함", error.text);
+    case KIOTTY_SPEC_SUBJECT_CHILD: return appendText("하위 항목이 있어 지울 수 없음", error.text);
+    case KIOTTY_SPEC_SUBJECT_TAG: return line + appendText("모델에 없는 태그", error.text);
+    case KIOTTY_SPEC_SUBJECT_TAG_VALUE:
+        return line + appendText("태그 값이 모델의 태그 정의에 맞지 않음", error.text);
+    case KIOTTY_SPEC_SUBJECT_RELATION:
+        if (status == KIOTTY_SPEC_STATUS_CONFLICT) { return appendText("이미 있는 관계", error.text); }
+        if (status == KIOTTY_SPEC_STATUS_NOT_FOUND) { return appendText("없는 관계", error.text); }
+        return line + appendText("모델의 관계 정의에 없는 관계", error.text);
+    case KIOTTY_SPEC_SUBJECT_DECISION: return describeTextProblem("결정 기록", status);
+    case KIOTTY_SPEC_SUBJECT_CHECKPOINT:
+        if (status == KIOTTY_SPEC_STATUS_CONFIRMED) {
+            return "가장 최근 체크포인트가 DONE 임. 새 체크포인트를 시작할 것";
+        }
+        if (status == KIOTTY_SPEC_STATUS_PRECONDITION) {
+            return "체크포인트가 없거나 기준 체크포인트가 DONE 이 아님. 먼저 체크포인트를 "
+                   "시작하거나 확정할 것";
+        }
+        return "없는 체크포인트 (정리로 지워졌거나 아직 없음)";
+    case KIOTTY_SPEC_SUBJECT_DESCRIPTION: return describeTextProblem("체크포인트 설명", status);
+    case KIOTTY_SPEC_SUBJECT_STEP: return "단계는 1 ~ 12";
+    case KIOTTY_SPEC_SUBJECT_ACTOR: return "사용자만 할 수 있음 (R-2)";
+    case KIOTTY_SPEC_SUBJECT_CURSOR: return "커서 수가 max_cursors 에 닿음";
+    case KIOTTY_SPEC_SUBJECT_CURSOR_ROWS: return "결과 행이 max_cursor_rows 를 넘음. 조건을 좁힐 것";
+    case KIOTTY_SPEC_SUBJECT_DIFF_RANGE: return "구간이 거꾸로이거나 비어 있음 (from < to, 시작은 체크포인트)";
+    case KIOTTY_SPEC_SUBJECT_TEXT_FIELD: return "글자 diff 는 제목이나 요약 하나에만 쓴다";
+    case KIOTTY_SPEC_SUBJECT_PROJECT_NAME: return describeTextProblem("프로젝트 이름", status);
+    case KIOTTY_SPEC_SUBJECT_COMPLETION: return describeCompletionFailure(session);
+    }
+    return std::string();
+}
+
+std::string describeTextProblem(const std::string& field, KiottySpecStatus status)
+{
+    if (status == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED) { return field + " 이 상한을 넘음"; }
+    if (status == KIOTTY_SPEC_STATUS_INVALID_UTF8) { return field + " 이 UTF-8 이 아님"; }
+    return field + " 이 비었거나 null 바이트가 있음";
+}
+
+std::string appendText(const std::string& sentence, const char* text)
+{ return text[0] == '\0' ? sentence : sentence + ": " + text; }
+
+std::string describeCompletionFailure(Session& session)
+{
+    const KiottySpecCheckpointResult checkpoint =
+        KiottySpec_readCheckpoint(session.context, KIOTTY_SPEC_CHECKPOINT_CURRENT);
+    const std::string step =
+        checkpoint.code == KIOTTY_SPEC_STATUS_SUCCESS
+            ? "Step " + std::to_string(static_cast<int>(checkpoint.value.step)) + " "
+            : "";
+    return step + "확정 조건 미충족" + listUnmetConditions(session);
+}
+
+std::string listUnmetConditions(Session& session)
+{
+    const KiottySpecCursorResult cursor = KiottySpec_openUnmetConditionCursor(session.context);
+    if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return std::string(); }
+    std::string text {};
+    bool first = true;
+    KiottySpecCondition current = KIOTTY_SPEC_CONDITION_ENTRY_STEP;
+    KiottySpecUnmetConditionPage page {};
+    while (true) {
+        const KiottySpecStatusResult fetched =
+            KiottySpec_fetchUnmetConditionPage(session.context, cursor.value, &page);
+        if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
+        for (size_t index = 0; index < page.length; ++index) {
+            const KiottySpecUnmetCondition& unmet = page.elements[index];
+            if (first || unmet.condition != current) {
+                text += "\n- " + describeCondition(unmet.condition) + ":";
+            }
+            first = false;
+            current = unmet.condition;
+            text += std::string(" ") + unmet.id;
+        }
+    }
+    KiottySpec_closeCursor(session.context, cursor.value);
+    return text;
+}
+
+std::string describeCondition(KiottySpecCondition condition)
+{
+    switch (condition) {
+    case KIOTTY_SPEC_CONDITION_ENTRY_STEP: return "진입 단계가 정해지지 않은 열린 변경 요청";
+    case KIOTTY_SPEC_CONDITION_ACCEPTANCE_CRITERIA: return "인수 조건이 없는 기능 요구사항 (R-4)";
+    case KIOTTY_SPEC_CONDITION_MILESTONE_COVERAGE: return "어떤 마일스톤에도 포함되지 않은 설계 사항 · 유닛 테스트 (R-5)";
+    case KIOTTY_SPEC_CONDITION_SYSTEM_TEST_PAIR: return "시스템 테스트와 1:1 이 아닌 기능 요구사항 (R-3)";
+    case KIOTTY_SPEC_CONDITION_END_TO_END_TEST_PAIR: return "E2E 테스트와 1:1 이 아닌 외부 인터페이스 (R-3)";
+    case KIOTTY_SPEC_CONDITION_CODE_INSPECTION_PAIR: return "코드 검사 결과와 1:1 이 아닌 개발 수칙";
+    case KIOTTY_SPEC_CONDITION_SINGLE_TARGET: return "대상이 하나가 아닌 테스트 · 검사 항목";
+    case KIOTTY_SPEC_CONDITION_PASSING_RESULT: return "PASS 가 아닌 결과 (R-10)";
+    case KIOTTY_SPEC_CONDITION_CLOSED_CHANGE_REQUEST: return "열린 변경 요청 (R-10)";
+    }
+    return std::to_string(static_cast<int>(condition));
+}
+
+std::vector<std::string> split(std::string_view text, char separator)
+{
+    std::vector<std::string> parts {};
+    size_t start = 0;
+    const size_t length = text.size();
+    while (start <= length) {
+        size_t end = text.find(separator, start);
+        if (end == std::string_view::npos) { end = text.size(); }
+        parts.emplace_back(text.substr(start, end - start));
+        start = end + 1;
+    }
+    return parts;
+}
+
 }
 
 }

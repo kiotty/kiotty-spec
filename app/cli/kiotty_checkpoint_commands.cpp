@@ -13,12 +13,7 @@ constexpr uint32_t DEFAULT_HISTORY_DEPTH = 3;
 const std::vector<std::string> CHECKPOINT_HEADER = { "checkpoint",  "step",       "state",
                                                      "description", "created_at", "previous" };
 
-void printCheckpoint(KiottySpecCheckpointHandle handle, const KiottySpecCheckpoint& checkpoint)
-{
-    printRow({ checkpointName(handle), stepName(checkpoint.step), stateName(checkpoint.state),
-               cell(checkpoint.description), std::to_string(checkpoint.created_at),
-               checkpointName(checkpoint.previous) });
-}
+void printCheckpoint(KiottySpecCheckpointHandle handle, const KiottySpecCheckpoint& checkpoint);
 
 }
 
@@ -26,7 +21,7 @@ int startCheckpoint(Session& session)
 {
     const std::string* step = positional(session, 0);
     if (step == nullptr) { return usage("ks checkpoint start STEP(1~12) [--description D]"); }
-    const unsigned long value = std::strtoul(step->c_str(), nullptr, 10);
+    const unsigned long value = std::strtoul(step->c_str(), nullptr, DECIMAL_BASE);
     const std::string description = session.args.option("description").value_or("");
     const KiottySpecCheckpointHandleResult started = KiottySpec_startCheckpoint(
         session.context, static_cast<KiottySpecStep>(value), textOf(description));
@@ -63,7 +58,7 @@ int listCheckpoints(Session& session)
     uint32_t step = 0;
     const std::optional<std::string> text = session.args.option("step");
     if (text) {
-        step = static_cast<uint32_t>(std::strtoul(text->c_str(), nullptr, 10));
+        step = static_cast<uint32_t>(std::strtoul(text->c_str(), nullptr, DECIMAL_BASE));
     }
     const KiottySpecCursorResult cursor =
         KiottySpec_openCheckpointCursor(session.context, static_cast<KiottySpecStep>(step));
@@ -110,7 +105,8 @@ int showHistory(Session& session)
     const std::optional<std::string> text = session.args.option("depth");
     if (text) {
         char* end = nullptr;
-        const unsigned long value = *text == "all" ? 0 : std::strtoul(text->c_str(), &end, 10);
+        const unsigned long value =
+            *text == "all" ? 0 : std::strtoul(text->c_str(), &end, DECIMAL_BASE);
         if (*text != "all" && (value == 0 || end == nullptr || *end != '\0')) {
             return usage("--depth 는 1 이상의 수나 all");
         }
@@ -151,7 +147,7 @@ int setDecision(Session& session)
     const std::string* name = positional(session, 0);
     const auto kind = name == nullptr ? std::nullopt : kindArgument(session, *name);
     const BodyOption text = bodyOption(session, "text", "file");
-    if (text.is_unreadable) { return 2; }
+    if (text.is_unreadable) { return USAGE_EXIT_CODE; }
     if (!kind || !text.text) { return usage("ks decision set KIND (--text T | --file F)"); }
     return check(session,
                  KiottySpec_writeDecision(session.context, *kind, textOf(*text.text)).code);
@@ -162,7 +158,7 @@ int showModel(Session& session)
     const std::string* name = positional(session, 0);
     if (name) {
         const auto kind = kindArgument(session, *name);
-        if (!kind) { return 2; }
+        if (!kind) { return USAGE_EXIT_CODE; }
         const KiottySpecModelResult model = KiottySpec_readModel(session.context, *kind);
         printRow({"type", "index", "name", "values", "cardinality"});
         for (uint32_t index = 0; index < model.value.tag_count; ++index) {
@@ -195,6 +191,17 @@ int showModel(Session& session)
                    std::to_string(model.value.relation_count) });
     }
     return 0;
+}
+
+namespace {
+
+void printCheckpoint(KiottySpecCheckpointHandle handle, const KiottySpecCheckpoint& checkpoint)
+{
+    printRow({ checkpointName(handle), stepName(checkpoint.step), stateName(checkpoint.state),
+               cell(checkpoint.description), std::to_string(checkpoint.created_at),
+               checkpointName(checkpoint.previous) });
+}
+
 }
 
 }

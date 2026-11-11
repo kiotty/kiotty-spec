@@ -84,6 +84,24 @@ std::optional<ColumnPlan> planColumns(Session& session, KiottySpecItemKind kind)
     return plan;
 }
 
+int printItemCursor(Session& session, const KiottySpecCursorResult& cursor, const ColumnPlan* plan)
+{
+    if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
+    printItemHeader(plan);
+    KiottySpecItemPage page {};
+    while (true) {
+        const KiottySpecStatusResult fetched =
+            KiottySpec_fetchItemPage(session.context, cursor.value, &page);
+        if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, fetched.code); }
+        if (page.length == 0) { break; }
+        for (size_t index = 0; index < page.length; ++index) {
+            printItem(session, page.elements[index], plan);
+        }
+    }
+    KiottySpec_closeCursor(session.context, cursor.value);
+    return 0;
+}
+
 void printItemHeader(const ColumnPlan* plan)
 {
     std::vector<std::string> header = {"id", "kind", "title", "summary", "checkpoint", "parent"};
@@ -118,24 +136,6 @@ void printItem(Session& session, const KiottySpecItem& item, const ColumnPlan* p
         }
     }
     printRow(row);
-}
-
-int printItemCursor(Session& session, const KiottySpecCursorResult& cursor, const ColumnPlan* plan)
-{
-    if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
-    printItemHeader(plan);
-    KiottySpecItemPage page {};
-    while (true) {
-        const KiottySpecStatusResult fetched =
-            KiottySpec_fetchItemPage(session.context, cursor.value, &page);
-        if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, fetched.code); }
-        if (page.length == 0) { break; }
-        for (size_t index = 0; index < page.length; ++index) {
-            printItem(session, page.elements[index], plan);
-        }
-    }
-    KiottySpec_closeCursor(session.context, cursor.value);
-    return 0;
 }
 
 }
