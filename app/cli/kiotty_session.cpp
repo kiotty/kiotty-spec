@@ -323,7 +323,7 @@ std::optional<uint32_t> findRelation(Session& session, KiottySpecItemKind kind, 
 
 std::optional<uint64_t> parseBits(const KiottySpecTagDefinition& definition, std::string_view names)
 {
-    if (names == "-") { return 0; }
+    if (names == "-") { return uint64_t{0}; }
     uint64_t value = 0;
     for (const std::string& name : split(names, ',')) {
         bool found = false;

@@ -185,6 +185,10 @@ typedef struct KiottySpecContext KiottySpecContext;
 typedef uint64_t KiottySpecItemHandle;
 typedef uint64_t KiottySpecCheckpointHandle;
 typedef uint64_t KiottySpecCursor;
+typedef int32_t  KiottySpecBool;
+
+#define KIOTTY_SPEC_FALSE ((KiottySpecBool)0)
+#define KIOTTY_SPEC_TRUE  ((KiottySpecBool)1)
 
 #define KIOTTY_SPEC_INVALID_ITEM_HANDLE ((KiottySpecItemHandle)0xFFFFFFFFu)
 
@@ -334,7 +338,7 @@ typedef struct KiottySpecKindDiff {
     uint32_t removed;
     uint32_t relations_added;
     uint32_t relations_removed;
-    uint32_t decision_changed;
+    KiottySpecBool decision_changed;
 } KiottySpecKindDiff;
 
 typedef struct KiottySpecTextDiff {

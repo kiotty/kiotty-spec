@@ -24,7 +24,7 @@ struct KindCounts {
     uint32_t removed {0};
     uint32_t relations_added {0};
     uint32_t relations_removed {0};
-    uint32_t decision_changed {0};
+    bool has_decision_change {false};
 };
 
 // 체크포인트 사이 비교 (설계서 v1 5.4). 버전 행만 읽고 본문 내용은 돌려주지 않는다.

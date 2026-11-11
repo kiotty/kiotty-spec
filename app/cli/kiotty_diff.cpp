@@ -57,7 +57,8 @@ std::string quoted(std::string_view text)
 
 std::optional<KiottySpecCheckpointHandle> checkpointArgument(std::string_view text)
 {
-    if (text == "current" || text == "-") { return KIOTTY_SPEC_CHECKPOINT_CURRENT; }
+    const KiottySpecCheckpointHandle current {KIOTTY_SPEC_CHECKPOINT_CURRENT};
+    if (text == "current" || text == "-") { return current; }
     return parseCheckpoint(text);
 }
 
@@ -96,10 +97,11 @@ int printSummary(Session& session, const KiottySpecDiffQuery& query)
     printRow({"kind", "added", "modified", "removed", "relations_added", "relations_removed", "decision"});
     for (uint32_t index = 0; index < KIOTTY_SPEC_ITEM_KIND_COUNT; ++index) {
         const KiottySpecKindDiff& kind = summary.kinds[index];
-        if (kind.added + kind.modified + kind.removed + kind.relations_added + kind.relations_removed + kind.decision_changed == 0) { continue; }
+        const uint32_t changes = kind.added + kind.modified + kind.removed + kind.relations_added + kind.relations_removed;
+        if (changes == 0 && kind.decision_changed == KIOTTY_SPEC_FALSE) { continue; }
         printRow({kindName(static_cast<KiottySpecItemKind>(index + 1)), std::to_string(kind.added), std::to_string(kind.modified),
                   std::to_string(kind.removed), std::to_string(kind.relations_added), std::to_string(kind.relations_removed),
-                  kind.decision_changed != 0 ? "changed" : "-"});
+                  kind.decision_changed == KIOTTY_SPEC_TRUE ? "changed" : "-"});
     }
     return 0;
 }

@@ -46,6 +46,10 @@ const isCliInfra = (f) => f.startsWith('app/cli/src/infra/');
 const isCliI18n = (f) => f.startsWith('app/cli/src/i18n/');
 const isLibrary = (f) => f.startsWith('src/');
 const pointerExempt = (f) => isCore(f) || isBackend(f) || isAdapter(f) || isPublicHeader(f) || isCliInfra(f);
+// docs/deviations.md: the CLI may allocate (1.1); raw pointers are allowed where the CLI crosses the C ABI (1.10).
+const allocationExempt = (f) => isCli(f);
+const C_ABI_LINE = /\bKiottySpec_?[A-Z]\w*|\b(?:std::)?(?:fwrite|fread|fputs|fflush|fopen|fclose|strtoul|strtoull|strtol)\s*\(|\b(?:_dupenv_s|free|MultiByteToWideChar|WideCharToMultiByte|GetCommandLineW|CommandLineToArgvW|LocalFree|SetConsoleOutputCP|GetStdHandle|GetConsoleMode|SetConsoleMode)\s*\(/;
+const cAbiBoundary = (f, line) => isCli(f) && C_ABI_LINE.test(line);
 
 // ---------------------------------------------------------------- lexing
 // code: same length as raw, comments and literal contents blanked. Preprocessor lines blanked in `code`.
@@ -478,23 +482,24 @@ function checkFile(file) {
   // 1.1 / 1.6 containers and heap
   bodyLines.forEach((t, i) => {
     if (/\bstd::(string|wstring|map|unordered_map|set|unordered_set|multimap|list|deque|ostringstream|istringstream|stringstream|function|shared_ptr|any)\b(?!_view)/.test(t)) report('1.6', rel, i + 1, 'standard container other than std::vector');
-    if (/\bstd::(to_string|getline)\b|\bstd::(cout|cerr|cin)\b|\bstd::(ifstream|ofstream|fstream)\b/.test(t)) report('1.1', rel, i + 1, 'allocating standard I/O or string helper');
+    if (!allocationExempt(rel) && /\bstd::(to_string|getline)\b|\bstd::(cout|cerr|cin)\b|\bstd::(ifstream|ofstream|fstream)\b/.test(t)) report('1.1', rel, i + 1, 'allocating standard I/O or string helper');
   });
   for (const fn of file.functions) {
     const isInit = fn.bare === (fn.cls ? fn.cls.name : fn.name.split('::').slice(-2, -1)[0]) || /^create|^KiottySpec_create/.test(fn.bare) || fn.bare === 'main';
     const body = file.text.slice(fn.open, fn.close);
-    if (isInit) continue;
+    if (isInit || allocationExempt(rel)) continue;
     const lines = body.split('\n');
     lines.forEach((t, j) => {
       const ln = fn.openLine + j;
       if (/\.(push_back|emplace_back|resize|reserve|insert|emplace|append)\s*\(/.test(t) && /\bstd::vector\b/.test(file.lex.body) ) report('1.1', rel, ln, 'container growth outside an initialization function');
-      if (/\bstd::make_(unique|shared)\b|\bstd::vector\s*</.test(t)) report('1.1', rel, ln, 'allocation outside an initialization function');
+      if (/\bstd::make_(unique|shared)\b|\bstd::vector\s*</.test(t) && !/\bstd::vector\s*<[^;=]*>\s*&/.test(t)) report('1.1', rel, ln, 'allocation outside an initialization function');
     });
   }
 
   // 1.10 raw pointers
   if (!pointerExempt(rel)) {
     bodyLines.forEach((t, i) => {
+      if (cAbiBoundary(rel, t)) return;
       if (/\bnullptr\b/.test(t)) report('1.10', rel, i + 1, 'nullptr');
       if (/->/.test(t.replace(/\)\s*->\s*[\w:<>]+\s*$/, '').replace(/\]\s*(\([^)]*\))?\s*->/, ''))) report('1.10', rel, i + 1, 'pointer dereference ->');
       if (/\b[A-Za-z_][\w:]*(?:<[^<>]*>)?\s*\*\s*(const\s+)?[A-Za-z_]\w*\s*[,)=;{\[]/.test(t) && !/\w\s+\*\s+\w/.test(t.replace(/\b(const\s+)?[A-Z]\w*\s*\*\s*\w+\s*[,)=;]/, ''))) report('1.10', rel, i + 1, 'pointer type');
@@ -914,6 +919,15 @@ for (const f of files) {
   }
 }
 
+// 5.7 C interface memory: no union, no bool (KiottySpecBool instead)
+for (const f of files) {
+  if (!isPublicHeader(f.rel)) continue;
+  f.lex.body.split('\n').forEach((t, i) => {
+    if (/\bunion\b/.test(t)) report('5.7', f.rel, i + 1, 'union in the C interface');
+    if (/\b(bool|_Bool)\b|<stdbool\.h>/.test(t)) report('5.7', f.rel, i + 1, 'bool in the C interface (use KiottySpecBool)');
+  });
+}
+
 // 2.5 pointers handed out by the C interface
 for (const f of files) {
   if (!isPublicHeader(f.rel)) continue;
@@ -922,7 +936,8 @@ for (const f of files) {
     if (m && m[2] !== 'KiottySpecContext') report('2.5', f.rel, i + 1, `returns a ${m[2]} pointer`);
   });
   for (const c of f.classes) for (const mem of c.members) {
-    if (/\*/.test(mem.type) && c.name !== 'KiottySpecText' && !/KiottySpecContext/.test(mem.type)) report('2.5', f.rel, mem.line, `record '${c.name}' holds pointer '${mem.name}'`);
+    // KiottySpecText and KiottySpecBuffer are input-only: the caller hands its own memory in, nothing is handed out.
+    if (/\*/.test(mem.type) && !['KiottySpecText', 'KiottySpecBuffer'].includes(c.name) && !/KiottySpecContext/.test(mem.type)) report('2.5', f.rel, mem.line, `record '${c.name}' holds pointer '${mem.name}'`);
   }
 }
 
@@ -957,9 +972,10 @@ for (const [item, rules] of Object.entries(CHECKLIST)) {
   const n = rules.reduce((a, r) => a + (byRule.get(r) || 0), 0);
   if (n > 0) report('9', 'docs', 0, `checklist ${item} fails (${rules.join(', ')}: ${n})`);
 }
+byRule.set('9', violations.filter((v) => v.rule === '9').length);
 
 const RULES = ['0', '0.1', '1.1', '1.4', '1.6', '1.7', '1.8', '1.9', '1.10', '2.2', '2.3', '2.4', '2.5', '2.8', '2.9', '3.4', '3.6', '4.1', '4.3', '4.4',
-  '4.5', '4.6', '4.7', '4.8', '4.9', '4.10', '4.11', '4.12', '4.13', '4.14', '4.15', '4.16', '4.17', '4.18', '4.19', '5.1', '5.3', '5.4', '5.5', '6.2',
+  '4.5', '4.6', '4.7', '4.8', '4.9', '4.10', '4.11', '4.12', '4.13', '4.14', '4.15', '4.16', '4.17', '4.18', '4.19', '5.1', '5.3', '5.4', '5.5', '5.7', '6.2',
   '6.5', '7.1', '7.2', '7.3', '7.4', '8', '9'];
 const shown = violations.filter((v) => onlyRule === null || v.rule === onlyRule);
 if (asJson) {

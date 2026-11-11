@@ -788,7 +788,7 @@ void st026(const fs::path& root)
     spec.link("DSN-001", DESIGN, "관련 요구사항", "REQ-001");
     KiottySpec_writeDecision(spec.context, DESIGN, textOf("- 고침"));
     const KiottySpecKindDiff diff = summarizeDiff(spec.context, range(first)).kinds[DESIGN - 1];
-    check(diff.added == 2 && diff.relations_added == 1 && diff.decision_changed == 1, "1 설계 사항 추가 2, 관계 추가 1, 결정 기록 바뀜");
+    check(diff.added == 2 && diff.relations_added == 1 && diff.decision_changed == KIOTTY_SPEC_TRUE, "1 설계 사항 추가 2, 관계 추가 1, 결정 기록 바뀜");
     check(summarizeDiff(spec.context, KiottySpecDiffQuery{second, first, 0, 0}).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "2 거꾸로 된 구간 거부");
     spec.complete();
     KiottySpec_pruneCheckpoints(spec.context, KIOTTY_SPEC_ACTOR_USER, second);

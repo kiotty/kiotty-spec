@@ -103,7 +103,7 @@ KiottySpecStatus Differ::countDecisions(DiffRange range, uint32_t kind_mask, Kin
         const entity::DecisionVersion* before = _w.decisions.versions().latest(kind, range.from);
         const entity::DecisionVersion* after = _w.decisions.versions().latest(kind, range.to);
         const bool changed = before != after;
-        if (inMask(kind_mask, kind) && changed) { counts[kind - 1].decision_changed = 1; }
+        if (inMask(kind_mask, kind) && changed) { counts[kind - 1].has_decision_change = true; }
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }

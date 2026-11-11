@@ -16,7 +16,7 @@ KiottySpecKindDiff toKindDiff(const impl::KindCounts& count)
     kind.removed = count.removed;
     kind.relations_added = count.relations_added;
     kind.relations_removed = count.relations_removed;
-    kind.decision_changed = count.decision_changed;
+    kind.decision_changed = count.has_decision_change ? KIOTTY_SPEC_TRUE : KIOTTY_SPEC_FALSE;
     return kind;
 }
 
