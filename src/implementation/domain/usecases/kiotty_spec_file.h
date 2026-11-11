@@ -15,7 +15,7 @@ namespace kiotty::spec::implementation {
 class SpecFile
 {
 public:
-    SpecFile(const SpecTables& tables, TextBuffer& work) : _t(tables), _work(work) {}
+    SpecFile(const SpecTables& tables, TextBuffer& work) : _tables(tables), _work(work) {}
 
     KiottySpecStatus open(Span<const char> database);
     KiottySpecStatus load();
@@ -29,7 +29,7 @@ private:
     KiottySpecStatus finishLoad();
     KiottySpecStatus lineFailure(size_t line_number, KiottySpecStatus status);
 
-    SpecTables _t;
+    SpecTables _tables;
     TextBuffer& _work;
     SystemPath _database {};
     uint64_t _hash {EMPTY_KISP_HASH};

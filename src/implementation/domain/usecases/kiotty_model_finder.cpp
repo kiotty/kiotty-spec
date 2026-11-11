@@ -11,6 +11,16 @@ namespace {
 
 using entity::ItemKind;
 
+const entity::Model EMPTY_MODEL {};
+
+}
+
+const entity::Model& pickModel(Span<const entity::Model> models, ItemKind kind)
+{
+    const size_t index = entity::kindIndex(kind);
+    const auto found = models.at(index);
+    if (!found) { return EMPTY_MODEL; }
+    return *found.value;
 }
 
 Result<uint32_t, KiottySpecStatus> ModelFinder::findTag(ItemKind kind, Span<const char> name) const
@@ -24,13 +34,14 @@ Result<uint32_t, KiottySpecStatus> ModelFinder::findTagBit(ItemKind kind, uint32
                                                            Span<const char> name) const
 {
     const Span<const entity::TagDefinition> tags = model(kind).tags;
-    const size_t tag_count = tags.length();
-    if (tag >= tag_count) {
+    const auto found = tags.at(tag);
+    if (!found) {
         return Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
+    const entity::TagDefinition& definition = *found.value;
     const std::string_view wanted = viewOf(name);
     for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
-        const entity::TagName& bit_name = tags[tag].bit_names[bit];
+        const entity::TagName& bit_name = definition.bit_names[bit];
         const bool is_empty = bit_name.empty();
         if (is_empty) { continue; }
         const std::string_view bit_text = bit_name;

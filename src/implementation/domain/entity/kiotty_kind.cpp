@@ -1,4 +1,5 @@
 #include "kiotty_kind.h"
+#include "implementation/core/kiotty_span.h"
 
 namespace kiotty::spec::implementation::entity {
 
@@ -24,14 +25,14 @@ constexpr uint32_t CHECKPOINT_STATE_COUNT = 3;
 
 constexpr std::string_view STATE_NAMES[CHECKPOINT_STATE_COUNT] = {"started", "running", "done"};
 
+std::string_view pickName(Span<const std::string_view> names, uint32_t value);
+
 }
 
 std::string_view kindName(ItemKind kind)
 {
     const uint32_t value = static_cast<uint32_t>(kind);
-    const bool is_valid = isValidKind(value);
-    if (!is_valid) { return std::string_view(); }
-    return KIND_NAMES[value - 1];
+    return pickName(Span<const std::string_view>(KIND_NAMES, ITEM_KIND_COUNT), value);
 }
 
 uint32_t parseKind(std::string_view name)
@@ -45,8 +46,7 @@ uint32_t parseKind(std::string_view name)
 std::string_view stateName(CheckpointState state)
 {
     const uint32_t value = static_cast<uint32_t>(state);
-    if (value < 1 || value > CHECKPOINT_STATE_COUNT) { return std::string_view(); }
-    return STATE_NAMES[value - 1];
+    return pickName(Span<const std::string_view>(STATE_NAMES, CHECKPOINT_STATE_COUNT), value);
 }
 
 uint32_t parseState(std::string_view name)
@@ -75,6 +75,18 @@ bool hasDecision(ItemKind kind)
     case ItemKind::END_TO_END_TEST_RESULT: return false;
     }
     return false;
+}
+
+namespace {
+
+std::string_view pickName(Span<const std::string_view> names, uint32_t value)
+{
+    const size_t index = static_cast<size_t>(value) - 1;
+    const auto name = names.at(index);
+    if (!name) { return std::string_view(); }
+    return *name.value;
+}
+
 }
 
 }

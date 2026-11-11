@@ -15,7 +15,7 @@ class RelationEditor
 {
 public:
     RelationEditor(Workspace& workspace, Lifecycle& lifecycle)
-        : _w(workspace), _lifecycle(lifecycle)
+        : _workspace(workspace), _lifecycle(lifecycle)
     {}
 
     KiottySpecStatus add(Span<const char> from_id, uint32_t relation, Span<const char> to_id);
@@ -25,7 +25,7 @@ private:
     Result<entity::RelationRecord, KiottySpecStatus>
     relationOf(Span<const char> from_id, uint32_t relation, Span<const char> to_id);
 
-    Workspace& _w;
+    Workspace& _workspace;
     Lifecycle& _lifecycle;
 };
 

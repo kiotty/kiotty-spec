@@ -5,6 +5,12 @@ namespace impl = kiotty::spec::implementation;
 namespace entity = kiotty::spec::implementation::entity;
 using namespace kiotty::spec::adapter;
 
+namespace {
+
+using IdElement = char[KIOTTY_SPEC_MAX_ID_LENGTH + 1];
+
+}
+
 extern "C" {
 
 KiottySpecStatusResult KiottySpec_addRelation(KiottySpecContext* context, KiottySpecText from_id,
@@ -47,7 +53,8 @@ KiottySpecCursorResult KiottySpec_openRelationCursorByModel(KiottySpecContext* c
                                                             uint32_t relation)
 {
     const bool is_valid_kind = isKind(kind);
-    if (context == nullptr || !is_valid_kind) {
+    const bool has_valid_arguments = context != nullptr && is_valid_kind;
+    if (!has_valid_arguments) {
         return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
     const size_t relation_count =
@@ -70,9 +77,11 @@ KiottySpecStatusResult KiottySpec_fetchRelationPage(KiottySpecContext* context,
     const auto rows = context->context.cursors().fetch(cursor, impl::CursorKind::RELATION,
                                                        KIOTTY_SPEC_PAGE_CAPACITY);
     if (!rows) { return status(rows.code); }
+    const impl::Span<KiottySpecRelation> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
-        const size_t index = page->length;
-        KiottySpecRelation& element = page->elements[index];
+        const auto slot = elements.at(page->length);
+        if (!slot) { return status(slot.code); }
+        KiottySpecRelation& element = *slot.value;
         element = KiottySpecRelation{};
         element.from = row.first;
         element.to = row.second;
@@ -89,8 +98,11 @@ KiottySpecCursorResult KiottySpec_openItemCursor(KiottySpecContext* context,
                                                  size_t count)
 {
     const bool is_kind = isKind(kind);
-    if (context == nullptr || (kind != 0 && !is_kind) || count > KIOTTY_SPEC_MAX_TAG_QUERIES ||
-        (count > 0 && tag_queries == nullptr)) {
+    const bool is_accepted_kind = kind == 0 || is_kind;
+    const bool has_tag_queries = count == 0 || tag_queries != nullptr;
+    const bool has_valid_arguments = context != nullptr && is_accepted_kind &&
+                                     count <= KIOTTY_SPEC_MAX_TAG_QUERIES && has_tag_queries;
+    if (!has_valid_arguments) {
         return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
     impl::TagQuery queries[KIOTTY_SPEC_MAX_TAG_QUERIES] {};
@@ -134,11 +146,13 @@ KiottySpecStatusResult KiottySpec_fetchItemPage(KiottySpecContext* context, Kiot
     const auto rows =
         context->context.cursors().fetch(cursor, impl::CursorKind::ITEM, KIOTTY_SPEC_PAGE_CAPACITY);
     if (!rows) { return status(rows.code); }
+    const impl::Span<KiottySpecItem> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
-        const size_t index = page->length;
         const auto record = items.reader().get(fromHandle(row.first));
         if (!record) { continue; }
-        page->elements[index] = toItem(*record.value);
+        const auto element = elements.at(page->length);
+        if (!element) { return status(element.code); }
+        *element.value = toItem(*record.value);
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);
@@ -154,11 +168,13 @@ KiottySpecStatusResult KiottySpec_fetchIdPage(KiottySpecContext* context, Kiotty
     const auto rows =
         context->context.cursors().fetch(cursor, impl::CursorKind::ID, KIOTTY_SPEC_PAGE_CAPACITY);
     if (!rows) { return status(rows.code); }
+    const impl::Span<IdElement> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
-        const size_t index = page->length;
         const auto record = items.reader().get(fromHandle(row.first));
         if (!record) { continue; }
-        copyText(page->elements[index], record.value->id);
+        const auto element = elements.at(page->length);
+        if (!element) { return status(element.code); }
+        copyText(*element.value, record.value->id);
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);

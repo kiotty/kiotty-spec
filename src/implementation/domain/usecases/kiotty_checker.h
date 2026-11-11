@@ -33,7 +33,7 @@ class Checker
 {
 public:
     Checker(Workspace& workspace, size_t max_items)
-        : _w(workspace), _body(entity::MAX_BODY_LENGTH + 1), _rows(max_items)
+        : _workspace(workspace), _body(entity::MAX_BODY_LENGTH + 1), _rows(max_items)
     {}
 
     Span<const UnmetCondition> collect(entity::Step step);
@@ -58,7 +58,7 @@ private:
                        bool functional_only);
     void checkResults();
 
-    Workspace& _w;
+    Workspace& _workspace;
     std::vector<char> _body;
     std::vector<UnmetCondition> _rows;
     size_t _length {0};

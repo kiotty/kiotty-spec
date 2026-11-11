@@ -36,6 +36,12 @@ inline Span<const char> cutAtCharacter(Span<const char> text, size_t limit)
     return Span<const char>(text.data(), length);
 }
 
+inline uint64_t keepFirstLine(uint64_t current_line, uint64_t line)
+{
+    const bool has_line = current_line != 0;
+    return has_line ? current_line : line;
+}
+
 class Failure
 {
 public:
@@ -51,7 +57,7 @@ public:
 
     KiottySpecStatus locate(KiottySpecStatus status, uint64_t line)
     {
-        if (_detail.line == 0) { _detail.line = line; }
+        _detail.line = keepFirstLine(_detail.line, line);
         return status;
     }
 

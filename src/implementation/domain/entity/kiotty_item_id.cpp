@@ -18,7 +18,8 @@ KiottySpecStatus validateItemId(Span<const char> id)
         const char letter = id[index];
         const bool is_alphanumeric = isAlphanumeric(letter);
         const bool is_separator = index > 0 && (letter == '-' || letter == '_');
-        if (!is_alphanumeric && !is_separator) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
+        const bool is_allowed = is_alphanumeric || is_separator;
+        if (!is_allowed) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }

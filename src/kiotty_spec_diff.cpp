@@ -59,9 +59,12 @@ KiottySpecStatusResult KiottySpec_fetchItemDiffPage(KiottySpecContext* context,
     const auto rows = context->context.cursors().fetch(cursor, impl::CursorKind::ITEM_DIFF,
                                                        KIOTTY_SPEC_PAGE_CAPACITY);
     if (!rows) { return status(rows.code); }
+    const impl::Span<KiottySpecItemDiff> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
         const impl::ItemDiffRow diff = impl::unpackItemDiff(row);
-        KiottySpecItemDiff& element = page->elements[page->length];
+        const auto slot = elements.at(page->length);
+        if (!slot) { return status(slot.code); }
+        KiottySpecItemDiff& element = *slot.value;
         element = KiottySpecItemDiff{};
         element.before = diff.before;
         element.after = diff.after;
@@ -97,9 +100,12 @@ KiottySpecStatusResult KiottySpec_fetchRelationDiffPage(KiottySpecContext* conte
     const auto rows = context->context.cursors().fetch(cursor, impl::CursorKind::RELATION_DIFF,
                                                        KIOTTY_SPEC_PAGE_CAPACITY);
     if (!rows) { return status(rows.code); }
+    const impl::Span<KiottySpecRelationDiff> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
         const impl::RelationDiffRow diff = impl::unpackRelationDiff(row);
-        KiottySpecRelationDiff& element = page->elements[page->length];
+        const auto slot = elements.at(page->length);
+        if (!slot) { return status(slot.code); }
+        KiottySpecRelationDiff& element = *slot.value;
         element = KiottySpecRelationDiff{};
         element.checkpoint = diff.checkpoint;
         element.model = static_cast<KiottySpecItemKind>(diff.model);
@@ -242,12 +248,15 @@ KiottySpecStatusResult KiottySpec_fetchTextDiffPage(KiottySpecContext* context,
     if (page == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     page->length = 0;
     impl::TextDiffer differ = context->context.differ().text();
+    const impl::Span<KiottySpecTextDiff> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     while (page->length < KIOTTY_SPEC_PAGE_CAPACITY) {
         const auto piece = differ.next(cursor);
         if (!piece) { return status(piece.code); }
         const size_t piece_length = piece.value.text.length();
         if (piece_length == 0) { break; }
-        KiottySpecTextDiff& element = page->elements[page->length];
+        const auto slot = elements.at(page->length);
+        if (!slot) { return status(slot.code); }
+        KiottySpecTextDiff& element = *slot.value;
         element = KiottySpecTextDiff{};
         copyTerminated(impl::Span<char>(element.text, sizeof(element.text)), piece.value.text);
         element.length = static_cast<uint32_t>(piece.value.text.length());

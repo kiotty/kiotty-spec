@@ -203,11 +203,12 @@ KiottySpecStatusResult KiottySpec_fetchTagPage(KiottySpecContext* context, Kiott
     const auto rows =
         context->context.cursors().fetch(cursor, impl::CursorKind::TAG, KIOTTY_SPEC_PAGE_CAPACITY);
     if (!rows) { return status(rows.code); }
+    const impl::Span<KiottySpecTag> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
-        const size_t index = page->length;
-        page->elements[index] =
-            toTag(row.first, static_cast<KiottySpecItemKind>(row.second & LOW_MASK),
-                  static_cast<uint32_t>(row.second >> SHIFT), row.third);
+        const auto element = elements.at(page->length);
+        if (!element) { return status(element.code); }
+        *element.value = toTag(row.first, static_cast<KiottySpecItemKind>(row.second & LOW_MASK),
+                               static_cast<uint32_t>(row.second >> SHIFT), row.third);
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);

@@ -9,6 +9,8 @@
 
 namespace kiotty::spec::implementation {
 
+const entity::Model& pickModel(Span<const entity::Model> models, entity::ItemKind kind);
+
 class ModelFinder
 {
 public:
@@ -21,8 +23,7 @@ public:
                                                     Span<const char> name) const;
 
 private:
-    const entity::Model& model(entity::ItemKind kind) const
-    { return _models[entity::kindIndex(kind)]; }
+    const entity::Model& model(entity::ItemKind kind) const { return pickModel(_models, kind); }
 
     Span<const entity::Model> _models;
 };

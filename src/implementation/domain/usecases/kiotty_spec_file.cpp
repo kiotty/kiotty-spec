@@ -25,6 +25,7 @@ struct WorkAreas {
 
 WorkAreas split(TextBuffer& work);
 bool isConflictMarker(std::string_view line);
+bool isSameHash(uint64_t current_hash, uint64_t saved_hash);
 
 }
 
@@ -36,15 +37,15 @@ KiottySpecStatus SpecFile::save()
     KispFileWriter file {};
     KiottySpecStatus status = file.open(_database.view());
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return _t.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE,
-                                _database.view());
+        return _tables.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE,
+                                     _database.view());
     }
-    status = SpecWriter(_t, file, areas.line).write();
+    status = SpecWriter(_tables, file, areas.line).write();
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
     status = file.commit();
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return _t.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE,
-                                _database.view());
+        return _tables.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE,
+                                     _database.view());
     }
     _hash = file.hash();
     return KIOTTY_SPEC_STATUS_SUCCESS;
@@ -55,18 +56,19 @@ KiottySpecStatus SpecFile::checkUnchanged()
     const WorkAreas areas = split(_work);
     const auto current = hashKispFile(_database.view(), areas.buffer);
     if (!current) {
-        return _t.failure.raise(current.code, KIOTTY_SPEC_SUBJECT_FILE, _database.view());
+        return _tables.failure.raise(current.code, KIOTTY_SPEC_SUBJECT_FILE, _database.view());
     }
-    if (current.value == _hash) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    return _t.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_FILE_CHANGED,
-                            _database.view());
+    const bool is_unchanged = isSameHash(current.value, _hash);
+    if (is_unchanged) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    return _tables.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_FILE_CHANGED,
+                                 _database.view());
 }
 
 KiottySpecStatus SpecFile::open(Span<const char> database)
 {
     const KiottySpecStatus status = _database.assign(database);
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return _t.failure.raise(status, KIOTTY_SPEC_SUBJECT_FILE, database);
+        return _tables.failure.raise(status, KIOTTY_SPEC_SUBJECT_FILE, database);
     }
     return load();
 }
@@ -78,7 +80,7 @@ KiottySpecStatus SpecFile::load()
     KispFileReader reader(areas.buffer, areas.line);
     const KiottySpecStatus opened = reader.open(_database.view());
     if (opened != KIOTTY_SPEC_STATUS_SUCCESS && opened != KIOTTY_SPEC_STATUS_NOT_FOUND) {
-        return _t.failure.raise(opened, KIOTTY_SPEC_SUBJECT_FILE, _database.view());
+        return _tables.failure.raise(opened, KIOTTY_SPEC_SUBJECT_FILE, _database.view());
     }
     const KiottySpecStatus read = readLines(reader);
     if (read != KIOTTY_SPEC_STATUS_SUCCESS) { return read; }
@@ -88,11 +90,11 @@ KiottySpecStatus SpecFile::load()
 
 void SpecFile::clear()
 {
-    _t.meta.clear();
-    _t.checkpoints.clear();
-    _t.items.clear();
-    _t.relations.versions().clear();
-    _t.decisions.versions().clear();
+    _tables.meta.clear();
+    _tables.checkpoints.clear();
+    _tables.items.clear();
+    _tables.relations.versions().clear();
+    _tables.decisions.versions().clear();
 }
 
 KiottySpecStatus SpecFile::readLines(KispFileReader& reader)
@@ -105,8 +107,8 @@ KiottySpecStatus SpecFile::readLines(KispFileReader& reader)
         }
     }
     if (next) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    return _t.failure.raise(next.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
-                            literalText("work_buffer_bytes"), reader.lineNumber() + 1);
+    return _tables.failure.raise(next.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
+                                 literalText("work_buffer_bytes"), reader.lineNumber() + 1);
 }
 
 KiottySpecStatus SpecFile::readLine(KispFileReader& reader)
@@ -114,14 +116,14 @@ KiottySpecStatus SpecFile::readLine(KispFileReader& reader)
     const std::string_view line = viewOf(reader.line());
     const size_t line_number = reader.lineNumber();
     if (line_number == 1 && line != KISP_HEADER) {
-        return _t.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
-                                KIOTTY_SPEC_SUBJECT_FILE_FORMAT, _database.view(),
-                                reader.lineNumber());
+        return _tables.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
+                                     KIOTTY_SPEC_SUBJECT_FILE_FORMAT, _database.view(),
+                                     reader.lineNumber());
     }
     const bool is_conflict_marker = isConflictMarker(line);
     if (is_conflict_marker) {
-        return _t.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_MERGE_MARKER,
-                                _database.view(), reader.lineNumber());
+        return _tables.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_MERGE_MARKER,
+                                     _database.view(), reader.lineNumber());
     }
     const bool is_empty = line.empty();
     if (is_empty) { return KIOTTY_SPEC_STATUS_SUCCESS; }
@@ -129,29 +131,31 @@ KiottySpecStatus SpecFile::readLine(KispFileReader& reader)
     if (first == COMMENT) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     const auto fields = reader.fields();
     if (!fields) {
-        return _t.failure.raise(fields.code, KIOTTY_SPEC_SUBJECT_FILE_LINE,
-                                spanOf(line.substr(0, line.find(FIELD_SEPARATOR))));
+        return _tables.failure.raise(fields.code, KIOTTY_SPEC_SUBJECT_FILE_LINE,
+                                     spanOf(line.substr(0, line.find(FIELD_SEPARATOR))));
     }
-    return SpecParser(_t).parse(fields.value);
+    return SpecParser(_tables).parse(fields.value);
 }
 
 KiottySpecStatus SpecFile::lineFailure(size_t line_number, KiottySpecStatus status)
-{ return _t.failure.locate(status, line_number); }
+{ return _tables.failure.locate(status, line_number); }
 
 KiottySpecStatus SpecFile::finishLoad()
 {
-    ItemTables& items = _t.items.tables();
+    ItemTables& items = _tables.items.tables();
     items.versions.sort();
     items.tag_versions.sort();
-    _t.relations.versions().sort();
-    const bool duplicated = items.versions.findDuplicate() || items.tag_versions.findDuplicate() ||
-                            _t.relations.versions().findDuplicate();
-    if (duplicated) {
-        return _t.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE);
+    _tables.relations.versions().sort();
+    const bool has_duplicate = items.versions.findDuplicate() ||
+                               items.tag_versions.findDuplicate() ||
+                               _tables.relations.versions().findDuplicate();
+    if (has_duplicate) {
+        return _tables.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT,
+                                     KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE);
     }
-    const KiottySpecStatus rebuilt = _t.items.rebuild();
+    const KiottySpecStatus rebuilt = _tables.items.rebuild();
     if (rebuilt != KIOTTY_SPEC_STATUS_SUCCESS) { return rebuilt; }
-    return _t.relations.rebuild();
+    return _tables.relations.rebuild();
 }
 
 namespace {
@@ -171,6 +175,8 @@ bool isConflictMarker(std::string_view line)
     }
     return false;
 }
+
+bool isSameHash(uint64_t current_hash, uint64_t saved_hash) { return current_hash == saved_hash; }
 
 }
 

@@ -146,6 +146,9 @@ static_assert(std::size(TAG_SOURCES) == ModelCatalog::TAG_COUNT, "tag table size
 static_assert(std::size(RELATION_SOURCES) == ModelCatalog::RELATION_COUNT, "relation table size");
 
 bool hasSingleBit(uint64_t value);
+Result<entity::Model, KiottySpecStatus>
+buildModel(const ModelSource& source, size_t index, Span<const entity::TagDefinition> tags,
+           Span<const entity::RelationDefinition> relations);
 
 }
 
@@ -194,36 +197,28 @@ KiottySpecStatus ModelCatalog::loadRelations()
 
 KiottySpecStatus ModelCatalog::loadModel(size_t index)
 {
-    const ModelSource& source = MODEL_SOURCES[index];
-    entity::Model& model = _models[index];
-    const size_t kind_index = entity::kindIndex(source.kind);
-    if (kind_index != index) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
-    model.kind = source.kind;
-    model.created_in = source.created_in;
-    const auto ofKind = [&](const auto& entry) { return entry.kind == source.kind; };
-    const Result<IndexRange, KiottySpecStatus> tags =
-        contiguousRange(Span<const TagSource>(TAG_SOURCES, TAG_COUNT), ofKind);
-    const Result<IndexRange, KiottySpecStatus> relations =
-        contiguousRange(Span<const RelationSource>(RELATION_SOURCES, RELATION_COUNT), ofKind);
-    if (!tags || !relations) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
-    model.tags = Span<const entity::TagDefinition>(_tags + tags.value.first, tags.value.length);
-    model.relations = Span<const entity::RelationDefinition>(_relations + relations.value.first,
-                                                             relations.value.length);
-    KiottySpecStatus status = assignText(model.name, source.name);
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
-        status = assignText(model.id_prefix, source.id_prefix);
-    }
-    return status;
+    const Span<const ModelSource> sources(MODEL_SOURCES, entity::ITEM_KIND_COUNT);
+    const Span<entity::Model> models(_models, entity::ITEM_KIND_COUNT);
+    const Span<const entity::TagDefinition> tags(_tags, TAG_COUNT);
+    const Span<const entity::RelationDefinition> relations(_relations, RELATION_COUNT);
+    const auto source = sources.at(index);
+    const auto model = models.at(index);
+    const bool has_slot = source && model;
+    if (!has_slot) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
+    const auto built = buildModel(*source.value, index, tags, relations);
+    if (!built) { return built.code; }
+    *model.value = built.value;
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 KiottySpecStatus ModelCatalog::checkTagValue(ItemKind kind, uint32_t tag, uint64_t value) const
 {
     const Span<const entity::TagDefinition> tags = model(kind).tags;
-    const size_t tag_count = tags.length();
-    if (tag >= tag_count) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
+    const auto found = tags.at(tag);
+    if (!found) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     if (value == 0) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     if ((value & ~entity::TAG_VALUE_MASK) != 0) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
-    const entity::TagDefinition& definition = tags[tag];
+    const entity::TagDefinition& definition = *found.value;
     for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
         const bool is_set = (value & (uint64_t { 1 } << bit)) != 0;
         const bool is_unnamed = definition.bit_names[bit].empty();
@@ -232,24 +227,57 @@ KiottySpecStatus ModelCatalog::checkTagValue(ItemKind kind, uint32_t tag, uint64
         }
     }
     const bool has_single_bit = hasSingleBit(value);
-    if (definition.cardinality == Cardinality::SINGLE && !has_single_bit) {
-        return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
-    }
-    return KIOTTY_SPEC_STATUS_SUCCESS;
+    const bool is_many = definition.cardinality != Cardinality::SINGLE;
+    const bool can_hold_value = is_many || has_single_bit;
+    if (can_hold_value) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
 }
 
 KiottySpecStatus ModelCatalog::checkRelation(ItemKind from, uint32_t relation, ItemKind to) const
 {
     const Span<const entity::RelationDefinition> relations = model(from).relations;
-    const size_t relation_count = relations.length();
-    if (relation >= relation_count) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
-    if (relations[relation].target_kind != to) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
+    const auto found = relations.at(relation);
+    if (!found) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
+    const entity::RelationDefinition& definition = *found.value;
+    if (definition.target_kind != to) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 namespace {
 
 bool hasSingleBit(uint64_t value) { return value != 0 && (value & (value - 1)) == 0; }
+
+Result<entity::Model, KiottySpecStatus>
+buildModel(const ModelSource& source, size_t index, Span<const entity::TagDefinition> tags,
+           Span<const entity::RelationDefinition> relations)
+{
+    using ModelResult = Result<entity::Model, KiottySpecStatus>;
+    const size_t kind_index = entity::kindIndex(source.kind);
+    if (kind_index != index) { return ModelResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    const auto ofKind = [&](const auto& entry) { return entry.kind == source.kind; };
+    const Span<const TagSource> tag_sources(TAG_SOURCES, ModelCatalog::TAG_COUNT);
+    const Span<const RelationSource> relation_sources(RELATION_SOURCES,
+                                                      ModelCatalog::RELATION_COUNT);
+    const Result<IndexRange, KiottySpecStatus> tag_range = contiguousRange(tag_sources, ofKind);
+    const Result<IndexRange, KiottySpecStatus> relation_range =
+        contiguousRange(relation_sources, ofKind);
+    const auto first_tag = tags.at(tag_range.value.first);
+    const auto first_relation = relations.at(relation_range.value.first);
+    const bool has_ranges = tag_range && relation_range && first_tag && first_relation;
+    if (!has_ranges) { return ModelResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    entity::Model model {};
+    model.kind = source.kind;
+    model.created_in = source.created_in;
+    model.tags = Span<const entity::TagDefinition>(first_tag.value, tag_range.value.length);
+    model.relations =
+        Span<const entity::RelationDefinition>(first_relation.value, relation_range.value.length);
+    KiottySpecStatus status = assignText(model.name, source.name);
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
+        status = assignText(model.id_prefix, source.id_prefix);
+    }
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return ModelResult::failure(status); }
+    return ModelResult::success(model);
+}
 
 }
 

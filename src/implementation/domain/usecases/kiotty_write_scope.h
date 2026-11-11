@@ -13,7 +13,7 @@ class WriteScope
 {
 public:
     WriteScope(Workspace& workspace, Lifecycle& lifecycle)
-        : _w(workspace), _sequence(lifecycle.beginWrite())
+        : _workspace(workspace), _sequence(lifecycle.beginWrite())
     {}
 
     WriteScope(const WriteScope&) = delete;
@@ -21,10 +21,10 @@ public:
 
     Result<uint32_t, KiottySpecStatus> sequence() const { return _sequence; }
     KiottySpecStatus finish(KiottySpecStatus status)
-    { return _w.finish(_sequence ? status : _sequence.code); }
+    { return _workspace.finish(_sequence ? status : _sequence.code); }
 
 private:
-    Workspace& _w;
+    Workspace& _workspace;
     Result<uint32_t, KiottySpecStatus> _sequence;
 };
 

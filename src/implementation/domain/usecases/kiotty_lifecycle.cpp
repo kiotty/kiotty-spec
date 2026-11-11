@@ -17,13 +17,14 @@ SequenceResult Lifecycle::start(entity::Step step, Span<const char> description)
 {
     const bool is_valid_step = entity::isValidStep(static_cast<uint32_t>(step));
     if (!is_valid_step) {
-        return SequenceResult::failure(
-            _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_STEP));
+        return SequenceResult::failure(_workspace.failure.raise(
+            KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_STEP));
     }
-    const KiottySpecStatus fresh = _w.refresh();
+    const KiottySpecStatus fresh = _workspace.refresh();
     if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(fresh); }
-    const auto created = _w.checkpoints.writer().create(step, description, nowEpochSeconds());
-    const KiottySpecStatus finished = _w.finish(created.code);
+    const auto created =
+        _workspace.checkpoints.writer().create(step, description, nowEpochSeconds());
+    const KiottySpecStatus finished = _workspace.finish(created.code);
     if (finished != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(finished); }
     return created;
 }
@@ -31,26 +32,26 @@ SequenceResult Lifecycle::start(entity::Step step, Span<const char> description)
 KiottySpecStatus Lifecycle::resume()
 {
     const auto sequence = beginWrite();
-    return _w.finish(sequence.code);
+    return _workspace.finish(sequence.code);
 }
 
 SequenceResult Lifecycle::beginWrite()
 {
-    const KiottySpecStatus fresh = _w.refresh();
+    const KiottySpecStatus fresh = _workspace.refresh();
     if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(fresh); }
-    const uint32_t latest = _w.checkpoints.latest();
-    const CheckpointRecord* record = _w.checkpoints.at(latest);
+    const uint32_t latest = _workspace.checkpoints.latest();
+    const CheckpointRecord* record = _workspace.checkpoints.at(latest);
     if (record == nullptr) {
-        return SequenceResult::failure(
-            _w.failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
+        return SequenceResult::failure(_workspace.failure.raise(
+            KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
     if (record->state == CheckpointState::DONE) {
         return SequenceResult::failure(
-            _w.failure.raise(KIOTTY_SPEC_STATUS_CONFIRMED, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
+            _workspace.failure.raise(KIOTTY_SPEC_STATUS_CONFIRMED, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
     if (record->state == CheckpointState::STARTED) {
         const KiottySpecStatus running =
-            _w.checkpoints.writer().setState(latest, CheckpointState::RUNNING);
+            _workspace.checkpoints.writer().setState(latest, CheckpointState::RUNNING);
         if (running != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(running); }
     }
     return SequenceResult::success(latest);
@@ -60,20 +61,23 @@ KiottySpecStatus Lifecycle::complete(KiottySpecActor actor)
 {
     const KiottySpecStatus allowed = requireUser(actor);
     if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) { return allowed; }
-    const KiottySpecStatus fresh = _w.refresh();
+    const KiottySpecStatus fresh = _workspace.refresh();
     if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return fresh; }
-    const uint32_t latest = _w.checkpoints.latest();
-    const CheckpointRecord* record = _w.checkpoints.at(latest);
+    const uint32_t latest = _workspace.checkpoints.latest();
+    const CheckpointRecord* record = _workspace.checkpoints.at(latest);
     if (record == nullptr) {
-        return _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_CHECKPOINT);
+        return _workspace.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND,
+                                        KIOTTY_SPEC_SUBJECT_CHECKPOINT);
     }
     if (record->state == CheckpointState::DONE) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     const Span<const UnmetCondition> unmet = _checker.collect(record->step);
     const size_t unmet_count = unmet.length();
     if (unmet_count > 0) {
-        return _w.failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_COMPLETION);
+        return _workspace.failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION,
+                                        KIOTTY_SPEC_SUBJECT_COMPLETION);
     }
-    return _w.finish(_w.checkpoints.writer().setState(latest, CheckpointState::DONE));
+    return _workspace.finish(
+        _workspace.checkpoints.writer().setState(latest, CheckpointState::DONE));
 }
 
 Result<size_t, KiottySpecStatus> Lifecycle::prune(KiottySpecActor actor, uint32_t base)
@@ -81,24 +85,24 @@ Result<size_t, KiottySpecStatus> Lifecycle::prune(KiottySpecActor actor, uint32_
     using CountResult = Result<size_t, KiottySpecStatus>;
     const KiottySpecStatus allowed = requireUser(actor);
     if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(allowed); }
-    const KiottySpecStatus fresh = _w.refresh();
+    const KiottySpecStatus fresh = _workspace.refresh();
     if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(fresh); }
-    const CheckpointRecord* record = _w.checkpoints.at(base);
+    const CheckpointRecord* record = _workspace.checkpoints.at(base);
     if (record == nullptr) {
         return CountResult::failure(
-            _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
+            _workspace.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
     if (record->state != CheckpointState::DONE) {
-        return CountResult::failure(
-            _w.failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
+        return CountResult::failure(_workspace.failure.raise(
+            KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
-    const auto dropped = _w.checkpoints.writer().dropBefore(base);
-    _w.items.history().prune(base);
-    _w.relations.versions().prune(base);
-    _w.decisions.versions().prune(base);
-    const KiottySpecStatus finished = _w.finish(dropped.code);
+    const auto dropped = _workspace.checkpoints.writer().dropBefore(base);
+    _workspace.items.history().prune(base);
+    _workspace.relations.versions().prune(base);
+    _workspace.decisions.versions().prune(base);
+    const KiottySpecStatus finished = _workspace.finish(dropped.code);
     if (finished != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(finished); }
-    const KiottySpecStatus reloaded = _w.reload();
+    const KiottySpecStatus reloaded = _workspace.reload();
     if (reloaded != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(reloaded); }
     return dropped;
 }
@@ -106,7 +110,7 @@ Result<size_t, KiottySpecStatus> Lifecycle::prune(KiottySpecActor actor, uint32_
 KiottySpecStatus Lifecycle::requireUser(KiottySpecActor actor)
 {
     if (actor == KIOTTY_SPEC_ACTOR_USER) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    return _w.failure.raise(KIOTTY_SPEC_STATUS_PERMISSION, KIOTTY_SPEC_SUBJECT_ACTOR);
+    return _workspace.failure.raise(KIOTTY_SPEC_STATUS_PERMISSION, KIOTTY_SPEC_SUBJECT_ACTOR);
 }
 
 }

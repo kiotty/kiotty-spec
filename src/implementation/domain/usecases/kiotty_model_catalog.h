@@ -45,7 +45,7 @@ public:
     KiottySpecStatus load();
 
     const entity::Model& model(entity::ItemKind kind) const
-    { return _models[entity::kindIndex(kind)]; }
+    { return pickModel(Span<const entity::Model>(_models, entity::ITEM_KIND_COUNT), kind); }
 
     ModelFinder finder() const
     { return ModelFinder(Span<const entity::Model>(_models, entity::ITEM_KIND_COUNT)); }

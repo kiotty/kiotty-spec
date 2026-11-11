@@ -12,7 +12,7 @@ class SpecWriter
 {
 public:
     SpecWriter(const SpecTables& tables, KispFileWriter& file, Span<char> area)
-        : _t(tables), _file(file), _area(area)
+        : _tables(tables), _file(file), _area(area)
     {}
 
     KiottySpecStatus write();
@@ -30,7 +30,7 @@ private:
     KiottySpecStatus emit(KispLineEncoder& line);
     KispLineEncoder startLine(std::string_view table, uint32_t removed);
 
-    SpecTables _t;
+    SpecTables _tables;
     KispFileWriter& _file;
     Span<char> _area;
 };

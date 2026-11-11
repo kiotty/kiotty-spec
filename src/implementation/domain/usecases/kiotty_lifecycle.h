@@ -15,7 +15,7 @@ namespace kiotty::spec::implementation {
 class Lifecycle
 {
 public:
-    Lifecycle(Workspace& workspace, Checker& checker) : _w(workspace), _checker(checker) {}
+    Lifecycle(Workspace& workspace, Checker& checker) : _workspace(workspace), _checker(checker) {}
 
     Result<uint32_t, KiottySpecStatus> beginWrite();
 
@@ -27,7 +27,7 @@ public:
 private:
     KiottySpecStatus requireUser(KiottySpecActor actor);
 
-    Workspace& _w;
+    Workspace& _workspace;
     Checker& _checker;
 };
 

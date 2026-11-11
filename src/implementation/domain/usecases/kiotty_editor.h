@@ -14,7 +14,9 @@ namespace kiotty::spec::implementation {
 class Editor
 {
 public:
-    Editor(Workspace& workspace, Lifecycle& lifecycle) : _w(workspace), _lifecycle(lifecycle) {}
+    Editor(Workspace& workspace, Lifecycle& lifecycle)
+        : _workspace(workspace), _lifecycle(lifecycle)
+    {}
 
     Result<entity::IdText, KiottySpecStatus> createItem(entity::ItemKind kind, Span<const char> id,
                                                         Span<const char> title,
@@ -36,7 +38,7 @@ private:
     KiottySpecStatus checkId(Span<const char> id);
     KiottySpecStatus markNeedsChange(entity::ItemHandle item, uint32_t sequence);
 
-    Workspace& _w;
+    Workspace& _workspace;
     Lifecycle& _lifecycle;
 };
 

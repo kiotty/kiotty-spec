@@ -83,16 +83,19 @@ ConfigurationResult parseConfiguration(const KiottySpecConfiguration& input)
                    KIOTTY_SPEC_MIN_WORK_BUFFER_BYTES, KIOTTY_SPEC_MAX_BUFFER_BYTES);
     const CountResult body = parseCount(input.max_body_bytes, impl::DEFAULT_MAX_BODY_BYTES,
                                         MIN_COUNT, KIOTTY_SPEC_MAX_BUFFER_BYTES);
-    const bool counted =
+    const bool has_counts =
         items && relations && tags && checkpoints && cursors && rows && work && body;
-    if (!counted) { return ConfigurationResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    if (!has_counts) { return ConfigurationResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     const CountResult item_versions = impl::checkedMultiply(items.value, impl::VERSION_FACTOR);
     const CountResult tag_versions = impl::checkedMultiply(tags.value, impl::VERSION_FACTOR);
     const CountResult relation_versions =
         impl::checkedMultiply(relations.value, impl::VERSION_FACTOR);
     const CountResult pool_rows = impl::checkedMultiply(cursors.value, rows.value);
-    const bool derived = item_versions && tag_versions && relation_versions && pool_rows;
-    if (!derived) { return ConfigurationResult::failure(KIOTTY_SPEC_STATUS_ARITHMETIC_OVERFLOW); }
+    const bool has_derived_counts =
+        item_versions && tag_versions && relation_versions && pool_rows;
+    if (!has_derived_counts) {
+        return ConfigurationResult::failure(KIOTTY_SPEC_STATUS_ARITHMETIC_OVERFLOW);
+    }
     impl::Configuration configuration {};
     configuration.max_items = items.value;
     configuration.max_relations = relations.value;
@@ -210,11 +213,13 @@ TextResult parseId(impl::Context& context, KiottySpecText id)
 
 void copyTerminated(impl::Span<char> target, impl::Span<const char> source)
 {
+    const size_t source_length = source.length();
     const size_t target_length = target.length();
-    if (target_length == 0) { return; }
-    const size_t length = source.length() < target.length() ? source.length() : target.length() - 1;
+    const size_t length = source_length < target_length ? source_length : target_length - 1;
+    const auto terminator = target.at(length);
+    if (!terminator) { return; }
     for (size_t index = 0; index < length; ++index) { target[index] = source[index]; }
-    target[length] = '\0';
+    *terminator.value = '\0';
 }
 
 namespace {

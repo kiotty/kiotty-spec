@@ -14,7 +14,7 @@ namespace kiotty::spec::implementation {
 class SpecParser
 {
 public:
-    explicit SpecParser(const SpecTables& tables) : _t(tables) {}
+    explicit SpecParser(const SpecTables& tables) : _tables(tables) {}
 
     KiottySpecStatus parse(const KispFields& fields);
 
@@ -31,8 +31,8 @@ private:
     Result<uint64_t, KiottySpecStatus> parseTagValue(entity::ItemKind kind, uint32_t tag,
                                                      Span<const char> names) const;
 
-    SpecTables _t;
-    bool _versions_sorted {false};
+    SpecTables _tables;
+    bool _has_sorted_versions {false};
 };
 
 }

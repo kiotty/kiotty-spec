@@ -64,8 +64,11 @@ KiottySpecStatusResult KiottySpec_fetchUnmetConditionPage(KiottySpecContext* con
     const auto rows = context->context.cursors().fetch(cursor, impl::CursorKind::UNMET_CONDITION,
                                                        KIOTTY_SPEC_PAGE_CAPACITY);
     if (!rows) { return status(rows.code); }
+    const impl::Span<KiottySpecUnmetCondition> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
-        page->elements[page->length] = convertUnmetCondition(row);
+        const auto element = elements.at(page->length);
+        if (!element) { return status(element.code); }
+        *element.value = convertUnmetCondition(row);
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);
@@ -99,7 +102,9 @@ KiottySpecCursorResult KiottySpec_openCheckpointCursor(KiottySpecContext* contex
                                                        KiottySpecStep step)
 {
     const bool is_valid_step = entity::isValidStep(step);
-    if (context == nullptr || (step != 0 && !is_valid_step)) {
+    const bool is_accepted_step = step == 0 || is_valid_step;
+    const bool has_valid_arguments = context != nullptr && is_accepted_step;
+    if (!has_valid_arguments) {
         return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
     return cursorResult(context->context, context->context.finder().history().checkpoints(step));
@@ -116,12 +121,17 @@ KiottySpecStatusResult KiottySpec_fetchCheckpointPage(KiottySpecContext* context
     const auto rows = context->context.cursors().fetch(cursor, impl::CursorKind::CHECKPOINT,
                                                        KIOTTY_SPEC_PAGE_CAPACITY);
     if (!rows) { return status(rows.code); }
+    const impl::Span<KiottySpecCheckpointHandle> handles(page->handles, KIOTTY_SPEC_PAGE_CAPACITY);
+    const impl::Span<KiottySpecCheckpoint> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
-        const size_t index = page->length;
         const entity::CheckpointRecord* record = checkpoints.at(static_cast<uint32_t>(row.number));
         if (record == nullptr) { continue; }
-        page->handles[index] = static_cast<KiottySpecCheckpointHandle>(row.number);
-        page->elements[index] = toCheckpointRecord(*record);
+        const auto handle = handles.at(page->length);
+        const auto element = elements.at(page->length);
+        const bool has_slot = handle && element;
+        if (!has_slot) { return status(KIOTTY_SPEC_STATUS_OUT_OF_RANGE); }
+        *handle.value = static_cast<KiottySpecCheckpointHandle>(row.number);
+        *element.value = toCheckpointRecord(*record);
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);
@@ -165,7 +175,8 @@ KiottySpecModelResult KiottySpec_readModel(KiottySpecContext* context, KiottySpe
 {
     KiottySpecModelResult result {};
     const bool is_valid_kind = isKind(kind);
-    if (context == nullptr || !is_valid_kind) {
+    const bool has_valid_arguments = context != nullptr && is_valid_kind;
+    if (!has_valid_arguments) {
         result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
         return result;
     }
@@ -186,19 +197,19 @@ KiottySpecStatusResult KiottySpec_readTagDefinition(KiottySpecContext* context,
                                                     KiottySpecTagDefinition* definition)
 {
     const bool is_valid_kind = isKind(kind);
-    if (context == nullptr || definition == nullptr || !is_valid_kind) {
+    const bool has_valid_arguments = context != nullptr && definition != nullptr && is_valid_kind;
+    if (!has_valid_arguments) {
         return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
     const entity::Model& model =
         context->context.catalog().model(static_cast<entity::ItemKind>(kind));
-    const size_t tag_count = model.tags.length();
-    if (index >= tag_count) { return status(KIOTTY_SPEC_STATUS_OUT_OF_RANGE); }
-    const entity::TagDefinition& source = model.tags[index];
-    copyText(definition->name, source.name);
+    const auto source = model.tags.at(index);
+    if (!source) { return status(source.code); }
+    copyText(definition->name, source.value->name);
     for (size_t bit = 0; bit < KIOTTY_SPEC_TAG_BIT_COUNT; ++bit) {
-        copyText(definition->bit_names[bit], source.bit_names[bit]);
+        copyText(definition->bit_names[bit], source.value->bit_names[bit]);
     }
-    definition->cardinality = static_cast<KiottySpecCardinality>(source.cardinality);
+    definition->cardinality = static_cast<KiottySpecCardinality>(source.value->cardinality);
     return status(KIOTTY_SPEC_STATUS_SUCCESS);
 }
 
@@ -208,22 +219,22 @@ KiottySpecRelationDefinitionResult KiottySpec_readRelationDefinition(KiottySpecC
 {
     KiottySpecRelationDefinitionResult result {};
     const bool is_valid_kind = isKind(kind);
-    if (context == nullptr || !is_valid_kind) {
+    const bool has_valid_arguments = context != nullptr && is_valid_kind;
+    if (!has_valid_arguments) {
         result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
         return result;
     }
     const entity::Model& model =
         context->context.catalog().model(static_cast<entity::ItemKind>(kind));
-    const size_t relation_count = model.relations.length();
-    if (index >= relation_count) {
-        result.code = KIOTTY_SPEC_STATUS_OUT_OF_RANGE;
+    const auto definition = model.relations.at(index);
+    if (!definition) {
+        result.code = definition.code;
         return result;
     }
-    const entity::RelationDefinition& definition = model.relations[index];
     result.code = KIOTTY_SPEC_STATUS_SUCCESS;
-    copyText(result.value.name, definition.name);
-    result.value.target_kind = static_cast<KiottySpecItemKind>(definition.target_kind);
-    result.value.cardinality = static_cast<KiottySpecCardinality>(definition.cardinality);
+    copyText(result.value.name, definition.value->name);
+    result.value.target_kind = static_cast<KiottySpecItemKind>(definition.value->target_kind);
+    result.value.cardinality = static_cast<KiottySpecCardinality>(definition.value->cardinality);
     return result;
 }
 
@@ -262,8 +273,11 @@ KiottySpecStatusResult KiottySpec_fetchStepRunPage(KiottySpecContext* context,
     const auto rows = context->context.cursors().fetch(cursor, impl::CursorKind::STEP_RUN,
                                                        KIOTTY_SPEC_PAGE_CAPACITY);
     if (!rows) { return status(rows.code); }
+    const impl::Span<KiottySpecStepRun> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
-        page->elements[page->length] = convertStepRun(row);
+        const auto element = elements.at(page->length);
+        if (!element) { return status(element.code); }
+        *element.value = convertStepRun(row);
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);

@@ -60,7 +60,7 @@ KiottySpecStatus SpecWriter::write()
 KiottySpecStatus SpecWriter::writeMeta()
 {
     KiottySpecStatus status = writeHeader(META_HEADER);
-    const auto& entries = _t.meta.all();
+    const auto& entries = _tables.meta.all();
     const size_t entry_count = entries.length();
     for (size_t index = 0; index < entry_count && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
         KispLineEncoder line = startLine(META_TABLE, 0);
@@ -74,10 +74,10 @@ KiottySpecStatus SpecWriter::writeMeta()
 KiottySpecStatus SpecWriter::writeCheckpoints()
 {
     KiottySpecStatus status = writeHeader(CHECKPOINT_HEADER);
-    const uint32_t latest = _t.checkpoints.latest();
+    const uint32_t latest = _tables.checkpoints.latest();
     for (uint32_t sequence = 1; sequence <= latest && status == KIOTTY_SPEC_STATUS_SUCCESS;
          ++sequence) {
-        const CheckpointRecord* record = _t.checkpoints.at(sequence);
+        const CheckpointRecord* record = _tables.checkpoints.at(sequence);
         if (record == nullptr) { continue; }
         KispLineEncoder line = startLine(CHECKPOINT_TABLE, 0);
         addDecimal(line, sequence);
@@ -99,7 +99,7 @@ KiottySpecStatus SpecWriter::writeCheckpoints()
 KiottySpecStatus SpecWriter::writeItems()
 {
     KiottySpecStatus status = writeHeader(ITEM_HEADER);
-    const auto& names = _t.items.tables().names;
+    const auto& names = _tables.items.tables().names;
     const size_t name_count = names.length();
     for (size_t index = 0; index < name_count && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
         KispLineEncoder line = startLine(ITEM_TABLE, 0);
@@ -113,7 +113,7 @@ KiottySpecStatus SpecWriter::writeItems()
 KiottySpecStatus SpecWriter::writeItemVersions()
 {
     KiottySpecStatus status = writeHeader(ITEM_VERSION_HEADER);
-    for (const ItemVersion& version : _t.items.tables().versions.all()) {
+    for (const ItemVersion& version : _tables.items.tables().versions.all()) {
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
         KispLineEncoder line = startLine(ITEM_VERSION_TABLE, version.removed);
         addKey(line, version.key);
@@ -131,12 +131,15 @@ KiottySpecStatus SpecWriter::writeItemVersions()
 KiottySpecStatus SpecWriter::writeTags()
 {
     KiottySpecStatus status = writeHeader(TAG_HEADER);
-    const ItemTables& tables = _t.items.tables();
+    const ItemTables& tables = _tables.items.tables();
     for (const TagVersion& version : tables.tag_versions.all()) {
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
         const ItemVersion* item = tables.versions.latest(version.key, UINT32_MAX);
         if (item == nullptr) { continue; }
-        const entity::TagDefinition& definition = _t.catalog.model(item->kind).tags[version.tag];
+        const Span<const entity::TagDefinition> tags = _tables.catalog.model(item->kind).tags;
+        const auto found = tags.at(version.tag);
+        if (!found) { return _tables.failure.raise(found.code, KIOTTY_SPEC_SUBJECT_TAG); }
+        const entity::TagDefinition& definition = *found.value;
         KispLineEncoder line = startLine(TAG_TABLE, version.removed);
         addKey(line, version.key);
         line.add(definition.name.view());
@@ -150,12 +153,17 @@ KiottySpecStatus SpecWriter::writeTags()
 KiottySpecStatus SpecWriter::writeRelations()
 {
     KiottySpecStatus status = writeHeader(RELATION_HEADER);
-    for (const RelationVersion& version : _t.relations.versions().all()) {
+    for (const RelationVersion& version : _tables.relations.versions().all()) {
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
+        const Span<const entity::RelationDefinition> relations =
+            _tables.catalog.model(version.model).relations;
+        const auto found = relations.at(version.relation);
+        if (!found) { return _tables.failure.raise(found.code, KIOTTY_SPEC_SUBJECT_RELATION); }
+        const entity::RelationDefinition& definition = *found.value;
         KispLineEncoder line = startLine(RELATION_TABLE, version.removed);
         addKey(line, version.from);
         line.add(spanOf(entity::kindName(version.model)));
-        line.add(_t.catalog.model(version.model).relations[version.relation].name.view());
+        line.add(definition.name.view());
         addKey(line, version.to);
         addDecimal(line, version.checkpoint);
         status = emit(line);
@@ -166,7 +174,7 @@ KiottySpecStatus SpecWriter::writeRelations()
 KiottySpecStatus SpecWriter::writeDecisions()
 {
     KiottySpecStatus status = writeHeader(DECISION_HEADER);
-    for (const DecisionVersion& version : _t.decisions.versions().all()) {
+    for (const DecisionVersion& version : _tables.decisions.versions().all()) {
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
         KispLineEncoder line = startLine(DECISION_TABLE, 0);
         line.add(spanOf(entity::kindName(version.kind)));
@@ -180,7 +188,7 @@ KiottySpecStatus SpecWriter::writeDecisions()
 KiottySpecStatus SpecWriter::writeBodies()
 {
     KiottySpecStatus status = writeHeader(BODY_HEADER);
-    const BodyStore& bodies = _t.items.tables().bodies;
+    const BodyStore& bodies = _tables.items.tables().bodies;
     const size_t body_count = bodies.length();
     for (size_t index = 0; index < body_count && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
         KispLineEncoder line = startLine(BODY_TABLE, 0);
@@ -206,8 +214,8 @@ KiottySpecStatus SpecWriter::emit(KispLineEncoder& line)
 {
     const auto finished = line.finish();
     if (!finished) {
-        return _t.failure.raise(finished.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
-                                literalText("work_buffer_bytes"));
+        return _tables.failure.raise(finished.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
+                                     literalText("work_buffer_bytes"));
     }
     return _file.write(finished.value);
 }
@@ -250,12 +258,12 @@ void addTagValue(KispLineEncoder& line, const entity::TagDefinition& definition,
         return;
     }
     line.add(Span<const char>());
-    bool first = true;
+    bool has_written_bit = false;
     for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
         if ((value & (uint64_t{1} << bit)) == 0) { continue; }
-        if (!first) { line.extend(literalText(",")); }
+        if (has_written_bit) { line.extend(literalText(",")); }
         line.extend(definition.bit_names[bit].view());
-        first = false;
+        has_written_bit = true;
     }
 }
 
