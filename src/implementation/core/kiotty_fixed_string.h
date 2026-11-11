@@ -34,16 +34,16 @@ public:
     void clear() { _data[0] = '\0'; }
 
     bool empty() const { return _data[0] == '\0'; }
+    static constexpr size_t capacity() { return Capacity; }
+    const char* c_str() const { return _data; }
+    Span<const char> view() const { return Span<const char>(_data, length()); }
+    operator std::string_view() const { return std::string_view(_data, length()); }
     size_t length() const
     {
         size_t count = 0;
         while (count < Capacity && _data[count] != '\0') { ++count; }
         return count;
     }
-    static constexpr size_t capacity() { return Capacity; }
-    const char* c_str() const { return _data; }
-    Span<const char> view() const { return Span<const char>(_data, length()); }
-    operator std::string_view() const { return std::string_view(_data, length()); }
 
 private:
     char _data[Capacity + 1] {};

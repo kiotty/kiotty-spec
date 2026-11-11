@@ -12,19 +12,10 @@ using entity::ItemKind;
 using entity::RelationRecord;
 using entity::TagRecord;
 
-constexpr uint32_t SHIFT = 32;
+constexpr uint32_t GENERATION_SHIFT = 32;
+constexpr uint32_t INDEX_MASK = 0xFFFFFFFFu;
+constexpr uint32_t ORDINAL_SHIFT = 32;
 
-}
-
-uint64_t packHandle(ItemHandle handle)
-{
-    return (static_cast<uint64_t>(handle.generation) << SHIFT) | handle.index;
-}
-
-ItemHandle unpackHandle(uint64_t value)
-{
-    return ItemHandle { static_cast<uint32_t>(value & 0xFFFFFFFFu),
-                        static_cast<uint32_t>(value >> SHIFT) };
 }
 
 CursorIdResult Finder::items(uint32_t kind, Span<const TagQuery> queries)
@@ -131,7 +122,7 @@ CursorIdResult Finder::relations(ItemHandle item, KiottySpecDirection direction)
         row.first = packHandle(relation.from);
         row.second = packHandle(relation.to);
         row.third = static_cast<uint64_t>(relation.model) |
-                    (static_cast<uint64_t>(relation.relation) << SHIFT);
+                    (static_cast<uint64_t>(relation.relation) << ORDINAL_SHIFT);
         const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
         if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) {
             return closeWith(_cursors, cursor.value, pushed);
@@ -156,7 +147,7 @@ CursorIdResult Finder::relationsByModel(ItemKind kind, uint32_t relation_index)
             row.first = packHandle(relation.from);
             row.second = packHandle(relation.to);
             row.third = static_cast<uint64_t>(relation.model) |
-                        (static_cast<uint64_t>(relation.relation) << SHIFT);
+                        (static_cast<uint64_t>(relation.relation) << ORDINAL_SHIFT);
             const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
             if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) {
                 return closeWith(_cursors, cursor.value, pushed);
@@ -173,7 +164,8 @@ CursorIdResult Finder::tags(ItemHandle item)
     for (const TagRecord& tag : _w.items.tags().of(item)) {
         CursorRow row {};
         row.first = packHandle(tag.item);
-        row.second = static_cast<uint64_t>(tag.model) | (static_cast<uint64_t>(tag.tag) << SHIFT);
+        row.second = static_cast<uint64_t>(tag.model) |
+                     (static_cast<uint64_t>(tag.tag) << ORDINAL_SHIFT);
         row.third = tag.value;
         const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
         if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) {
@@ -181,6 +173,17 @@ CursorIdResult Finder::tags(ItemHandle item)
         }
     }
     return cursor;
+}
+
+uint64_t packHandle(ItemHandle handle)
+{
+    return (static_cast<uint64_t>(handle.generation) << GENERATION_SHIFT) | handle.index;
+}
+
+ItemHandle unpackHandle(uint64_t value)
+{
+    return ItemHandle { static_cast<uint32_t>(value & INDEX_MASK),
+                        static_cast<uint32_t>(value >> GENERATION_SHIFT) };
 }
 
 }

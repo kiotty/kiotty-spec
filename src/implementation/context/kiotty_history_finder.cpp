@@ -12,13 +12,7 @@ using entity::CheckpointState;
 
 constexpr uint32_t SHIFT = 32;
 
-uint64_t countWrites(Workspace& workspace, uint32_t sequence)
-{
-    const ItemTables& items = workspace.items.tables();
-    return items.versions.countAt(sequence) + items.tag_versions.countAt(sequence) +
-           workspace.relations.versions().countAt(sequence) +
-           workspace.decisions.versions().countAt(sequence);
-}
+uint64_t countWrites(Workspace& workspace, uint32_t sequence);
 
 }
 
@@ -124,6 +118,18 @@ Result<Position, KiottySpecStatus> HistoryFinder::position()
                                  : 0;
     }
     return Result<Position, KiottySpecStatus>::success(position);
+}
+
+namespace {
+
+uint64_t countWrites(Workspace& workspace, uint32_t sequence)
+{
+    const ItemTables& items = workspace.items.tables();
+    return items.versions.countAt(sequence) + items.tag_versions.countAt(sequence) +
+           workspace.relations.versions().countAt(sequence) +
+           workspace.decisions.versions().countAt(sequence);
+}
+
 }
 
 }

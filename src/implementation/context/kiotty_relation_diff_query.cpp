@@ -8,10 +8,8 @@ using entity::RelationVersion;
 
 constexpr uint32_t MAX_KIND_BIT = 32;
 
-bool inMask(uint32_t mask, uint32_t kind)
-{ return mask == 0 || (kind >= 1 && kind <= MAX_KIND_BIT && (mask & (1u << (kind - 1))) != 0); }
-
-bool isLive(const RelationVersion* version) { return version != nullptr && version->removed == 0; }
+bool isKindInMask(uint32_t mask, uint32_t kind);
+bool isLive(const RelationVersion* version);
 
 }
 
@@ -37,7 +35,7 @@ Result<bool, KiottySpecStatus> RelationDiffQuery::next()
 bool RelationDiffQuery::decode(uint32_t first)
 {
     const RelationVersion& any = _relations.versions().all()[first];
-    const bool is_in_mask = inMask(_kind_mask, static_cast<uint32_t>(any.model));
+    const bool is_in_mask = isKindInMask(_kind_mask, static_cast<uint32_t>(any.model));
     if (!is_in_mask) { return false; }
     const RelationVersion* before = _relations.versions().latest(any.identity(), _range.from);
     const RelationVersion* after = _relations.versions().latest(any.identity(), _range.to);
@@ -53,6 +51,15 @@ bool RelationDiffQuery::decode(uint32_t first)
     _current.checkpoint = after != nullptr ? after->checkpoint : 0;
     _current.change = is_live_after ? KIOTTY_SPEC_CHANGE_ADDED : KIOTTY_SPEC_CHANGE_REMOVED;
     return true;
+}
+
+namespace {
+
+bool isKindInMask(uint32_t mask, uint32_t kind)
+{ return mask == 0 || (kind >= 1 && kind <= MAX_KIND_BIT && (mask & (1u << (kind - 1))) != 0); }
+
+bool isLive(const RelationVersion* version) { return version != nullptr && version->removed == 0; }
+
 }
 
 }

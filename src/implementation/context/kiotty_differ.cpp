@@ -9,22 +9,36 @@ namespace {
 
 using entity::ItemKind;
 
-constexpr uint32_t SHIFT = 32;
+constexpr uint32_t ITEM_AFTER_SHIFT = 32;
+constexpr uint32_t ITEM_BEFORE_MASK = 0xFFFFFFFFu;
+constexpr uint32_t ITEM_KIND_MASK = 0xFFu;
+constexpr uint32_t ITEM_CHANGE_SHIFT = 8;
+constexpr uint32_t ITEM_CHANGE_MASK = 0xFFu;
+constexpr uint32_t ITEM_FIELDS_SHIFT = 16;
+constexpr uint32_t ITEM_FIELDS_MASK = 0xFFFFu;
+constexpr uint32_t RELATION_CHECKPOINT_MASK = 0xFFFFFFFFu;
+constexpr uint32_t RELATION_ID_SHIFT = 32;
+constexpr uint32_t RELATION_ID_MASK = 0xFFFFu;
+constexpr uint32_t RELATION_MODEL_SHIFT = 48;
+constexpr uint32_t RELATION_MODEL_MASK = 0xFFu;
+constexpr uint32_t RELATION_CHANGE_SHIFT = 56;
+constexpr uint32_t CHECKPOINT_SEQUENCE_MASK = 0xFFFFFFFFu;
 
 constexpr uint32_t MAX_KIND_BIT = 32;
 
-bool inMask(uint32_t mask, uint32_t kind)
-{ return mask == 0 || (kind >= 1 && kind <= MAX_KIND_BIT && (mask & (1u << (kind - 1))) != 0); }
+bool isKindInMask(uint32_t mask, uint32_t kind);
 }
 
 ItemDiffRow unpackItemDiff(const CursorRow& row)
 {
     return ItemDiffRow { unpackId(row.first, row.second),
-                         static_cast<uint32_t>(row.third & 0xFFFFFFFFu),
-                         static_cast<uint32_t>(row.third >> SHIFT),
-                         static_cast<uint32_t>(row.fourth & 0xFFu),
-                         static_cast<uint32_t>((row.fourth >> 8) & 0xFFu),
-                         static_cast<uint32_t>((row.fourth >> 16) & 0xFFFFu) };
+                         static_cast<uint32_t>(row.third & ITEM_BEFORE_MASK),
+                         static_cast<uint32_t>(row.third >> ITEM_AFTER_SHIFT),
+                         static_cast<uint32_t>(row.fourth & ITEM_KIND_MASK),
+                         static_cast<uint32_t>((row.fourth >> ITEM_CHANGE_SHIFT) &
+                                               ITEM_CHANGE_MASK),
+                         static_cast<uint32_t>((row.fourth >> ITEM_FIELDS_SHIFT) &
+                                               ITEM_FIELDS_MASK) };
 }
 
 RelationDiffRow unpackRelationDiff(const CursorRow& row)
@@ -32,24 +46,12 @@ RelationDiffRow unpackRelationDiff(const CursorRow& row)
     const uint64_t number = static_cast<uint64_t>(row.number);
     return RelationDiffRow { unpackId(row.first, row.second),
                              unpackId(row.third, row.fourth),
-                             static_cast<uint32_t>(number & 0xFFFFFFFFu),
-                             static_cast<uint32_t>((number >> 32) & 0xFFFFu),
-                             static_cast<uint32_t>((number >> 48) & 0xFFu),
-                             static_cast<uint32_t>(number >> 56) };
-}
-
-Result<uint32_t, KiottySpecStatus> Differ::point(uint64_t checkpoint)
-{
-    using PointResult = Result<uint32_t, KiottySpecStatus>;
-    const uint32_t sequence = checkpoint == KIOTTY_SPEC_CHECKPOINT_CURRENT
-                                  ? _w.checkpoints.latest()
-                                  : static_cast<uint32_t>(checkpoint & 0xFFFFFFFFu);
-    const bool has_checkpoint = _w.checkpoints.at(sequence) != nullptr;
-    if (!has_checkpoint) {
-        return PointResult::failure(
-            _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
-    }
-    return PointResult::success(sequence);
+                             static_cast<uint32_t>(number & RELATION_CHECKPOINT_MASK),
+                             static_cast<uint32_t>((number >> RELATION_ID_SHIFT) &
+                                                   RELATION_ID_MASK),
+                             static_cast<uint32_t>((number >> RELATION_MODEL_SHIFT) &
+                                                   RELATION_MODEL_MASK),
+                             static_cast<uint32_t>(number >> RELATION_CHANGE_SHIFT) };
 }
 
 Result<DiffRange, KiottySpecStatus> Differ::range(uint64_t from, uint64_t to)
@@ -68,6 +70,20 @@ Result<DiffRange, KiottySpecStatus> Differ::range(uint64_t from, uint64_t to)
             _w.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_DIFF_RANGE));
     }
     return RangeResult::success(DiffRange{start.value, end.value});
+}
+
+Result<uint32_t, KiottySpecStatus> Differ::point(uint64_t checkpoint)
+{
+    using PointResult = Result<uint32_t, KiottySpecStatus>;
+    const uint32_t sequence = checkpoint == KIOTTY_SPEC_CHECKPOINT_CURRENT
+                                  ? _w.checkpoints.latest()
+                                  : static_cast<uint32_t>(checkpoint & CHECKPOINT_SEQUENCE_MASK);
+    const bool has_checkpoint = _w.checkpoints.at(sequence) != nullptr;
+    if (!has_checkpoint) {
+        return PointResult::failure(
+            _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
+    }
+    return PointResult::success(sequence);
 }
 
 KiottySpecStatus Differ::summarize(DiffRange range, uint32_t kind_mask, uint32_t field_mask,
@@ -123,7 +139,7 @@ KiottySpecStatus Differ::countDecisions(DiffRange range, uint32_t kind_mask,
         const entity::DecisionVersion* before = _w.decisions.versions().latest(kind, range.from);
         const entity::DecisionVersion* after = _w.decisions.versions().latest(kind, range.to);
         const bool changed = before != after;
-        const bool is_in_mask = inMask(kind_mask, kind);
+        const bool is_in_mask = isKindInMask(kind_mask, kind);
         if (is_in_mask && changed) { counts[kind - 1].has_decision_change = true; }
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
@@ -143,9 +159,9 @@ CursorIdResult Differ::items(DiffRange range, uint32_t kind_mask, uint32_t field
         CursorRow row {};
         row.first = packIdWord(diff.id, 0);
         row.second = packIdWord(diff.id, PACKED_ID_WORD_BYTES);
-        row.third = diff.before | (static_cast<uint64_t>(diff.after) << SHIFT);
-        row.fourth = diff.kind | (static_cast<uint64_t>(diff.change) << 8) |
-                     (static_cast<uint64_t>(diff.fields) << 16);
+        row.third = diff.before | (static_cast<uint64_t>(diff.after) << ITEM_AFTER_SHIFT);
+        row.fourth = diff.kind | (static_cast<uint64_t>(diff.change) << ITEM_CHANGE_SHIFT) |
+                     (static_cast<uint64_t>(diff.fields) << ITEM_FIELDS_SHIFT);
         status = pushRow(_cursors, _w.failure, cursor.value, row);
     }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = next.code; }
@@ -171,8 +187,10 @@ CursorIdResult Differ::relations(DiffRange range, uint32_t kind_mask)
         row.third = packIdWord(diff.to_id, 0);
         row.fourth = packIdWord(diff.to_id, PACKED_ID_WORD_BYTES);
         row.number = static_cast<int64_t>(
-            diff.checkpoint | (static_cast<uint64_t>(diff.relation & 0xFFFFu) << 32) |
-            (static_cast<uint64_t>(diff.model) << 48) | (static_cast<uint64_t>(diff.change) << 56));
+            diff.checkpoint |
+            (static_cast<uint64_t>(diff.relation & RELATION_ID_MASK) << RELATION_ID_SHIFT) |
+            (static_cast<uint64_t>(diff.model) << RELATION_MODEL_SHIFT) |
+            (static_cast<uint64_t>(diff.change) << RELATION_CHANGE_SHIFT));
         status = pushRow(_cursors, _w.failure, cursor.value, row);
     }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = next.code; }
@@ -181,5 +199,11 @@ CursorIdResult Differ::relations(DiffRange range, uint32_t kind_mask)
     return CursorIdResult::failure(status);
 }
 
+namespace {
+
+bool isKindInMask(uint32_t mask, uint32_t kind)
+{ return mask == 0 || (kind >= 1 && kind <= MAX_KIND_BIT && (mask & (1u << (kind - 1))) != 0); }
+
+}
 
 }

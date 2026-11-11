@@ -41,6 +41,15 @@ public:
         return Result<Element&, KiottySpecStatus>::success(_values[handle.index]);
     }
 
+    void releaseAll()
+    {
+        for (size_t index = _values.size(); index > 0; --index) {
+            if (_in_use[index - 1] != 0) {
+                release(Handle { static_cast<uint32_t>(index - 1), _generations[index - 1] });
+            }
+        }
+    }
+
     KiottySpecStatus release(Handle handle)
     {
         const bool is_live = isLive(handle);
@@ -61,15 +70,6 @@ public:
             return Handle { Handle::INVALID_INDEX, 0 };
         }
         return Handle{static_cast<uint32_t>(index), _generations[index]};
-    }
-
-    void releaseAll()
-    {
-        for (size_t index = _values.size(); index > 0; --index) {
-            if (_in_use[index - 1] != 0) {
-                release(Handle { static_cast<uint32_t>(index - 1), _generations[index - 1] });
-            }
-        }
     }
 
 private:

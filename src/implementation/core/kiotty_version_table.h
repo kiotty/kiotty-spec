@@ -44,6 +44,14 @@ public:
         return Result<size_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
     }
 
+    KiottySpecStatus write(const Record& record)
+    {
+        const auto target = slot(record.identity(), record.checkpoint);
+        if (!target) { return target.code; }
+        *target.value = record;
+        return KIOTTY_SPEC_STATUS_SUCCESS;
+    }
+
     Result<Record&, KiottySpecStatus> slot(Identity identity, uint32_t checkpoint)
     {
         const size_t position = lowerBound(identity, checkpoint);
@@ -61,14 +69,6 @@ public:
         _records[position].checkpoint = checkpoint;
         ++_length;
         return Result<Record&, KiottySpecStatus>::success(_records[position]);
-    }
-
-    KiottySpecStatus write(const Record& record)
-    {
-        const auto target = slot(record.identity(), record.checkpoint);
-        if (!target) { return target.code; }
-        *target.value = record;
-        return KIOTTY_SPEC_STATUS_SUCCESS;
     }
 
     const Record* latest(Identity identity, uint32_t checkpoint) const
@@ -134,10 +134,11 @@ private:
 
     size_t lowerBound(Identity identity, uint64_t checkpoint) const
     {
+        constexpr size_t BISECT_DIVISOR = 2;
         size_t low = 0;
         size_t high = _length;
         while (low < high) {
-            const size_t middle = low + (high - low) / 2;
+            const size_t middle = low + (high - low) / BISECT_DIVISOR;
             const Record& record = _records[middle];
             const bool before = record.identity() < identity ||
                                 (record.identity() == identity && record.checkpoint < checkpoint);

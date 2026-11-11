@@ -12,11 +12,12 @@ template <typename Text>
 KiottySpecStatus appendDecimal(Text& text, uint64_t number, size_t min_digits = 1)
 {
     constexpr size_t MAX_DIGITS = 20;
+    constexpr uint64_t DECIMAL_BASE = 10;
     char digits[MAX_DIGITS] {};
     size_t count = 0;
     do {
-        digits[count] = static_cast<char>('0' + number % 10);
-        number /= 10;
+        digits[count] = static_cast<char>('0' + number % DECIMAL_BASE);
+        number /= DECIMAL_BASE;
         ++count;
     } while (number > 0);
     while (count < min_digits && count < MAX_DIGITS) { digits[count++] = '0'; }

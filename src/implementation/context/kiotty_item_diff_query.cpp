@@ -8,10 +8,8 @@ using entity::ItemVersion;
 
 constexpr uint32_t MAX_KIND_BIT = 32;
 
-bool inMask(uint32_t mask, uint32_t kind)
-{ return mask == 0 || (kind >= 1 && kind <= MAX_KIND_BIT && (mask & (1u << (kind - 1))) != 0); }
-
-bool isLive(const ItemVersion* version) { return version != nullptr && version->removed == 0; }
+bool isKindInMask(uint32_t mask, uint32_t kind);
+bool isLive(const ItemVersion* version);
 
 }
 
@@ -41,7 +39,7 @@ bool ItemDiffQuery::decode(uint32_t key)
     const ItemVersion* after = tables.versions.latest(key, _range.to);
     const ItemVersion* known = after != nullptr ? after : before;
     if (known == nullptr) { return false; }
-    const bool is_in_mask = inMask(_kind_mask, static_cast<uint32_t>(known->kind));
+    const bool is_in_mask = isKindInMask(_kind_mask, static_cast<uint32_t>(known->kind));
     if (!is_in_mask) { return false; }
     _current = ItemDiffRow{};
     _current.id = tables.names.find(key).value;
@@ -72,6 +70,15 @@ uint32_t ItemDiffQuery::changedFields(uint32_t key, const ItemVersion& before,
     if (has_tag_change) { fields |= KIOTTY_SPEC_CHANGED_FIELD_TAGS; }
     if (before.body_hash != after.body_hash) { fields |= KIOTTY_SPEC_CHANGED_FIELD_BODY; }
     return fields;
+}
+
+namespace {
+
+bool isKindInMask(uint32_t mask, uint32_t kind)
+{ return mask == 0 || (kind >= 1 && kind <= MAX_KIND_BIT && (mask & (1u << (kind - 1))) != 0); }
+
+bool isLive(const ItemVersion* version) { return version != nullptr && version->removed == 0; }
+
 }
 
 }

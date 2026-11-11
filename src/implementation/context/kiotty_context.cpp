@@ -12,30 +12,14 @@ namespace {
 
 constexpr size_t MAX_EPOCH_DIGITS = 20;
 
-ItemCapacity itemCapacity(const Configuration& configuration)
-{
-    return ItemCapacity { configuration.max_items, configuration.max_tags,
-                          configuration.max_item_versions, configuration.max_tag_versions,
-                          configuration.max_body_bytes };
-}
-
-KiottySpecStatus writeMergeAttributes(Span<const char> directory)
-{
-    const SystemPathResult path = joinPath(directory, literalText(".gitattributes"));
-    if (!path) { return path.code; }
-    const bool is_file = isFile(path.value.view());
-    if (is_file) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    FileWriter writer {};
-    const KiottySpecStatus opened = writer.open(path.value.view());
-    if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return opened; }
-    return writer.write(literalText("*.kisp text eol=lf merge=union\n"));
-}
+ItemCapacity buildItemCapacity(const Configuration& configuration);
+KiottySpecStatus writeMergeAttributes(Span<const char> directory);
 
 }
 
 Context::Context(const Configuration& configuration)
     : _work(configuration.work_buffer_bytes), _checkpoints(_failure, configuration.max_checkpoints),
-      _items(_failure, itemCapacity(configuration)),
+      _items(_failure, buildItemCapacity(configuration)),
       _relations(_failure, _items, configuration.max_relations,
                  configuration.max_relation_versions),
       _decisions(_failure, configuration.max_decision_versions),
@@ -110,6 +94,29 @@ KiottySpecStatus Context::init(Span<const char> name)
         status = _meta.set(literalText("project.created_at"), now.view());
     }
     return _workspace.finish(status);
+}
+
+namespace {
+
+ItemCapacity buildItemCapacity(const Configuration& configuration)
+{
+    return ItemCapacity { configuration.max_items, configuration.max_tags,
+                          configuration.max_item_versions, configuration.max_tag_versions,
+                          configuration.max_body_bytes };
+}
+
+KiottySpecStatus writeMergeAttributes(Span<const char> directory)
+{
+    const SystemPathResult path = joinPath(directory, literalText(".gitattributes"));
+    if (!path) { return path.code; }
+    const bool is_file = isFile(path.value.view());
+    if (is_file) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    FileWriter writer {};
+    const KiottySpecStatus opened = writer.open(path.value.view());
+    if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return opened; }
+    return writer.write(literalText("*.kisp text eol=lf merge=union\n"));
+}
+
 }
 
 }

@@ -12,6 +12,7 @@
 namespace kiotty::spec::implementation {
 
 constexpr size_t PACKED_ID_WORD_BYTES = 8;
+constexpr size_t PACKED_ID_WORDS = 2;
 constexpr uint32_t BITS_PER_BYTE = 8;
 constexpr uint64_t BYTE_MASK = 0xFFu;
 
@@ -52,7 +53,7 @@ inline uint64_t packIdWord(entity::IdText id, size_t offset)
 
 inline entity::IdText unpackId(uint64_t first, uint64_t second)
 {
-    char bytes[PACKED_ID_WORD_BYTES * 2] {};
+    char bytes[PACKED_ID_WORD_BYTES * PACKED_ID_WORDS] {};
     for (size_t index = 0; index < PACKED_ID_WORD_BYTES; ++index) {
         bytes[index] = static_cast<char>((first >> (BITS_PER_BYTE * index)) & BYTE_MASK);
         bytes[PACKED_ID_WORD_BYTES + index] =

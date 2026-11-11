@@ -10,20 +10,6 @@ using entity::ItemVersion;
 
 }
 
-Result<const ItemVersion*, KiottySpecStatus> PastReader::versionAt(Span<const char> id,
-                                                                   uint32_t checkpoint)
-{
-    using VersionResult = Result<const ItemVersion*, KiottySpecStatus>;
-    const auto key = _w.items.history().keyOf(id);
-    const ItemVersion* version =
-        key ? _w.items.tables().versions.latest(key.value, checkpoint) : nullptr;
-    if (version == nullptr || version->removed != 0) {
-        return VersionResult::failure(
-            _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_ITEM, id));
-    }
-    return VersionResult::success(version);
-}
-
 Result<ItemVersionView, KiottySpecStatus> PastReader::itemAt(Span<const char> id,
                                                              uint32_t checkpoint)
 {
@@ -76,6 +62,20 @@ Result<size_t, KiottySpecStatus> PastReader::decisionAt(entity::ItemKind kind, u
                                                         char* buffer, size_t capacity)
 {
     return _w.decisions.read(kind, checkpoint, buffer, capacity);
+}
+
+Result<const ItemVersion*, KiottySpecStatus> PastReader::versionAt(Span<const char> id,
+                                                                   uint32_t checkpoint)
+{
+    using VersionResult = Result<const ItemVersion*, KiottySpecStatus>;
+    const auto key = _w.items.history().keyOf(id);
+    const ItemVersion* version =
+        key ? _w.items.tables().versions.latest(key.value, checkpoint) : nullptr;
+    if (version == nullptr || version->removed != 0) {
+        return VersionResult::failure(
+            _w.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_ITEM, id));
+    }
+    return VersionResult::success(version);
 }
 
 }

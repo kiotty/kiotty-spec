@@ -9,28 +9,35 @@
 
 namespace kiotty::spec::implementation {
 
+constexpr uint64_t FNV_OFFSET_BASIS = 0xcbf29ce484222325ull;
+constexpr uint64_t FNV_PRIME = 0x100000001b3ull;
+
 inline Result<uint64_t, KiottySpecStatus> parseDecimal(Span<const char> text, uint64_t maximum)
 {
     const size_t length = text.length();
     if (length == 0) {
         return Result<uint64_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
+    constexpr uint64_t DECIMAL_BASE = 10;
     uint64_t number = 0;
     for (const char letter : text) {
         const bool digit = letter >= '0' && letter <= '9';
         const uint64_t value = static_cast<uint64_t>(letter - '0');
-        if (!digit || number > (maximum - value) / 10) {
+        if (!digit || number > (maximum - value) / DECIMAL_BASE) {
             return Result<uint64_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
         }
-        number = number * 10 + value;
+        number = number * DECIMAL_BASE + value;
     }
     return Result<uint64_t, KiottySpecStatus>::success(number);
 }
 
 inline Result<uint64_t, KiottySpecStatus> parseHex(Span<const char> text, size_t digits)
 {
+    constexpr size_t MAX_DIGITS = 16;
+    constexpr int FIRST_LETTER_VALUE = 10;
+    constexpr uint32_t DIGIT_BITS = 4;
     const size_t length = text.length();
-    if (length != digits || digits > 16) {
+    if (length != digits || digits > MAX_DIGITS) {
         return Result<uint64_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
     uint64_t number = 0;
@@ -41,8 +48,8 @@ inline Result<uint64_t, KiottySpecStatus> parseHex(Span<const char> text, size_t
             return Result<uint64_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
         }
         const uint64_t value = decimal ? static_cast<uint64_t>(letter - '0')
-                                       : static_cast<uint64_t>(letter - 'a' + 10);
-        number = (number << 4) | value;
+                                       : static_cast<uint64_t>(letter - 'a' + FIRST_LETTER_VALUE);
+        number = (number << DIGIT_BITS) | value;
     }
     return Result<uint64_t, KiottySpecStatus>::success(number);
 }
@@ -52,31 +59,36 @@ KiottySpecStatus appendHex(Text& text, uint64_t number, size_t digits)
 {
     constexpr char LETTERS[] = "0123456789abcdef";
     constexpr size_t MAX_DIGITS = 16;
+    constexpr size_t DIGIT_BITS = 4;
+    constexpr uint64_t DIGIT_MASK = 0xFu;
     char letters[MAX_DIGITS] {};
     const size_t count = digits < MAX_DIGITS ? digits : MAX_DIGITS;
     for (size_t index = 0; index < count; ++index) {
-        const size_t shift = (count - 1 - index) * 4;
-        letters[index] = LETTERS[(number >> shift) & 0xFu];
+        const size_t shift = (count - 1 - index) * DIGIT_BITS;
+        letters[index] = LETTERS[(number >> shift) & DIGIT_MASK];
     }
     return text.append(Span<const char>(letters, count));
 }
 
 inline uint64_t mix64(uint64_t value)
 {
-    value ^= value >> 33;
-    value *= 0xff51afd7ed558ccdull;
-    value ^= value >> 33;
-    value *= 0xc4ceb9fe1a85ec53ull;
-    value ^= value >> 33;
+    constexpr uint32_t MIX_SHIFT = 33;
+    constexpr uint64_t FIRST_MIX_MULTIPLIER = 0xff51afd7ed558ccdull;
+    constexpr uint64_t SECOND_MIX_MULTIPLIER = 0xc4ceb9fe1a85ec53ull;
+    value ^= value >> MIX_SHIFT;
+    value *= FIRST_MIX_MULTIPLIER;
+    value ^= value >> MIX_SHIFT;
+    value *= SECOND_MIX_MULTIPLIER;
+    value ^= value >> MIX_SHIFT;
     return value;
 }
 
-inline uint64_t hash64(Span<const char> bytes, uint64_t seed = 0xcbf29ce484222325ull)
+inline uint64_t hash64(Span<const char> bytes, uint64_t seed = FNV_OFFSET_BASIS)
 {
     uint64_t hash = seed;
     for (const char letter : bytes) {
         hash ^= static_cast<uint8_t>(letter);
-        hash *= 0x100000001b3ull;
+        hash *= FNV_PRIME;
     }
     return hash;
 }

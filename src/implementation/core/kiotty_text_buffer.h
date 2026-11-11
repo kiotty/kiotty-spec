@@ -13,6 +13,12 @@ class TextBuffer
 public:
     explicit TextBuffer(size_t capacity) : _data(capacity + 1, '\0'), _length(0) {}
 
+    Span<char> scratch()
+    {
+        clear();
+        return Span<char>(_data.data(), capacity());
+    }
+
     void clear()
     {
         _length = 0;
@@ -34,11 +40,6 @@ public:
 
     Span<const char> view() const { return Span<const char>(_data.data(), _length); }
     size_t capacity() const { return _data.size() - 1; }
-    Span<char> scratch()
-    {
-        clear();
-        return Span<char>(_data.data(), capacity());
-    }
 
 private:
     std::vector<char> _data;

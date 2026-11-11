@@ -63,10 +63,11 @@ public:
 private:
     size_t lowerBound(const Key& key) const
     {
+        constexpr size_t BISECT_DIVISOR = 2;
         size_t low = 0;
         size_t high = _length;
         while (low < high) {
-            const size_t middle = low + (high - low) / 2;
+            const size_t middle = low + (high - low) / BISECT_DIVISOR;
             if (_keys[middle] < key) { low = middle + 1; } else { high = middle; }
         }
         return low;
