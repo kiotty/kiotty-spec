@@ -35,7 +35,8 @@ bool isLetter(char letter)
 WidePathResult widen(Span<const char> path)
 {
     WidePath wide {};
-    if (path.length() == 0) { return WidePathResult::success(wide); }
+    const size_t path_length = path.length();
+    if (path_length == 0) { return WidePathResult::success(wide); }
     const int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path.data(),
                                            static_cast<int>(path.length()), wide.text,
                                            static_cast<int>(MAX_SYSTEM_PATH_LENGTH));
@@ -75,9 +76,16 @@ bool isSeparator(char letter) { return letter == '/' || letter == '\\'; }
 size_t rootLength(Span<const char> path)
 {
     const size_t length = path.length();
-    if (length >= 2 && isSeparator(path[0]) && isSeparator(path[1])) { return 2; }
+    if (length >= 2) {
+        const bool is_first_separator = isSeparator(path[0]);
+        const bool is_second_separator = isSeparator(path[1]);
+        if (is_first_separator && is_second_separator) { return 2; }
+    }
     const bool has_drive = length >= 2 && isLetter(path[0]) && path[1] == ':';
-    if (has_drive && length >= 3 && isSeparator(path[2])) { return 3; }
+    if (has_drive && length >= 3) {
+        const bool is_third_separator = isSeparator(path[2]);
+        if (is_third_separator) { return 3; }
+    }
     if (has_drive) { return 2; }
     return length >= 1 && isSeparator(path[0]) ? 1 : 0;
 }
@@ -87,7 +95,8 @@ SystemPathResult absolutePath(Span<const char> path)
     const WidePathResult wide = widen(path);
     if (!wide) { return SystemPathResult::failure(wide.code); }
     wchar_t full[MAX_SYSTEM_PATH_LENGTH + 1] {};
-    if (_wfullpath(full, wide.value.text, MAX_SYSTEM_PATH_LENGTH) == nullptr) {
+    const wchar_t* const resolved = _wfullpath(full, wide.value.text, MAX_SYSTEM_PATH_LENGTH);
+    if (resolved == nullptr) {
         return SystemPathResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT);
     }
     return narrow(full);

@@ -17,7 +17,8 @@ CheckpointWriter::create(entity::Step step, Span<const char> description, int64_
 {
     using SequenceResult = Result<uint32_t, KiottySpecStatus>;
     const uint32_t sequence = _latest + 1;
-    if (sequence > _records.size()) {
+    const size_t capacity = _records.size();
+    if (sequence > capacity) {
         return SequenceResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED,
                                                       KIOTTY_SPEC_SUBJECT_CONFIGURATION,
                                                       literalText("max_checkpoints")));
@@ -36,7 +37,8 @@ CheckpointWriter::create(entity::Step step, Span<const char> description, int64_
 
 KiottySpecStatus CheckpointWriter::setState(uint32_t sequence, CheckpointState state)
 {
-    if (sequence == 0 || sequence > _records.size() || _exists[sequence - 1] == 0) {
+    const size_t capacity = _records.size();
+    if (sequence == 0 || sequence > capacity || _exists[sequence - 1] == 0) {
         return KIOTTY_SPEC_STATUS_NOT_FOUND;
     }
     _records[sequence - 1].state = state;
@@ -46,11 +48,12 @@ KiottySpecStatus CheckpointWriter::setState(uint32_t sequence, CheckpointState s
 Result<size_t, KiottySpecStatus> CheckpointWriter::dropBefore(uint32_t base)
 {
     size_t count = 0;
-    for (uint32_t sequence = 1; sequence < base && sequence <= _records.size(); ++sequence) {
+    const size_t capacity = _records.size();
+    for (uint32_t sequence = 1; sequence < base && sequence <= capacity; ++sequence) {
         count += _exists[sequence - 1];
         _exists[sequence - 1] = 0;
     }
-    if (base >= 1 && base <= _records.size()) {
+    if (base >= 1 && base <= capacity) {
         _records[base - 1].previous = entity::INVALID_CHECKPOINT_HANDLE;
     }
     return Result<size_t, KiottySpecStatus>::success(count);

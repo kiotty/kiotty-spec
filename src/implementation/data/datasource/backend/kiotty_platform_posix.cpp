@@ -38,9 +38,11 @@ size_t rootLength(Span<const char> path)
 
 SystemPathResult absolutePath(Span<const char> path)
 {
-    if (rootLength(path) > 0) { return joinPath(path, Span<const char>()); }
+    const size_t root = rootLength(path);
+    if (root > 0) { return joinPath(path, Span<const char>()); }
     char current[MAX_SYSTEM_PATH_LENGTH + 1] {};
-    if (::getcwd(current, MAX_SYSTEM_PATH_LENGTH) == nullptr) {
+    const char* const directory = ::getcwd(current, MAX_SYSTEM_PATH_LENGTH);
+    if (directory == nullptr) {
         return SystemPathResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT);
     }
     return joinPath(boundedText(current, MAX_SYSTEM_PATH_LENGTH), path);
@@ -49,7 +51,8 @@ SystemPathResult absolutePath(Span<const char> path)
 int openFile(Span<const char> path, OpenMode mode)
 {
     SystemPath terminated {};
-    if (terminated.assign(path) != KIOTTY_SPEC_STATUS_SUCCESS) { return -1; }
+    const KiottySpecStatus assigned = terminated.assign(path);
+    if (assigned != KIOTTY_SPEC_STATUS_SUCCESS) { return -1; }
     const int flags = mode == OpenMode::READ ? O_RDONLY : (O_WRONLY | O_CREAT | O_TRUNC);
     return ::open(terminated.c_str(), flags, FILE_MODE);
 }
@@ -65,7 +68,8 @@ void closeFile(int descriptor) { ::close(descriptor); }
 bool makeDirectory(Span<const char> path)
 {
     SystemPath terminated {};
-    if (terminated.assign(path) != KIOTTY_SPEC_STATUS_SUCCESS) { return false; }
+    const KiottySpecStatus assigned = terminated.assign(path);
+    if (assigned != KIOTTY_SPEC_STATUS_SUCCESS) { return false; }
     return ::mkdir(terminated.c_str(), DIRECTORY_MODE) == 0 || errno == EEXIST;
 }
 
@@ -84,7 +88,8 @@ bool isFile(Span<const char> path)
 KiottySpecStatus removeFile(Span<const char> path)
 {
     SystemPath terminated {};
-    if (terminated.assign(path) != KIOTTY_SPEC_STATUS_SUCCESS) {
+    const KiottySpecStatus assigned = terminated.assign(path);
+    if (assigned != KIOTTY_SPEC_STATUS_SUCCESS) {
         return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED;
     }
     return ::remove(terminated.c_str()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS
@@ -95,8 +100,12 @@ KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
 {
     SystemPath source {};
     SystemPath target {};
-    if (source.assign(from) != KIOTTY_SPEC_STATUS_SUCCESS ||
-        target.assign(to) != KIOTTY_SPEC_STATUS_SUCCESS) {
+    const KiottySpecStatus source_assigned = source.assign(from);
+    if (source_assigned != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED;
+    }
+    const KiottySpecStatus target_assigned = target.assign(to);
+    if (target_assigned != KIOTTY_SPEC_STATUS_SUCCESS) {
         return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED;
     }
     return ::rename(source.c_str(), target.c_str()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS

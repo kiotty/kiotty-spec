@@ -43,8 +43,10 @@ Result<KispFields, KiottySpecStatus> KispLineDecoder::decode(Span<const char> li
     size_t written = 0;
     size_t start = 0;
     size_t index = 0;
-    while (index <= line.length()) {
-        const bool end = index == line.length() || line[index] == TAB;
+    const size_t length = line.length();
+    const size_t capacity = _area.length();
+    while (index <= length) {
+        const bool end = index == length || line[index] == TAB;
         if (end) {
             if (fields.count == MAX_KISP_FIELDS) {
                 return FieldsResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
@@ -57,13 +59,13 @@ Result<KispFields, KiottySpecStatus> KispLineDecoder::decode(Span<const char> li
         }
         char letter = line[index];
         if (letter == ESCAPE) {
-            letter = index + 1 < line.length() ? unescape(line[index + 1]) : '\0';
+            letter = index + 1 < length ? unescape(line[index + 1]) : '\0';
             if (letter == '\0') {
                 return FieldsResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
             }
             ++index;
         }
-        if (written == _area.length()) {
+        if (written == capacity) {
             return FieldsResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED);
         }
         _area[written] = letter;
@@ -84,8 +86,8 @@ void KispLineEncoder::add(Span<const char> field)
 
 void KispLineEncoder::extend(Span<const char> text)
 {
-    for (size_t index = 0; index < text.length() && _status == KIOTTY_SPEC_STATUS_SUCCESS;
-         ++index) {
+    const size_t length = text.length();
+    for (size_t index = 0; index < length && _status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
         const char escaped[2] = {ESCAPE, escapeOf(text[index])};
         const bool plain = escaped[1] == '\0';
         _status = plain ? _text.append(Span<const char>(&text[index], 1))

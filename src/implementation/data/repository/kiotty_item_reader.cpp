@@ -11,7 +11,8 @@ using entity::ItemRecord;
 Result<ItemHandle, KiottySpecStatus> ItemReader::find(Span<const char> id) const
 {
     IdText key {};
-    if (key.assign(id) != KIOTTY_SPEC_STATUS_SUCCESS) {
+    const KiottySpecStatus assigned = key.assign(id);
+    if (assigned != KIOTTY_SPEC_STATUS_SUCCESS) {
         return Result<ItemHandle, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
     }
     const auto index = _t.id_index.find(key);
@@ -39,14 +40,16 @@ Result<const ItemRecord*, KiottySpecStatus> ItemReader::get(ItemHandle handle) c
 
 uint32_t ItemReader::key(ItemHandle handle) const
 {
-    if (!_t.items.get(handle)) { return entity::NO_KEY; }
+    const auto record = _t.items.get(handle);
+    if (!record) { return entity::NO_KEY; }
     return _t.keys[handle.index];
 }
 
 Result<size_t, KiottySpecStatus> ItemReader::readBody(ItemHandle handle, char* buffer,
                                                       size_t capacity) const
 {
-    if (!_t.items.get(handle)) {
+    const auto record = _t.items.get(handle);
+    if (!record) {
         return Result<size_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_HANDLE);
     }
     return copyBody(_t.bodies.find(_t.keys[handle.index]), buffer, capacity);

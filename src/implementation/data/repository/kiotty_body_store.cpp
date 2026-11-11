@@ -7,10 +7,14 @@ namespace kiotty::spec::implementation {
 KiottySpecStatus BodyStore::put(uint32_t key, Span<const char> body)
 {
     erase(key);
-    if (body.length() == 0) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    if (_slices.length() == _slices.capacity()) { return KIOTTY_SPEC_STATUS_POOL_IS_FULL; }
-    if (body.length() > _bytes.size() - _used) { compact(); }
-    if (body.length() > _bytes.size() - _used) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+    const size_t length = body.length();
+    if (length == 0) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    const size_t slice_count = _slices.length();
+    const size_t slice_capacity = _slices.capacity();
+    if (slice_count == slice_capacity) { return KIOTTY_SPEC_STATUS_POOL_IS_FULL; }
+    const size_t byte_capacity = _bytes.size();
+    if (length > byte_capacity - _used) { compact(); }
+    if (length > byte_capacity - _used) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
     std::copy(body.begin(), body.end(), _bytes.begin() + static_cast<std::ptrdiff_t>(_used));
     const KiottySpecStatus inserted = _slices.insert(key, BodySlice{_used, body.length()});
     if (inserted != KIOTTY_SPEC_STATUS_SUCCESS) { return inserted; }
@@ -63,12 +67,13 @@ void BodyStore::compact()
 Result<size_t, KiottySpecStatus> copyBody(Span<const char> body, char* buffer, size_t capacity)
 {
     using SizeResult = Result<size_t, KiottySpecStatus>;
-    if (buffer == nullptr || capacity <= body.length()) {
-        return SizeResult { KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, body.length() + 1 };
+    const size_t length = body.length();
+    if (buffer == nullptr || capacity <= length) {
+        return SizeResult { KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, length + 1 };
     }
     std::copy(body.begin(), body.end(), buffer);
-    buffer[body.length()] = '\0';
-    return SizeResult::success(body.length());
+    buffer[length] = '\0';
+    return SizeResult::success(length);
 }
 
 }

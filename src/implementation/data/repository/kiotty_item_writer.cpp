@@ -29,7 +29,9 @@ Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record
     using HandleResult = Result<ItemHandle, KiottySpecStatus>;
     const KiottySpecStatus unused = checkUnused(record.id);
     if (unused != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(unused); }
-    if (_t.id_index.length() == _t.id_index.capacity()) {
+    const size_t item_count = _t.id_index.length();
+    const size_t item_capacity = _t.id_index.capacity();
+    if (item_count == item_capacity) {
         return HandleResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL,
                                                     KIOTTY_SPEC_SUBJECT_CONFIGURATION,
                                                     literalText("max_items")));
@@ -50,7 +52,8 @@ Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record
             _failure.raise(status, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items")));
     }
     const ItemHandle handle = _t.items.acquire();
-    if (!handle.isValid()) { return HandleResult::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL); }
+    const bool is_valid = handle.isValid();
+    if (!is_valid) { return HandleResult::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL); }
     ItemRecord& stored = *_t.items.get(handle).value;
     stored = record;
     stored.checkpoint = CheckpointHandle{sequence, 0};
@@ -63,7 +66,8 @@ Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record
 
 KiottySpecStatus ItemWriter::checkUnused(IdText id)
 {
-    if (_t.id_index.find(id)) {
+    const auto existing = _t.id_index.find(id);
+    if (existing) {
         return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_ID, id.view());
     }
     const auto removed = ItemHistory(_t).keyOf(id.view());
@@ -81,9 +85,9 @@ Result<uint32_t, KiottySpecStatus> ItemWriter::newKey(IdText id) const
     for (uint32_t attempt = 0; attempt < MAX_KEY_ATTEMPTS; ++attempt) {
         const uint64_t mixed = mix64(hash64(id.view(), moment + attempt));
         const uint32_t key = static_cast<uint32_t>(mixed ^ (mixed >> KEY_SHIFT));
-        if (key != entity::NO_KEY && !_t.names.find(key)) {
-            return Result<uint32_t, KiottySpecStatus>::success(key);
-        }
+        if (key == entity::NO_KEY) { continue; }
+        const auto existing = _t.names.find(key);
+        if (!existing) { return Result<uint32_t, KiottySpecStatus>::success(key); }
     }
     return Result<uint32_t, KiottySpecStatus>::failure(
         _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_ID, id.view()));
@@ -91,7 +95,8 @@ Result<uint32_t, KiottySpecStatus> ItemWriter::newKey(IdText id) const
 
 Result<ItemVersion, KiottySpecStatus> ItemWriter::currentVersion(ItemHandle handle) const
 {
-    if (!_t.items.get(handle)) {
+    const auto record = _t.items.get(handle);
+    if (!record) {
         return Result<ItemVersion, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_HANDLE);
     }
     const ItemVersion* version = _t.versions.latest(_t.keys[handle.index], UINT32_MAX);
@@ -135,7 +140,8 @@ KiottySpecStatus ItemWriter::setTag(ItemHandle handle, uint32_t tag, uint64_t va
     const auto stored = _t.items.get(handle);
     if (!stored) { return stored.code; }
     const bool adds = value != 0 && tags().value(handle, tag) == 0;
-    if (adds && _t.tag_count == _t.tags.size()) {
+    const size_t tag_capacity = _t.tags.size();
+    if (adds && _t.tag_count == tag_capacity) {
         return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
                               literalText("max_tags"));
     }

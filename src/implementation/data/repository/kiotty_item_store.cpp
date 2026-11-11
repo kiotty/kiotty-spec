@@ -51,9 +51,9 @@ size_t ItemStore::collectLatest()
 {
     const Span<const ItemVersion> versions = _t.versions.all();
     size_t count = 0;
-    for (size_t index = 0; index < versions.length(); ++index) {
-        const bool last =
-            index + 1 == versions.length() || versions[index + 1].key != versions[index].key;
+    const size_t length = versions.length();
+    for (size_t index = 0; index < length; ++index) {
+        const bool last = index + 1 == length || versions[index + 1].key != versions[index].key;
         if (!last || versions[index].removed != 0) { continue; }
         _t.order[count] = static_cast<uint32_t>(index);
         ++count;
@@ -75,7 +75,8 @@ KiottySpecStatus ItemStore::place(const ItemVersion& version)
                               literalText("item_version"));
     }
     const ItemHandle handle = _t.items.acquire();
-    if (!handle.isValid()) {
+    const bool is_valid = handle.isValid();
+    if (!is_valid) {
         return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
                               literalText("max_items"));
     }
@@ -100,9 +101,11 @@ KiottySpecStatus ItemStore::place(const ItemVersion& version)
 
 void ItemStore::linkParents()
 {
-    for (size_t index = 0; index < _t.items.capacity(); ++index) {
+    const size_t capacity = _t.items.capacity();
+    for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _t.items.handleAt(index);
-        if (!handle.isValid() || _t.parents[index] == entity::NO_KEY) { continue; }
+        const bool is_valid = handle.isValid();
+        if (!is_valid || _t.parents[index] == entity::NO_KEY) { continue; }
         const auto parent = _t.key_index.find(_t.parents[index]);
         if (parent) { _t.items.get(handle).value->parent = _t.items.handleAt(parent.value); }
     }
@@ -111,10 +114,12 @@ void ItemStore::linkParents()
 KiottySpecStatus ItemStore::loadTags()
 {
     const Span<const TagVersion> versions = _t.tag_versions.all();
-    for (size_t index = 0; index < versions.length(); ++index) {
+    const size_t length = versions.length();
+    const size_t tag_capacity = _t.tags.size();
+    for (size_t index = 0; index < length; ++index) {
         const TagVersion& tag = versions[index];
         const bool last =
-            index + 1 == versions.length() || !(versions[index + 1].identity() == tag.identity());
+            index + 1 == length || !(versions[index + 1].identity() == tag.identity());
         const auto position =
             last ? _t.key_index.find(tag.key)
                  : Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
@@ -125,7 +130,7 @@ KiottySpecStatus ItemStore::loadTags()
             record.checkpoint = CheckpointHandle { tag.checkpoint, 0 };
         }
         if (tag.removed != 0 || tag.value == 0) { continue; }
-        if (_t.tag_count == _t.tags.size()) {
+        if (_t.tag_count == tag_capacity) {
             return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL,
                                   KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_tags"));
         }

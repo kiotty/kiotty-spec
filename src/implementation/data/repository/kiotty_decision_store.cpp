@@ -24,12 +24,13 @@ Result<size_t, KiottySpecStatus> DecisionStore::read(entity::ItemKind kind, uint
     const entity::DecisionVersion* version =
         _versions.latest(static_cast<uint32_t>(kind), checkpoint);
     const Span<const char> text = version == nullptr ? Span<const char>() : version->text.view();
-    if (buffer == nullptr || capacity <= text.length()) {
-        return SizeResult { KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, text.length() + 1 };
+    const size_t length = text.length();
+    if (buffer == nullptr || capacity <= length) {
+        return SizeResult { KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, length + 1 };
     }
-    for (size_t index = 0; index < text.length(); ++index) { buffer[index] = text[index]; }
-    buffer[text.length()] = '\0';
-    return SizeResult::success(text.length());
+    for (size_t index = 0; index < length; ++index) { buffer[index] = text[index]; }
+    buffer[length] = '\0';
+    return SizeResult::success(length);
 }
 
 }

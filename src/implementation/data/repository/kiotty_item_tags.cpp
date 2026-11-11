@@ -25,14 +25,16 @@ Span<const TagRecord> ItemTags::of(ItemHandle handle) const
 {
     const size_t first = position(handle.index, 0);
     size_t last = first;
-    while (last < _tags.length() && _tags[last].item.index == handle.index) { ++last; }
+    const size_t length = _tags.length();
+    while (last < length && _tags[last].item.index == handle.index) { ++last; }
     return Span<const TagRecord>(_tags.data() + first, last - first);
 }
 
 uint64_t ItemTags::value(ItemHandle handle, uint32_t tag) const
 {
     const size_t found = position(handle.index, tag);
-    if (found < _tags.length() && _tags[found].item.index == handle.index &&
+    const size_t length = _tags.length();
+    if (found < length && _tags[found].item.index == handle.index &&
         _tags[found].tag == tag) {
         return _tags[found].value;
     }

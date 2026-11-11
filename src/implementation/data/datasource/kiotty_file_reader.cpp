@@ -33,7 +33,8 @@ Result<bool, KiottySpecStatus> FileReader::next()
         _start = 0;
         _end = kept;
         scan = kept;
-        if (_end == _buffer.length()) {
+        const size_t capacity = _buffer.length();
+        if (_end == capacity) {
             return LineResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED);
         }
         const int count =

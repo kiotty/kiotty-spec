@@ -18,7 +18,8 @@ void CheckpointStore::clear()
 
 KiottySpecStatus CheckpointStore::put(uint32_t sequence, const CheckpointRecord& record)
 {
-    if (sequence < 1 || sequence > _records.size()) {
+    const size_t capacity = _records.size();
+    if (sequence < 1 || sequence > capacity) {
         return _failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED,
                               KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_checkpoints"));
     }
@@ -43,7 +44,8 @@ Result<const CheckpointRecord*, KiottySpecStatus> CheckpointStore::get(uint32_t 
 
 const CheckpointRecord* CheckpointStore::at(uint32_t sequence) const
 {
-    if (sequence == 0 || sequence > _records.size() || _exists[sequence - 1] == 0) {
+    const size_t capacity = _records.size();
+    if (sequence == 0 || sequence > capacity || _exists[sequence - 1] == 0) {
         return nullptr;
     }
     return &_records[sequence - 1];

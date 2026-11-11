@@ -31,15 +31,17 @@ KiottySpecStatus RelationStore::rebuild()
 {
     _length = 0;
     const Span<const RelationVersion> versions = _versions.all();
-    for (size_t index = 0; index < versions.length(); ++index) {
+    const size_t length = versions.length();
+    const size_t capacity = _records.size();
+    for (size_t index = 0; index < length; ++index) {
         const RelationVersion& version = versions[index];
-        const bool last = index + 1 == versions.length() ||
+        const bool last = index + 1 == length ||
                           !(versions[index + 1].identity() == version.identity());
         if (!last || version.removed != 0) { continue; }
         const auto from = _items.reader().findKey(version.from);
         const auto to = _items.reader().findKey(version.to);
         if (!from || !to) { continue; }
-        if (_length == _records.size()) {
+        if (_length == capacity) {
             return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL,
                                   KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_relations"));
         }
@@ -55,7 +57,8 @@ Span<const uint32_t> RelationStore::relationsInDiffOrder()
 {
     const Span<const RelationVersion> versions = _versions.all();
     size_t count = 0;
-    for (size_t index = 0; index < versions.length(); ++index) {
+    const size_t length = versions.length();
+    for (size_t index = 0; index < length; ++index) {
         const bool first =
             index == 0 || !(versions[index - 1].identity() == versions[index].identity());
         if (!first) { continue; }
@@ -85,7 +88,8 @@ size_t RelationStore::lowerBound(const RelationRecord& relation) const
     size_t high = _length;
     while (low < high) {
         const size_t middle = low + (high - low) / 2;
-        if (lessRelation(_records[middle], relation)) { low = middle + 1; } else { high = middle; }
+        const bool is_less = lessRelation(_records[middle], relation);
+        if (is_less) { low = middle + 1; } else { high = middle; }
     }
     return low;
 }
@@ -116,10 +120,13 @@ KiottySpecStatus RelationStore::writeVersion(const RelationRecord& relation, uin
 KiottySpecStatus RelationStore::add(const RelationRecord& relation, uint32_t sequence)
 {
     const size_t position = lowerBound(relation);
-    if (position < _length && sameRelation(_records[position], relation)) {
+    bool is_duplicate = false;
+    if (position < _length) { is_duplicate = sameRelation(_records[position], relation); }
+    if (is_duplicate) {
         return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_RELATION);
     }
-    if (_length == _records.size()) {
+    const size_t capacity = _records.size();
+    if (_length == capacity) {
         return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
                               literalText("max_relations"));
     }
@@ -136,7 +143,9 @@ KiottySpecStatus RelationStore::add(const RelationRecord& relation, uint32_t seq
 KiottySpecStatus RelationStore::remove(const RelationRecord& relation, uint32_t sequence)
 {
     const size_t position = lowerBound(relation);
-    if (position == _length || !sameRelation(_records[position], relation)) {
+    bool is_found = false;
+    if (position != _length) { is_found = sameRelation(_records[position], relation); }
+    if (!is_found) {
         return _failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_RELATION);
     }
     const KiottySpecStatus written = writeVersion(_records[position], 1, sequence);

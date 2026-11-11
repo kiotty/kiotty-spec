@@ -25,15 +25,16 @@ struct IdParts {
 
 IdParts splitId(Span<const char> id)
 {
-    size_t dash = id.length();
-    for (size_t index = id.length(); index > 0 && dash == id.length(); --index) {
+    const size_t length = id.length();
+    size_t dash = length;
+    for (size_t index = length; index > 0 && dash == length; --index) {
         if (id[index - 1] == '-') { dash = index - 1; }
     }
     IdParts parts {};
     parts.prefix = Span<const char>(id.data(), dash);
-    if (dash == id.length()) { return parts; }
+    if (dash == length) { return parts; }
     const auto number =
-        parseDecimal(Span<const char>(id.data() + dash + 1, id.length() - dash - 1), MAX_ID_NUMBER);
+        parseDecimal(Span<const char>(id.data() + dash + 1, length - dash - 1), MAX_ID_NUMBER);
     parts.number = number ? static_cast<uint32_t>(number.value) : 0;
     return parts;
 }
@@ -42,8 +43,11 @@ IdParts splitId(Span<const char> id)
 
 Result<uint32_t, KiottySpecStatus> ItemHistory::keyOf(Span<const char> id) const
 {
-    for (size_t index = 0; index < _t.names.length(); ++index) {
-        if (viewOf(_t.names.valueAt(index).view()) == viewOf(id)) {
+    const size_t count = _t.names.length();
+    const std::string_view wanted = viewOf(id);
+    for (size_t index = 0; index < count; ++index) {
+        const std::string_view name = viewOf(_t.names.valueAt(index).view());
+        if (name == wanted) {
             return Result<uint32_t, KiottySpecStatus>::success(_t.names.keyAt(index));
         }
     }
@@ -85,7 +89,9 @@ uint64_t ItemHistory::tagAt(uint32_t key, uint32_t tag, uint32_t checkpoint) con
 bool ItemHistory::tagsDiffer(uint32_t key, uint32_t from, uint32_t to) const
 {
     for (const TagVersion& tag : tagsOf(key)) {
-        if (tagAt(key, tag.tag, from) != tagAt(key, tag.tag, to)) { return true; }
+        const uint64_t from_value = tagAt(key, tag.tag, from);
+        const uint64_t to_value = tagAt(key, tag.tag, to);
+        if (from_value != to_value) { return true; }
     }
     return false;
 }
@@ -93,7 +99,8 @@ bool ItemHistory::tagsDiffer(uint32_t key, uint32_t from, uint32_t to) const
 Result<IdText, KiottySpecStatus> ItemHistory::nextId(Span<const char> prefix) const
 {
     uint32_t largest = 0;
-    for (size_t index = 0; index < _t.names.length(); ++index) {
+    const size_t count = _t.names.length();
+    for (size_t index = 0; index < count; ++index) {
         const IdParts parts = splitId(_t.names.valueAt(index).view());
         const bool same = viewOf(parts.prefix) == viewOf(prefix);
         if (same && parts.number > largest) { largest = parts.number; }
@@ -141,7 +148,8 @@ void ItemHistory::prune(uint32_t base)
     _t.tag_versions.prune(base);
     for (size_t index = _t.names.length(); index > 0; --index) {
         const uint32_t key = _t.names.keyAt(index - 1);
-        if (_t.versions.latest(key, UINT32_MAX) != nullptr) { continue; }
+        const bool has_version = _t.versions.latest(key, UINT32_MAX) != nullptr;
+        if (has_version) { continue; }
         _t.bodies.erase(key);
         _t.names.erase(key);
     }
