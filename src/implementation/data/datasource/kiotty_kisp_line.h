@@ -14,7 +14,7 @@ constexpr size_t MAX_KISP_FIELDS = 10;
 // .kisp 한 줄의 필드. 값은 KispLineDecoder 의 영역을 가리킨다.
 struct KispFields
 {
-    Span<const char> values[MAX_KISP_FIELDS];
+    Span<const char> values[MAX_KISP_FIELDS] {};
     size_t count {0};
 };
 

@@ -14,12 +14,12 @@
 namespace kiotty::spec::implementation {
 
 struct RelationDiffRow {
-    entity::IdText from_id;
-    entity::IdText to_id;
-    uint32_t checkpoint;
-    uint32_t relation;
-    uint32_t model;
-    uint32_t change;
+    entity::IdText from_id {};
+    entity::IdText to_id {};
+    uint32_t checkpoint {};
+    uint32_t relation {};
+    uint32_t model {};
+    uint32_t change {};
 };
 
 // 두 체크포인트 사이에 생기거나 없어진 관계 (설계서 v1 5.4). 모델 Kind 순이다.
@@ -44,7 +44,7 @@ private:
     RelationStore& _relations;
     DiffRange _range;
     uint32_t _kind_mask;
-    Span<const uint32_t> _firsts;
+    Span<const uint32_t> _firsts {};
     size_t _position {0};
     RelationDiffRow _current {};
 };

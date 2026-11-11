@@ -37,7 +37,7 @@ using CursorId = uint64_t;
 // 커서 하나의 슬롯과 행 영역. 글자 diff 처럼 행 영역을 바이트로 쓰는 커서가 쓴다.
 struct CursorSpace {
     CursorSlot* slot {nullptr};
-    Span<CursorRow> rows;
+    Span<CursorRow> rows {};
 };
 using CursorIdResult = Result<CursorId, KiottySpecStatus>;
 using CursorRowsResult = Result<Span<const CursorRow>, KiottySpecStatus>;

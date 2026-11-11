@@ -35,7 +35,7 @@ private:
 
     SpecTables _t;
     TextBuffer& _work;
-    SystemPath _database;
+    SystemPath _database {};
     uint64_t _hash {EMPTY_KISP_HASH};
 };
 

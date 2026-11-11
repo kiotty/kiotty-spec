@@ -117,7 +117,7 @@ CursorIdResult Differ::items(DiffRange range, uint32_t kind_mask, uint32_t field
     Result<bool, KiottySpecStatus> next = status == KIOTTY_SPEC_STATUS_SUCCESS ? query.next() : Result<bool, KiottySpecStatus>::failure(status);
     for (; next && next.value && status == KIOTTY_SPEC_STATUS_SUCCESS; next = query.next()) {
         const ItemDiffRow& diff = query.current();
-        CursorRow row;
+        CursorRow row {};
         row.first = packIdWord(diff.id, 0);
         row.second = packIdWord(diff.id, PACKED_ID_WORD_BYTES);
         row.third = diff.before | (static_cast<uint64_t>(diff.after) << SHIFT);
@@ -139,7 +139,7 @@ CursorIdResult Differ::relations(DiffRange range, uint32_t kind_mask)
     Result<bool, KiottySpecStatus> next = status == KIOTTY_SPEC_STATUS_SUCCESS ? query.next() : Result<bool, KiottySpecStatus>::failure(status);
     for (; next && next.value && status == KIOTTY_SPEC_STATUS_SUCCESS; next = query.next()) {
         const RelationDiffRow& diff = query.current();
-        CursorRow row;
+        CursorRow row {};
         row.first = packIdWord(diff.from_id, 0);
         row.second = packIdWord(diff.from_id, PACKED_ID_WORD_BYTES);
         row.third = packIdWord(diff.to_id, 0);

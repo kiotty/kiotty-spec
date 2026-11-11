@@ -43,7 +43,7 @@ CursorIdResult Finder::items(uint32_t kind, Span<const TagQuery> queries)
             }
         }
         if (!selected) { continue; }
-        CursorRow row;
+        CursorRow row {};
         row.first = packHandle(handle);
         const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
         if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return closeWith(_cursors, cursor.value, pushed); }
@@ -59,7 +59,7 @@ CursorIdResult Finder::children(ItemHandle parent)
         const ItemHandle handle = _w.items.reader().handleInIdOrder(position);
         const auto item = _w.items.reader().get(handle);
         if (!item || !item.value->parent.isValid() || item.value->parent.index != parent.index) { continue; }
-        CursorRow row;
+        CursorRow row {};
         row.first = packHandle(handle);
         const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
         if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return closeWith(_cursors, cursor.value, pushed); }
@@ -91,7 +91,7 @@ CursorIdResult Finder::impact(ItemHandle item, uint32_t depth)
     for (size_t position = 0; position < _w.items.reader().count(); ++position) {
         const ItemHandle handle = _w.items.reader().handleInIdOrder(position);
         if (handle.index == item.index || _visited[handle.index] == 0) { continue; }
-        CursorRow row;
+        CursorRow row {};
         row.first = packHandle(handle);
         const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
         if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return closeWith(_cursors, cursor.value, pushed); }
@@ -107,7 +107,7 @@ CursorIdResult Finder::relations(ItemHandle item, KiottySpecDirection direction)
     const bool down = direction == KIOTTY_SPEC_DIRECTION_DOWNSTREAM || direction == KIOTTY_SPEC_DIRECTION_BOTH;
     for (const RelationRecord& relation : _w.relations.all()) {
         if (!((up && relation.from.index == item.index) || (down && relation.to.index == item.index))) { continue; }
-        CursorRow row;
+        CursorRow row {};
         row.first = packHandle(relation.from);
         row.second = packHandle(relation.to);
         row.third = static_cast<uint64_t>(relation.model) | (static_cast<uint64_t>(relation.relation) << SHIFT);
@@ -126,7 +126,7 @@ CursorIdResult Finder::relationsByModel(ItemKind kind, uint32_t relation_index)
         const ItemHandle from = _w.items.reader().handleInIdOrder(position);
         for (const RelationRecord& relation : _w.relations.all()) {
             if (relation.from.index != from.index || relation.model != kind || relation.relation != relation_index) { continue; }
-            CursorRow row;
+            CursorRow row {};
             row.first = packHandle(relation.from);
             row.second = packHandle(relation.to);
             row.third = static_cast<uint64_t>(relation.model) | (static_cast<uint64_t>(relation.relation) << SHIFT);
@@ -142,7 +142,7 @@ CursorIdResult Finder::tags(ItemHandle item)
     const auto cursor = _cursors.open(CursorKind::TAG);
     if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
     for (const TagRecord& tag : _w.items.tags().of(item)) {
-        CursorRow row;
+        CursorRow row {};
         row.first = packHandle(tag.item);
         row.second = static_cast<uint64_t>(tag.model) | (static_cast<uint64_t>(tag.tag) << SHIFT);
         row.third = tag.value;

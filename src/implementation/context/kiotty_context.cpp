@@ -23,7 +23,7 @@ KiottySpecStatus writeMergeAttributes(Span<const char> directory)
     const SystemPathResult path = joinPath(directory, literalText(".gitattributes"));
     if (!path) { return path.code; }
     if (isFile(path.value.view())) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    FileWriter writer;
+    FileWriter writer {};
     const KiottySpecStatus opened = writer.open(path.value.view());
     if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return opened; }
     return writer.write(literalText("*.kisp text eol=lf merge=union\n"));
@@ -81,7 +81,7 @@ KiottySpecStatus Context::init(Span<const char> name)
     KiottySpecStatus status = _meta.set(literalText("project.name"), project);
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { status = _failure.raise(status, KIOTTY_SPEC_SUBJECT_PROJECT_NAME, project); }
     const int64_t seconds = nowEpochSeconds();
-    FixedString<MAX_EPOCH_DIGITS> now;
+    FixedString<MAX_EPOCH_DIGITS> now {};
     appendDecimal(now, seconds > 0 ? static_cast<uint64_t>(seconds) : 0);
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _meta.set(literalText("project.created_at"), now.view()); }
     return _workspace.finish(status);

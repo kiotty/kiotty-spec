@@ -77,11 +77,11 @@ public:
 
 private:
     bool _opened {false};
-    SystemPath _root;
-    entity::Failure _failure;
+    SystemPath _root {};
+    entity::Failure _failure {};
     TextBuffer _work;
-    ModelCatalog _catalog;
-    MetaStore _meta;
+    ModelCatalog _catalog {};
+    MetaStore _meta {};
     CheckpointStore _checkpoints;
     ItemStore _items;
     RelationStore _relations;

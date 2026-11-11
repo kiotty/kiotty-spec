@@ -15,7 +15,7 @@ namespace kiotty::spec::implementation {
 // 그 시점의 항목 버전 (설계서 v1 5.4 readItemAt)
 struct ItemVersionView {
     entity::ItemRecord record {};
-    entity::IdText parent_id;
+    entity::IdText parent_id {};
 };
 
 // 과거 체크포인트 시점의 항목 · 태그 · 본문 · 결정 기록을 읽는다 (설계서 v1 5.4). Differ 의 세부 클래스 (개발수칙 4.19).

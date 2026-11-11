@@ -19,15 +19,15 @@ std::optional<std::string> bodyOption(Session& session, const char* text_name, c
 
 // 항목 목록의 선택 열 (설계서 v1 8.4)
 struct Column {
-    std::string header;
+    std::string header {};
     bool is_tag {false};
     TagColumn tag {};
-    std::map<std::string, std::string> targets;
+    std::map<std::string, std::string> targets {};
 };
 
 struct ColumnPlan {
-    std::vector<Column> columns;
-    std::vector<KiottySpecTagQuery> queries;
+    std::vector<Column> columns {};
+    std::vector<KiottySpecTagQuery> queries {};
 };
 
 std::optional<ColumnPlan> planColumns(Session& session, KiottySpecItemKind kind);

@@ -11,8 +11,8 @@ constexpr size_t MAX_HUNKS = MAX_POINTS * 2 + 1;
 
 // 글자마다 시작 바이트. starts[count] 는 끝 바이트
 struct Points {
-    uint16_t starts[MAX_POINTS + 1];
-    size_t count;
+    uint16_t starts[MAX_POINTS + 1] {};
+    size_t count {};
 };
 
 bool splitPoints(Span<const char> text, Points& points)
@@ -42,16 +42,16 @@ bool samePoint(Span<const char> before, const Points& a, size_t i, Span<const ch
 
 // 같은 구간이면 before 와 after 의 길이가 같다. 편집이면 둘 중 하나가 0 일 수 있다.
 struct Hunk {
-    bool edit;
-    uint16_t before_start;
-    uint16_t before_end;
-    uint16_t after_start;
-    uint16_t after_end;
+    bool edit {};
+    uint16_t before_start {};
+    uint16_t before_end {};
+    uint16_t after_start {};
+    uint16_t after_end {};
 };
 
 struct Hunks {
-    Hunk items[MAX_HUNKS];
-    size_t count;
+    Hunk items[MAX_HUNKS] {};
+    size_t count {};
 
     void add(bool edit, size_t before_start, size_t before_end, size_t after_start, size_t after_end)
     {

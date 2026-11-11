@@ -7,12 +7,12 @@ namespace kiotty::cli {
 
 std::optional<ColumnPlan> planColumns(Session& session, KiottySpecItemKind kind)
 {
-    ColumnPlan plan;
+    ColumnPlan plan {};
     auto addTag = [&](const TagColumn& tag) {
         for (const Column& column : plan.columns) {
             if (column.is_tag && column.tag.index == tag.index) { return; }
         }
-        Column column;
+        Column column {};
         column.header = tag.definition.name;
         column.is_tag = true;
         column.tag = tag;
@@ -40,7 +40,7 @@ std::optional<ColumnPlan> planColumns(Session& session, KiottySpecItemKind kind)
             if (KiottySpec_readTagDefinition(session.context, kind, index, &tag.definition).code == KIOTTY_SPEC_STATUS_SUCCESS) { addTag(tag); }
         }
     }
-    std::vector<uint32_t> relations;
+    std::vector<uint32_t> relations {};
     for (const std::string& name : session.args.all("relation")) {
         const auto relation = findRelation(session, kind, name);
         if (!relation) { return std::nullopt; }
@@ -50,7 +50,7 @@ std::optional<ColumnPlan> planColumns(Session& session, KiottySpecItemKind kind)
         for (uint32_t index = 0; index < model.value.relation_count; ++index) { relations.push_back(index); }
     }
     for (const uint32_t relation : relations) {
-        Column column;
+        Column column {};
         column.header = KiottySpec_readRelationDefinition(session.context, kind, relation).value.name;
         const KiottySpecCursorResult cursor = KiottySpec_openRelationCursorByModel(session.context, kind, relation);
         if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) {

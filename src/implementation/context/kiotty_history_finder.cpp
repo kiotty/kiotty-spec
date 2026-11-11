@@ -29,7 +29,7 @@ CursorIdResult HistoryFinder::checkpoints(uint32_t step)
     for (uint32_t sequence = 1; sequence <= _w.checkpoints.latest(); ++sequence) {
         const CheckpointRecord* record = _w.checkpoints.at(sequence);
         if (record == nullptr || (step != 0 && static_cast<uint32_t>(record->step) != step)) { continue; }
-        CursorRow row;
+        CursorRow row {};
         row.number = sequence;
         const KiottySpecStatus pushed = pushRow(_cursors, _w.failure, cursor.value, row);
         if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return closeWith(_cursors, cursor.value, pushed); }
@@ -41,7 +41,7 @@ CursorIdResult HistoryFinder::stepRuns()
 {
     const auto cursor = _cursors.open(CursorKind::STEP_RUN);
     if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
-    CursorRow run;
+    CursorRow run {};
     uint32_t step = 0;
     for (uint32_t sequence = 1; sequence <= _w.checkpoints.latest() + 1; ++sequence) {
         const CheckpointRecord* record = sequence <= _w.checkpoints.latest() ? _w.checkpoints.at(sequence) : nullptr;
@@ -83,7 +83,7 @@ CursorIdResult HistoryFinder::unmetConditions()
 
 Result<Position, KiottySpecStatus> HistoryFinder::position()
 {
-    Position position;
+    Position position {};
     position.open_change_requests = _checker.openChangeRequestCount();
     const uint32_t latest = _w.checkpoints.latest();
     const CheckpointRecord* record = _w.checkpoints.at(latest);

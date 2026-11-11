@@ -22,23 +22,23 @@ struct ItemVersion
 {
     using Identity = uint32_t;
 
-    uint64_t body_hash;
-    uint32_t key;
-    uint32_t checkpoint;
-    uint32_t parent;
-    uint32_t removed;
-    ItemKind kind;
-    uint32_t _padding;
-    TitleText title;
-    SummaryText summary;
+    uint64_t body_hash {};
+    uint32_t key {};
+    uint32_t checkpoint {};
+    uint32_t parent {};
+    uint32_t removed {};
+    ItemKind kind {};
+    uint32_t _padding {};
+    TitleText title {};
+    SummaryText summary {};
 
     Identity identity() const { return key; }
 };
 
 struct TagIdentity
 {
-    uint32_t key;
-    uint32_t tag;
+    uint32_t key {};
+    uint32_t tag {};
 
     bool operator<(const TagIdentity& other) const { return key != other.key ? key < other.key : tag < other.tag; }
     bool operator==(const TagIdentity& other) const { return key == other.key && tag == other.tag; }
@@ -48,11 +48,11 @@ struct TagVersion
 {
     using Identity = TagIdentity;
 
-    uint64_t value;
-    uint32_t key;
-    uint32_t tag;
-    uint32_t checkpoint;
-    uint32_t removed;
+    uint64_t value {};
+    uint32_t key {};
+    uint32_t tag {};
+    uint32_t checkpoint {};
+    uint32_t removed {};
 
     Identity identity() const { return TagIdentity{key, tag}; }
 };
@@ -60,9 +60,9 @@ struct TagVersion
 // "from 의 (relation) 은 to 다"
 struct RelationIdentity
 {
-    uint32_t from;
-    uint32_t relation;
-    uint32_t to;
+    uint32_t from {};
+    uint32_t relation {};
+    uint32_t to {};
 
     bool operator<(const RelationIdentity& other) const
     {
@@ -77,12 +77,12 @@ struct RelationVersion
 {
     using Identity = RelationIdentity;
 
-    uint32_t from;
-    uint32_t relation;
-    uint32_t to;
-    uint32_t checkpoint;
-    uint32_t removed;
-    ItemKind model;
+    uint32_t from {};
+    uint32_t relation {};
+    uint32_t to {};
+    uint32_t checkpoint {};
+    uint32_t removed {};
+    ItemKind model {};
 
     Identity identity() const { return RelationIdentity{from, relation, to}; }
 };
@@ -91,10 +91,10 @@ struct DecisionVersion
 {
     using Identity = uint32_t;
 
-    ItemKind kind;
-    uint32_t checkpoint;
-    uint32_t removed;
-    DecisionVersionText text;
+    ItemKind kind {};
+    uint32_t checkpoint {};
+    uint32_t removed {};
+    DecisionVersionText text {};
 
     Identity identity() const { return static_cast<uint32_t>(kind); }
 };

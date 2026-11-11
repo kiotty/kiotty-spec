@@ -24,7 +24,7 @@ bool isFlag(std::string_view name)
 
 std::vector<std::string> split(std::string_view text, char separator)
 {
-    std::vector<std::string> parts;
+    std::vector<std::string> parts {};
     size_t start = 0;
     while (start <= text.size()) {
         size_t end = text.find(separator, start);
@@ -144,7 +144,7 @@ std::string describeFailure(Session& session, const KiottySpecError& error)
 
 std::optional<std::string> Arguments::option(std::string_view name) const
 {
-    std::optional<std::string> found;
+    std::optional<std::string> found {};
     for (const auto& [key, value] : options) {
         if (key == name) { found = value; }
     }
@@ -153,7 +153,7 @@ std::optional<std::string> Arguments::option(std::string_view name) const
 
 std::vector<std::string> Arguments::all(std::string_view name) const
 {
-    std::vector<std::string> values;
+    std::vector<std::string> values {};
     for (const auto& [key, value] : options) {
         if (key == name) { values.push_back(value); }
     }
@@ -170,7 +170,7 @@ bool Arguments::flag(std::string_view name) const
 
 Arguments parseArguments(const std::vector<std::string>& tokens, size_t first, const std::vector<std::string_view>& extra_flags)
 {
-    Arguments args;
+    Arguments args {};
     for (size_t index = first; index < tokens.size(); ++index) {
         const std::string& token = tokens[index];
         if (token.size() > 2 && token.compare(0, 2, "--") == 0) {
@@ -214,7 +214,7 @@ std::string stateName(KiottySpecCheckpointState state) { return KiottySpec_forma
 // 설계서 v1 12 #9. 탭은 공백, 줄바꿈은 \n 두 글자
 std::string cell(std::string_view value)
 {
-    std::string text;
+    std::string text {};
     text.reserve(value.size());
     for (const char letter : value) {
         if (letter == '\t') {
@@ -230,7 +230,7 @@ std::string cell(std::string_view value)
 
 void printRow(const std::vector<std::string>& cells)
 {
-    std::string line;
+    std::string line {};
     for (size_t index = 0; index < cells.size(); ++index) {
         if (index > 0) { line += '\t'; }
         line += cells[index];
@@ -264,7 +264,7 @@ std::optional<std::string> readFileText(const std::string& path)
 {
     std::ifstream stream(pathFromUtf8(path), std::ios::binary);
     if (!stream) { return std::nullopt; }
-    std::ostringstream content;
+    std::ostringstream content {};
     content << stream.rdbuf();
     return content.str();
 }
@@ -273,7 +273,7 @@ std::optional<KiottySpecItemKind> kindArgument(Session& session, std::string_vie
 {
     const KiottySpecItemKind kind = KiottySpec_parseKind(textOf(text));
     if (kind != 0) { return kind; }
-    std::string names;
+    std::string names {};
     for (uint32_t value = 1; !kindName(static_cast<KiottySpecItemKind>(value)).empty(); ++value) {
         const KiottySpecItemKind candidate = static_cast<KiottySpecItemKind>(value);
         const KiottySpecModelResult model = KiottySpec_readModel(session.context, candidate);
@@ -296,7 +296,7 @@ std::string itemId(Session& session, KiottySpecItemHandle handle)
 std::optional<TagColumn> findTag(Session& session, KiottySpecItemKind kind, std::string_view name)
 {
     const KiottySpecModelResult model = KiottySpec_readModel(session.context, kind);
-    std::string names;
+    std::string names {};
     for (uint32_t index = 0; model.code == KIOTTY_SPEC_STATUS_SUCCESS && index < model.value.tag_count; ++index) {
         TagColumn column {index, {}};
         if (KiottySpec_readTagDefinition(session.context, kind, index, &column.definition).code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
@@ -310,7 +310,7 @@ std::optional<TagColumn> findTag(Session& session, KiottySpecItemKind kind, std:
 std::optional<uint32_t> findRelation(Session& session, KiottySpecItemKind kind, std::string_view name)
 {
     const KiottySpecModelResult model = KiottySpec_readModel(session.context, kind);
-    std::string names;
+    std::string names {};
     for (uint32_t index = 0; model.code == KIOTTY_SPEC_STATUS_SUCCESS && index < model.value.relation_count; ++index) {
         const KiottySpecRelationDefinitionResult definition = KiottySpec_readRelationDefinition(session.context, kind, index);
         if (definition.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
@@ -334,7 +334,7 @@ std::optional<uint64_t> parseBits(const KiottySpecTagDefinition& definition, std
             }
         }
         if (!found) {
-            std::string known;
+            std::string known {};
             for (size_t bit = 0; bit < KIOTTY_SPEC_TAG_BIT_COUNT; ++bit) {
                 if (definition.bit_names[bit][0] != '\0') { known += (known.empty() ? "" : ", ") + std::string(definition.bit_names[bit]); }
             }
@@ -347,7 +347,7 @@ std::optional<uint64_t> parseBits(const KiottySpecTagDefinition& definition, std
 
 std::string bitNames(const KiottySpecTagDefinition& definition, uint64_t value)
 {
-    std::string text;
+    std::string text {};
     for (size_t bit = 0; bit < KIOTTY_SPEC_TAG_BIT_COUNT; ++bit) {
         if ((value & (uint64_t{1} << bit)) == 0) { continue; }
         if (!text.empty()) { text += '|'; }

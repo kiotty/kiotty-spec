@@ -56,9 +56,9 @@ public:
     uint64_t hash() const { return _hash; }
 
 private:
-    FileWriter _file;
-    SystemPath _path;
-    SystemPath _temporary;
+    FileWriter _file {};
+    SystemPath _path {};
+    SystemPath _temporary {};
     uint64_t _hash {EMPTY_KISP_HASH};
     bool _open {false};
 };

@@ -28,7 +28,7 @@ SystemPathResult absolutePath(Span<const char> path) { return platform::absolute
 
 SystemPathResult joinPath(Span<const char> base, Span<const char> part)
 {
-    SystemPath joined;
+    SystemPath joined {};
     const KiottySpecStatus copied = appendSlashed(joined, base);
     if (copied != KIOTTY_SPEC_STATUS_SUCCESS) { return SystemPathResult::failure(copied); }
     if (part.length() == 0) { return SystemPathResult::success(joined); }

@@ -11,8 +11,8 @@ struct Result
     static_assert(std::is_enum<Code>::value, "Code must be an enum class");
     static_assert(std::is_default_constructible<Value>::value, "Value must be default constructible");
 
-    Code code;
-    Value value;
+    Code code {};
+    Value value {};
 
     explicit operator bool() const { return code == Code{}; }
 
@@ -25,8 +25,8 @@ struct Result<Value&, Code>
 {
     static_assert(std::is_enum<Code>::value, "Code must be an enum class");
 
-    Code code;
-    Value* value;
+    Code code {};
+    Value* value {};
 
     explicit operator bool() const { return code == Code{}; }
 

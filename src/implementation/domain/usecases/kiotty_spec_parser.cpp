@@ -114,7 +114,7 @@ KiottySpecStatus SpecParser::parseItem(const KispFields& fields)
     if (fields.count != ITEM_FIELDS) { return invalid(_t.failure, ITEM_TABLE); }
     const auto key = parseKey(fields.values[2]);
     if (!key || entity::validateItemId(fields.values[3]) != KIOTTY_SPEC_STATUS_SUCCESS) { return invalid(_t.failure, ITEM_TABLE); }
-    entity::IdText id;
+    entity::IdText id {};
     id.assign(fields.values[3]);
     const KiottySpecStatus inserted = _t.items.tables().names.insert(key.value, id);
     if (inserted == KIOTTY_SPEC_STATUS_CONFLICT) { return _t.failure.raise(inserted, KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE, fields.values[2]); }

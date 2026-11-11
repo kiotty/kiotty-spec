@@ -19,7 +19,7 @@ constexpr size_t MIN_ID_DIGITS = 3;
 constexpr uint32_t MAX_ID_NUMBER = 100000000u;
 
 struct IdParts {
-    Span<const char> prefix;
+    Span<const char> prefix {};
     uint32_t number {0};
 };
 
@@ -30,7 +30,7 @@ IdParts splitId(Span<const char> id)
     for (size_t index = id.length(); index > 0 && dash == id.length(); --index) {
         if (id[index - 1] == '-') { dash = index - 1; }
     }
-    IdParts parts;
+    IdParts parts {};
     parts.prefix = Span<const char>(id.data(), dash);
     if (dash == id.length()) { return parts; }
     const auto number = parseDecimal(Span<const char>(id.data() + dash + 1, id.length() - dash - 1), MAX_ID_NUMBER);
@@ -92,7 +92,7 @@ Result<IdText, KiottySpecStatus> ItemHistory::nextId(Span<const char> prefix) co
         const bool same = viewOf(parts.prefix) == viewOf(prefix);
         if (same && parts.number > largest) { largest = parts.number; }
     }
-    IdText id;
+    IdText id {};
     KiottySpecStatus status = id.assign(prefix);
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = id.append(literalText("-")); }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = appendDecimal(id, largest + 1, MIN_ID_DIGITS); }

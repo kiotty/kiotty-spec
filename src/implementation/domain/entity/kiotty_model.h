@@ -27,17 +27,17 @@ enum class Cardinality : uint32_t {
 // 설계서 v1 3.4. bit_names 가 빈 칸인 비트는 켤 수 없다.
 struct TagDefinition
 {
-    TagName name;
-    TagName bit_names[TAG_BIT_COUNT];
-    Cardinality cardinality;
+    TagName name {};
+    TagName bit_names[TAG_BIT_COUNT] {};
+    Cardinality cardinality {};
 };
 
 // 설계서 v1 3.5
 struct RelationDefinition
 {
-    TagName name;
-    ItemKind target_kind;
-    Cardinality cardinality;
+    TagName name {};
+    ItemKind target_kind {};
+    Cardinality cardinality {};
 };
 
 static_assert(sizeof(TagDefinition) == 3140, "unexpected padding");
@@ -46,12 +46,12 @@ static_assert(sizeof(RelationDefinition) == 72, "unexpected padding");
 // 설계서 v1 3.3. 정의 배열은 ModelCatalog 가 갖고, 모델은 그 일부를 가리킨다.
 struct Model
 {
-    ItemKind kind;
-    ModelName name;
-    IdText id_prefix;
-    Step created_in;
-    Span<const TagDefinition> tags;
-    Span<const RelationDefinition> relations;
+    ItemKind kind {};
+    ModelName name {};
+    IdText id_prefix {};
+    Step created_in {};
+    Span<const TagDefinition> tags {};
+    Span<const RelationDefinition> relations {};
 };
 
 }

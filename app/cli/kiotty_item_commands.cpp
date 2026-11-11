@@ -145,7 +145,7 @@ int listItems(Session& session)
     const bool wants_columns = !session.args.all("tag").empty() || !session.args.all("relation").empty() || session.args.flag("tags") ||
                                session.args.flag("relations");
     if (kind == 0 && wants_columns) { return usage("--tag · --relation 은 --kind 와 함께 쓴다"); }
-    std::optional<ColumnPlan> plan;
+    std::optional<ColumnPlan> plan {};
     if (kind != 0) {
         plan = planColumns(session, kind);
         if (!plan) { return 2; }

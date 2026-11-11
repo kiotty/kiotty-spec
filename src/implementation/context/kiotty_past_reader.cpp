@@ -28,7 +28,7 @@ Result<ItemVersionView, KiottySpecStatus> PastReader::itemAt(Span<const char> id
     const auto version = versionAt(id, checkpoint);
     if (!version) { return ViewResult::failure(version.code); }
     const ItemVersion& found = *version.value;
-    ItemVersionView view;
+    ItemVersionView view {};
     view.record.checkpoint = entity::CheckpointHandle{_w.items.history().lastWriteAt(found.key, checkpoint), 0};
     view.record.kind = found.kind;
     view.record.parent = entity::INVALID_ITEM_HANDLE;

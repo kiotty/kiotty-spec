@@ -33,7 +33,7 @@ bool isLetter(char letter) { return (letter >= 'A' && letter <= 'Z') || (letter 
 
 WidePathResult widen(Span<const char> path)
 {
-    WidePath wide;
+    WidePath wide {};
     if (path.length() == 0) { return WidePathResult::success(wide); }
     const int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path.data(), static_cast<int>(path.length()), wide.text,
                                            static_cast<int>(MAX_SYSTEM_PATH_LENGTH));
@@ -51,7 +51,7 @@ SystemPathResult narrow(const wchar_t* wide)
     const int length = WideCharToMultiByte(CP_UTF8, 0, wide, -1, buffer, static_cast<int>(MAX_SYSTEM_PATH_LENGTH), nullptr, nullptr);
     if (length <= 0) { return SystemPathResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
     for (int index = 0; index < length - 1; ++index) { buffer[index] = isSeparator(buffer[index]) ? '/' : buffer[index]; }
-    SystemPath path;
+    SystemPath path {};
     const KiottySpecStatus copied = path.assign(Span<const char>(buffer, static_cast<size_t>(length - 1)));
     if (copied != KIOTTY_SPEC_STATUS_SUCCESS) { return SystemPathResult::failure(copied); }
     return SystemPathResult::success(path);

@@ -16,9 +16,9 @@
 namespace kiotty::spec::implementation {
 
 struct TagQuery {
-    entity::ItemKind kind;
-    uint32_t tag;
-    uint64_t mask;
+    entity::ItemKind kind {};
+    uint32_t tag {};
+    uint64_t mask {};
 };
 
 // 목록 질의 (설계서 v1 8). 결과 행의 키를 커서 풀에 담는다. 레코드는 페이지를 받을 때 다시 읽는다.

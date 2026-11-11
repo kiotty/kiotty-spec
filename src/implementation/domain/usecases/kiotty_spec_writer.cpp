@@ -34,7 +34,7 @@ using NumberText = FixedString<MAX_NUMBER_DIGITS>;
 
 void addDecimal(KispLineEncoder& line, uint64_t number)
 {
-    NumberText text;
+    NumberText text {};
     appendDecimal(text, number);
     line.add(text.view());
 }
@@ -45,7 +45,7 @@ void addKey(KispLineEncoder& line, uint32_t key)
         line.add(spanOf(NONE_MARKER));
         return;
     }
-    NumberText text;
+    NumberText text {};
     appendHex(text, key, KEY_DIGITS);
     line.add(text.view());
 }
@@ -56,7 +56,7 @@ void addHash(KispLineEncoder& line, uint64_t hash)
         line.add(spanOf(NONE_MARKER));
         return;
     }
-    NumberText text;
+    NumberText text {};
     appendHex(text, hash, HASH_DIGITS);
     line.add(text.view());
 }

@@ -62,7 +62,7 @@ Result<IdText, KiottySpecStatus> Editor::insertItem(ItemKind kind, Span<const ch
     using IdResult = Result<IdText, KiottySpecStatus>;
     Result<IdText, KiottySpecStatus> id = IdResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     if (given.length() > 0) {
-        IdText text;
+        IdText text {};
         text.assign(given);
         id = IdResult::success(text);
     } else {
@@ -88,7 +88,7 @@ KiottySpecStatus Editor::renameItem(Span<const char> id, Span<const char> new_id
     if (!item) { return item.code; }
     const KiottySpecStatus valid = checkId(new_id);
     if (valid != KIOTTY_SPEC_STATUS_SUCCESS) { return valid; }
-    IdText next;
+    IdText next {};
     next.assign(new_id);
     return _w.finish(_w.items.writer().rename(item.value, next));
 }

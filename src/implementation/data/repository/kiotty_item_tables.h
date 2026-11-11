@@ -14,11 +14,11 @@
 namespace kiotty::spec::implementation {
 
 struct ItemCapacity {
-    size_t items;
-    size_t tags;
-    size_t versions;
-    size_t tag_versions;
-    size_t body_bytes;
+    size_t items {};
+    size_t tags {};
+    size_t versions {};
+    size_t tag_versions {};
+    size_t body_bytes {};
 };
 
 // ItemStore 가 소유하는 표 묶음. 세부 클래스는 이것을 reference 로 받는다 (개발수칙 4.19).

@@ -10,7 +10,7 @@ using entity::ItemRecord;
 
 Result<ItemHandle, KiottySpecStatus> ItemReader::find(Span<const char> id) const
 {
-    IdText key;
+    IdText key {};
     if (key.assign(id) != KIOTTY_SPEC_STATUS_SUCCESS) { return Result<ItemHandle, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
     const auto index = _t.id_index.find(key);
     if (!index) { return Result<ItemHandle, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }

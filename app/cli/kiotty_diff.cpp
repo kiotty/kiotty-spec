@@ -63,7 +63,7 @@ std::optional<KiottySpecCheckpointHandle> checkpointArgument(std::string_view te
 }
 
 struct Painter {
-    bool color;
+    bool color {};
 
     std::string added(std::string_view text) const
     {
@@ -84,8 +84,8 @@ struct Painter {
 };
 
 struct RelationChange {
-    bool added;
-    std::string to_id;
+    bool added {};
+    std::string to_id {};
 };
 
 using RelationKey = std::pair<std::string, uint32_t>;
@@ -113,7 +113,7 @@ std::string summaryDiff(Session& session, const KiottySpecItemDiff& diff, const 
     const KiottySpecDiffQuery points {range.from, range.to, 0, 0};
     const KiottySpecCursorResult cursor = KiottySpec_openTextDiffCursor(session.context, diff.item, KIOTTY_SPEC_TEXT_FIELD_SUMMARY, &points);
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return quoted(before) + " -> " + quoted(after); }
-    std::string text;
+    std::string text {};
     KiottySpecTextDiffPage page {};
     while (KiottySpec_fetchTextDiffPage(session.context, cursor.value, &page).code == KIOTTY_SPEC_STATUS_SUCCESS && page.length > 0) {
         for (size_t index = 0; index < page.length; ++index) {
@@ -154,7 +154,7 @@ int runDiff(Session& session)
     const Painter painter {!session.args.flag("no-color") && colorTerminal()};
 
     // 열: 태그와 관계 (8.4)
-    std::vector<TagColumn> tags;
+    std::vector<TagColumn> tags {};
     for (const std::string& name : session.args.all("tag")) {
         const auto tag = findTag(session, *kind, name);
         if (!tag) { return 2; }
@@ -169,7 +169,7 @@ int runDiff(Session& session)
             tags.push_back(tag);
         }
     }
-    std::vector<std::pair<uint32_t, std::string>> relations;
+    std::vector<std::pair<uint32_t, std::string>> relations {};
     for (const std::string& name : session.args.all("relation")) {
         const auto relation = findRelation(session, *kind, name);
         if (!relation) { return 2; }
@@ -181,7 +181,7 @@ int runDiff(Session& session)
             relations.emplace_back(index, KiottySpec_readRelationDefinition(session.context, *kind, index).value.name);
         }
     }
-    std::map<RelationKey, std::vector<RelationChange>> changes;
+    std::map<RelationKey, std::vector<RelationChange>> changes {};
     if (!relations.empty()) {
         const KiottySpecCursorResult cursor = KiottySpec_openRelationDiffCursor(session.context, &query);
         if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
@@ -195,7 +195,7 @@ int runDiff(Session& session)
         KiottySpec_closeCursor(session.context, cursor.value);
     }
 
-    std::vector<KiottySpecItemDiff> diffs;
+    std::vector<KiottySpecItemDiff> diffs {};
     const KiottySpecCursorResult cursor = KiottySpec_openItemDiffCursor(session.context, &query);
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
     KiottySpecItemDiffPage page {};
@@ -243,7 +243,7 @@ int runDiff(Session& session)
             }
             for (const auto& relation : relations) {
                 const auto found = changes.find({diff.id, relation.first});
-                std::string text;
+                std::string text {};
                 if (found != changes.end()) {
                     for (const RelationChange& change : found->second) {
                         if (!modified) {

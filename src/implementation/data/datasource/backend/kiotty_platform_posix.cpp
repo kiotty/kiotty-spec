@@ -20,7 +20,7 @@ constexpr mode_t DIRECTORY_MODE = 0777;
 
 bool statOf(Span<const char> path, struct stat& status)
 {
-    SystemPath terminated;
+    SystemPath terminated {};
     return terminated.assign(path) == KIOTTY_SPEC_STATUS_SUCCESS && ::stat(terminated.c_str(), &status) == 0;
 }
 
@@ -45,7 +45,7 @@ SystemPathResult absolutePath(Span<const char> path)
 
 int openFile(Span<const char> path, OpenMode mode)
 {
-    SystemPath terminated;
+    SystemPath terminated {};
     if (terminated.assign(path) != KIOTTY_SPEC_STATUS_SUCCESS) { return -1; }
     const int flags = mode == OpenMode::READ ? O_RDONLY : (O_WRONLY | O_CREAT | O_TRUNC);
     return ::open(terminated.c_str(), flags, FILE_MODE);
@@ -59,7 +59,7 @@ void closeFile(int descriptor) { ::close(descriptor); }
 
 bool makeDirectory(Span<const char> path)
 {
-    SystemPath terminated;
+    SystemPath terminated {};
     if (terminated.assign(path) != KIOTTY_SPEC_STATUS_SUCCESS) { return false; }
     return ::mkdir(terminated.c_str(), DIRECTORY_MODE) == 0 || errno == EEXIST;
 }
@@ -78,15 +78,15 @@ bool isFile(Span<const char> path)
 
 KiottySpecStatus removeFile(Span<const char> path)
 {
-    SystemPath terminated;
+    SystemPath terminated {};
     if (terminated.assign(path) != KIOTTY_SPEC_STATUS_SUCCESS) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
     return ::remove(terminated.c_str()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 }
 
 KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
 {
-    SystemPath source;
-    SystemPath target;
+    SystemPath source {};
+    SystemPath target {};
     if (source.assign(from) != KIOTTY_SPEC_STATUS_SUCCESS || target.assign(to) != KIOTTY_SPEC_STATUS_SUCCESS) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
     return ::rename(source.c_str(), target.c_str()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 }

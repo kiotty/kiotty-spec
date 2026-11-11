@@ -27,7 +27,7 @@ public:
 
 private:
     Span<char> _buffer;
-    Span<const char> _line;
+    Span<const char> _line {};
     int _descriptor {-1};
     size_t _start {0};
     size_t _end {0};

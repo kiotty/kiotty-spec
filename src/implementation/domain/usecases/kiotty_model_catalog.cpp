@@ -34,26 +34,26 @@ using entity::Step;
 
 struct ModelSource
 {
-    ItemKind kind;
-    const char* name;
-    const char* id_prefix;
-    Step created_in;
+    ItemKind kind {};
+    const char* name {};
+    const char* id_prefix {};
+    Step created_in {};
 };
 
 struct TagSource
 {
-    ItemKind kind;
-    const char* name;
-    Cardinality cardinality;
-    const char* bits[entity::TAG_BIT_COUNT];
+    ItemKind kind {};
+    const char* name {};
+    Cardinality cardinality {};
+    const char* bits[entity::TAG_BIT_COUNT] {};
 };
 
 struct RelationSource
 {
-    ItemKind kind;
-    const char* name;
-    ItemKind target_kind;
-    Cardinality cardinality;
+    ItemKind kind {};
+    const char* name {};
+    ItemKind target_kind {};
+    Cardinality cardinality {};
 };
 
 // 설계서 v1 3.1. Kind 값 순서다.

@@ -38,7 +38,7 @@ char escapeOf(char letter)
 Result<KispFields, KiottySpecStatus> KispLineDecoder::decode(Span<const char> line) const
 {
     using FieldsResult = Result<KispFields, KiottySpecStatus>;
-    KispFields fields;
+    KispFields fields {};
     size_t written = 0;
     size_t start = 0;
     size_t index = 0;

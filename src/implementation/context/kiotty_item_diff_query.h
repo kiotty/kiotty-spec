@@ -13,12 +13,12 @@
 namespace kiotty::spec::implementation {
 
 struct ItemDiffRow {
-    entity::IdText id;
-    uint32_t before;
-    uint32_t after;
-    uint32_t kind;
-    uint32_t change;
-    uint32_t fields;
+    entity::IdText id {};
+    uint32_t before {};
+    uint32_t after {};
+    uint32_t kind {};
+    uint32_t change {};
+    uint32_t fields {};
 };
 
 // 두 체크포인트 사이에 추가 · 삭제 · 수정된 항목 (설계서 v1 5.4). Kind 순, ID 순이다.
@@ -44,7 +44,7 @@ private:
     DiffRange _range;
     uint32_t _kind_mask;
     uint32_t _field_mask;
-    Span<const uint32_t> _keys;
+    Span<const uint32_t> _keys {};
     size_t _position {0};
     ItemDiffRow _current {};
 };

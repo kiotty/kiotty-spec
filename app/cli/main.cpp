@@ -32,7 +32,7 @@ std::string findRoot(const Arguments& args)
 {
     if (const auto root = args.option("root")) { return *root; }
     if (const auto env = environment("KIOTTY_SPEC_ROOT"); !env.empty()) { return env; }
-    std::error_code error;
+    std::error_code error {};
     const auto current = std::filesystem::current_path(error);
     for (auto probe = current; !probe.empty(); probe = probe.parent_path()) {
         if (std::filesystem::is_directory(probe / ".kiotty", error)) { return pathToUtf8(probe); }
@@ -89,7 +89,7 @@ int run(const std::vector<std::string>& tokens)
     size_t consumed = 0;
     const CommandEntry* command = findCommand(tokens, consumed);
     if (command == nullptr) { return usage("알 수 없는 명령 '" + tokens[0] + (tokens.size() > 1 ? " " + tokens[1] : "") + "'. `ks help` 참고"); }
-    Session session;
+    Session session {};
     const bool diff = std::string_view(command->group) == "diff";
     session.args = parseArguments(tokens, consumed, diff ? DIFF_FLAGS : std::vector<std::string_view>());
     if (session.args.flag("help")) {
@@ -115,7 +115,7 @@ int wmain(int argc, wchar_t** argv)
 {
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
-    std::vector<std::string> tokens;
+    std::vector<std::string> tokens {};
     for (int index = 1; index < argc; ++index) {
         const int size = WideCharToMultiByte(CP_UTF8, 0, argv[index], -1, nullptr, 0, nullptr, nullptr);
         std::string token(static_cast<size_t>(size > 0 ? size - 1 : 0), '\0');

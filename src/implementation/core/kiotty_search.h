@@ -18,7 +18,7 @@ struct IndexRange {
 template <typename Element, typename Match>
 Result<IndexRange, KiottySpecStatus> contiguousRange(Span<const Element> elements, Match match)
 {
-    IndexRange range;
+    IndexRange range {};
     bool found = false;
     for (size_t index = 0; index < elements.length(); ++index) {
         if (!match(elements[index])) { continue; }

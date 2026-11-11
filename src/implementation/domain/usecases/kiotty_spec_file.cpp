@@ -19,8 +19,8 @@ constexpr char COMMENT = '#';
 constexpr char FIELD_SEPARATOR = '\t';
 
 struct WorkAreas {
-    Span<char> buffer;
-    Span<char> line;
+    Span<char> buffer {};
+    Span<char> line {};
 };
 
 WorkAreas split(TextBuffer& work)
@@ -123,7 +123,7 @@ KiottySpecStatus SpecFile::save()
     const KiottySpecStatus unchanged = checkUnchanged();
     if (unchanged != KIOTTY_SPEC_STATUS_SUCCESS) { return unchanged; }
     const WorkAreas areas = split(_work);
-    KispFileWriter file;
+    KispFileWriter file {};
     KiottySpecStatus status = file.open(_database.view());
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return _t.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE, _database.view()); }
     status = SpecWriter(_t, file, areas.line).write();

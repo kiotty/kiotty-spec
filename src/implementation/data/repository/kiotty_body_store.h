@@ -13,8 +13,8 @@ namespace kiotty::spec::implementation {
 
 // 본문이 놓인 자리
 struct BodySlice {
-    size_t offset;
-    size_t length;
+    size_t offset {};
+    size_t length {};
 };
 
 // 항목 key 마다 현재 본문을 둔다. 바이트 영역과 자리 표는 초기화 때 한 번 확보한다 (개발수칙 1.1).
