@@ -1,4 +1,3 @@
-// ks diff (설계서 v1 5.4 "ks 출력"). 색은 이 output 층만 안다.
 
 #include "kiotty_session.h"
 
@@ -38,7 +37,6 @@ bool colorTerminal()
 #endif
 }
 
-// 탭은 공백, 줄바꿈은 \n 두 글자. 빈 값을 - 로 바꾸지 않는다.
 std::string plain(std::string_view text)
 {
     std::string value = cell(text);
@@ -154,7 +152,6 @@ int runDiff(Session& session)
     if (range.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, range.code); }
     const Painter painter {!session.args.flag("no-color") && colorTerminal()};
 
-    // 열: 태그와 관계 (8.4)
     std::vector<TagColumn> tags {};
     for (const std::string& name : session.args.all("tag")) {
         const auto tag = findTag(session, *kind, name);

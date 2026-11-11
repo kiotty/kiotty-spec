@@ -22,8 +22,6 @@ struct RelationDiffRow {
     uint32_t change {};
 };
 
-// 두 체크포인트 사이에 생기거나 없어진 관계 (설계서 v1 5.4). 모델 Kind 순이다.
-// open 한 뒤 next 가 true 인 동안 current() 를 읽는다.
 class RelationDiffQuery
 {
 public:
@@ -37,7 +35,6 @@ public:
     const RelationDiffRow& current() const { return _current; }
 
 private:
-    // first 에서 시작하는 관계가 diff 이면 _current 에 담고 true
     bool decode(uint32_t first);
 
     ItemStore& _items;

@@ -12,8 +12,6 @@
 
 namespace kiotty::spec::implementation {
 
-// CheckpointStore 의 쓰는 쪽 (개발수칙 4.19). 멤버는 CheckpointStore 가 소유하고 여기서는 reference 만 든다.
-// 풀만 고친다. 파일에 옮기는 일은 호출자가 한다.
 class CheckpointWriter
 {
 public:
@@ -24,7 +22,6 @@ public:
 
     Result<uint32_t, KiottySpecStatus> create(entity::Step step, Span<const char> description, int64_t created_at);
     KiottySpecStatus setState(uint32_t sequence, entity::CheckpointState state);
-    // base 이전의 체크포인트를 지우고 base 의 previous 를 비운다. 버전 정리는 Lifecycle 이 store 마다 맡긴다.
     Result<size_t, KiottySpecStatus> dropBefore(uint32_t base);
 
 private:

@@ -31,13 +31,6 @@ public:
         return Result<Element&, KiottySpecStatus>::success(_data[index]);
     }
 
-    KiottySpecStatus copyFrom(Span<const Element> source) const
-    {
-        if (source.length() > _length) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-        for (size_t index = 0; index < source.length(); ++index) { _data[index] = source[index]; }
-        return KIOTTY_SPEC_STATUS_SUCCESS;
-    }
-
 private:
     Element* _data;
     size_t _length;

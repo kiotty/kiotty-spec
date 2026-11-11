@@ -18,7 +18,6 @@ struct TextPiece {
     uint32_t change {0};
 };
 
-// 제목 · 요약의 글자 diff 커서 (설계서 v1 5.4). Differ 의 세부 클래스 (개발수칙 4.19). LCS 표는 작업 버퍼를 빌린다.
 class TextDiffer
 {
 public:

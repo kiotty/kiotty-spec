@@ -11,14 +11,11 @@
 
 namespace kiotty::spec::implementation {
 
-// .kisp 한 줄을 store 의 버전 표에 넣는다. 태그 · 관계 · Kind 는 이름으로 적혀 있어 모델 표에서 index 를 찾는다.
-// SpecFile 의 세부 클래스 (개발수칙 4.19). 실패하면 이유를 남긴다.
 class SpecParser
 {
 public:
     explicit SpecParser(const SpecTables& tables) : _t(tables) {}
 
-    // TABLE 머리줄은 건너뛴다.
     KiottySpecStatus parse(const KispFields& fields);
 
 private:

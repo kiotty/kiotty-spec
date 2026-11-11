@@ -27,21 +27,18 @@ struct KindCounts {
     bool has_decision_change {false};
 };
 
-// 체크포인트 사이 비교 (설계서 v1 5.4). 버전 행만 읽고 본문 내용은 돌려주지 않는다.
 class Differ
 {
 public:
     Differ(Workspace& workspace, CursorPool& cursors, TextBuffer& work) : _w(workspace), _cursors(cursors), _work(work) {}
 
     Result<DiffRange, KiottySpecStatus> range(uint64_t from, uint64_t to);
-    // 0 이면 가장 최근. 없는(정리된) 체크포인트면 NOT_FOUND
     Result<uint32_t, KiottySpecStatus> point(uint64_t checkpoint);
 
     KiottySpecStatus summarize(DiffRange range, uint32_t kind_mask, uint32_t field_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
     CursorIdResult items(DiffRange range, uint32_t kind_mask, uint32_t field_mask);
     CursorIdResult relations(DiffRange range, uint32_t kind_mask);
 
-    // 그 시점 읽기 · 글자 diff 는 세부 클래스에 맡긴다 (개발수칙 4.19). 부른 자리에서 쓰고 버린다.
     PastReader past() { return PastReader(_w); }
     TextDiffer text() { return TextDiffer(_w, _cursors, _work); }
 
@@ -55,7 +52,6 @@ private:
     TextBuffer& _work;
 };
 
-// 커서 행에 담은 항목 diff · 관계 diff 를 푼다.
 ItemDiffRow unpackItemDiff(const CursorRow& row);
 RelationDiffRow unpackRelationDiff(const CursorRow& row);
 

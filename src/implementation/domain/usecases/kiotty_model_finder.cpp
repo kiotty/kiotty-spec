@@ -13,14 +13,6 @@ using entity::ItemKind;
 
 }
 
-Result<ItemKind, KiottySpecStatus> ModelFinder::findKindByPrefix(Span<const char> prefix) const
-{
-    for (const entity::Model& entry : _models) {
-        if (std::string_view(entry.id_prefix) == viewOf(prefix)) { return Result<ItemKind, KiottySpecStatus>::success(entry.kind); }
-    }
-    return Result<ItemKind, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
-}
-
 Result<uint32_t, KiottySpecStatus> ModelFinder::findTag(ItemKind kind, Span<const char> name) const
 {
     return findIndex(model(kind).tags, [&](const entity::TagDefinition& definition) { return std::string_view(definition.name) == viewOf(name); });

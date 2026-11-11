@@ -1,4 +1,3 @@
-// C 인터페이스: 체크포인트 diff · 시점 읽기 · 글자 diff. 입력을 Span 으로, 내부 레코드를 C 구조체로 바꾸는 일만 한다.
 
 #include "kiotty_spec_adapter.h"
 

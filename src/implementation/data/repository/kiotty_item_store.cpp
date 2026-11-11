@@ -47,7 +47,6 @@ KiottySpecStatus ItemStore::rebuild()
     return loadTags();
 }
 
-// 지워지지 않은 key 마다 마지막 버전의 index 를 ID 순으로 order 에 모은다. 풀 index 가 ID 순서를 따르게 한다.
 size_t ItemStore::collectLatest()
 {
     const Span<const ItemVersion> versions = _t.versions.all();
@@ -97,7 +96,6 @@ void ItemStore::linkParents()
     }
 }
 
-// key 마다 태그의 마지막 버전을 풀에 넣고, 항목의 체크포인트를 태그에 쓴 체크포인트까지 올린다.
 KiottySpecStatus ItemStore::loadTags()
 {
     const Span<const TagVersion> versions = _t.tag_versions.all();

@@ -1,4 +1,3 @@
-// C 인터페이스: 항목 · 본문 · 태그. 입력을 Span 으로, 내부 레코드를 C 구조체로 바꾸는 일만 한다.
 
 #include "kiotty_spec_adapter.h"
 

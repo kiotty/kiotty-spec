@@ -23,7 +23,6 @@
 
 namespace kiotty::spec::implementation {
 
-// 버전 표 용량은 현재 풀 용량의 VERSION_FACTOR 배다. 넘치면 정리(prune)로 줄인다.
 constexpr size_t VERSION_FACTOR = 4;
 constexpr size_t DEFAULT_MAX_ITEMS = 4096;
 constexpr size_t DEFAULT_MAX_RELATIONS = 16384;
@@ -51,8 +50,6 @@ struct Configuration {
     size_t cursor_pool_rows {DEFAULT_MAX_CURSORS * DEFAULT_MAX_CURSOR_ROWS};
 };
 
-// 라이브러리 인스턴스 하나가 쓰는 모든 것을 소유한다 (개발수칙 1.2, 설계서 v1 10.1).
-// 풀 · 커서 · 버퍼는 생성자에서 확보하고, 소멸자가 전부 정리한다.
 class Context {
 public:
     explicit Context(const Configuration& configuration);
@@ -60,7 +57,6 @@ public:
     Context(const Context&) = delete;
     Context& operator=(const Context&) = delete;
 
-    // .kisp 파일을 읽어 버전 표와 현재 뷰를 만든다. 없으면 디렉토리와 함께 빈 파일을 만든다.
     KiottySpecStatus open(Span<const char> database);
     KiottySpecStatus init(Span<const char> name);
 

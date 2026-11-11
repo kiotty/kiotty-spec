@@ -7,7 +7,6 @@
 
 namespace kiotty::spec::implementation {
 
-// 남이 준 영역에 null 종료 글을 쌓는다. 영역은 이 객체보다 오래 살아야 한다.
 class SpanText
 {
 public:
@@ -16,7 +15,6 @@ public:
         if (_area.length() > 0) { _area[0] = '\0'; }
     }
 
-    // 다 들어가지 않으면 아무것도 쓰지 않고 CAPACITY_EXCEEDED
     KiottySpecStatus append(Span<const char> text)
     {
         if (_area.length() == 0 || text.length() > capacity() - _length) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }

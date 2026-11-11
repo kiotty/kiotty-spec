@@ -12,10 +12,6 @@ namespace kiotty::spec::implementation {
 
 enum class CursorKind : uint8_t { NONE, ITEM, TAG, RELATION, CHECKPOINT, STEP_RUN, ID, ITEM_DIFF, RELATION_DIFF, TEXT_DIFF, UNMET_CONDITION };
 
-// 커서가 가리키는 행의 키 (40 바이트). 페이지를 채울 때 이 키로 레코드를 다시 읽거나 그대로 옮긴다.
-// 항목 · ID: first = 항목 핸들. 태그: first = 항목 핸들, second = model | tag << 32, third = value.
-// 관계: first = from, second = to, third = model | relation << 32. 체크포인트: number = sequence.
-// 단계 구간: first = 처음 sequence, second = 마지막 sequence, third = step | state << 32, number = 개수.
 struct CursorRow {
     uint64_t first {0};
     uint64_t second {0};
@@ -34,7 +30,6 @@ struct CursorSlot {
 
 using CursorId = uint64_t;
 
-// 커서 하나의 슬롯과 행 영역. 글자 diff 처럼 행 영역을 바이트로 쓰는 커서가 쓴다.
 struct CursorSpace {
     CursorSlot* slot {nullptr};
     Span<CursorRow> rows {};
@@ -42,7 +37,6 @@ struct CursorSpace {
 using CursorIdResult = Result<CursorId, KiottySpecStatus>;
 using CursorRowsResult = Result<Span<const CursorRow>, KiottySpecStatus>;
 
-// 커서 슬롯과 행 영역을 열 때 모두 확보한다. 커서 ID 는 {index, generation} 이며 0 은 늘 무효다.
 class CursorPool {
 public:
     CursorPool(size_t max_cursors, size_t max_rows, size_t total_rows);

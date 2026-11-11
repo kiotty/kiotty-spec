@@ -23,7 +23,6 @@ struct IdParts {
     uint32_t number {0};
 };
 
-// "DSN-012" → ("DSN", 12). 숫자 꼬리가 없으면 number = 0
 IdParts splitId(Span<const char> id)
 {
     size_t dash = id.length();
@@ -50,7 +49,6 @@ Result<uint32_t, KiottySpecStatus> ItemHistory::keyOf(Span<const char> id) const
 
 Result<IdText, KiottySpecStatus> ItemHistory::idOf(uint32_t key) const { return _t.names.find(key); }
 
-// 태그 버전은 (key, tag, checkpoint) 순이라 한 항목의 태그가 이어져 있다.
 Span<const TagVersion> ItemHistory::tagsOf(uint32_t key) const
 {
     const Span<const TagVersion> all = _t.tag_versions.all();

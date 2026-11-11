@@ -9,8 +9,6 @@
 
 namespace kiotty::spec::implementation {
 
-// 정렬 배열 + 이진 탐색 (개발수칙 1.6). 용량은 생성할 때 한 번 확보하고 늘리지 않는다.
-// Key 는 operator< 로 순서를 정한다.
 template <typename Key, typename Value>
 class FixedMap
 {

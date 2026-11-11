@@ -14,7 +14,6 @@ struct IndexRange {
     size_t length {0};
 };
 
-// match 가 참인 원소가 이어진 구간. 없으면 빈 구간, 떨어져 있으면 INVALID_ARGUMENT
 template <typename Element, typename Match>
 Result<IndexRange, KiottySpecStatus> contiguousRange(Span<const Element> elements, Match match)
 {
@@ -30,7 +29,6 @@ Result<IndexRange, KiottySpecStatus> contiguousRange(Span<const Element> element
     return Result<IndexRange, KiottySpecStatus>::success(range);
 }
 
-// match 가 참인 첫 원소의 index. 없으면 NOT_FOUND
 template <typename Element, typename Match>
 Result<uint32_t, KiottySpecStatus> findIndex(Span<const Element> elements, Match match)
 {

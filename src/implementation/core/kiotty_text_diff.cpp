@@ -9,7 +9,6 @@ namespace {
 constexpr size_t MAX_POINTS = MAX_DIFF_TEXT_BYTES;
 constexpr size_t MAX_HUNKS = MAX_POINTS * 2 + 1;
 
-// 글자마다 시작 바이트. starts[count] 는 끝 바이트
 struct Points {
     uint16_t starts[MAX_POINTS + 1] {};
     size_t count {};
@@ -40,7 +39,6 @@ bool samePoint(Span<const char> before, const Points& a, size_t i, Span<const ch
     return true;
 }
 
-// 같은 구간이면 before 와 after 의 길이가 같다. 편집이면 둘 중 하나가 0 일 수 있다.
 struct Hunk {
     bool edit {};
     uint16_t before_start {};
@@ -78,7 +76,6 @@ size_t largerSide(const Hunk& hunk)
     return before > after ? before : after;
 }
 
-// 양옆 편집보다 짧은 공통 구간을 편집에 합친다.
 void mergeShortEqualities(Hunks& hunks)
 {
     bool changed = true;
@@ -116,12 +113,10 @@ size_t nextPointEnd(Span<const char> text, size_t start)
     return end;
 }
 
-// 편집 한쪽 끝이 낱말 가운데이면 공통 구간의 글자를 편집으로 옮겨 공백 경계에 맞춘다.
 void alignToWords(Hunks& hunks, Span<const char> before, Span<const char> after)
 {
     for (size_t index = 0; index < hunks.count; ++index) {
         if (!hunks.items[index].edit) { continue; }
-        // 오른쪽
         while (index + 1 < hunks.count && !hunks.items[index + 1].edit) {
             Hunk& edit = hunks.items[index];
             Hunk& equal = hunks.items[index + 1];
@@ -142,7 +137,6 @@ void alignToWords(Hunks& hunks, Span<const char> before, Span<const char> after)
                 }
             }
         }
-        // 왼쪽
         while (index > 0 && !hunks.items[index - 1].edit) {
             Hunk& edit = hunks.items[index];
             Hunk& equal = hunks.items[index - 1];
@@ -181,7 +175,6 @@ Result<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const ch
     const size_t width = b.count + 1;
     if (table.length() < (a.count + 1) * width) { return CountResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
 
-    // table[i * width + j] = before[i..] 와 after[j..] 의 LCS 길이
     for (size_t i = a.count + 1; i > 0; --i) {
         for (size_t j = b.count + 1; j > 0; --j) {
             const size_t row = i - 1;

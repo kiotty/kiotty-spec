@@ -1,7 +1,5 @@
 #pragma once
 
-// C ↔ implementation 어댑터가 함께 쓰는 도우미. 입력을 Span 으로, 내부 레코드를 C 구조체로 바꾼다.
-
 #include "kiotty_spec.h"
 #include "implementation/context/kiotty_context.h"
 #include "implementation/core/kiotty_fixed_string.h"

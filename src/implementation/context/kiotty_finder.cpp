@@ -87,7 +87,6 @@ CursorIdResult Finder::impact(ItemHandle item, uint32_t depth)
             }
         }
     }
-    // 시작 항목을 빼고 ID 순서로 담는다.
     for (size_t position = 0; position < _w.items.reader().count(); ++position) {
         const ItemHandle handle = _w.items.reader().handleInIdOrder(position);
         if (handle.index == item.index || _visited[handle.index] == 0) { continue; }
@@ -121,7 +120,6 @@ CursorIdResult Finder::relationsByModel(ItemKind kind, uint32_t relation_index)
 {
     const auto cursor = _cursors.open(CursorKind::RELATION);
     if (!cursor) { return CursorIdResult::failure(raiseCursorFull(_w.failure, cursor.code)); }
-    // from 의 ID 순서로 담는다 (8.4).
     for (size_t position = 0; position < _w.items.reader().count(); ++position) {
         const ItemHandle from = _w.items.reader().handleInIdOrder(position);
         for (const RelationRecord& relation : _w.relations.all()) {

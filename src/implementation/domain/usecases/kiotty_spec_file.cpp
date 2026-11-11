@@ -10,7 +10,6 @@ namespace kiotty::spec::implementation {
 
 namespace {
 
-// 작업 버퍼를 줄 버퍼와 줄 영역으로 나눈다. 줄 영역은 모든 글자를 이스케이프한 가장 긴 본문 줄이 들어가는 크기다.
 constexpr size_t READ_BUFFER_BYTES = 64 * 1024;
 constexpr size_t LINE_BYTES = 2 * entity::MAX_BODY_LENGTH + 1024;
 static_assert(READ_BUFFER_BYTES + LINE_BYTES <= KIOTTY_SPEC_MIN_WORK_BUFFER_BYTES, "work buffer minimum must hold the read buffer and one line");

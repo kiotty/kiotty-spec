@@ -8,8 +8,6 @@
 
 namespace kiotty::spec::implementation {
 
-// number 를 10진수로 text 뒤에 붙인다. 자릿수가 min_digits 보다 적으면 앞을 0 으로 채운다.
-// Text 는 append(Span<const char>) 를 가진 FixedString · TextBuffer 다.
 template <typename Text>
 KiottySpecStatus appendDecimal(Text& text, uint64_t number, size_t min_digits = 1)
 {

@@ -1,4 +1,3 @@
-// C 인터페이스: 컨텍스트 · 이름. 입력을 Span 으로, 내부 레코드를 C 구조체로 바꾸는 일만 한다.
 
 #include "kiotty_spec_adapter.h"
 
@@ -50,7 +49,6 @@ KiottySpecContextResult KiottySpec_createContext(const KiottySpecConfiguration* 
         result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
         return result;
     }
-    // 할당 실패는 process 종료다 (개발수칙 1.1). 소유권은 releaseContext 가 되찾는다.
     result.value = std::make_unique<KiottySpecContext>(settings.value).release();
     result.code = KIOTTY_SPEC_STATUS_SUCCESS;
     return result;

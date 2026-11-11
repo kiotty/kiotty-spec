@@ -8,7 +8,6 @@
 
 namespace kiotty::spec::implementation {
 
-// 초기화 때 크기를 정하는 작업 버퍼. 이후 크기는 바뀌지 않는다 (개발수칙 1.7).
 class TextBuffer
 {
 public:
@@ -31,7 +30,6 @@ public:
 
     Span<const char> view() const { return Span<const char>(_data.data(), _length); }
     size_t capacity() const { return _data.size() - 1; }
-    // 내용을 버리고 영역 전체를 작업 공간으로 빌려준다.
     Span<char> scratch()
     {
         clear();

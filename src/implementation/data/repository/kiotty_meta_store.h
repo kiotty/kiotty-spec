@@ -16,7 +16,6 @@ constexpr size_t MAX_META_ENTRIES = 32;
 using MetaKey = FixedString<MAX_META_KEY_LENGTH>;
 using MetaValue = FixedString<MAX_META_VALUE_LENGTH>;
 
-// 프로젝트 meta (project.name, project.created_at)
 class MetaStore
 {
 public:

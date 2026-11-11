@@ -21,8 +21,6 @@ struct ItemDiffRow {
     uint32_t fields {};
 };
 
-// 두 체크포인트 사이에 추가 · 삭제 · 수정된 항목 (설계서 v1 5.4). Kind 순, ID 순이다.
-// open 한 뒤 next 가 true 인 동안 current() 를 읽는다.
 class ItemDiffQuery
 {
 public:
@@ -36,7 +34,6 @@ public:
     const ItemDiffRow& current() const { return _current; }
 
 private:
-    // 이 key 가 diff 이면 _current 에 담고 true
     bool decode(uint32_t key);
     uint32_t changedFields(uint32_t key, const entity::ItemVersion& before, const entity::ItemVersion& after) const;
 

@@ -20,7 +20,6 @@ inline KiottySpecStatus raiseCursorFull(entity::Failure& failure, KiottySpecStat
     return failure.raise(status, KIOTTY_SPEC_SUBJECT_CURSOR, literalText("max_cursors"));
 }
 
-// 목록 질의가 결과 행을 커서에 담을 때 쓰는 도우미. 행이 넘치면 이유를 남긴다.
 inline KiottySpecStatus pushRow(CursorPool& cursors, entity::Failure& failure, CursorId cursor, const CursorRow& row)
 {
     const KiottySpecStatus pushed = cursors.push(cursor, row);
@@ -28,7 +27,6 @@ inline KiottySpecStatus pushRow(CursorPool& cursors, entity::Failure& failure, C
     return pushed;
 }
 
-// 채우던 커서를 닫고 실패를 돌려준다.
 inline CursorIdResult closeWith(CursorPool& cursors, CursorId cursor, KiottySpecStatus status)
 {
     cursors.close(cursor);

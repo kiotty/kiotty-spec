@@ -19,13 +19,11 @@ struct Position {
     uint64_t open_change_requests {0};
 };
 
-// 체크포인트 이력과 현재 위치 (설계서 v1 8). Finder 의 세부 클래스 (개발수칙 4.19).
 class HistoryFinder
 {
 public:
     HistoryFinder(Workspace& workspace, CursorPool& cursors, Checker& checker) : _w(workspace), _cursors(cursors), _checker(checker) {}
 
-    // step 이 0 이면 모든 단계
     CursorIdResult checkpoints(uint32_t step);
     CursorIdResult stepRuns();
     CursorIdResult unmetConditions();

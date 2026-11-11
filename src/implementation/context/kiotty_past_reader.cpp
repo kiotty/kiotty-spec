@@ -10,7 +10,6 @@ using entity::ItemVersion;
 
 }
 
-// 지운 항목도 ID 로 찾는다. 그 시점에 없거나 지워져 있으면 NOT_FOUND
 Result<const ItemVersion*, KiottySpecStatus> PastReader::versionAt(Span<const char> id, uint32_t checkpoint)
 {
     using VersionResult = Result<const ItemVersion*, KiottySpecStatus>;
@@ -50,7 +49,6 @@ Result<uint64_t, KiottySpecStatus> PastReader::tagAt(Span<const char> id, uint32
     return Result<uint64_t, KiottySpecStatus>::success(_w.items.history().tagAt(version.value->key, tag, checkpoint));
 }
 
-// 본문은 현재 것만 .kisp 에 있다. 그 시점의 본문 해시가 지금과 같을 때만 돌려준다. 과거 본문은 git 이력에 있다.
 Result<size_t, KiottySpecStatus> PastReader::bodyAt(Span<const char> id, uint32_t checkpoint, char* buffer, size_t capacity)
 {
     using SizeResult = Result<size_t, KiottySpecStatus>;

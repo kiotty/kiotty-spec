@@ -87,7 +87,6 @@ int showPosition(Session& session)
     return 0;
 }
 
-// 현재 체크포인트부터 previous 를 따라 depth 개. all 이면 처음까지
 int showHistory(Session& session)
 {
     uint32_t depth = DEFAULT_HISTORY_DEPTH;

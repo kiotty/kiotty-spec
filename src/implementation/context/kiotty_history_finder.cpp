@@ -12,7 +12,6 @@ using entity::CheckpointState;
 
 constexpr uint32_t SHIFT = 32;
 
-// 이 체크포인트에 묶인 버전 수 (항목 · 태그 · 관계 · 결정 기록)
 uint64_t countWrites(Workspace& workspace, uint32_t sequence)
 {
     const ItemTables& items = workspace.items.tables();
@@ -98,7 +97,6 @@ Result<Position, KiottySpecStatus> HistoryFinder::position()
     if (record->state != CheckpointState::DONE) {
         position.next_step = position.step;
     } else if (record->step == entity::Step::CHANGE_REQUEST_REPORTED) {
-        // 변경 요청을 받은 뒤에는 가장 상류의 진입 단계에서 흐름을 다시 시작한다 (3.4).
         const uint32_t entry = _checker.earliestEntryStep();
         position.next_step = entry != 0 ? entry : static_cast<uint32_t>(entity::Step::REQUIREMENT_DISCUSSING);
     } else if (position.step < entity::STEP_COUNT) {

@@ -42,7 +42,6 @@ std::string findRoot(const Arguments& args)
     return pathToUtf8(current);
 }
 
-// <루트>/.kiotty/spec.kisp
 std::string databasePath(const std::string& root) { return pathToUtf8(std::filesystem::u8path(root) / ".kiotty" / "spec.kisp"); }
 
 KiottySpecActor findActor(const Arguments& args)

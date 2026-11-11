@@ -28,7 +28,6 @@ Result<bool, KiottySpecStatus> FileReader::next()
         while (scan < _end && _buffer[scan] != '\n') { ++scan; }
         if (scan < _end || (_finished && _start < _end)) { break; }
         if (_finished) { return LineResult::success(false); }
-        // 남은 조각을 앞으로 당기고 더 읽는다.
         const size_t kept = _end - _start;
         for (size_t index = 0; index < kept; ++index) { _buffer[index] = _buffer[_start + index]; }
         _start = 0;

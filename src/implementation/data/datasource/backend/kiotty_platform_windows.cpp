@@ -44,7 +44,6 @@ WidePathResult widen(Span<const char> path)
     return WidePathResult::success(wide);
 }
 
-// UTF-8 로 바꾸고 구분자를 '/' 로 맞춘다.
 SystemPathResult narrow(const wchar_t* wide)
 {
     char buffer[MAX_SYSTEM_PATH_LENGTH + 1] {};

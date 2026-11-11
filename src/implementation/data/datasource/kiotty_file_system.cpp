@@ -1,4 +1,3 @@
-// 파일 · 디렉토리 입출력. 운영체제마다 다른 부분은 backend/kiotty_platform 이 맡는다.
 
 #include "implementation/data/datasource/kiotty_file_system.h"
 
@@ -49,7 +48,6 @@ KiottySpecStatus writeDescriptor(int descriptor, Span<const char> content) { ret
 
 void closeDescriptor(int descriptor) { platform::closeFile(descriptor); }
 
-// 없는 파일이면 성공으로 본다.
 KiottySpecStatus removeFile(Span<const char> path)
 {
     if (!platform::isFile(path)) { return KIOTTY_SPEC_STATUS_SUCCESS; }

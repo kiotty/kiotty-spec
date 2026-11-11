@@ -8,8 +8,6 @@
 
 namespace kiotty::spec::implementation {
 
-// store 의 버전 표를 정렬된 줄로 쓴다. 태그 · 관계 · Kind 는 이름으로 쓴다.
-// SpecFile 의 세부 클래스 (개발수칙 4.19). area 는 한 줄을 쌓는 영역이다.
 class SpecWriter
 {
 public:

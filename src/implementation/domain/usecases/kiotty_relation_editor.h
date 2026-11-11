@@ -11,7 +11,6 @@
 
 namespace kiotty::spec::implementation {
 
-// 관계 쓰기. 모델의 관계 정의로 허용 쌍을 검사하고, 체크포인트에 묶어 DB 와 풀을 함께 고친다.
 class RelationEditor
 {
 public:

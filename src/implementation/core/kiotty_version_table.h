@@ -11,9 +11,6 @@
 
 namespace kiotty::spec::implementation {
 
-// 레코드 버전을 (정체성, checkpoint) 순으로 정렬해 둔 고정 용량 표 (개발수칙 1.6).
-// Record 는 checkpoint · removed 필드와 Identity identity() const 를 가진다. Identity 는 operator< 와 == 를 가진다.
-// "그 시점의 값" 은 정체성이 같고 checkpoint 이하인 마지막 버전이다.
 template <typename Record>
 class VersionTable
 {
@@ -24,7 +21,6 @@ public:
 
     void clear() { _length = 0; }
 
-    // 적재할 때 쓴다. 다 넣은 뒤 sort 를 부른다.
     KiottySpecStatus append(const Record& record)
     {
         if (_length == _records.size()) { return KIOTTY_SPEC_STATUS_POOL_IS_FULL; }
@@ -35,7 +31,6 @@ public:
 
     void sort() { std::sort(_records.begin(), _records.begin() + static_cast<std::ptrdiff_t>(_length), less); }
 
-    // 정렬 뒤 같은 정체성 · 같은 checkpoint 가 두 번 나오면 둘째의 index. 병합 충돌이다.
     Result<size_t, KiottySpecStatus> findDuplicate() const
     {
         for (size_t index = 1; index < _length; ++index) {
@@ -45,8 +40,6 @@ public:
         return Result<size_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
     }
 
-    // (identity, checkpoint) 버전이 있으면 그 자리를, 없으면 정렬 위치에 빈 레코드를 넣어 돌려준다.
-    // 호출자는 정체성 필드를 identity 와 같게 채운다.
     Result<Record&, KiottySpecStatus> slot(Identity identity, uint32_t checkpoint)
     {
         const size_t position = lowerBound(identity, checkpoint);
@@ -68,7 +61,6 @@ public:
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
 
-    // 정체성이 identity 이고 checkpoint 이하인 마지막 버전. 없으면 nullptr
     const Record* latest(Identity identity, uint32_t checkpoint) const
     {
         const size_t after = lowerBound(identity, static_cast<uint64_t>(checkpoint) + 1);
@@ -85,7 +77,6 @@ public:
         return count;
     }
 
-    // 정리 (설계서 v1 5.3). base 이하의 버전은 정체성마다 마지막 하나만 base 로 올려 남기고, 그것이 지움이면 그것도 버린다.
     void prune(uint32_t base)
     {
         size_t kept = 0;
@@ -98,7 +89,6 @@ public:
         _length = kept;
     }
 
-    // keep 이 참인 버전만 남긴다. 순서는 그대로다.
     template <typename Keep>
     void retain(Keep keep)
     {

@@ -1,4 +1,3 @@
-// 경로 글자 계산. 파일 시스템에는 닿지 않는다 (absolutePath 의 현재 디렉토리 읽기만 예외).
 
 #include "implementation/data/datasource/kiotty_file_system.h"
 
@@ -11,7 +10,6 @@ namespace {
 
 constexpr char SEPARATOR[] = "/";
 
-// 구분자를 '/' 로 맞춰 붙인다.
 KiottySpecStatus appendSlashed(SystemPath& out, Span<const char> text)
 {
     for (size_t index = 0; index < text.length(); ++index) {

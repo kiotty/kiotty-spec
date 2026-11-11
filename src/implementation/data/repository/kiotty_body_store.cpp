@@ -39,7 +39,6 @@ Span<const char> BodyStore::bodyAt(size_t index) const
     return Span<const char>(_bytes.data() + slice.offset, slice.length);
 }
 
-// 살아 있는 본문을 자리 순서대로 앞으로 당긴다. 앞쪽으로만 옮기므로 아직 옮기지 않은 본문을 덮지 않는다.
 void BodyStore::compact()
 {
     const size_t count = _slices.length();

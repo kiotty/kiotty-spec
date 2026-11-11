@@ -11,7 +11,6 @@
 
 namespace kiotty::cli {
 
-// 명령이 함께 쓰는 도우미
 int check(Session& session, KiottySpecStatus status);
 const std::string* positional(Session& session, size_t index);
 std::string stepName(uint32_t step);
@@ -21,7 +20,6 @@ struct BodyOption {
 };
 BodyOption bodyOption(Session& session, const char* text_name, const char* file_name);
 
-// 항목 목록의 선택 열 (설계서 v1 8.4)
 struct Column {
     std::string header {};
     bool is_tag {false};
@@ -39,7 +37,6 @@ void printItemHeader(const ColumnPlan* plan);
 void printItem(Session& session, const KiottySpecItem& item, const ColumnPlan* plan);
 int printItemCursor(Session& session, const KiottySpecCursorResult& cursor, const ColumnPlan* plan);
 
-// 명령. 명령 표는 kiotty_commands.cpp 에 있다.
 int initProject(Session& session);
 int addItem(Session& session);
 int renameItem(Session& session);

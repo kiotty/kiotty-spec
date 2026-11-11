@@ -75,9 +75,6 @@ bool testModels()
     ok = expectTrue(models.model(ItemKind::CHANGE_REQUEST).tags.length() == 3, "change request tags") && ok;
     ok = expectTrue(models.model(ItemKind::MILESTONE).tags.length() == 0, "milestone has no tags") && ok;
     ok = expectTrue(models.model(ItemKind::CHANGE_REQUEST).relations.length() == 5, "change request relations") && ok;
-    const auto kind = models.finder().findKindByPrefix(textOf("UTR"));
-    ok = expectTrue(static_cast<bool>(kind) && kind.value == ItemKind::UNIT_TEST_RESULT, "prefix lookup") && ok;
-    ok = expectTrue(models.finder().findKindByPrefix(textOf("XX")).code == KIOTTY_SPEC_STATUS_NOT_FOUND, "unknown prefix") && ok;
     return ok;
 }
 

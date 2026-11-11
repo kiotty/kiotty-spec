@@ -1,4 +1,3 @@
-// C 인터페이스: 체크포인트 · 결정 기록 · 모델 · 위치. 입력을 Span 으로, 내부 레코드를 C 구조체로 바꾸는 일만 한다.
 
 #include "kiotty_spec_adapter.h"
 #include "implementation/context/kiotty_cursor_rows.h"

@@ -73,18 +73,6 @@ bool testSpanAccess()
     return ok;
 }
 
-bool testSpanCopy()
-{
-    char source[3] = {'x', 'y', 'z'};
-    char target[4] = {};
-    const core::Span<char> destination(target, 4);
-    bool ok = true;
-    ok = expectTrue(destination.copyFrom(core::Span<const char>(source, 3)) == KIOTTY_SPEC_STATUS_SUCCESS, "copy fits") && ok;
-    ok = expectTrue(target[2] == 'z', "copy writes bytes") && ok;
-    const core::Span<char> small(target, 2);
-    ok = expectTrue(small.copyFrom(core::Span<const char>(source, 3)) == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "copy too large fails") && ok;
-    return ok;
-}
 
 bool testFixedStringAssign()
 {
@@ -210,8 +198,6 @@ bool testChecked()
 {
     const size_t maximum = std::numeric_limits<size_t>::max();
     bool ok = true;
-    ok = expectTrue(core::checkedAdd(1, 2).value == 3, "checked add sums") && ok;
-    ok = expectTrue(!core::checkedAdd(maximum, 1), "checked add detects overflow") && ok;
     ok = expectTrue(core::checkedMultiply(3, 4).value == 12, "checked multiply product") && ok;
     ok = expectTrue(!core::checkedMultiply(maximum, 2), "checked multiply detects overflow") && ok;
     ok = expectTrue(static_cast<bool>(core::checkedMultiply(0, maximum)), "multiply by zero never overflows") && ok;
@@ -388,7 +374,6 @@ int main()
         {"result", testResult},
         {"result reference", testResultReference},
         {"span access", testSpanAccess},
-        {"span copy", testSpanCopy},
         {"fixed string assign", testFixedStringAssign},
         {"fixed string overflow clears", testFixedStringOverflowClears},
         {"fixed string is compact", testFixedStringIsCompact},

@@ -55,7 +55,6 @@ Result<IdText, KiottySpecStatus> Editor::createItem(ItemKind kind, Span<const ch
     return created;
 }
 
-// 주어진 ID 나 새로 발급한 ID 로 항목을 만든다. 발급 번호는 있는 ID (지운 항목 포함) 의 가장 큰 번호 다음이다.
 Result<IdText, KiottySpecStatus> Editor::insertItem(ItemKind kind, Span<const char> given, Span<const char> title, Span<const char> summary,
                                                    uint32_t sequence)
 {

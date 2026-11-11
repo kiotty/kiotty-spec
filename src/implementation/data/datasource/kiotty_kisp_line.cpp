@@ -18,7 +18,6 @@ static_assert(sizeof(EscapePair) == 2, "unexpected padding");
 
 constexpr EscapePair ESCAPE_PAIRS[] = {{'\t', 't'}, {'\n', 'n'}, {'\r', 'r'}, {'\\', '\\'}};
 
-// 이스케이프 뒤 글자를 원래 글자로. 모르는 글자면 '\0'
 char unescape(char letter)
 {
     for (const EscapePair& pair : ESCAPE_PAIRS) {
@@ -27,7 +26,6 @@ char unescape(char letter)
     return '\0';
 }
 
-// 원래 글자를 이스케이프 뒤 글자로. 이스케이프할 글자가 아니면 '\0'
 char escapeOf(char letter)
 {
     for (const EscapePair& pair : ESCAPE_PAIRS) {

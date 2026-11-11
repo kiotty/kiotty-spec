@@ -8,13 +8,8 @@
 
 namespace kiotty::spec::implementation::entity {
 
-// .kisp 파일의 한 줄이 레코드 한 버전이다 (docs/plan/261110_kisp_v1.md).
-// 항목은 바뀌지 않는 key (8자리 16진수) 로 서로를 가리킨다. ID 는 item 줄에만 있다.
-// removed 가 1 이면 "checkpoint 시점에 지워짐" 이라는 버전 (툼스톤) 이다.
-
 constexpr uint32_t NO_KEY = 0;
 
-// 공개 헤더의 KIOTTY_SPEC_MAX_DECISION_LENGTH 와 같다.
 constexpr size_t MAX_DECISION_VERSION_LENGTH = 2048;
 using DecisionVersionText = FixedString<MAX_DECISION_VERSION_LENGTH>;
 
@@ -57,7 +52,6 @@ struct TagVersion
     Identity identity() const { return TagIdentity{key, tag}; }
 };
 
-// "from 의 (relation) 은 to 다"
 struct RelationIdentity
 {
     uint32_t from {};

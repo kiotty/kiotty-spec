@@ -64,7 +64,6 @@ KiottySpecStatus ItemWriter::checkUnused(IdText id)
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-// 두 브랜치가 따로 만들어도 겹치지 않도록 ID · 시각 · 시도 횟수로 섞는다.
 Result<uint32_t, KiottySpecStatus> ItemWriter::newKey(IdText id) const
 {
     const uint64_t moment = static_cast<uint64_t>(nowEpochSeconds()) ^ (static_cast<uint64_t>(_t.names.length()) << KEY_SHIFT);
@@ -143,7 +142,6 @@ KiottySpecStatus ItemWriter::applyTag(ItemHandle handle, ItemKind kind, uint32_t
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-// 본문을 먼저 두고, 본문 해시를 바꾼 버전을 쓴다. 빈 본문은 지운다.
 KiottySpecStatus ItemWriter::writeBody(ItemHandle handle, Span<const char> body, uint32_t sequence)
 {
     auto version = currentVersion(handle);

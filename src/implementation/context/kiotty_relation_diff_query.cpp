@@ -31,7 +31,6 @@ Result<bool, KiottySpecStatus> RelationDiffQuery::next()
     return Result<bool, KiottySpecStatus>::success(false);
 }
 
-// 한 시점에만 살아 있는 관계가 diff 다.
 bool RelationDiffQuery::decode(uint32_t first)
 {
     const RelationVersion& any = _relations.versions().all()[first];

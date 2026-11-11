@@ -29,7 +29,6 @@ struct TagBit {
 
 static_assert(sizeof(TagBit) == 16, "unexpected padding");
 
-// 단계별 확정 조건 (설계서 v1 5.2, 정의서 R-3 ~ R-5, R-10). 태그 · 관계 이름은 모델 표에서 찾는다.
 class Checker
 {
 public:
@@ -37,12 +36,9 @@ public:
 
     Span<const UnmetCondition> collect(entity::Step step);
 
-    // 상태 태그가 없거나 "열림" · "반영 중" 인 변경 요청
     bool isOpenChangeRequest(entity::ItemHandle handle);
     size_t openChangeRequestCount();
-    // 열린 변경 요청 중 가장 상류의 진입 단계. 없으면 0
     uint32_t earliestEntryStep();
-    // 본문의 "인수 조건" 제목 아래 목록 줄 수 (R-4)
     static size_t countAcceptanceCriteria(Span<const char> body);
 
 private:

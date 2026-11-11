@@ -56,7 +56,6 @@ struct RelationSource
     Cardinality cardinality {};
 };
 
-// 설계서 v1 3.1. Kind 값 순서다.
 const ModelSource MODEL_SOURCES[] = {
     {ItemKind::CHANGE_REQUEST, "변경 요청", "CR", Step::CHANGE_REQUEST_REPORTED},
     {ItemKind::REQUIREMENT, "요구사항", "REQ", Step::REQUIREMENT_DISCUSSING},
@@ -73,7 +72,6 @@ const ModelSource MODEL_SOURCES[] = {
     {ItemKind::END_TO_END_TEST_RESULT, "E2E 테스트 결과", "E2ER", Step::END_TO_END_TEST_RUN},
 };
 
-// 설계서 v1 3.4. 같은 Kind 의 태그는 이어서 적고, Kind 안의 순서가 태그 index 다.
 const TagSource TAG_SOURCES[] = {
     {ItemKind::CHANGE_REQUEST, "출처", Cardinality::MANY, {"사용자 피드백", "이슈", "초기 요구"}},
     {ItemKind::CHANGE_REQUEST, "상태", Cardinality::SINGLE, {"열림", "반영 중", "완료", "거부"}},
@@ -91,7 +89,6 @@ const TagSource TAG_SOURCES[] = {
     {ItemKind::END_TO_END_TEST_RESULT, "결과", Cardinality::SINGLE, {"PASS", "FAIL"}},
 };
 
-// 설계서 v1 3.5. 같은 Kind 의 관계는 이어서 적고, Kind 안의 순서가 관계 index 다.
 const RelationSource RELATION_SOURCES[] = {
     {ItemKind::CHANGE_REQUEST, "영향 요구사항", ItemKind::REQUIREMENT, Cardinality::MANY},
     {ItemKind::CHANGE_REQUEST, "영향 개발 수칙", ItemKind::RULE, Cardinality::MANY},
@@ -159,7 +156,6 @@ KiottySpecStatus ModelCatalog::loadRelations()
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-// 태그 · 관계 표에서 이 Kind 의 정의가 이어진 구간을 모델에 건다. 이어지지 않으면 표가 잘못된 것이다.
 KiottySpecStatus ModelCatalog::loadModel(size_t index)
 {
     const ModelSource& source = MODEL_SOURCES[index];

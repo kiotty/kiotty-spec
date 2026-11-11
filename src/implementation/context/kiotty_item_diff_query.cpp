@@ -31,7 +31,6 @@ Result<bool, KiottySpecStatus> ItemDiffQuery::next()
     return Result<bool, KiottySpecStatus>::success(false);
 }
 
-// 앞 시점에만 있으면 삭제, 뒤 시점에만 있으면 추가, 두 시점 모두 있으면 바뀐 필드를 모은다.
 bool ItemDiffQuery::decode(uint32_t key)
 {
     const ItemTables& tables = _items.tables();

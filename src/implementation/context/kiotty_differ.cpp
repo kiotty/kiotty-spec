@@ -96,7 +96,6 @@ KiottySpecStatus Differ::countRelations(DiffRange range, uint32_t kind_mask, Kin
     return next.code;
 }
 
-// 두 시점에 보이는 결정 기록 버전이 다르면 바뀐 것이다.
 KiottySpecStatus Differ::countDecisions(DiffRange range, uint32_t kind_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT])
 {
     for (uint32_t kind = 1; kind <= entity::ITEM_KIND_COUNT; ++kind) {

@@ -60,7 +60,6 @@ std::string conditionHeading(KiottySpecCondition condition)
     return std::to_string(static_cast<int>(condition));
 }
 
-// 어긋난 확정 조건을 조건마다 "- 제목: ID ID" 줄로 잇는다.
 std::string unmetConditions(Session& session)
 {
     const KiottySpecCursorResult cursor = KiottySpec_openUnmetConditionCursor(session.context);
@@ -89,7 +88,6 @@ std::string completionFailure(Session& session)
     return step + "확정 조건 미충족" + unmetConditions(session);
 }
 
-// 라이브러리가 돌려준 (상태, 주제, 글, 줄) 을 문장으로 바꾼다 (개발수칙 5.5).
 std::string describeFailure(Session& session, const KiottySpecError& error)
 {
     const std::string line = error.line > 0 ? "줄 " + std::to_string(error.line) + ": " : "";
@@ -211,7 +209,6 @@ std::string kindName(KiottySpecItemKind kind) { return KiottySpec_formatKind(kin
 
 std::string stateName(KiottySpecCheckpointState state) { return KiottySpec_formatCheckpointState(state).value.value; }
 
-// 설계서 v1 12 #9. 탭은 공백, 줄바꿈은 \n 두 글자
 std::string cell(std::string_view value)
 {
     std::string text {};

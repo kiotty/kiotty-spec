@@ -61,7 +61,6 @@ void addHash(KispLineEncoder& line, uint64_t hash)
     line.add(text.view());
 }
 
-// 켠 비트의 이름을 쉼표로 잇는다. 값이 0 이면 "-"
 void addTagValue(KispLineEncoder& line, const entity::TagDefinition& definition, uint64_t value)
 {
     if (value == 0) {
@@ -223,7 +222,6 @@ KiottySpecStatus SpecWriter::writeDecisions()
     return status;
 }
 
-// 항목 key 순서로 현재 본문을 한 줄씩 쓴다. 줄바꿈은 \n 으로 이스케이프된다.
 KiottySpecStatus SpecWriter::writeBodies()
 {
     KiottySpecStatus status = writeHeader(BODY_HEADER);

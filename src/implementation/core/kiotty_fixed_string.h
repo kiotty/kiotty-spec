@@ -9,8 +9,6 @@
 
 namespace kiotty::spec::implementation {
 
-// 길이를 따로 두지 않고 null 종료로 끝을 표시한다. sizeof == Capacity + 1 이라
-// 레코드 안에 그대로 넣어도 크기가 설계서의 바이트 수와 같다.
 template <size_t Capacity>
 class FixedString
 {
@@ -97,7 +95,6 @@ std::string operator+(const FixedString<Capacity>& left, const char* right)
 }
 
 
-// FixedString 을 같은 용량의 C 배열(null 종료)로 옮긴다. C 구조체로 내보낼 때 쓴다.
 template <size_t Capacity, size_t Size>
 void copyText(char (&target)[Size], const FixedString<Capacity>& source)
 {
@@ -108,7 +105,6 @@ void copyText(char (&target)[Size], const FixedString<Capacity>& source)
 }
 
 
-// null 종료 C 글자를 넣는다. 용량을 넘으면 CAPACITY_EXCEEDED
 template <size_t Capacity>
 KiottySpecStatus assignText(FixedString<Capacity>& target, const char* text)
 {

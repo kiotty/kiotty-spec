@@ -176,7 +176,6 @@ KiottySpecStatus SpecParser::parseTag(const KispFields& fields, uint32_t removed
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-// "구현 완료" 나 "모듈,동작 흐름" 처럼 비트 이름을 쉼표로 잇는다.
 Result<uint64_t, KiottySpecStatus> SpecParser::parseTagValue(ItemKind kind, uint32_t tag, Span<const char> names) const
 {
     uint64_t value = 0;
@@ -222,7 +221,6 @@ KiottySpecStatus SpecParser::parseDecision(const KispFields& fields)
     return slot.value->text.assign(fields.values[4]);
 }
 
-// 항목의 현재 본문. item 줄이 있는 key 에만 둘 수 있고 key 마다 한 줄이다.
 KiottySpecStatus SpecParser::parseBody(const KispFields& fields)
 {
     if (fields.count != BODY_FIELDS) { return invalid(_t.failure, BODY_TABLE); }

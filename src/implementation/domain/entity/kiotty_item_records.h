@@ -9,7 +9,6 @@
 
 namespace kiotty::spec::implementation::entity {
 
-// 설계서 v1 9.1 용량 상수
 constexpr size_t MAX_ID_LENGTH = 15;
 constexpr size_t MAX_TITLE_LENGTH = 127;
 constexpr size_t MAX_SUMMARY_LENGTH = 255;
@@ -25,10 +24,8 @@ using SummaryText = FixedString<MAX_SUMMARY_LENGTH>;
 using DescriptionText = FixedString<MAX_DESCRIPTION_LENGTH>;
 using DecisionText = FixedString<MAX_DECISION_LENGTH>;
 
-// 상위 4바이트 generation, 하위 4바이트 index (설계서 v1 4)
 using ItemHandle = Handle;
 
-// 상위 4바이트 reserved(0), 하위 4바이트 sequence. sequence == 0 이 무효 값이다.
 struct CheckpointHandle
 {
     uint32_t sequence {};
@@ -40,7 +37,6 @@ struct CheckpointHandle
 constexpr ItemHandle INVALID_ITEM_HANDLE {Handle::INVALID_INDEX, 0};
 constexpr CheckpointHandle INVALID_CHECKPOINT_HANDLE {0, 0};
 
-// 설계서 v1 3.2. 멤버는 크기 내림차순이다.
 struct ItemRecord
 {
     CheckpointHandle checkpoint {};
@@ -52,7 +48,6 @@ struct ItemRecord
     SummaryText summary {};
 };
 
-// 설계서 v1 3.6. (item, tag) 쌍마다 하나이며 value 는 하위 48비트만 쓴다.
 struct TagRecord
 {
     ItemHandle item {};
@@ -61,7 +56,6 @@ struct TagRecord
     uint64_t value {};
 };
 
-// 설계서 v1 3.5. "from 의 (relation) 은 to 다".
 struct RelationRecord
 {
     ItemHandle from {};
@@ -70,7 +64,6 @@ struct RelationRecord
     uint32_t relation {};
 };
 
-// 설계서 v1 5.1
 struct CheckpointRecord
 {
     int64_t created_at {};
@@ -80,7 +73,6 @@ struct CheckpointRecord
     DescriptionText description {};
 };
 
-// 설계서 v1 6
 struct DecisionRecord
 {
     CheckpointHandle checkpoint {};
