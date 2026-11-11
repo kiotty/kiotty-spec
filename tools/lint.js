@@ -46,7 +46,8 @@ const isCliInfra = (f) => f.startsWith('app/cli/src/infra/');
 const isCliI18n = (f) => f.startsWith('app/cli/src/i18n/');
 const isLibrary = (f) => f.startsWith('src/');
 const pointerExempt = (f) => isCore(f) || isBackend(f) || isAdapter(f) || isPublicHeader(f) || isCliInfra(f);
-// docs/deviations.md: the CLI may allocate (1.1); raw pointers are allowed where the CLI crosses the C ABI (1.10).
+// docs/deviations.md: the CLI may allocate (1.1) with standard containers (1.6) whose sizes are not fixed (3.4);
+// raw pointers are allowed where the CLI crosses the C ABI (1.10).
 const allocationExempt = (f) => isCli(f);
 const C_ABI_LINE = /\bKiottySpec_?[A-Z]\w*|\b(?:std::)?(?:fwrite|fread|fputs|fflush|fopen|fclose|strtoul|strtoull|strtol)\s*\(|\b(?:_dupenv_s|_wdupenv_s|free|MultiByteToWideChar|WideCharToMultiByte|GetCommandLineW|CommandLineToArgvW|LocalFree|SetConsoleOutputCP|GetStdHandle|GetConsoleMode|SetConsoleMode)\s*\(/;
 const cAbiBoundary = (f, line) => isCli(f) && C_ABI_LINE.test(line);
@@ -481,7 +482,7 @@ function checkFile(file) {
 
   // 1.1 / 1.6 containers and heap
   bodyLines.forEach((t, i) => {
-    if (/\bstd::(string|wstring|map|unordered_map|set|unordered_set|multimap|list|deque|ostringstream|istringstream|stringstream|function|shared_ptr|any)\b(?!_view)/.test(t)) report('1.6', rel, i + 1, 'standard container other than std::vector');
+    if (!allocationExempt(rel) && /\bstd::(string|wstring|map|unordered_map|set|unordered_set|multimap|list|deque|ostringstream|istringstream|stringstream|function|shared_ptr|any)\b(?!_view)/.test(t)) report('1.6', rel, i + 1, 'standard container other than std::vector');
     if (!allocationExempt(rel) && /\bstd::(to_string|getline)\b|\bstd::(cout|cerr|cin)\b|\bstd::(ifstream|ofstream|fstream)\b/.test(t)) report('1.1', rel, i + 1, 'allocating standard I/O or string helper');
   });
   for (const fn of file.functions) {
@@ -613,7 +614,7 @@ function checkFile(file) {
       if (mem.init === '' && !/&\s*$/.test(mem.type) && !isPublicHeader(rel) && !mem.isStatic && !initializedInConstructor(cls, mem.name)) report('1.9', rel, mem.line, `member '${mem.name}' has no initializer`);
       if (!pointerExempt(rel) && /\*\s*$/.test(mem.type)) report('1.10', rel, mem.line, `pointer member '${mem.name}'`);
     }
-    if (cls.kind !== 'class' && cls.name !== '(anonymous)') {
+    if (cls.kind !== 'class' && cls.name !== '(anonymous)' && !allocationExempt(rel)) {
       const name = cls.typedefName && cls.name === '(anonymous)' ? cls.typedefName : cls.name;
       if (!sizes.has(name)) report('3.4', rel, cls.openLine, `struct '${name}' has no static_assert(sizeof)`);
       else checkOrder(file, cls);
