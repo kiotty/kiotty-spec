@@ -26,7 +26,7 @@ Arguments parseArguments(const std::vector<std::string>& tokens, size_t first,
                          const std::vector<std::string_view>& extra_flags);
 
 struct Session {
-    KiottySpecContext* context {nullptr};
+    KiottySpecContext& context;
     KiottySpecActor actor {KIOTTY_SPEC_ACTOR_AI};
     Arguments arguments {};
 };
@@ -35,6 +35,7 @@ constexpr int USAGE_EXIT_CODE = 2;
 constexpr int DECIMAL_BASE = 10;
 
 int fail(const Session& session, KiottySpecStatus status);
+int failWithoutContext(KiottySpecStatus status);
 int usage(std::string_view message);
 
 KiottySpecText textOf(std::string_view text);

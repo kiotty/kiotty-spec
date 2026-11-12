@@ -1,4 +1,5 @@
-#include "kiotty_path_utf8.h"
+#include "src/infra/kiotty_environment.h"
+#include "src/infra/kiotty_path_utf8.h"
 #include "kiotty_session.h"
 
 #include "kiotty_spec.h"
@@ -29,7 +30,7 @@ std::optional<CommandMatch> findCommand(const std::vector<std::string>& tokens);
 KiottySpecActor findActor(const Arguments& arguments);
 std::string findRoot(const Arguments& arguments);
 std::string makeDatabasePath(const std::string& root);
-std::string readEnvironment(const char* name);
+int openAndRun(const CommandEntry& command, const Session& session);
 
 }
 
@@ -88,20 +89,21 @@ int runTokens(const std::vector<std::string>& tokens)
 
 int runCommand(const CommandEntry& command, const Arguments& arguments)
 {
-    Session session {};
-    session.arguments = arguments;
-    session.actor = findActor(arguments);
-    const std::string database = makeDatabasePath(findRoot(arguments));
     KiottySpecConfiguration configuration {};
     const KiottySpecContextResult created = KiottySpec_createContext(&configuration);
-    session.context = created.value;
-    const KiottySpecStatus opened = created.code == KIOTTY_SPEC_STATUS_SUCCESS
-                                        ? KiottySpec_open(session.context, textOf(database)).code
-                                        : created.code;
-    const int code =
-        opened != KIOTTY_SPEC_STATUS_SUCCESS ? fail(session, opened) : command.run(session);
-    KiottySpec_releaseContext(session.context);
+    if (created.code != KIOTTY_SPEC_STATUS_SUCCESS) { return failWithoutContext(created.code); }
+    const Session session {*created.value, findActor(arguments), arguments};
+    const int code = openAndRun(command, session);
+    KiottySpec_releaseContext(&session.context);
     return code;
+}
+
+int openAndRun(const CommandEntry& command, const Session& session)
+{
+    const std::string database = makeDatabasePath(findRoot(session.arguments));
+    const KiottySpecStatus opened = KiottySpec_open(&session.context, textOf(database)).code;
+    if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, opened); }
+    return command.run(session);
 }
 
 void printHelp()
@@ -149,7 +151,7 @@ KiottySpecActor findActor(const Arguments& arguments)
 std::string findRoot(const Arguments& arguments)
 {
     const std::optional<std::string> root = arguments.option("root");
-    if (root) { return *root; }
+    if (root) { return root.value(); }
     const std::string environment_root = readEnvironment("KIOTTY_SPEC_ROOT");
     const bool has_environment_root = !environment_root.empty();
     if (has_environment_root) { return environment_root; }
@@ -170,23 +172,5 @@ std::string findRoot(const Arguments& arguments)
 
 std::string makeDatabasePath(const std::string& root)
 { return pathToUtf8(std::filesystem::u8path(root) / ".kiotty" / "spec.kisp"); }
-
-std::string readEnvironment(const char* name)
-{
-#ifdef _WIN32
-    const std::wstring wide_name = pathFromUtf8(name).wstring();
-    const DWORD capacity = GetEnvironmentVariableW(wide_name.c_str(), nullptr, 0);
-    if (capacity == 0) { return ""; }
-    std::wstring value(capacity, L'\0');
-    const DWORD length = GetEnvironmentVariableW(wide_name.c_str(), value.data(), capacity);
-    const bool is_complete = length > 0 && length < capacity;
-    if (!is_complete) { return ""; }
-    value.resize(length);
-    return utf8FromWide(value);
-#else
-    const char* value = std::getenv(name);
-    return value != nullptr ? value : "";
-#endif
-}
 
 }

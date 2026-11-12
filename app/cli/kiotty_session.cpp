@@ -1,8 +1,8 @@
 #include "kiotty_session.h"
 
-#include "kiotty_path_utf8.h"
+#include "src/infra/kiotty_path_utf8.h"
 
-#include <charconv>
+#include <cstdint>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -25,6 +25,9 @@ constexpr size_t CHECKPOINT_DIGIT_WIDTH = 4;
 constexpr uint32_t CHECKPOINT_NUMBER_MASK = 0xFFFFFFFFu;
 constexpr size_t CHECKPOINT_PREFIX_LENGTH = 3;
 constexpr size_t MAX_CHECKPOINT_DIGITS = 9;
+constexpr size_t MAX_NUMBER_DIGITS = 10;
+constexpr unsigned EIGHT_FOLD_SHIFT = 3;
+constexpr std::string_view DIGITS = "0123456789";
 
 bool isFlag(std::string_view name, const std::vector<std::string_view>& extra_flags);
 std::vector<std::string> split(std::string_view text, char separator);
@@ -100,7 +103,7 @@ std::optional<KiottySpecItemKind> kindArgument(const Session& session, std::stri
         const KiottySpecItemKind candidate = static_cast<KiottySpecItemKind>(value);
         const bool has_kind = !kindName(candidate).empty();
         if (!has_kind) { break; }
-        const KiottySpecModelResult model = KiottySpec_readModel(session.context, candidate);
+        const KiottySpecModelResult model = KiottySpec_readModel(&session.context, candidate);
         if (model.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
         if (text == model.value.name) { return candidate; }
         names += (names.empty() ? "" : ", ") + kindName(candidate) + "(" + model.value.name + ")";
@@ -112,13 +115,13 @@ std::optional<KiottySpecItemKind> kindArgument(const Session& session, std::stri
 std::optional<TagColumn> findTag(const Session& session, KiottySpecItemKind kind,
                                  std::string_view name)
 {
-    const KiottySpecModelResult model = KiottySpec_readModel(session.context, kind);
+    const KiottySpecModelResult model = KiottySpec_readModel(&session.context, kind);
     std::string names {};
     for (uint32_t index = 0;
          model.code == KIOTTY_SPEC_STATUS_SUCCESS && index < model.value.tag_count; ++index) {
         TagColumn column {index, {}};
         const KiottySpecStatusResult read =
-            KiottySpec_readTagDefinition(session.context, kind, index, &column.definition);
+            KiottySpec_readTagDefinition(&session.context, kind, index, &column.definition);
         if (read.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
         if (column.definition.name == name) { return column; }
         names += (names.empty() ? "" : ", ") + std::string(column.definition.name);
@@ -132,12 +135,12 @@ std::optional<TagColumn> findTag(const Session& session, KiottySpecItemKind kind
 std::optional<uint32_t> findRelation(const Session& session, KiottySpecItemKind kind,
                                      std::string_view name)
 {
-    const KiottySpecModelResult model = KiottySpec_readModel(session.context, kind);
+    const KiottySpecModelResult model = KiottySpec_readModel(&session.context, kind);
     std::string names {};
     for (uint32_t index = 0;
          model.code == KIOTTY_SPEC_STATUS_SUCCESS && index < model.value.relation_count; ++index) {
         const KiottySpecRelationDefinitionResult definition =
-            KiottySpec_readRelationDefinition(session.context, kind, index);
+            KiottySpec_readRelationDefinition(&session.context, kind, index);
         if (definition.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
         if (definition.value.name == name) { return index; }
         names += (names.empty() ? "" : ", ") + std::string(definition.value.name);
@@ -225,13 +228,18 @@ std::optional<KiottySpecCheckpointHandle> parseCheckpoint(std::string_view text)
 
 std::optional<uint32_t> parseNumber(std::string_view text)
 {
-    const char* const first = text.data();
-    const char* const last = first + text.size();
-    uint32_t value = 0;
-    const std::from_chars_result parsed = std::from_chars(first, last, value, DECIMAL_BASE);
-    const bool is_complete = parsed.ec == std::errc {} && parsed.ptr == last;
-    if (!is_complete) { return std::nullopt; }
-    return value;
+    const size_t first_other = text.find_first_not_of(DIGITS);
+    const bool is_digits = !text.empty() && first_other == std::string_view::npos;
+    const bool is_short = text.size() <= MAX_NUMBER_DIGITS;
+    const bool is_number = is_digits && is_short;
+    if (!is_number) { return std::nullopt; }
+    uint64_t value = 0;
+    for (const char letter : text) {
+        value = (value << EIGHT_FOLD_SHIFT) + (value << 1) + static_cast<uint64_t>(letter - '0');
+    }
+    const bool is_in_range = value <= UINT32_MAX;
+    if (!is_in_range) { return std::nullopt; }
+    return static_cast<uint32_t>(value);
 }
 
 std::optional<std::string> readFileText(const std::string& path)
@@ -246,7 +254,7 @@ std::optional<std::string> readFileText(const std::string& path)
 std::string itemId(const Session& session, KiottySpecItemHandle handle)
 {
     if (handle == KIOTTY_SPEC_INVALID_ITEM_HANDLE) { return "-"; }
-    const KiottySpecItemResult item = KiottySpec_readItemByHandle(session.context, handle);
+    const KiottySpecItemResult item = KiottySpec_readItemByHandle(&session.context, handle);
     if (item.code != KIOTTY_SPEC_STATUS_SUCCESS) { return "-"; }
     return item.value.id;
 }

@@ -25,18 +25,18 @@ int applyRelationChange(const Session& session, RelationEdit edit);
 int initializeProject(const Session& session)
 {
     const std::string name = session.arguments.option("name").value_or("");
-    return check(session, KiottySpec_initializeProject(session.context, textOf(name)).code);
+    return check(session, KiottySpec_initializeProject(&session.context, textOf(name)).code);
 }
 
 int addItem(const Session& session)
 {
-    const std::string* kind_name = positional(session, 0);
+    const std::optional<std::string> kind_name = readPositional(session, 0);
     const std::optional<std::string> title = session.arguments.option("title");
-    const bool has_arguments = kind_name != nullptr && title.has_value();
+    const bool has_arguments = kind_name.has_value() && title.has_value();
     if (!has_arguments) { return usage(findMessage(MessageKey::ITEM_ADD_USAGE)); }
     const std::optional<KiottySpecItemKind> kind = kindArgument(session, *kind_name);
     if (!kind) { return USAGE_EXIT_CODE; }
-    const BodyOption body = bodyOption(session, "body", "body-file");
+    const BodyOption body = readBodyOption(session, "body", "body-file");
     if (body.is_unreadable) { return USAGE_EXIT_CODE; }
     const KiottySpecIdResult created = addDraftItem(session, *kind, *title);
     if (created.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, created.code); }
@@ -44,12 +44,12 @@ int addItem(const Session& session)
     const std::optional<std::string> parent = session.arguments.option("parent");
     if (parent) {
         const KiottySpecStatusResult set =
-            KiottySpec_setItemParent(session.context, textOf(id), textOf(*parent));
+            KiottySpec_setItemParent(&session.context, textOf(id), textOf(*parent));
         if (set.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, set.code); }
     }
     if (body.text) {
         const KiottySpecStatusResult written =
-            KiottySpec_writeItemBody(session.context, textOf(id), textOf(*body.text));
+            KiottySpec_writeItemBody(&session.context, textOf(id), textOf(*body.text));
         if (written.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, written.code); }
     }
     const int tagged = setTags(session, id, *kind);
@@ -60,11 +60,11 @@ int addItem(const Session& session)
 
 int setItem(const Session& session)
 {
-    const std::string* id = positional(session, 0);
-    if (id == nullptr) {
+    const std::optional<std::string> id = readPositional(session, 0);
+    if (!id) {
         return usage(findMessage(MessageKey::ITEM_SET_USAGE));
     }
-    const KiottySpecItemResult item = KiottySpec_readItem(session.context, textOf(*id));
+    const KiottySpecItemResult item = KiottySpec_readItem(&session.context, textOf(*id));
     if (item.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, item.code); }
     const std::optional<std::string> title = session.arguments.option("title");
     const std::optional<std::string> summary = session.arguments.option("summary");
@@ -72,21 +72,21 @@ int setItem(const Session& session)
         const KiottySpecText title_text = title ? textOf(*title) : KiottySpecText{nullptr, 0};
         const KiottySpecText summary_text = summary ? textOf(*summary) : KiottySpecText{nullptr, 0};
         const KiottySpecStatusResult updated =
-            KiottySpec_updateItem(session.context, textOf(*id), title_text, summary_text);
+            KiottySpec_updateItem(&session.context, textOf(*id), title_text, summary_text);
         if (updated.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, updated.code); }
     }
     const std::optional<std::string> parent = session.arguments.option("parent");
     if (parent) {
         const std::string target = *parent == "-" ? std::string() : *parent;
         const KiottySpecStatusResult set =
-            KiottySpec_setItemParent(session.context, textOf(*id), textOf(target));
+            KiottySpec_setItemParent(&session.context, textOf(*id), textOf(target));
         if (set.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, set.code); }
     }
-    const BodyOption body = bodyOption(session, "body", "body-file");
+    const BodyOption body = readBodyOption(session, "body", "body-file");
     if (body.is_unreadable) { return USAGE_EXIT_CODE; }
     if (body.text) {
         const KiottySpecStatusResult written =
-            KiottySpec_writeItemBody(session.context, textOf(*id), textOf(*body.text));
+            KiottySpec_writeItemBody(&session.context, textOf(*id), textOf(*body.text));
         if (written.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, written.code); }
     }
     return setTags(session, *id, item.value.kind);
@@ -94,27 +94,28 @@ int setItem(const Session& session)
 
 int showItem(const Session& session)
 {
-    const std::string* id = positional(session, 0);
-    if (id == nullptr) {
+    const std::optional<std::string> id = readPositional(session, 0);
+    if (!id) {
         return usage(findMessage(MessageKey::ITEM_SHOW_USAGE));
     }
-    const KiottySpecItemResult item = KiottySpec_readItem(session.context, textOf(*id));
+    const KiottySpecItemResult item = KiottySpec_readItem(&session.context, textOf(*id));
     if (item.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, item.code); }
     const std::optional<ColumnPlan> plan = planColumns(session, item.value.kind);
     if (!plan) { return USAGE_EXIT_CODE; }
-    printItemHeader(&*plan);
-    printItem(session, item.value, &*plan);
+    printItemHeader(*plan);
+    printItem(session, item.value, *plan);
     return 0;
 }
 
 int renameItem(const Session& session)
 {
-    const std::string* id = positional(session, 0);
-    const std::string* next = positional(session, 1);
-    if (id == nullptr || next == nullptr) {
+    const std::optional<std::string> id = readPositional(session, 0);
+    const std::optional<std::string> next = readPositional(session, 1);
+    const bool has_arguments = id.has_value() && next.has_value();
+    if (!has_arguments) {
         return usage(findMessage(MessageKey::ITEM_RENAME_USAGE));
     }
-    return check(session, KiottySpec_renameItem(session.context, textOf(*id), textOf(*next)).code);
+    return check(session, KiottySpec_renameItem(&session.context, textOf(*id), textOf(*next)).code);
 }
 
 int listItems(const Session& session)
@@ -137,29 +138,28 @@ int listItems(const Session& session)
         plan = planColumns(session, kind);
         if (!plan) { return USAGE_EXIT_CODE; }
     }
-    const KiottySpecTagQuery* queries =
-        plan && !plan->queries.empty() ? plan->queries.data() : nullptr;
-    const size_t count = plan ? plan->queries.size() : 0;
-    return printItemCursor(session,
-                           KiottySpec_openItemCursor(session.context, kind, queries, count),
-                           plan ? &*plan : nullptr);
+    const ColumnPlan columns = plan.value_or(ColumnPlan {});
+    const std::vector<KiottySpecTagQuery>& queries = columns.queries;
+    const KiottySpecCursorResult cursor =
+        KiottySpec_openItemCursor(&session.context, kind, queries.data(), queries.size());
+    return printItemCursor(session, cursor, columns);
 }
 
 int listChildren(const Session& session)
 {
-    const std::string* id = positional(session, 0);
-    if (id == nullptr) { return usage(findMessage(MessageKey::ITEM_CHILDREN_USAGE)); }
-    return printItemCursor(session, KiottySpec_openChildCursor(session.context, textOf(*id)),
-                           nullptr);
+    const std::optional<std::string> id = readPositional(session, 0);
+    if (!id) { return usage(findMessage(MessageKey::ITEM_CHILDREN_USAGE)); }
+    return printItemCursor(session, KiottySpec_openChildCursor(&session.context, textOf(*id)),
+                           ColumnPlan {});
 }
 
 int showBody(const Session& session)
 {
-    const std::string* id = positional(session, 0);
-    if (id == nullptr) { return usage(findMessage(MessageKey::ITEM_BODY_USAGE)); }
+    const std::optional<std::string> id = readPositional(session, 0);
+    if (!id) { return usage(findMessage(MessageKey::ITEM_BODY_USAGE)); }
     std::vector<char> buffer(KIOTTY_SPEC_MAX_BODY_LENGTH + 1);
     const KiottySpecSizeResult read = KiottySpec_readItemBody(
-        session.context, textOf(*id), KiottySpecBuffer { buffer.data(), buffer.size() });
+        &session.context, textOf(*id), KiottySpecBuffer { buffer.data(), buffer.size() });
     if (read.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, read.code); }
     std::fwrite(buffer.data(), 1, read.value, stdout);
     if (read.value > 0 && buffer[read.value - 1] != '\n') { std::fputc('\n', stdout); }
@@ -168,27 +168,28 @@ int showBody(const Session& session)
 
 int removeItem(const Session& session)
 {
-    const std::string* id = positional(session, 0);
-    if (id == nullptr) { return usage(findMessage(MessageKey::ITEM_REMOVE_USAGE)); }
-    return check(session, KiottySpec_removeItem(session.context, textOf(*id)).code);
+    const std::optional<std::string> id = readPositional(session, 0);
+    if (!id) { return usage(findMessage(MessageKey::ITEM_REMOVE_USAGE)); }
+    return check(session, KiottySpec_removeItem(&session.context, textOf(*id)).code);
 }
 
 int showTags(const Session& session)
 {
-    const std::string* id = positional(session, 0);
-    if (id == nullptr) { return usage(findMessage(MessageKey::TAG_SHOW_USAGE)); }
-    const KiottySpecItemResult item = KiottySpec_readItem(session.context, textOf(*id));
+    const std::optional<std::string> id = readPositional(session, 0);
+    if (!id) { return usage(findMessage(MessageKey::TAG_SHOW_USAGE)); }
+    const KiottySpecItemResult item = KiottySpec_readItem(&session.context, textOf(*id));
     if (item.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, item.code); }
-    const KiottySpecModelResult model = KiottySpec_readModel(session.context, item.value.kind);
+    const KiottySpecModelResult model = KiottySpec_readModel(&session.context, item.value.kind);
     printRow({"tag", "value"});
     for (uint32_t index = 0; index < model.value.tag_count; ++index) {
         const std::unique_ptr<KiottySpecTagDefinition> definition_storage =
             std::make_unique<KiottySpecTagDefinition>();
         KiottySpecTagDefinition& definition = *definition_storage;
         const KiottySpecStatusResult read =
-            KiottySpec_readTagDefinition(session.context, item.value.kind, index, &definition);
+            KiottySpec_readTagDefinition(&session.context, item.value.kind, index, &definition);
         if (read.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
-        const KiottySpecTagResult tag = KiottySpec_readItemTag(session.context, item.handle, index);
+        const KiottySpecTagResult tag =
+            KiottySpec_readItemTag(&session.context, item.handle, index);
         printRow(
             { definition.name,
               bitNames(definition, tag.code == KIOTTY_SPEC_STATUS_SUCCESS ? tag.value.value : 0) });
@@ -198,20 +199,22 @@ int showTags(const Session& session)
 
 int setTag(const Session& session)
 {
-    const std::string* id = positional(session, 0);
-    const std::string* name = positional(session, 1);
-    const std::string* bits = positional(session, TAG_VALUE_POSITION);
-    if (id == nullptr || name == nullptr || bits == nullptr) {
+    const std::optional<std::string> id = readPositional(session, 0);
+    const std::optional<std::string> name = readPositional(session, 1);
+    const std::optional<std::string> bits = readPositional(session, TAG_VALUE_POSITION);
+    const bool has_arguments = id.has_value() && name.has_value() && bits.has_value();
+    if (!has_arguments) {
         return usage(findMessage(MessageKey::TAG_SET_USAGE));
     }
-    const KiottySpecItemResult item = KiottySpec_readItem(session.context, textOf(*id));
+    const KiottySpecItemResult item = KiottySpec_readItem(&session.context, textOf(*id));
     if (item.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, item.code); }
     const std::optional<TagColumn> tag = findTag(session, item.value.kind, *name);
     if (!tag) { return USAGE_EXIT_CODE; }
-    const std::optional<uint64_t> value = parseBits(tag->definition, *bits);
+    const std::optional<uint64_t> value = parseBits(tag.value().definition, *bits);
     if (!value) { return USAGE_EXIT_CODE; }
-    return check(session,
-                 KiottySpec_setItemTag(session.context, item.handle, tag->index, *value).code);
+    const KiottySpecStatusResult set =
+        KiottySpec_setItemTag(&session.context, item.handle, tag.value().index, *value);
+    return check(session, set.code);
 }
 
 int addRelation(const Session& session)
@@ -222,15 +225,15 @@ int removeRelation(const Session& session)
 
 int listRelations(const Session& session)
 {
-    const std::string* id = positional(session, 0);
-    if (id == nullptr) { return usage(findMessage(MessageKey::RELATION_LIST_USAGE)); }
+    const std::optional<std::string> id = readPositional(session, 0);
+    if (!id) { return usage(findMessage(MessageKey::RELATION_LIST_USAGE)); }
     KiottySpecDirection direction = KIOTTY_SPEC_DIRECTION_BOTH;
     const bool has_up_flag = session.arguments.flag("up");
     const bool has_down_flag = session.arguments.flag("down");
     if (has_up_flag) { direction = KIOTTY_SPEC_DIRECTION_UPSTREAM; }
     if (has_down_flag) { direction = KIOTTY_SPEC_DIRECTION_DOWNSTREAM; }
     const KiottySpecCursorResult cursor =
-        KiottySpec_openRelationCursor(session.context, textOf(*id), direction);
+        KiottySpec_openRelationCursor(&session.context, textOf(*id), direction);
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
     printRow({"from", "relation", "to"});
     const std::unique_ptr<KiottySpecRelationPage> page_storage =
@@ -238,39 +241,39 @@ int listRelations(const Session& session)
     KiottySpecRelationPage& page = *page_storage;
     while (true) {
         const KiottySpecStatusResult fetched =
-            KiottySpec_fetchRelationPage(session.context, cursor.value, &page);
+            KiottySpec_fetchRelationPage(&session.context, cursor.value, &page);
         if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
         for (size_t index = 0; index < page.length; ++index) {
             const KiottySpecRelation& relation = page.elements[index];
             const KiottySpecRelationDefinitionResult definition = KiottySpec_readRelationDefinition(
-                session.context, relation.model, relation.relation);
+                &session.context, relation.model, relation.relation);
             printRow({ itemId(session, relation.from), definition.value.name,
                        itemId(session, relation.to) });
         }
     }
-    KiottySpec_closeCursor(session.context, cursor.value);
+    KiottySpec_closeCursor(&session.context, cursor.value);
     return 0;
 }
 
 int showImpact(const Session& session)
 {
-    const std::string* id = positional(session, 0);
-    if (id == nullptr) { return usage(findMessage(MessageKey::IMPACT_USAGE)); }
+    const std::optional<std::string> id = readPositional(session, 0);
+    if (!id) { return usage(findMessage(MessageKey::IMPACT_USAGE)); }
     const std::optional<uint32_t> depth = readNumberOption(session, "depth", DEFAULT_IMPACT_DEPTH);
     if (!depth) { return usage(findMessage(MessageKey::IMPACT_USAGE)); }
     const KiottySpecCursorResult cursor =
-        KiottySpec_openImpactCursor(session.context, textOf(*id), *depth);
+        KiottySpec_openImpactCursor(&session.context, textOf(*id), *depth);
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
     printRow({"id"});
     const std::unique_ptr<KiottySpecIdPage> page_storage = std::make_unique<KiottySpecIdPage>();
     KiottySpecIdPage& page = *page_storage;
     while (true) {
         const KiottySpecStatusResult fetched =
-            KiottySpec_fetchIdPage(session.context, cursor.value, &page);
+            KiottySpec_fetchIdPage(&session.context, cursor.value, &page);
         if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
         for (size_t index = 0; index < page.length; ++index) { printRow({page.elements[index]}); }
     }
-    KiottySpec_closeCursor(session.context, cursor.value);
+    KiottySpec_closeCursor(&session.context, cursor.value);
     return 0;
 }
 
@@ -286,7 +289,7 @@ KiottySpecIdResult addDraftItem(const Session& session, KiottySpecItemKind kind,
     draft.title = textOf(title);
     draft.summary = textOf(summary);
     draft.kind = kind;
-    return KiottySpec_createItem(session.context, &draft);
+    return KiottySpec_createItem(&session.context, &draft);
 }
 
 int setTags(const Session& session, const std::string& id, KiottySpecItemKind kind)
@@ -296,12 +299,13 @@ int setTags(const Session& session, const std::string& id, KiottySpecItemKind ki
         if (equal == std::string::npos) { return usage(findMessage(MessageKey::TAG_OPTION_USAGE)); }
         const std::optional<TagColumn> tag = findTag(session, kind, spec.substr(0, equal));
         if (!tag) { return USAGE_EXIT_CODE; }
-        const std::optional<uint64_t> value = parseBits(tag->definition, spec.substr(equal + 1));
+        const std::optional<uint64_t> value =
+            parseBits(tag.value().definition, spec.substr(equal + 1));
         if (!value) { return USAGE_EXIT_CODE; }
-        const KiottySpecItemHandleResult handle = KiottySpec_findItem(session.context, textOf(id));
+        const KiottySpecItemHandleResult handle = KiottySpec_findItem(&session.context, textOf(id));
         if (handle.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, handle.code); }
         const KiottySpecStatusResult set =
-            KiottySpec_setItemTag(session.context, handle.value, tag->index, *value);
+            KiottySpec_setItemTag(&session.context, handle.value, tag.value().index, *value);
         if (set.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, set.code); }
     }
     return 0;
@@ -309,20 +313,21 @@ int setTags(const Session& session, const std::string& id, KiottySpecItemKind ki
 
 int applyRelationChange(const Session& session, RelationEdit edit)
 {
-    const std::string* from = positional(session, 0);
-    const std::string* name = positional(session, 1);
-    const std::string* to = positional(session, RELATION_TARGET_POSITION);
-    if (from == nullptr || name == nullptr || to == nullptr) {
+    const std::optional<std::string> from = readPositional(session, 0);
+    const std::optional<std::string> name = readPositional(session, 1);
+    const std::optional<std::string> to = readPositional(session, RELATION_TARGET_POSITION);
+    const bool has_arguments = from.has_value() && name.has_value() && to.has_value();
+    if (!has_arguments) {
         return usage(findMessage(MessageKey::RELATION_CHANGE_USAGE));
     }
-    const KiottySpecItemResult item = KiottySpec_readItem(session.context, textOf(*from));
+    const KiottySpecItemResult item = KiottySpec_readItem(&session.context, textOf(*from));
     if (item.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, item.code); }
     const std::optional<uint32_t> relation = findRelation(session, item.value.kind, *name);
     if (!relation) { return USAGE_EXIT_CODE; }
     const KiottySpecStatusResult changed =
         edit == RelationEdit::ADD
-            ? KiottySpec_addRelation(session.context, textOf(*from), *relation, textOf(*to))
-            : KiottySpec_removeRelation(session.context, textOf(*from), *relation, textOf(*to));
+            ? KiottySpec_addRelation(&session.context, textOf(*from), *relation, textOf(*to))
+            : KiottySpec_removeRelation(&session.context, textOf(*from), *relation, textOf(*to));
     return check(session, changed.code);
 }
 

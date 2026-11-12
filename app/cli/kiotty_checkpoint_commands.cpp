@@ -23,35 +23,35 @@ std::string describeCardinality(KiottySpecCardinality cardinality);
 
 int startCheckpoint(const Session& session)
 {
-    const std::string* step = positional(session, 0);
-    if (step == nullptr) { return usage(findMessage(MessageKey::CHECKPOINT_START_USAGE)); }
+    const std::optional<std::string> step = readPositional(session, 0);
+    if (!step) { return usage(findMessage(MessageKey::CHECKPOINT_START_USAGE)); }
     const std::optional<uint32_t> value = parseNumber(*step);
     if (!value) { return usage(findMessage(MessageKey::CHECKPOINT_START_USAGE)); }
     const std::string description = session.arguments.option("description").value_or("");
     const KiottySpecCheckpointHandleResult started = KiottySpec_startCheckpoint(
-        session.context, static_cast<KiottySpecStep>(*value), textOf(description));
+        &session.context, static_cast<KiottySpecStep>(*value), textOf(description));
     if (started.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, started.code); }
     std::printf("%s\n", checkpointName(started.value).c_str());
     return 0;
 }
 
 int resumeCheckpoint(const Session& session)
-{ return check(session, KiottySpec_resumeCheckpoint(session.context).code); }
+{ return check(session, KiottySpec_resumeCheckpoint(&session.context).code); }
 
 int completeCheckpoint(const Session& session)
-{ return check(session, KiottySpec_completeCheckpoint(session.context, session.actor).code); }
+{ return check(session, KiottySpec_completeCheckpoint(&session.context, session.actor).code); }
 
 int showCheckpoint(const Session& session)
 {
     KiottySpecCheckpointHandle handle = KIOTTY_SPEC_CHECKPOINT_CURRENT;
-    const std::string* name = positional(session, 0);
+    const std::optional<std::string> name = readPositional(session, 0);
     if (name) {
         const std::optional<KiottySpecCheckpointHandle> parsed = parseCheckpoint(*name);
         if (!parsed) { return usage(findMessage(MessageKey::CHECKPOINT_NAME_USAGE)); }
         handle = *parsed;
     }
     const KiottySpecCheckpointResult checkpoint =
-        KiottySpec_readCheckpoint(session.context, handle);
+        KiottySpec_readCheckpoint(&session.context, handle);
     if (checkpoint.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, checkpoint.code); }
     printRow(CHECKPOINT_HEADER);
     printCheckpoint(checkpoint.handle, checkpoint.value);
@@ -63,7 +63,7 @@ int listCheckpoints(const Session& session)
     const std::optional<uint32_t> step = readNumberOption(session, "step", 0);
     if (!step) { return usage(findMessage(MessageKey::CHECKPOINT_LIST_USAGE)); }
     const KiottySpecCursorResult cursor =
-        KiottySpec_openCheckpointCursor(session.context, static_cast<KiottySpecStep>(*step));
+        KiottySpec_openCheckpointCursor(&session.context, static_cast<KiottySpecStep>(*step));
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
     printRow(CHECKPOINT_HEADER);
     const std::unique_ptr<KiottySpecCheckpointPage> page_storage =
@@ -71,24 +71,24 @@ int listCheckpoints(const Session& session)
     KiottySpecCheckpointPage& page = *page_storage;
     while (true) {
         const KiottySpecStatusResult fetched =
-            KiottySpec_fetchCheckpointPage(session.context, cursor.value, &page);
+            KiottySpec_fetchCheckpointPage(&session.context, cursor.value, &page);
         if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
         for (size_t index = 0; index < page.length; ++index) {
             printCheckpoint(page.handles[index], page.elements[index]);
         }
     }
-    KiottySpec_closeCursor(session.context, cursor.value);
+    KiottySpec_closeCursor(&session.context, cursor.value);
     return 0;
 }
 
 int pruneCheckpoints(const Session& session)
 {
-    const std::string* name = positional(session, 0);
+    const std::optional<std::string> name = readPositional(session, 0);
     const std::optional<KiottySpecCheckpointHandle> base =
-        name == nullptr ? std::nullopt : parseCheckpoint(*name);
+        !name ? std::nullopt : parseCheckpoint(*name);
     if (!base) { return usage(findMessage(MessageKey::CHECKPOINT_PRUNE_USAGE)); }
     const KiottySpecSizeResult pruned =
-        KiottySpec_pruneCheckpoints(session.context, session.actor, *base);
+        KiottySpec_pruneCheckpoints(&session.context, session.actor, *base);
     if (pruned.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, pruned.code); }
     printRow({"removed"});
     printRow({std::to_string(pruned.value)});
@@ -97,7 +97,7 @@ int pruneCheckpoints(const Session& session)
 
 int showPosition(const Session& session)
 {
-    const KiottySpecPositionResult position = KiottySpec_readPosition(session.context);
+    const KiottySpecPositionResult position = KiottySpec_readPosition(&session.context);
     if (position.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, position.code); }
     printRow({"step"});
     printRow({stepName(position.value.step)});
@@ -116,7 +116,7 @@ int showHistory(const Session& session)
     KiottySpecCheckpointHandle handle = KIOTTY_SPEC_CHECKPOINT_CURRENT;
     for (uint32_t count = 0; count < depth; ++count) {
         const KiottySpecCheckpointResult checkpoint =
-            KiottySpec_readCheckpoint(session.context, handle);
+            KiottySpec_readCheckpoint(&session.context, handle);
         if (checkpoint.code == KIOTTY_SPEC_STATUS_NOT_FOUND) { break; }
         if (checkpoint.code != KIOTTY_SPEC_STATUS_SUCCESS) {
             return fail(session, checkpoint.code);
@@ -130,13 +130,13 @@ int showHistory(const Session& session)
 
 int showDecision(const Session& session)
 {
-    const std::string* name = positional(session, 0);
+    const std::optional<std::string> name = readPositional(session, 0);
     const std::optional<KiottySpecItemKind> kind =
-        name == nullptr ? std::nullopt : kindArgument(session, *name);
+        !name ? std::nullopt : kindArgument(session, *name);
     if (!kind) { return usage(findMessage(MessageKey::DECISION_SHOW_USAGE)); }
     std::vector<char> buffer(KIOTTY_SPEC_MAX_DECISION_LENGTH + 1);
     const KiottySpecSizeResult read = KiottySpec_readDecision(
-        session.context, *kind, KiottySpecBuffer { buffer.data(), buffer.size() });
+        &session.context, *kind, KiottySpecBuffer { buffer.data(), buffer.size() });
     if (read.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, read.code); }
     std::fwrite(buffer.data(), 1, read.value, stdout);
     if (read.value > 0 && buffer[read.value - 1] != '\n') { std::fputc('\n', stdout); }
@@ -145,20 +145,20 @@ int showDecision(const Session& session)
 
 int setDecision(const Session& session)
 {
-    const std::string* name = positional(session, 0);
+    const std::optional<std::string> name = readPositional(session, 0);
     const std::optional<KiottySpecItemKind> kind =
-        name == nullptr ? std::nullopt : kindArgument(session, *name);
-    const BodyOption text = bodyOption(session, "text", "file");
+        !name ? std::nullopt : kindArgument(session, *name);
+    const BodyOption text = readBodyOption(session, "text", "file");
     if (text.is_unreadable) { return USAGE_EXIT_CODE; }
     const bool has_arguments = kind.has_value() && text.text.has_value();
     if (!has_arguments) { return usage(findMessage(MessageKey::DECISION_SET_USAGE)); }
     return check(session,
-                 KiottySpec_writeDecision(session.context, *kind, textOf(*text.text)).code);
+                 KiottySpec_writeDecision(&session.context, *kind, textOf(*text.text)).code);
 }
 
 int printDiffSummary(const Session& session, const KiottySpecDiffQuery& query)
 {
-    const KiottySpecDiffSummaryResult summary = KiottySpec_summarizeDiff(session.context, &query);
+    const KiottySpecDiffSummaryResult summary = KiottySpec_summarizeDiff(&session.context, &query);
     if (summary.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, summary.code); }
     printRow({ "kind", "added", "modified", "removed", "relations_added", "relations_removed",
                "decision" });
@@ -177,12 +177,12 @@ int printDiffSummary(const Session& session, const KiottySpecDiffQuery& query)
 
 int showModel(const Session& session)
 {
-    const std::string* name = positional(session, 0);
+    const std::optional<std::string> name = readPositional(session, 0);
     if (name) { return showKindModel(session, *name); }
     printRow({"kind", "name", "prefix", "step", "tags", "relations"});
     for (uint32_t value = 1; value <= KIOTTY_SPEC_ITEM_KIND_COUNT; ++value) {
         const KiottySpecModelResult model =
-            KiottySpec_readModel(session.context, static_cast<KiottySpecItemKind>(value));
+            KiottySpec_readModel(&session.context, static_cast<KiottySpecItemKind>(value));
         printRow({ kindName(model.value.kind), model.value.name, model.value.id_prefix,
                    stepName(model.value.created_in), std::to_string(model.value.tag_count),
                    std::to_string(model.value.relation_count) });
@@ -203,7 +203,7 @@ int showKindModel(const Session& session, const std::string& name)
 {
     const std::optional<KiottySpecItemKind> kind = kindArgument(session, name);
     if (!kind) { return USAGE_EXIT_CODE; }
-    const KiottySpecModelResult model = KiottySpec_readModel(session.context, *kind);
+    const KiottySpecModelResult model = KiottySpec_readModel(&session.context, *kind);
     printRow({"type", "index", "name", "values", "cardinality"});
     for (uint32_t index = 0; index < model.value.tag_count; ++index) {
         printTagDefinition(session, *kind, index);
@@ -219,7 +219,7 @@ void printTagDefinition(const Session& session, KiottySpecItemKind kind, uint32_
     const std::unique_ptr<KiottySpecTagDefinition> definition_storage =
         std::make_unique<KiottySpecTagDefinition>();
     KiottySpecTagDefinition& definition = *definition_storage;
-    KiottySpec_readTagDefinition(session.context, kind, index, &definition);
+    KiottySpec_readTagDefinition(&session.context, kind, index, &definition);
     uint64_t named = 0;
     for (size_t bit = 0; bit < KIOTTY_SPEC_TAG_BIT_COUNT; ++bit) {
         const bool is_named = definition.bit_names[bit][0] != 0;
@@ -232,7 +232,7 @@ void printTagDefinition(const Session& session, KiottySpecItemKind kind, uint32_
 void printRelationDefinition(const Session& session, KiottySpecItemKind kind, uint32_t index)
 {
     const KiottySpecRelationDefinitionResult definition =
-        KiottySpec_readRelationDefinition(session.context, kind, index);
+        KiottySpec_readRelationDefinition(&session.context, kind, index);
     printRow({ "relation", std::to_string(index), definition.value.name,
                kindName(definition.value.target_kind),
                describeCardinality(definition.value.cardinality) });

@@ -12,7 +12,7 @@
 namespace kiotty::cli {
 
 int check(const Session& session, KiottySpecStatus status);
-const std::string* positional(const Session& session, size_t index);
+std::optional<std::string> readPositional(const Session& session, size_t index);
 std::optional<uint32_t> readNumberOption(const Session& session, std::string_view name,
                                          uint32_t fallback);
 std::string stepName(uint32_t step);
@@ -20,7 +20,8 @@ struct BodyOption {
     std::optional<std::string> text {};
     bool is_unreadable {false};
 };
-BodyOption bodyOption(const Session& session, const char* text_name, const char* file_name);
+BodyOption readBodyOption(const Session& session, std::string_view text_name,
+                          std::string_view file_name);
 
 struct Column {
     std::string header {};
@@ -34,6 +35,14 @@ struct ColumnPlan {
     std::vector<KiottySpecTagQuery> queries {};
 };
 
+struct TagSpecText {
+    std::string name {};
+    std::optional<std::string> bits {};
+};
+
+std::optional<TagSpecText> parseTagSpec(std::string_view spec);
+std::optional<KiottySpecCheckpointHandle> parseCheckpointArgument(std::string_view text);
+
 struct RelationColumn {
     uint32_t index {};
     std::string name {};
@@ -46,10 +55,10 @@ struct DiffColumns {
 
 std::optional<ColumnPlan> planColumns(const Session& session, KiottySpecItemKind kind);
 std::optional<DiffColumns> planDiffColumns(const Session& session, KiottySpecItemKind kind);
-void printItemHeader(const ColumnPlan* plan);
-void printItem(const Session& session, const KiottySpecItem& item, const ColumnPlan* plan);
+void printItemHeader(const ColumnPlan& plan);
+void printItem(const Session& session, const KiottySpecItem& item, const ColumnPlan& plan);
 int printItemCursor(const Session& session, const KiottySpecCursorResult& cursor,
-                    const ColumnPlan* plan);
+                    const ColumnPlan& plan);
 
 int initializeProject(const Session& session);
 int addItem(const Session& session);

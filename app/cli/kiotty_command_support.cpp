@@ -97,7 +97,7 @@ int check(const Session& session, KiottySpecStatus status)
 int fail(const Session& session, KiottySpecStatus status)
 {
     std::cerr << "error: " << KiottySpec_formatStatus(status).value.value;
-    const KiottySpecErrorResult last = KiottySpec_readLastError(session.context);
+    const KiottySpecErrorResult last = KiottySpec_readLastError(&session.context);
     const bool is_described = last.code == KIOTTY_SPEC_STATUS_SUCCESS &&
                               last.value.status == status &&
                               last.value.subject != KIOTTY_SPEC_SUBJECT_NONE;
@@ -106,11 +106,18 @@ int fail(const Session& session, KiottySpecStatus status)
     return 1;
 }
 
-const std::string* positional(const Session& session, size_t index)
+int failWithoutContext(KiottySpecStatus status)
+{
+    std::cerr << "error: " << KiottySpec_formatStatus(status).value.value << "\n";
+    return 1;
+}
+
+std::optional<std::string> readPositional(const Session& session, size_t index)
 {
     const std::vector<std::string>& values = session.arguments.positional;
     const bool is_present = index < values.size();
-    return is_present ? &values.at(index) : nullptr;
+    if (!is_present) { return std::nullopt; }
+    return values.at(index);
 }
 
 std::optional<uint32_t> readNumberOption(const Session& session, std::string_view name,
@@ -133,7 +140,8 @@ std::string stepName(uint32_t step)
     return "-";
 }
 
-BodyOption bodyOption(const Session& session, const char* text_name, const char* file_name)
+BodyOption readBodyOption(const Session& session, std::string_view text_name,
+                          std::string_view file_name)
 {
     const std::optional<std::string> text = session.arguments.option(text_name);
     if (text) { return BodyOption{text, false}; }
@@ -207,7 +215,7 @@ std::string appendText(MessageKey sentence, std::string_view text)
 std::string describeCompletionFailure(const Session& session)
 {
     const KiottySpecCheckpointResult checkpoint =
-        KiottySpec_readCheckpoint(session.context, KIOTTY_SPEC_CHECKPOINT_CURRENT);
+        KiottySpec_readCheckpoint(&session.context, KIOTTY_SPEC_CHECKPOINT_CURRENT);
     const std::string step = std::to_string(static_cast<int>(checkpoint.value.step));
     const std::string failure =
         checkpoint.code == KIOTTY_SPEC_STATUS_SUCCESS
@@ -218,7 +226,7 @@ std::string describeCompletionFailure(const Session& session)
 
 std::string listUnmetConditions(const Session& session)
 {
-    const KiottySpecCursorResult cursor = KiottySpec_openUnmetConditionCursor(session.context);
+    const KiottySpecCursorResult cursor = KiottySpec_openUnmetConditionCursor(&session.context);
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return std::string(); }
     std::string text {};
     std::optional<KiottySpecCondition> previous {};
@@ -227,7 +235,7 @@ std::string listUnmetConditions(const Session& session)
     KiottySpecUnmetConditionPage& page = *page_storage;
     while (true) {
         const KiottySpecStatusResult fetched =
-            KiottySpec_fetchUnmetConditionPage(session.context, cursor.value, &page);
+            KiottySpec_fetchUnmetConditionPage(&session.context, cursor.value, &page);
         if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
         for (size_t index = 0; index < page.length; ++index) {
             const KiottySpecUnmetCondition& unmet = page.elements[index];
@@ -235,7 +243,7 @@ std::string listUnmetConditions(const Session& session)
             previous = unmet.condition;
         }
     }
-    KiottySpec_closeCursor(session.context, cursor.value);
+    KiottySpec_closeCursor(&session.context, cursor.value);
     return text;
 }
 

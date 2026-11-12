@@ -71,13 +71,19 @@ kiotty_windows_definitions(kiotty_spec)
 # ---------------------------------------------------------------------------
 file(GLOB KIOTTY_CLI_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/app/cli/*.cpp
      ${CMAKE_CURRENT_SOURCE_DIR}/app/cli/src/i18n/*.cpp)
-add_executable(ks ${KIOTTY_CLI_SOURCES})
-target_link_libraries(ks PRIVATE kiotty_spec)
+list(REMOVE_ITEM KIOTTY_CLI_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/app/cli/main.cpp)
+add_library(kiotty_cli STATIC ${KIOTTY_CLI_SOURCES})
+target_include_directories(kiotty_cli PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/app/cli)
+target_link_libraries(kiotty_cli PUBLIC kiotty_spec)
+kiotty_warnings(kiotty_cli)
+kiotty_no_exceptions(kiotty_cli)
+kiotty_windows_definitions(kiotty_cli)
+
+add_executable(ks app/cli/main.cpp)
+target_link_libraries(ks PRIVATE kiotty_cli)
 kiotty_warnings(ks)
 kiotty_no_exceptions(ks)
-if(WIN32)
-    target_compile_definitions(ks PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
-endif()
+kiotty_windows_definitions(ks)
 
 # ---------------------------------------------------------------------------
 # core 단위 테스트: 개발수칙 0.1 에 따라 C++17 로 빌드한다.
@@ -124,6 +130,12 @@ add_executable(kiotty_model_test
 target_include_directories(kiotty_model_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 kiotty_warnings(kiotty_model_test)
 kiotty_no_exceptions(kiotty_model_test)
+
+add_executable(kiotty_cli_test tests/cli/cli_test.cpp)
+target_link_libraries(kiotty_cli_test PRIVATE kiotty_cli)
+kiotty_warnings(kiotty_cli_test)
+kiotty_no_exceptions(kiotty_cli_test)
+kiotty_windows_definitions(kiotty_cli_test)
 
 add_executable(kiotty_api_test tests/api/api_test.cpp)
 target_link_libraries(kiotty_api_test PRIVATE kiotty_spec)
