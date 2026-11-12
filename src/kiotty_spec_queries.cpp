@@ -116,8 +116,9 @@ KiottySpecCursorResult KiottySpec_openItemCursor(KiottySpecContext* context,
         if (!is_query_kind) {
             return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
         }
-        queries[index] = impl::TagQuery { static_cast<entity::ItemKind>(tag_queries[index].kind),
-                                          tag_queries[index].tag_index, tag_queries[index].mask };
+        queries[index] = impl::TagQuery { tag_queries[index].mask,
+                                          static_cast<entity::ItemKind>(tag_queries[index].kind),
+                                          tag_queries[index].tag_index };
     }
     const impl::CursorIdResult opened =
         context->context.finder().items(kind, impl::Span<const impl::TagQuery>(queries, count));

@@ -50,10 +50,10 @@ struct ItemRecord
 
 struct TagRecord
 {
+    uint64_t value {};
     ItemHandle item {};
     ItemKind model {};
     uint32_t tag {};
-    uint64_t value {};
 };
 
 struct RelationRecord

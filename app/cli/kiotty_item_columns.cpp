@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <iostream>
+#include <memory>
 
 namespace kiotty::cli {
 
@@ -62,7 +63,8 @@ int printItemCursor(const Session& session, const KiottySpecCursorResult& cursor
 {
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
     printItemHeader(plan);
-    KiottySpecItemPage page {};
+    const std::unique_ptr<KiottySpecItemPage> page_storage = std::make_unique<KiottySpecItemPage>();
+    KiottySpecItemPage& page = *page_storage;
     while (true) {
         const KiottySpecStatusResult fetched =
             KiottySpec_fetchItemPage(session.context, cursor.value, &page);
@@ -213,7 +215,9 @@ std::optional<Column> readRelationColumn(const Session& session, KiottySpecItemK
         fail(session, cursor.code);
         return std::nullopt;
     }
-    KiottySpecRelationPage page {};
+    const std::unique_ptr<KiottySpecRelationPage> page_storage =
+        std::make_unique<KiottySpecRelationPage>();
+    KiottySpecRelationPage& page = *page_storage;
     while (true) {
         const KiottySpecStatusResult fetched =
             KiottySpec_fetchRelationPage(session.context, cursor.value, &page);

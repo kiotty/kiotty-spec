@@ -1,6 +1,7 @@
 #include "kiotty_commands.h"
 
 #include <iostream>
+#include <memory>
 
 namespace kiotty::cli {
 
@@ -213,7 +214,9 @@ std::string listUnmetConditions(const Session& session)
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return std::string(); }
     std::string text {};
     std::optional<KiottySpecCondition> previous {};
-    KiottySpecUnmetConditionPage page {};
+    const std::unique_ptr<KiottySpecUnmetConditionPage> page_storage =
+        std::make_unique<KiottySpecUnmetConditionPage>();
+    KiottySpecUnmetConditionPage& page = *page_storage;
     while (true) {
         const KiottySpecStatusResult fetched =
             KiottySpec_fetchUnmetConditionPage(session.context, cursor.value, &page);

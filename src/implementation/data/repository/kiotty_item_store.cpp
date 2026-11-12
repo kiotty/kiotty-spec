@@ -123,7 +123,7 @@ KiottySpecStatus ItemStore::loadTags()
             return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL,
                                   KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_tags"));
         }
-        *slot.value = TagRecord{handle, record.kind, tag.tag, tag.value};
+        *slot.value = TagRecord{tag.value, handle, record.kind, tag.tag};
         ++_tables.tag_count;
     }
     const Span<TagRecord> loaded(tags.begin(), _tables.tag_count);

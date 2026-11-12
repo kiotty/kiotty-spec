@@ -8,6 +8,12 @@
 #include <iterator>
 #include <sstream>
 
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
+
 namespace kiotty::cli {
 
 namespace {
@@ -266,6 +272,22 @@ std::string bitNames(const KiottySpecTagDefinition& definition, uint64_t value)
             definition.bit_names[bit][0] != '\0' ? definition.bit_names[bit] : std::to_string(bit);
     }
     return text.empty() ? "-" : text;
+}
+
+bool detectColorTerminal()
+{
+#ifdef _WIN32
+    const bool is_terminal = _isatty(_fileno(stdout)) != 0;
+    if (!is_terminal) { return false; }
+    const HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD mode = 0;
+    if (output == INVALID_HANDLE_VALUE) { return false; }
+    const bool has_console_mode = GetConsoleMode(output, &mode) != 0;
+    if (!has_console_mode) { return false; }
+    return SetConsoleMode(output, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
+#else
+    return isatty(fileno(stdout)) != 0;
+#endif
 }
 
 namespace {

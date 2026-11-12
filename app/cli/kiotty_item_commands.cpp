@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <iostream>
 #include <map>
+#include <memory>
 
 namespace kiotty::cli {
 
@@ -181,7 +182,9 @@ int showTags(const Session& session)
     const KiottySpecModelResult model = KiottySpec_readModel(session.context, item.value.kind);
     printRow({"tag", "value"});
     for (uint32_t index = 0; index < model.value.tag_count; ++index) {
-        KiottySpecTagDefinition definition {};
+        const std::unique_ptr<KiottySpecTagDefinition> definition_storage =
+            std::make_unique<KiottySpecTagDefinition>();
+        KiottySpecTagDefinition& definition = *definition_storage;
         const KiottySpecStatusResult read =
             KiottySpec_readTagDefinition(session.context, item.value.kind, index, &definition);
         if (read.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
@@ -230,7 +233,9 @@ int listRelations(const Session& session)
         KiottySpec_openRelationCursor(session.context, textOf(*id), direction);
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
     printRow({"from", "relation", "to"});
-    KiottySpecRelationPage page {};
+    const std::unique_ptr<KiottySpecRelationPage> page_storage =
+        std::make_unique<KiottySpecRelationPage>();
+    KiottySpecRelationPage& page = *page_storage;
     while (true) {
         const KiottySpecStatusResult fetched =
             KiottySpec_fetchRelationPage(session.context, cursor.value, &page);
@@ -260,7 +265,8 @@ int showImpact(const Session& session)
         KiottySpec_openImpactCursor(session.context, textOf(*id), depth);
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
     printRow({"id"});
-    KiottySpecIdPage page {};
+    const std::unique_ptr<KiottySpecIdPage> page_storage = std::make_unique<KiottySpecIdPage>();
+    KiottySpecIdPage& page = *page_storage;
     while (true) {
         const KiottySpecStatusResult fetched =
             KiottySpec_fetchIdPage(session.context, cursor.value, &page);

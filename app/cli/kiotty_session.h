@@ -63,6 +63,7 @@ std::optional<uint32_t> findRelation(const Session& session, KiottySpecItemKind 
 std::optional<uint64_t> parseBits(const KiottySpecTagDefinition& definition,
                                   std::string_view names);
 std::string bitNames(const KiottySpecTagDefinition& definition, uint64_t value);
+bool detectColorTerminal();
 
 using Command = int (*)(const Session&);
 

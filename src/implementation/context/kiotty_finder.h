@@ -17,10 +17,11 @@
 namespace kiotty::spec::implementation {
 
 struct TagQuery {
+    uint64_t mask {};
     entity::ItemKind kind {};
     uint32_t tag {};
-    uint64_t mask {};
 };
+static_assert(sizeof(TagQuery) == 16, "unexpected padding");
 
 class Finder
 {

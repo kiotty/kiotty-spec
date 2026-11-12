@@ -3,15 +3,9 @@
 #include <cstdio>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
-
-#ifdef _WIN32
-#include <io.h>
-#include <windows.h>
-#else
-#include <unistd.h>
-#endif
 
 namespace kiotty::cli {
 
@@ -58,8 +52,6 @@ struct ItemVersions {
     KiottySpecItem before {};
     KiottySpecItem after {};
 };
-
-bool detectColorTerminal();
 
 struct Painter {
     bool is_colored {};
@@ -192,22 +184,6 @@ std::vector<DiffGroup> chooseDiffGroups(const Arguments& arguments)
     return groups;
 }
 
-bool detectColorTerminal()
-{
-#ifdef _WIN32
-    const bool is_terminal = _isatty(_fileno(stdout)) != 0;
-    if (!is_terminal) { return false; }
-    const HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
-    DWORD mode = 0;
-    if (output == INVALID_HANDLE_VALUE) { return false; }
-    const bool has_console_mode = GetConsoleMode(output, &mode) != 0;
-    if (!has_console_mode) { return false; }
-    return SetConsoleMode(output, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
-#else
-    return isatty(fileno(stdout)) != 0;
-#endif
-}
-
 RelationChangesResult readRelationChanges(const Session& session, const KiottySpecDiffQuery& query,
                                           const std::vector<RelationColumn>& relations)
 {
@@ -219,7 +195,9 @@ RelationChangesResult readRelationChanges(const Session& session, const KiottySp
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) {
         return RelationChangesResult{cursor.code, {}};
     }
-    KiottySpecRelationDiffPage page {};
+    const std::unique_ptr<KiottySpecRelationDiffPage> page_storage =
+        std::make_unique<KiottySpecRelationDiffPage>();
+    KiottySpecRelationDiffPage& page = *page_storage;
     while (true) {
         const KiottySpecStatusResult fetched =
             KiottySpec_fetchRelationDiffPage(session.context, cursor.value, &page);
@@ -241,7 +219,9 @@ ItemDiffsResult readItemDiffs(const Session& session, const KiottySpecDiffQuery&
     const KiottySpecCursorResult cursor = KiottySpec_openItemDiffCursor(session.context, &query);
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return ItemDiffsResult{cursor.code, {}}; }
     ItemDiffsResult result {};
-    KiottySpecItemDiffPage page {};
+    const std::unique_ptr<KiottySpecItemDiffPage> page_storage =
+        std::make_unique<KiottySpecItemDiffPage>();
+    KiottySpecItemDiffPage& page = *page_storage;
     while (true) {
         const KiottySpecStatusResult fetched =
             KiottySpec_fetchItemDiffPage(session.context, cursor.value, &page);
@@ -336,7 +316,9 @@ std::string diffSummary(const Session& session, const DiffView& view,
         session.context, diff.item, KIOTTY_SPEC_TEXT_FIELD_SUMMARY, &points);
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return whole; }
     std::string text {};
-    KiottySpecTextDiffPage page {};
+    const std::unique_ptr<KiottySpecTextDiffPage> page_storage =
+        std::make_unique<KiottySpecTextDiffPage>();
+    KiottySpecTextDiffPage& page = *page_storage;
     while (true) {
         const KiottySpecStatusResult fetched =
             KiottySpec_fetchTextDiffPage(session.context, cursor.value, &page);

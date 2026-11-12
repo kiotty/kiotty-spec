@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 
 namespace kiotty::cli {
 
@@ -68,7 +69,9 @@ int listCheckpoints(const Session& session)
         KiottySpec_openCheckpointCursor(session.context, static_cast<KiottySpecStep>(step));
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
     printRow(CHECKPOINT_HEADER);
-    KiottySpecCheckpointPage page {};
+    const std::unique_ptr<KiottySpecCheckpointPage> page_storage =
+        std::make_unique<KiottySpecCheckpointPage>();
+    KiottySpecCheckpointPage& page = *page_storage;
     while (true) {
         const KiottySpecStatusResult fetched =
             KiottySpec_fetchCheckpointPage(session.context, cursor.value, &page);
@@ -221,7 +224,9 @@ int showKindModel(const Session& session, const std::string& name)
 
 void printTagDefinition(const Session& session, KiottySpecItemKind kind, uint32_t index)
 {
-    KiottySpecTagDefinition definition {};
+    const std::unique_ptr<KiottySpecTagDefinition> definition_storage =
+        std::make_unique<KiottySpecTagDefinition>();
+    KiottySpecTagDefinition& definition = *definition_storage;
     KiottySpec_readTagDefinition(session.context, kind, index, &definition);
     uint64_t named = 0;
     for (size_t bit = 0; bit < KIOTTY_SPEC_TAG_BIT_COUNT; ++bit) {

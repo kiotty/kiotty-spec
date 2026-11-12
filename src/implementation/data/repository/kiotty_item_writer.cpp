@@ -218,7 +218,7 @@ KiottySpecStatus ItemWriter::applyTag(ItemHandle handle, ItemKind kind, uint32_t
 {
     const size_t position = tags().position(handle.index, tag);
     const Span<TagRecord> records = viewTags();
-    const TagRecord record {handle, kind, tag, value};
+    const TagRecord record {value, handle, kind, tag};
     const CountResult applied = applyRecord(records, _tables.tag_count, position, record);
     if (!applied) { return applied.code; }
     _tables.tag_count = applied.value;
