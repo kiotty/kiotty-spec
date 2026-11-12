@@ -17,6 +17,8 @@ struct ItemVersion
 {
     using Identity = uint32_t;
 
+    SummaryText summary {};
+    TitleText title {};
     uint64_t body_hash {};
     uint32_t key {};
     uint32_t checkpoint {};
@@ -24,8 +26,6 @@ struct ItemVersion
     uint32_t removed {};
     ItemKind kind {};
     uint32_t _padding {};
-    TitleText title {};
-    SummaryText summary {};
 
     Identity identity() const { return key; }
 };
@@ -35,9 +35,9 @@ struct TagIdentity
     uint32_t key {};
     uint32_t tag {};
 
-    bool operator<(const TagIdentity& other) const
+    bool operator<(TagIdentity other) const
     { return key != other.key ? key < other.key : tag < other.tag; }
-    bool operator==(const TagIdentity& other) const { return key == other.key && tag == other.tag; }
+    bool operator==(TagIdentity other) const { return key == other.key && tag == other.tag; }
 };
 
 struct TagVersion
@@ -59,13 +59,13 @@ struct RelationIdentity
     uint32_t relation {};
     uint32_t to {};
 
-    bool operator<(const RelationIdentity& other) const
+    bool operator<(RelationIdentity other) const
     {
         if (from != other.from) { return from < other.from; }
         if (relation != other.relation) { return relation < other.relation; }
         return to < other.to;
     }
-    bool operator==(const RelationIdentity& other) const
+    bool operator==(RelationIdentity other) const
     { return from == other.from && relation == other.relation && to == other.to; }
 };
 
@@ -87,15 +87,17 @@ struct DecisionVersion
 {
     using Identity = uint32_t;
 
+    DecisionVersionText text {};
     ItemKind kind {};
     uint32_t checkpoint {};
     uint32_t removed {};
-    DecisionVersionText text {};
 
     Identity identity() const { return static_cast<uint32_t>(kind); }
 };
 
 static_assert(sizeof(ItemVersion) == 416, "unexpected padding");
+static_assert(sizeof(TagIdentity) == 8, "unexpected padding");
+static_assert(sizeof(RelationIdentity) == 12, "unexpected padding");
 static_assert(sizeof(TagVersion) == 24, "unexpected padding");
 static_assert(sizeof(RelationVersion) == 24, "unexpected padding");
 static_assert(sizeof(DecisionVersion) == 2064, "unexpected padding");

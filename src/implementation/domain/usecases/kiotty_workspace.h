@@ -52,4 +52,6 @@ struct Workspace {
     }
 };
 
+static_assert(sizeof(Workspace) == 64, "unexpected padding");
+
 }

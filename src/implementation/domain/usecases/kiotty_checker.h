@@ -29,6 +29,26 @@ struct TagBit {
 
 static_assert(sizeof(TagBit) == 16, "unexpected padding");
 
+enum class TargetFilter : uint32_t {
+    ALL_TARGETS = 1,
+    FUNCTIONAL_REQUIREMENTS
+};
+
+enum class RelationSide : uint32_t {
+    FROM = 1,
+    TO
+};
+
+struct PairRule {
+    std::string_view relation_name {};
+    entity::ItemKind target_kind {};
+    entity::ItemKind test_kind {};
+    KiottySpecCondition pair_condition {KIOTTY_SPEC_CONDITION_ENTRY_STEP};
+    TargetFilter filter {TargetFilter::ALL_TARGETS};
+};
+
+static_assert(sizeof(PairRule) == 32, "unexpected padding");
+
 class Checker
 {
 public:
@@ -41,22 +61,23 @@ public:
     bool isOpenChangeRequest(entity::ItemHandle handle);
     size_t openChangeRequestCount();
     uint32_t earliestEntryStep();
-    static size_t countAcceptanceCriteria(Span<const char> body);
 
 private:
     TagBit tagBit(entity::ItemKind kind, std::string_view tag, std::string_view bit);
     uint32_t relationIndex(entity::ItemKind kind, std::string_view name);
     size_t countRelations(entity::ItemKind model, uint32_t relation, entity::ItemHandle item,
-                          bool as_target);
+                          RelationSide side);
     void add(KiottySpecCondition condition, entity::IdText id);
 
     void checkEntrySteps();
     void checkAcceptanceCriteria();
     void checkMilestoneCoverage();
-    void checkOneToOne(entity::ItemKind target_kind, entity::ItemKind test_kind,
-                       std::string_view relation, KiottySpecCondition pair_condition,
-                       bool functional_only);
+    void checkOneToOne(const PairRule& rule);
+    void checkTargetPairs(const PairRule& rule, uint32_t relation);
+    void checkSingleTargets(entity::ItemKind test_kind, uint32_t relation);
     void checkResults();
+    void checkPassingResults();
+    void checkClosedChangeRequests();
 
     Workspace& _workspace;
     std::vector<char> _body;

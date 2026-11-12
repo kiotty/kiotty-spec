@@ -39,13 +39,13 @@ constexpr CheckpointHandle INVALID_CHECKPOINT_HANDLE {0, 0};
 
 struct ItemRecord
 {
+    SummaryText summary {};
+    TitleText title {};
+    IdText id {};
     CheckpointHandle checkpoint {};
     ItemHandle parent {};
     ItemKind kind {};
     uint32_t _padding {};
-    IdText id {};
-    TitleText title {};
-    SummaryText summary {};
 };
 
 struct TagRecord
@@ -66,19 +66,19 @@ struct RelationRecord
 
 struct CheckpointRecord
 {
+    DescriptionText description {};
     int64_t created_at {};
     CheckpointHandle previous {};
     Step step {};
     CheckpointState state {};
-    DescriptionText description {};
 };
 
 struct DecisionRecord
 {
+    DecisionText description {};
     CheckpointHandle checkpoint {};
     ItemKind kind {};
     uint32_t _padding {};
-    DecisionText description {};
 };
 
 static_assert(sizeof(ItemHandle) == 8, "unexpected padding");

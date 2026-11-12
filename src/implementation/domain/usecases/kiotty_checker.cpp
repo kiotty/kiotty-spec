@@ -2,6 +2,7 @@
 
 #include "implementation/core/kiotty_fixed_string.h"
 #include "implementation/core/kiotty_text_view.h"
+#include "implementation/domain/usecases/checker/kiotty_acceptance_criteria.h"
 
 #include <string_view>
 #include <vector>
@@ -15,13 +16,15 @@ using entity::ItemKind;
 using entity::ItemRecord;
 using entity::RelationRecord;
 
-constexpr uint32_t MISSING = 0xFFFFFFFFu;
-constexpr size_t MAX_HEADING_LEVEL = 6;
-constexpr size_t ACCEPTANCE_WORD_LENGTH = 10;
-constexpr size_t NUMBERED_MARKER_LENGTH = 2;
+using IndexResult = Result<uint32_t, KiottySpecStatus>;
 
-bool startsWithKeyword(std::string_view text);
-bool isListLine(std::string_view line);
+constexpr uint32_t MISSING = 0xFFFFFFFFu;
+constexpr ItemKind RESULT_KINDS[] = { ItemKind::SYSTEM_TEST_RESULT,
+                                      ItemKind::END_TO_END_TEST_RESULT,
+                                      ItemKind::CODE_INSPECTION_RESULT };
+
+uint32_t findLowestStep(uint64_t value);
+bool isResultKind(ItemKind kind);
 size_t appendCondition(Span<UnmetCondition> rows, size_t length, const UnmetCondition& row);
 
 }
@@ -34,19 +37,21 @@ Span<const UnmetCondition> Checker::collect(entity::Step step)
     case entity::Step::REQUIREMENT_DISCUSSING: checkAcceptanceCriteria(); break;
     case entity::Step::DEVELOPMENT_PLAN_DISCUSSING: checkMilestoneCoverage(); break;
     case entity::Step::SYSTEM_TEST_PLAN_DISCUSSING:
-        checkOneToOne(ItemKind::REQUIREMENT, ItemKind::SYSTEM_TEST_PLAN,
-                      SYSTEM_TEST_REQUIREMENT_RELATION, KIOTTY_SPEC_CONDITION_SYSTEM_TEST_PAIR,
-                      true);
+        checkOneToOne(PairRule { SYSTEM_TEST_REQUIREMENT_RELATION, ItemKind::REQUIREMENT,
+                                 ItemKind::SYSTEM_TEST_PLAN, KIOTTY_SPEC_CONDITION_SYSTEM_TEST_PAIR,
+                                 TargetFilter::FUNCTIONAL_REQUIREMENTS });
         break;
     case entity::Step::CODE_INSPECTING:
-        checkOneToOne(ItemKind::RULE, ItemKind::CODE_INSPECTION_RESULT,
-                      CODE_INSPECTION_RULE_RELATION, KIOTTY_SPEC_CONDITION_CODE_INSPECTION_PAIR,
-                      false);
+        checkOneToOne(PairRule { CODE_INSPECTION_RULE_RELATION, ItemKind::RULE,
+                                 ItemKind::CODE_INSPECTION_RESULT,
+                                 KIOTTY_SPEC_CONDITION_CODE_INSPECTION_PAIR,
+                                 TargetFilter::ALL_TARGETS });
         break;
     case entity::Step::END_TO_END_TEST_DISCUSSING:
-        checkOneToOne(ItemKind::EXTERNAL_INTERFACE, ItemKind::END_TO_END_TEST_PLAN,
-                      END_TO_END_TEST_INTERFACE_RELATION,
-                      KIOTTY_SPEC_CONDITION_END_TO_END_TEST_PAIR, false);
+        checkOneToOne(PairRule { END_TO_END_TEST_INTERFACE_RELATION, ItemKind::EXTERNAL_INTERFACE,
+                                 ItemKind::END_TO_END_TEST_PLAN,
+                                 KIOTTY_SPEC_CONDITION_END_TO_END_TEST_PAIR,
+                                 TargetFilter::ALL_TARGETS });
         break;
     case entity::Step::END_TO_END_TEST_RUN: checkResults(); break;
     case entity::Step::EXTERNAL_INTERFACE_DISCUSSING:
@@ -75,8 +80,8 @@ size_t Checker::openChangeRequestCount()
 
 uint32_t Checker::earliestEntryStep()
 {
-    const auto entry = _workspace.catalog.finder().findTag(ItemKind::CHANGE_REQUEST,
-                                                           spanOf(CHANGE_REQUEST_ENTRY_STEP_TAG));
+    const IndexResult entry = _workspace.catalog.finder().findTag(
+        ItemKind::CHANGE_REQUEST, spanOf(CHANGE_REQUEST_ENTRY_STEP_TAG));
     if (!entry) { return 0; }
     uint32_t earliest = 0;
     const size_t capacity = _workspace.items.reader().capacity();
@@ -88,19 +93,16 @@ uint32_t Checker::earliestEntryStep()
         const bool is_open = isOpenChangeRequest(handle);
         if (!is_open) { continue; }
         const uint64_t value = _workspace.items.tags().value(handle, entry.value);
-        for (uint32_t bit = 0; bit < entity::STEP_COUNT; ++bit) {
-            if ((value & (uint64_t{1} << bit)) == 0) { continue; }
-            if (earliest == 0 || bit + 1 < earliest) { earliest = bit + 1; }
-            break;
-        }
+        const uint32_t step = findLowestStep(value);
+        if (step != 0 && (earliest == 0 || step < earliest)) { earliest = step; }
     }
     return earliest;
 }
 
 void Checker::checkEntrySteps()
 {
-    const auto entry = _workspace.catalog.finder().findTag(ItemKind::CHANGE_REQUEST,
-                                                           spanOf(CHANGE_REQUEST_ENTRY_STEP_TAG));
+    const IndexResult entry = _workspace.catalog.finder().findTag(
+        ItemKind::CHANGE_REQUEST, spanOf(CHANGE_REQUEST_ENTRY_STEP_TAG));
     const size_t capacity = _workspace.items.reader().capacity();
     for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _workspace.items.reader().handleAt(index);
@@ -129,42 +131,12 @@ void Checker::checkAcceptanceCriteria()
         if (!is_requirement) { continue; }
         const uint64_t kind_value = _workspace.items.tags().value(handle, functional.tag_index);
         if ((kind_value & functional.bit) == 0) { continue; }
-        const auto length =
+        const Result<size_t, KiottySpecStatus> length =
             _workspace.items.reader().readBody(handle, buffer.data(), buffer.size());
         const size_t criteria_count =
             length ? countAcceptanceCriteria(Span<const char>(buffer.data(), length.value)) : 0;
         if (criteria_count == 0) { add(KIOTTY_SPEC_CONDITION_ACCEPTANCE_CRITERIA, item.value->id); }
     }
-}
-
-size_t Checker::countAcceptanceCriteria(Span<const char> body)
-{
-    const std::string_view text = viewOf(body);
-    size_t count = 0;
-    size_t active_level = 0;
-    size_t start = 0;
-    const size_t text_size = text.size();
-    while (start <= text_size) {
-        size_t end = text.find('\n', start);
-        if (end == std::string_view::npos) { end = text_size; }
-        std::string_view line = text.substr(start, end - start);
-        const bool has_carriage_return = !line.empty() && line.back() == '\r';
-        if (has_carriage_return) { line.remove_suffix(1); }
-        const size_t line_size = line.size();
-        size_t level = 0;
-        while (level < line_size && line[level] == '#') { ++level; }
-        if (level > 0 && level <= MAX_HEADING_LEVEL && level < line_size && line[level] == ' ') {
-            if (active_level != 0 && level <= active_level) { active_level = 0; }
-            const bool is_keyword = startsWithKeyword(line.substr(level));
-            if (is_keyword) { active_level = level; }
-        } else if (active_level != 0) {
-            const bool is_list = isListLine(line);
-            if (is_list) { ++count; }
-        }
-        if (end == text_size) { break; }
-        start = end + 1;
-    }
-    return count;
 }
 
 void Checker::checkMilestoneCoverage()
@@ -180,79 +152,101 @@ void Checker::checkMilestoneCoverage()
         if (item.value->kind == ItemKind::DESIGN) { relation = designs; }
         if (item.value->kind == ItemKind::UNIT_TEST_PLAN) { relation = tests; }
         if (relation == MISSING) { continue; }
-        const size_t count = countRelations(ItemKind::MILESTONE, relation, handle, true);
+        const size_t count =
+            countRelations(ItemKind::MILESTONE, relation, handle, RelationSide::TO);
         if (count == 0) { add(KIOTTY_SPEC_CONDITION_MILESTONE_COVERAGE, item.value->id); }
     }
 }
 
-void Checker::checkOneToOne(ItemKind target_kind, ItemKind test_kind,
-                            std::string_view relation_name, KiottySpecCondition pair_condition,
-                            bool functional_only)
+void Checker::checkOneToOne(const PairRule& rule)
 {
-    const uint32_t relation = relationIndex(test_kind, relation_name);
-    const TagBit functional = functional_only ? tagBit(ItemKind::REQUIREMENT, REQUIREMENT_KIND_TAG,
-                                                       FUNCTIONAL_REQUIREMENT_BIT)
-                                              : TagBit {};
+    const uint32_t relation = relationIndex(rule.test_kind, rule.relation_name);
+    checkTargetPairs(rule, relation);
+    checkSingleTargets(rule.test_kind, relation);
+}
+
+void Checker::checkTargetPairs(const PairRule& rule, uint32_t relation)
+{
+    const bool is_functional_only = rule.filter == TargetFilter::FUNCTIONAL_REQUIREMENTS;
+    const TagBit functional = is_functional_only ? tagBit(ItemKind::REQUIREMENT,
+                                                          REQUIREMENT_KIND_TAG,
+                                                          FUNCTIONAL_REQUIREMENT_BIT)
+                                                 : TagBit {};
     const size_t capacity = _workspace.items.reader().capacity();
     for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _workspace.items.reader().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
-        const bool is_target = item && item.value->kind == target_kind;
+        const bool is_target = item && item.value->kind == rule.target_kind;
         if (!is_target) { continue; }
-        const bool can_read_tag = functional_only && functional.tag_index != MISSING;
+        const bool can_read_tag = is_functional_only && functional.tag_index != MISSING;
         const uint64_t kind_value =
             can_read_tag ? _workspace.items.tags().value(handle, functional.tag_index) : 0;
-        if (functional_only && (kind_value & functional.bit) == 0) { continue; }
-        const size_t test_count = countRelations(test_kind, relation, handle, true);
-        if (test_count != 1) { add(pair_condition, item.value->id); }
+        if (is_functional_only && (kind_value & functional.bit) == 0) { continue; }
+        const size_t test_count =
+            countRelations(rule.test_kind, relation, handle, RelationSide::TO);
+        if (test_count != 1) { add(rule.pair_condition, item.value->id); }
     }
+}
+
+void Checker::checkSingleTargets(ItemKind test_kind, uint32_t relation)
+{
+    const size_t capacity = _workspace.items.reader().capacity();
     for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _workspace.items.reader().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
         const bool is_test = item && item.value->kind == test_kind;
         if (!is_test) { continue; }
-        const size_t target_count = countRelations(test_kind, relation, handle, false);
+        const size_t target_count =
+            countRelations(test_kind, relation, handle, RelationSide::FROM);
         if (target_count != 1) { add(KIOTTY_SPEC_CONDITION_SINGLE_TARGET, item.value->id); }
     }
 }
 
 uint32_t Checker::relationIndex(ItemKind kind, std::string_view name)
 {
-    const auto found = _workspace.catalog.finder().findRelation(kind, spanOf(name));
+    const IndexResult found = _workspace.catalog.finder().findRelation(kind, spanOf(name));
     return found ? found.value : MISSING;
 }
 
-size_t Checker::countRelations(ItemKind model, uint32_t relation, ItemHandle item, bool as_target)
+size_t Checker::countRelations(ItemKind model, uint32_t relation, ItemHandle item,
+                               RelationSide side)
 {
     size_t count = 0;
     for (const RelationRecord& record : _workspace.relations.all()) {
         if (record.model != model || record.relation != relation) { continue; }
-        const ItemHandle side = as_target ? record.to : record.from;
-        if (side.index == item.index) { ++count; }
+        const ItemHandle endpoint = side == RelationSide::TO ? record.to : record.from;
+        if (endpoint.index == item.index) { ++count; }
     }
     return count;
 }
 
 void Checker::checkResults()
 {
-    const ItemKind kinds[] = { ItemKind::SYSTEM_TEST_RESULT, ItemKind::END_TO_END_TEST_RESULT,
-                               ItemKind::CODE_INSPECTION_RESULT };
+    checkPassingResults();
+    checkClosedChangeRequests();
+}
+
+void Checker::checkPassingResults()
+{
     const size_t capacity = _workspace.items.reader().capacity();
     for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _workspace.items.reader().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
-        if (!item) { continue; }
-        for (const ItemKind kind : kinds) {
-            if (item.value->kind != kind) { continue; }
-            const TagBit pass = tagBit(kind, RESULT_TAG, PASS_BIT);
-            const bool has_pass_tag = pass.tag_index != MISSING;
-            const uint64_t result_value =
-                has_pass_tag ? _workspace.items.tags().value(handle, pass.tag_index) : 0;
-            if (pass.tag_index == MISSING || result_value != pass.bit) {
-                add(KIOTTY_SPEC_CONDITION_PASSING_RESULT, item.value->id);
-            }
+        const bool is_result = item && isResultKind(item.value->kind);
+        if (!is_result) { continue; }
+        const TagBit pass = tagBit(item.value->kind, RESULT_TAG, PASS_BIT);
+        const bool has_pass_tag = pass.tag_index != MISSING;
+        const uint64_t result_value =
+            has_pass_tag ? _workspace.items.tags().value(handle, pass.tag_index) : 0;
+        if (pass.tag_index == MISSING || result_value != pass.bit) {
+            add(KIOTTY_SPEC_CONDITION_PASSING_RESULT, item.value->id);
         }
     }
+}
+
+void Checker::checkClosedChangeRequests()
+{
+    const size_t capacity = _workspace.items.reader().capacity();
     for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _workspace.items.reader().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
@@ -276,9 +270,10 @@ bool Checker::isOpenChangeRequest(ItemHandle handle)
 
 TagBit Checker::tagBit(ItemKind kind, std::string_view tag, std::string_view bit)
 {
-    const auto found = _workspace.catalog.finder().findTag(kind, spanOf(tag));
+    const IndexResult found = _workspace.catalog.finder().findTag(kind, spanOf(tag));
     if (!found) { return TagBit{}; }
-    const auto position = _workspace.catalog.finder().findTagBit(kind, found.value, spanOf(bit));
+    const IndexResult position =
+        _workspace.catalog.finder().findTagBit(kind, found.value, spanOf(bit));
     if (!position) { return TagBit{}; }
     return TagBit{uint64_t{1} << position.value, found.value};
 }
@@ -291,46 +286,21 @@ void Checker::add(KiottySpecCondition condition, entity::IdText id)
 
 namespace {
 
-bool startsWithKeyword(std::string_view text)
+uint32_t findLowestStep(uint64_t value)
 {
-    for (const std::string_view keyword : ACCEPTANCE_CRITERIA_KEYWORDS) {
-        const size_t position = text.find(keyword);
-        if (position != std::string_view::npos) { return true; }
+    for (uint32_t bit = 0; bit < entity::STEP_COUNT; ++bit) {
+        const bool is_set = (value & (uint64_t{1} << bit)) != 0;
+        if (is_set) { return bit + 1; }
     }
-    const size_t text_size = text.size();
-    for (size_t index = 0; index + ACCEPTANCE_WORD_LENGTH <= text_size; ++index) {
-        const std::string_view candidate = text.substr(index, ACCEPTANCE_WORD_LENGTH);
-        bool is_same = true;
-        const char word[] = "acceptance";
-        for (size_t offset = 0; offset < ACCEPTANCE_WORD_LENGTH; ++offset) {
-            char letter = candidate[offset];
-            if (letter >= 'A' && letter <= 'Z') { letter = static_cast<char>(letter - 'A' + 'a'); }
-            if (letter != word[offset]) {
-                is_same = false;
-                break;
-            }
-        }
-        if (is_same) { return true; }
-    }
-    return false;
+    return 0;
 }
 
-bool isListLine(std::string_view line)
+bool isResultKind(ItemKind kind)
 {
-    const size_t line_size = line.size();
-    size_t index = 0;
-    while (index < line_size && (line[index] == ' ' || line[index] == '\t')) { ++index; }
-    if (index + 1 < line_size &&
-        (line[index] == '-' || line[index] == '*' || line[index] == '+') &&
-        line[index + 1] == ' ') {
-        return true;
+    for (const ItemKind result_kind : RESULT_KINDS) {
+        if (kind == result_kind) { return true; }
     }
-    size_t digits = index;
-    while (digits < line_size && line[digits] >= '0' && line[digits] <= '9') { ++digits; }
-    const bool has_digits = digits > index;
-    const std::string_view marker = line.substr(digits, NUMBERED_MARKER_LENGTH);
-    const bool is_numbered_marker = marker == ". " || marker == ") ";
-    return has_digits && is_numbered_marker;
+    return false;
 }
 
 size_t appendCondition(Span<UnmetCondition> rows, size_t length, const UnmetCondition& row)

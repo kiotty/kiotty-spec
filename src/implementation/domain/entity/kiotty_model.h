@@ -24,8 +24,8 @@ enum class Cardinality : uint32_t {
 
 struct TagDefinition
 {
-    TagName name {};
     TagName bit_names[TAG_BIT_COUNT] {};
+    TagName name {};
     Cardinality cardinality {};
 };
 
@@ -41,12 +41,14 @@ static_assert(sizeof(RelationDefinition) == 72, "unexpected padding");
 
 struct Model
 {
-    ItemKind kind {};
     ModelName name {};
     IdText id_prefix {};
-    Step created_in {};
     Span<const TagDefinition> tags {};
     Span<const RelationDefinition> relations {};
+    ItemKind kind {};
+    Step created_in {};
 };
+
+static_assert(sizeof(Model) == 88, "unexpected padding");
 
 }

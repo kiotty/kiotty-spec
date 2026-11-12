@@ -18,12 +18,8 @@ constexpr std::string_view CONFLICT_MARKERS[] = {"<<<<<<<", "=======", ">>>>>>>"
 constexpr char COMMENT = '#';
 constexpr char FIELD_SEPARATOR = '\t';
 
-struct WorkAreas {
-    Span<char> buffer {};
-    Span<char> line {};
-};
+using HashResult = Result<uint64_t, KiottySpecStatus>;
 
-WorkAreas split(TextBuffer& work);
 bool isConflictMarker(std::string_view line);
 bool isSameHash(uint64_t current_hash, uint64_t saved_hash);
 
@@ -33,7 +29,7 @@ KiottySpecStatus SpecFile::save()
 {
     const KiottySpecStatus unchanged = checkUnchanged();
     if (unchanged != KIOTTY_SPEC_STATUS_SUCCESS) { return unchanged; }
-    const WorkAreas areas = split(_work);
+    const WorkAreas areas = splitWork();
     KispFileWriter file {};
     KiottySpecStatus status = file.open(_database.view());
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
@@ -53,8 +49,8 @@ KiottySpecStatus SpecFile::save()
 
 KiottySpecStatus SpecFile::checkUnchanged()
 {
-    const WorkAreas areas = split(_work);
-    const auto current = hashKispFile(_database.view(), areas.buffer);
+    const WorkAreas areas = splitWork();
+    const HashResult current = hashKispFile(_database.view(), areas.buffer);
     if (!current) {
         return _tables.failure.raise(current.code, KIOTTY_SPEC_SUBJECT_FILE, _database.view());
     }
@@ -76,15 +72,9 @@ KiottySpecStatus SpecFile::open(Span<const char> database)
 KiottySpecStatus SpecFile::load()
 {
     clear();
-    const WorkAreas areas = split(_work);
-    KispFileReader reader(areas.buffer, areas.line);
-    const KiottySpecStatus opened = reader.open(_database.view());
-    if (opened != KIOTTY_SPEC_STATUS_SUCCESS && opened != KIOTTY_SPEC_STATUS_NOT_FOUND) {
-        return _tables.failure.raise(opened, KIOTTY_SPEC_SUBJECT_FILE, _database.view());
-    }
-    const KiottySpecStatus read = readLines(reader);
-    if (read != KIOTTY_SPEC_STATUS_SUCCESS) { return read; }
-    _hash = reader.hash();
+    const HashResult read = readLines();
+    if (!read) { return read.code; }
+    _hash = read.value;
     return finishLoad();
 }
 
@@ -97,21 +87,29 @@ void SpecFile::clear()
     _tables.decisions.versions().clear();
 }
 
-KiottySpecStatus SpecFile::readLines(KispFileReader& reader)
+Result<uint64_t, KiottySpecStatus> SpecFile::readLines()
 {
+    const WorkAreas areas = splitWork();
+    KispFileReader reader(areas.buffer, areas.line);
+    const KiottySpecStatus opened = reader.open(_database.view());
+    if (opened != KIOTTY_SPEC_STATUS_SUCCESS && opened != KIOTTY_SPEC_STATUS_NOT_FOUND) {
+        return HashResult::failure(
+            _tables.failure.raise(opened, KIOTTY_SPEC_SUBJECT_FILE, _database.view()));
+    }
     Result<bool, KiottySpecStatus> next = reader.next();
     for (; next && next.value; next = reader.next()) {
         const KiottySpecStatus status = readLine(reader);
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
-            return lineFailure(reader.lineNumber(), status);
+            return HashResult::failure(lineFailure(reader.lineNumber(), status));
         }
     }
-    if (next) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    return _tables.failure.raise(next.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
-                                 literalText("work_buffer_bytes"), reader.lineNumber() + 1);
+    if (next) { return HashResult::success(reader.hash()); }
+    return HashResult::failure(
+        _tables.failure.raise(next.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
+                              literalText("work_buffer_bytes"), reader.lineNumber() + 1));
 }
 
-KiottySpecStatus SpecFile::readLine(KispFileReader& reader)
+KiottySpecStatus SpecFile::readLine(const KispFileReader& reader)
 {
     const std::string_view line = viewOf(reader.line());
     const size_t line_number = reader.lineNumber();
@@ -158,14 +156,14 @@ KiottySpecStatus SpecFile::finishLoad()
     return _tables.relations.rebuild();
 }
 
-namespace {
-
-WorkAreas split(TextBuffer& work)
+WorkAreas SpecFile::splitWork()
 {
-    const Span<char> all = work.scratch();
+    const Span<char> all = _work.scratch();
     return WorkAreas { Span<char>(all.data(), READ_BUFFER_BYTES),
                        Span<char>(all.data() + READ_BUFFER_BYTES, LINE_BYTES) };
 }
+
+namespace {
 
 bool isConflictMarker(std::string_view line)
 {

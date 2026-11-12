@@ -8,6 +8,7 @@
 #include "implementation/domain/usecases/kiotty_spec_tables.h"
 
 #include <cstdint>
+#include <string_view>
 
 namespace kiotty::spec::implementation {
 
@@ -30,6 +31,7 @@ private:
     Result<entity::ItemKind, KiottySpecStatus> kindOfKey(uint32_t key);
     Result<uint64_t, KiottySpecStatus> parseTagValue(entity::ItemKind kind, uint32_t tag,
                                                      Span<const char> names) const;
+    KiottySpecStatus reject(std::string_view table);
 
     SpecTables _tables;
     bool _has_sorted_versions {false};

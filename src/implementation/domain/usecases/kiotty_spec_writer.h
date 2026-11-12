@@ -27,8 +27,7 @@ private:
     KiottySpecStatus writeDecisions();
     KiottySpecStatus writeBodies();
     KiottySpecStatus writeHeader(std::string_view columns);
-    KiottySpecStatus emit(KispLineEncoder& line);
-    KispLineEncoder startLine(std::string_view table, uint32_t removed);
+    KiottySpecStatus emit(const Result<Span<const char>, KiottySpecStatus>& finished);
 
     SpecTables _tables;
     KispFileWriter& _file;

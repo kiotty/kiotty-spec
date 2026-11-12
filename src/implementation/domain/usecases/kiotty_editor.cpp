@@ -13,6 +13,9 @@ using entity::ItemHandle;
 using entity::ItemKind;
 using entity::ItemRecord;
 
+ItemRecord makeDraftItem(ItemKind kind, Span<const char> title, Span<const char> summary);
+bool isInParentChain(const ItemReader& reader, ItemHandle start, ItemHandle item);
+
 }
 
 Result<IdText, KiottySpecStatus> Editor::createItem(ItemKind kind, Span<const char> id,
@@ -35,15 +38,15 @@ Result<IdText, KiottySpecStatus> Editor::createItem(ItemKind kind, Span<const ch
     WriteScope scope(_workspace, _lifecycle);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return IdResult::failure(scope.finish(sequence.code)); }
-    const IdResult created = insertItem(kind, id, title, summary, sequence.value);
+    const ItemRecord draft = makeDraftItem(kind, title, summary);
+    const IdResult created = insertItem(draft, id, sequence.value);
     status = scope.finish(created.code);
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return IdResult::failure(status); }
     return created;
 }
 
-Result<IdText, KiottySpecStatus> Editor::insertItem(ItemKind kind, Span<const char> given,
-                                                    Span<const char> title,
-                                                    Span<const char> summary, uint32_t sequence)
+Result<IdText, KiottySpecStatus> Editor::insertItem(const ItemRecord& draft, Span<const char> given,
+                                                    uint32_t sequence)
 {
     using IdResult = Result<IdText, KiottySpecStatus>;
     Result<IdText, KiottySpecStatus> id = IdResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
@@ -53,15 +56,12 @@ Result<IdText, KiottySpecStatus> Editor::insertItem(ItemKind kind, Span<const ch
         text.assign(given);
         id = IdResult::success(text);
     } else {
-        id = _workspace.items.history().nextId(_workspace.catalog.model(kind).id_prefix.view());
+        id = _workspace.items.history().nextId(
+            _workspace.catalog.model(draft.kind).id_prefix.view());
     }
     if (!id) { return IdResult::failure(id.code); }
-    ItemRecord record {};
-    record.parent = entity::INVALID_ITEM_HANDLE;
-    record.kind = kind;
+    ItemRecord record = draft;
     record.id = id.value;
-    record.title.assign(title);
-    record.summary.assign(summary);
     const auto handle = _workspace.items.writer().create(record, sequence);
     if (!handle) { return IdResult::failure(handle.code); }
     return IdResult::success(id.value);
@@ -120,30 +120,30 @@ KiottySpecStatus Editor::setParent(Span<const char> id, Span<const char> parent_
 {
     const auto item = _workspace.resolve(id);
     if (!item) { return item.code; }
+    const Result<ItemHandle, KiottySpecStatus> parent = resolveParent(item.value, id, parent_id);
+    if (!parent) { return parent.code; }
     ItemRecord record = *_workspace.items.reader().get(item.value).value;
-    record.parent = entity::INVALID_ITEM_HANDLE;
-    const size_t parent_id_length = parent_id.length();
-    if (parent_id_length > 0) {
-        const auto parent = _workspace.resolve(parent_id);
-        if (!parent) { return parent.code; }
-        ItemHandle probe = parent.value;
-        while (true) {
-            const bool is_valid = probe.isValid();
-            if (!is_valid) { break; }
-            if (probe.index == item.value.index) {
-                return _workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
-                                                KIOTTY_SPEC_SUBJECT_PARENT, id);
-            }
-            const auto above = _workspace.items.reader().get(probe);
-            if (!above) { break; }
-            probe = above.value->parent;
-        }
-        record.parent = parent.value;
-    }
+    record.parent = parent.value;
     WriteScope scope(_workspace, _lifecycle);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }
     return scope.finish(_workspace.items.writer().update(item.value, record, sequence.value));
+}
+
+Result<ItemHandle, KiottySpecStatus> Editor::resolveParent(ItemHandle item, Span<const char> id,
+                                                           Span<const char> parent_id)
+{
+    using HandleResult = Result<ItemHandle, KiottySpecStatus>;
+    const size_t parent_id_length = parent_id.length();
+    if (parent_id_length == 0) { return HandleResult::success(entity::INVALID_ITEM_HANDLE); }
+    const HandleResult parent = _workspace.resolve(parent_id);
+    if (!parent) { return parent; }
+    const bool is_cycle = isInParentChain(_workspace.items.reader(), parent.value, item);
+    if (is_cycle) {
+        return HandleResult::failure(_workspace.failure.raise(
+            KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_PARENT, id));
+    }
+    return parent;
 }
 
 KiottySpecStatus Editor::removeItem(Span<const char> id)
@@ -152,7 +152,8 @@ KiottySpecStatus Editor::removeItem(Span<const char> id)
     if (!item) { return item.code; }
     const size_t capacity = _workspace.items.reader().capacity();
     for (size_t index = 0; index < capacity; ++index) {
-        const auto child = _workspace.items.reader().get(_workspace.items.reader().handleAt(index));
+        const ItemHandle handle = _workspace.items.reader().handleAt(index);
+        const auto child = _workspace.items.reader().get(handle);
         const bool is_child = child && child.value->parent.index == item.value.index;
         if (!is_child) { continue; }
         const bool has_parent = child.value->parent.isValid();
@@ -193,11 +194,13 @@ KiottySpecStatus Editor::markNeedsChange(ItemHandle item, uint32_t sequence)
     if (kind != ItemKind::DESIGN && kind != ItemKind::UNIT_TEST_PLAN) {
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
-    const auto state = _workspace.catalog.finder().findTag(kind, spanOf(IMPLEMENTATION_STATE_TAG));
+    using IndexResult = Result<uint32_t, KiottySpecStatus>;
+    const IndexResult state =
+        _workspace.catalog.finder().findTag(kind, spanOf(IMPLEMENTATION_STATE_TAG));
     if (!state) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    const auto done =
+    const IndexResult done =
         _workspace.catalog.finder().findTagBit(kind, state.value, spanOf(IMPLEMENTED_BIT));
-    const auto changed =
+    const IndexResult changed =
         _workspace.catalog.finder().findTagBit(kind, state.value, spanOf(NEEDS_CHANGE_BIT));
     const bool has_state_bits = done && changed;
     if (!has_state_bits) { return KIOTTY_SPEC_STATUS_SUCCESS; }
@@ -242,6 +245,34 @@ KiottySpecStatus Editor::writeDecision(ItemKind kind, Span<const char> text)
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }
     return scope.finish(_workspace.decisions.write(kind, text, sequence.value));
+}
+
+namespace {
+
+ItemRecord makeDraftItem(ItemKind kind, Span<const char> title, Span<const char> summary)
+{
+    ItemRecord record {};
+    record.parent = entity::INVALID_ITEM_HANDLE;
+    record.kind = kind;
+    record.title.assign(title);
+    record.summary.assign(summary);
+    return record;
+}
+
+bool isInParentChain(const ItemReader& reader, ItemHandle start, ItemHandle item)
+{
+    ItemHandle probe = start;
+    bool is_valid = probe.isValid();
+    while (is_valid) {
+        if (probe.index == item.index) { return true; }
+        const auto above = reader.get(probe);
+        if (!above) { return false; }
+        probe = above.value->parent;
+        is_valid = probe.isValid();
+    }
+    return false;
+}
+
 }
 
 }

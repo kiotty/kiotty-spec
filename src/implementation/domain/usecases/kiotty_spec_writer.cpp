@@ -35,10 +35,21 @@ constexpr size_t HASH_DIGITS = 16;
 constexpr size_t MAX_NUMBER_DIGITS = 20;
 using NumberText = FixedString<MAX_NUMBER_DIGITS>;
 
-void addDecimal(KispLineEncoder& line, uint64_t number);
-void addKey(KispLineEncoder& line, uint32_t key);
-void addHash(KispLineEncoder& line, uint64_t hash);
-void addTagValue(KispLineEncoder& line, const entity::TagDefinition& definition, uint64_t value);
+class SpecLine
+{
+public:
+    SpecLine(KispLineEncoder line, std::string_view table, uint32_t removed);
+
+    void add(Span<const char> field) { _line.add(field); }
+    void addDecimal(uint64_t number);
+    void addKey(uint32_t key);
+    void addHash(uint64_t hash);
+    void addTagValue(const entity::TagDefinition& definition, uint64_t value);
+    Result<Span<const char>, KiottySpecStatus> finish() { return _line.finish(); }
+
+private:
+    KispLineEncoder _line;
+};
 
 }
 
@@ -60,13 +71,13 @@ KiottySpecStatus SpecWriter::write()
 KiottySpecStatus SpecWriter::writeMeta()
 {
     KiottySpecStatus status = writeHeader(META_HEADER);
-    const auto& entries = _tables.meta.all();
+    const FixedMap<MetaKey, MetaValue>& entries = _tables.meta.all();
     const size_t entry_count = entries.length();
     for (size_t index = 0; index < entry_count && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
-        KispLineEncoder line = startLine(META_TABLE, 0);
+        SpecLine line(KispLineEncoder(_area), META_TABLE, 0);
         line.add(entries.keyAt(index).view());
         line.add(entries.valueAt(index).view());
-        status = emit(line);
+        status = emit(line.finish());
     }
     return status;
 }
@@ -79,19 +90,19 @@ KiottySpecStatus SpecWriter::writeCheckpoints()
          ++sequence) {
         const CheckpointRecord* record = _tables.checkpoints.at(sequence);
         if (record == nullptr) { continue; }
-        KispLineEncoder line = startLine(CHECKPOINT_TABLE, 0);
-        addDecimal(line, sequence);
+        SpecLine line(KispLineEncoder(_area), CHECKPOINT_TABLE, 0);
+        line.addDecimal(sequence);
         const bool has_previous = record->previous.isValid();
         if (has_previous) {
-            addDecimal(line, record->previous.sequence);
+            line.addDecimal(record->previous.sequence);
         } else {
             line.add(spanOf(NONE_MARKER));
         }
-        addDecimal(line, static_cast<uint64_t>(record->step));
+        line.addDecimal(static_cast<uint64_t>(record->step));
         line.add(spanOf(entity::stateName(record->state)));
-        addDecimal(line, record->created_at > 0 ? static_cast<uint64_t>(record->created_at) : 0);
+        line.addDecimal(record->created_at > 0 ? static_cast<uint64_t>(record->created_at) : 0);
         line.add(record->description.view());
-        status = emit(line);
+        status = emit(line.finish());
     }
     return status;
 }
@@ -99,13 +110,13 @@ KiottySpecStatus SpecWriter::writeCheckpoints()
 KiottySpecStatus SpecWriter::writeItems()
 {
     KiottySpecStatus status = writeHeader(ITEM_HEADER);
-    const auto& names = _tables.items.tables().names;
+    const FixedMap<uint32_t, entity::IdText>& names = _tables.items.tables().names;
     const size_t name_count = names.length();
     for (size_t index = 0; index < name_count && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
-        KispLineEncoder line = startLine(ITEM_TABLE, 0);
-        addKey(line, names.keyAt(index));
+        SpecLine line(KispLineEncoder(_area), ITEM_TABLE, 0);
+        line.addKey(names.keyAt(index));
         line.add(names.valueAt(index).view());
-        status = emit(line);
+        status = emit(line.finish());
     }
     return status;
 }
@@ -115,15 +126,15 @@ KiottySpecStatus SpecWriter::writeItemVersions()
     KiottySpecStatus status = writeHeader(ITEM_VERSION_HEADER);
     for (const ItemVersion& version : _tables.items.tables().versions.all()) {
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
-        KispLineEncoder line = startLine(ITEM_VERSION_TABLE, version.removed);
-        addKey(line, version.key);
-        addDecimal(line, version.checkpoint);
+        SpecLine line(KispLineEncoder(_area), ITEM_VERSION_TABLE, version.removed);
+        line.addKey(version.key);
+        line.addDecimal(version.checkpoint);
         line.add(spanOf(entity::kindName(version.kind)));
-        addKey(line, version.parent);
+        line.addKey(version.parent);
         line.add(version.title.view());
         line.add(version.summary.view());
-        addHash(line, version.body_hash);
-        status = emit(line);
+        line.addHash(version.body_hash);
+        status = emit(line.finish());
     }
     return status;
 }
@@ -140,12 +151,12 @@ KiottySpecStatus SpecWriter::writeTags()
         const auto found = tags.at(version.tag);
         if (!found) { return _tables.failure.raise(found.code, KIOTTY_SPEC_SUBJECT_TAG); }
         const entity::TagDefinition& definition = *found.value;
-        KispLineEncoder line = startLine(TAG_TABLE, version.removed);
-        addKey(line, version.key);
+        SpecLine line(KispLineEncoder(_area), TAG_TABLE, version.removed);
+        line.addKey(version.key);
         line.add(definition.name.view());
-        addDecimal(line, version.checkpoint);
-        addTagValue(line, definition, version.removed != 0 ? 0 : version.value);
-        status = emit(line);
+        line.addDecimal(version.checkpoint);
+        line.addTagValue(definition, version.removed != 0 ? 0 : version.value);
+        status = emit(line.finish());
     }
     return status;
 }
@@ -160,13 +171,13 @@ KiottySpecStatus SpecWriter::writeRelations()
         const auto found = relations.at(version.relation);
         if (!found) { return _tables.failure.raise(found.code, KIOTTY_SPEC_SUBJECT_RELATION); }
         const entity::RelationDefinition& definition = *found.value;
-        KispLineEncoder line = startLine(RELATION_TABLE, version.removed);
-        addKey(line, version.from);
+        SpecLine line(KispLineEncoder(_area), RELATION_TABLE, version.removed);
+        line.addKey(version.from);
         line.add(spanOf(entity::kindName(version.model)));
         line.add(definition.name.view());
-        addKey(line, version.to);
-        addDecimal(line, version.checkpoint);
-        status = emit(line);
+        line.addKey(version.to);
+        line.addDecimal(version.checkpoint);
+        status = emit(line.finish());
     }
     return status;
 }
@@ -176,11 +187,11 @@ KiottySpecStatus SpecWriter::writeDecisions()
     KiottySpecStatus status = writeHeader(DECISION_HEADER);
     for (const DecisionVersion& version : _tables.decisions.versions().all()) {
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
-        KispLineEncoder line = startLine(DECISION_TABLE, 0);
+        SpecLine line(KispLineEncoder(_area), DECISION_TABLE, 0);
         line.add(spanOf(entity::kindName(version.kind)));
-        addDecimal(line, version.checkpoint);
+        line.addDecimal(version.checkpoint);
         line.add(version.text.view());
-        status = emit(line);
+        status = emit(line.finish());
     }
     return status;
 }
@@ -191,10 +202,10 @@ KiottySpecStatus SpecWriter::writeBodies()
     const BodyStore& bodies = _tables.items.tables().bodies;
     const size_t body_count = bodies.length();
     for (size_t index = 0; index < body_count && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
-        KispLineEncoder line = startLine(BODY_TABLE, 0);
-        addKey(line, bodies.keyAt(index));
+        SpecLine line(KispLineEncoder(_area), BODY_TABLE, 0);
+        line.addKey(bodies.keyAt(index));
         line.add(bodies.bodyAt(index));
-        status = emit(line);
+        status = emit(line.finish());
     }
     return status;
 }
@@ -202,17 +213,8 @@ KiottySpecStatus SpecWriter::writeBodies()
 KiottySpecStatus SpecWriter::writeHeader(std::string_view columns)
 { return _file.write(spanOf(columns)); }
 
-KispLineEncoder SpecWriter::startLine(std::string_view table, uint32_t removed)
+KiottySpecStatus SpecWriter::emit(const Result<Span<const char>, KiottySpecStatus>& finished)
 {
-    KispLineEncoder line(_area);
-    line.add(spanOf(table));
-    line.add(spanOf(removed != 0 ? REMOVED_MARKER : LIVE_MARKER));
-    return line;
-}
-
-KiottySpecStatus SpecWriter::emit(KispLineEncoder& line)
-{
-    const auto finished = line.finish();
     if (!finished) {
         return _tables.failure.raise(finished.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
                                      literalText("work_buffer_bytes"));
@@ -222,47 +224,53 @@ KiottySpecStatus SpecWriter::emit(KispLineEncoder& line)
 
 namespace {
 
-void addDecimal(KispLineEncoder& line, uint64_t number)
+SpecLine::SpecLine(KispLineEncoder line, std::string_view table, uint32_t removed) : _line(line)
+{
+    _line.add(spanOf(table));
+    _line.add(spanOf(removed != 0 ? REMOVED_MARKER : LIVE_MARKER));
+}
+
+void SpecLine::addDecimal(uint64_t number)
 {
     NumberText text {};
     appendDecimal(text, number);
-    line.add(text.view());
+    _line.add(text.view());
 }
 
-void addKey(KispLineEncoder& line, uint32_t key)
+void SpecLine::addKey(uint32_t key)
 {
     if (key == entity::NO_KEY) {
-        line.add(spanOf(NONE_MARKER));
+        _line.add(spanOf(NONE_MARKER));
         return;
     }
     NumberText text {};
     appendHex(text, key, KEY_DIGITS);
-    line.add(text.view());
+    _line.add(text.view());
 }
 
-void addHash(KispLineEncoder& line, uint64_t hash)
+void SpecLine::addHash(uint64_t hash)
 {
     if (hash == 0) {
-        line.add(spanOf(NONE_MARKER));
+        _line.add(spanOf(NONE_MARKER));
         return;
     }
     NumberText text {};
     appendHex(text, hash, HASH_DIGITS);
-    line.add(text.view());
+    _line.add(text.view());
 }
 
-void addTagValue(KispLineEncoder& line, const entity::TagDefinition& definition, uint64_t value)
+void SpecLine::addTagValue(const entity::TagDefinition& definition, uint64_t value)
 {
     if (value == 0) {
-        line.add(spanOf(NONE_MARKER));
+        _line.add(spanOf(NONE_MARKER));
         return;
     }
-    line.add(Span<const char>());
+    _line.add(Span<const char>());
     bool has_written_bit = false;
     for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
         if ((value & (uint64_t{1} << bit)) == 0) { continue; }
-        if (has_written_bit) { line.extend(literalText(",")); }
-        line.extend(definition.bit_names[bit].view());
+        if (has_written_bit) { _line.extend(literalText(",")); }
+        _line.extend(definition.bit_names[bit].view());
         has_written_bit = true;
     }
 }

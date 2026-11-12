@@ -22,7 +22,7 @@ SequenceResult Lifecycle::start(entity::Step step, Span<const char> description)
     }
     const KiottySpecStatus fresh = _workspace.refresh();
     if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(fresh); }
-    const auto created =
+    const SequenceResult created =
         _workspace.checkpoints.writer().create(step, description, nowEpochSeconds());
     const KiottySpecStatus finished = _workspace.finish(created.code);
     if (finished != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(finished); }

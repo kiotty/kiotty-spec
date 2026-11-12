@@ -12,6 +12,13 @@
 
 namespace kiotty::spec::implementation {
 
+struct WorkAreas {
+    Span<char> buffer {};
+    Span<char> line {};
+};
+
+static_assert(sizeof(WorkAreas) == 32, "unexpected padding");
+
 class SpecFile
 {
 public:
@@ -24,10 +31,11 @@ public:
 
 private:
     void clear();
-    KiottySpecStatus readLines(KispFileReader& reader);
-    KiottySpecStatus readLine(KispFileReader& reader);
+    Result<uint64_t, KiottySpecStatus> readLines();
+    KiottySpecStatus readLine(const KispFileReader& reader);
     KiottySpecStatus finishLoad();
     KiottySpecStatus lineFailure(size_t line_number, KiottySpecStatus status);
+    WorkAreas splitWork();
 
     SpecTables _tables;
     TextBuffer& _work;

@@ -1,9 +1,8 @@
 #include "implementation/domain/usecases/kiotty_spec_parser.h"
 
-#include "implementation/core/kiotty_number.h"
 #include "implementation/core/kiotty_text_view.h"
-#include "implementation/core/kiotty_utf8.h"
 #include "implementation/domain/entity/kiotty_item_id.h"
+#include "implementation/domain/usecases/spec_parser/kiotty_spec_fields.h"
 
 namespace kiotty::spec::implementation {
 
@@ -67,26 +66,7 @@ constexpr size_t DECISION_TEXT_FIELD = 4;
 constexpr size_t BODY_KEY_FIELD = 2;
 constexpr size_t BODY_TEXT_FIELD = 3;
 
-constexpr size_t KEY_DIGITS = 8;
-constexpr size_t HASH_DIGITS = 16;
-constexpr uint64_t MAX_SEQUENCE = UINT32_MAX;
 constexpr uint64_t MAX_EPOCH = INT64_MAX;
-
-using FieldResult = Result<Span<const char>, KiottySpecStatus>;
-using KeyResult = Result<uint32_t, KiottySpecStatus>;
-using NumberResult = Result<uint64_t, KiottySpecStatus>;
-
-KiottySpecStatus reject(entity::Failure& failure, std::string_view table);
-KeyResult parseOptionalKey(const KispFields& fields, size_t index);
-KeyResult parseKey(const KispFields& fields, size_t index);
-KeyResult parseSequence(const KispFields& fields, size_t index);
-NumberResult parseNumber(const KispFields& fields, size_t index, uint64_t maximum);
-NumberResult parseHash(const KispFields& fields, size_t index);
-Result<ItemKind, KiottySpecStatus> parseKindName(const KispFields& fields, size_t index);
-FieldResult readText(const KispFields& fields, size_t index, size_t limit);
-std::string_view viewField(const KispFields& fields, size_t index);
-FieldResult readField(const KispFields& fields, size_t index);
-bool fits(Span<const char> text, size_t limit);
 
 }
 
@@ -95,7 +75,7 @@ KiottySpecStatus SpecParser::parse(const KispFields& fields)
     const std::string_view table = viewField(fields, TABLE_FIELD);
     if (table == TABLE_MARKER) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     const std::string_view state = viewField(fields, STATE_FIELD);
-    if (state != LIVE_MARKER && state != REMOVED_MARKER) { return reject(_tables.failure, table); }
+    if (state != LIVE_MARKER && state != REMOVED_MARKER) { return reject(table); }
     const uint32_t removed = state == REMOVED_MARKER ? 1u : 0u;
     if (table == META_TABLE) { return parseMeta(fields); }
     if (table == CHECKPOINT_TABLE) { return parseCheckpoint(fields); }
@@ -105,16 +85,16 @@ KiottySpecStatus SpecParser::parse(const KispFields& fields)
     if (table == RELATION_TABLE) { return parseRelation(fields, removed); }
     if (table == DECISION_TABLE) { return parseDecision(fields); }
     if (table == BODY_TABLE) { return parseBody(fields); }
-    return reject(_tables.failure, table);
+    return reject(table);
 }
 
 KiottySpecStatus SpecParser::parseMeta(const KispFields& fields)
 {
-    if (fields.count != META_FIELDS) { return reject(_tables.failure, META_TABLE); }
+    if (fields.count != META_FIELDS) { return reject(META_TABLE); }
     const auto key = readField(fields, META_KEY_FIELD);
     const auto value = readField(fields, META_VALUE_FIELD);
     const bool has_fields = key && value;
-    if (!has_fields) { return reject(_tables.failure, META_TABLE); }
+    if (!has_fields) { return reject(META_TABLE); }
     const KiottySpecStatus set = _tables.meta.set(key.value, value.value);
     if (set != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _tables.failure.raise(set, KIOTTY_SPEC_SUBJECT_FILE_LINE, spanOf(META_TABLE));
@@ -124,7 +104,7 @@ KiottySpecStatus SpecParser::parseMeta(const KispFields& fields)
 
 KiottySpecStatus SpecParser::parseCheckpoint(const KispFields& fields)
 {
-    if (fields.count != CHECKPOINT_FIELDS) { return reject(_tables.failure, CHECKPOINT_TABLE); }
+    if (fields.count != CHECKPOINT_FIELDS) { return reject(CHECKPOINT_TABLE); }
     const auto sequence = parseSequence(fields, CHECKPOINT_SEQUENCE_FIELD);
     const bool is_first = viewField(fields, CHECKPOINT_PREVIOUS_FIELD) == NONE_MARKER;
     const auto previous = is_first ? KeyResult::success(0)
@@ -137,7 +117,7 @@ KiottySpecStatus SpecParser::parseCheckpoint(const KispFields& fields)
     const bool is_valid = sequence && previous && step &&
                           entity::isValidStep(static_cast<uint32_t>(step.value)) && state != 0 &&
                           created && description;
-    if (!is_valid) { return reject(_tables.failure, CHECKPOINT_TABLE); }
+    if (!is_valid) { return reject(CHECKPOINT_TABLE); }
     CheckpointRecord record {};
     record.created_at = static_cast<int64_t>(created.value);
     record.previous = CheckpointHandle{previous.value, 0};
@@ -149,14 +129,14 @@ KiottySpecStatus SpecParser::parseCheckpoint(const KispFields& fields)
 
 KiottySpecStatus SpecParser::parseItem(const KispFields& fields)
 {
-    if (fields.count != ITEM_FIELDS) { return reject(_tables.failure, ITEM_TABLE); }
+    if (fields.count != ITEM_FIELDS) { return reject(ITEM_TABLE); }
     const auto key_text = readField(fields, ITEM_KEY_FIELD);
     const auto key = parseKey(fields, ITEM_KEY_FIELD);
     const auto id_text = readField(fields, ITEM_ID_FIELD);
     const bool has_fields = key_text && key && id_text;
-    if (!has_fields) { return reject(_tables.failure, ITEM_TABLE); }
+    if (!has_fields) { return reject(ITEM_TABLE); }
     const KiottySpecStatus id_status = entity::validateItemId(id_text.value);
-    if (id_status != KIOTTY_SPEC_STATUS_SUCCESS) { return reject(_tables.failure, ITEM_TABLE); }
+    if (id_status != KIOTTY_SPEC_STATUS_SUCCESS) { return reject(ITEM_TABLE); }
     entity::IdText id {};
     id.assign(id_text.value);
     const KiottySpecStatus inserted = _tables.items.tables().names.insert(key.value, id);
@@ -172,18 +152,18 @@ KiottySpecStatus SpecParser::parseItem(const KispFields& fields)
 
 KiottySpecStatus SpecParser::parseItemVersion(const KispFields& fields, uint32_t removed)
 {
-    if (fields.count != ITEM_VERSION_FIELDS) { return reject(_tables.failure, ITEM_VERSION_TABLE); }
+    if (fields.count != ITEM_VERSION_FIELDS) { return reject(ITEM_VERSION_TABLE); }
     const auto key = parseKey(fields, ITEM_VERSION_KEY_FIELD);
     const auto checkpoint = parseSequence(fields, ITEM_VERSION_CHECKPOINT_FIELD);
     const auto kind = parseKindName(fields, ITEM_VERSION_KIND_FIELD);
     const auto parent = parseOptionalKey(fields, ITEM_VERSION_PARENT_FIELD);
     const auto body = parseHash(fields, ITEM_VERSION_BODY_FIELD);
     const bool is_valid = key && checkpoint && kind && parent && body;
-    if (!is_valid) { return reject(_tables.failure, ITEM_VERSION_TABLE); }
+    if (!is_valid) { return reject(ITEM_VERSION_TABLE); }
     const auto title = readText(fields, ITEM_VERSION_TITLE_FIELD, entity::MAX_TITLE_LENGTH);
     const auto summary = readText(fields, ITEM_VERSION_SUMMARY_FIELD, entity::MAX_SUMMARY_LENGTH);
     const bool has_texts = title && summary;
-    if (!has_texts) { return reject(_tables.failure, ITEM_VERSION_TABLE); }
+    if (!has_texts) { return reject(ITEM_VERSION_TABLE); }
     ItemVersion version {};
     version.body_hash = body.value;
     version.key = key.value;
@@ -204,7 +184,7 @@ KiottySpecStatus SpecParser::parseItemVersion(const KispFields& fields, uint32_t
 
 KiottySpecStatus SpecParser::parseTag(const KispFields& fields, uint32_t removed)
 {
-    if (fields.count != TAG_FIELDS) { return reject(_tables.failure, TAG_TABLE); }
+    if (fields.count != TAG_FIELDS) { return reject(TAG_TABLE); }
     const auto key = parseKey(fields, TAG_KEY_FIELD);
     const auto checkpoint = parseSequence(fields, TAG_CHECKPOINT_FIELD);
     const auto name = readField(fields, TAG_NAME_FIELD);
@@ -212,7 +192,7 @@ KiottySpecStatus SpecParser::parseTag(const KispFields& fields, uint32_t removed
     const auto kind =
         key ? kindOfKey(key.value) : Result<ItemKind, KiottySpecStatus>::failure(key.code);
     const bool is_valid = key && checkpoint && kind && name && names;
-    if (!is_valid) { return reject(_tables.failure, TAG_TABLE); }
+    if (!is_valid) { return reject(TAG_TABLE); }
     const auto tag = _tables.catalog.finder().findTag(kind.value, name.value);
     if (!tag) {
         return _tables.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_TAG,
@@ -254,8 +234,9 @@ Result<uint64_t, KiottySpecStatus> SpecParser::parseTagValue(ItemKind kind, uint
     const size_t length = names.length();
     for (size_t index = 0; index <= length; ++index) {
         if (index < length && names[index] != ',') { continue; }
-        const auto bit = _tables.catalog.finder().findTagBit(
-            kind, tag, Span<const char>(names.data() + start, index - start));
+        const Span<const char> name(names.data() + start, index - start);
+        const Result<uint32_t, KiottySpecStatus> bit =
+            _tables.catalog.finder().findTagBit(kind, tag, name);
         if (!bit) { return Result<uint64_t, KiottySpecStatus>::failure(bit.code); }
         value |= uint64_t{1} << bit.value;
         start = index + 1;
@@ -265,14 +246,14 @@ Result<uint64_t, KiottySpecStatus> SpecParser::parseTagValue(ItemKind kind, uint
 
 KiottySpecStatus SpecParser::parseRelation(const KispFields& fields, uint32_t removed)
 {
-    if (fields.count != RELATION_FIELDS) { return reject(_tables.failure, RELATION_TABLE); }
+    if (fields.count != RELATION_FIELDS) { return reject(RELATION_TABLE); }
     const auto from = parseKey(fields, RELATION_FROM_FIELD);
     const auto model = parseKindName(fields, RELATION_MODEL_FIELD);
     const auto to = parseKey(fields, RELATION_TO_FIELD);
     const auto checkpoint = parseSequence(fields, RELATION_CHECKPOINT_FIELD);
     const auto name = readField(fields, RELATION_NAME_FIELD);
     const bool is_valid = from && model && to && checkpoint && name;
-    if (!is_valid) { return reject(_tables.failure, RELATION_TABLE); }
+    if (!is_valid) { return reject(RELATION_TABLE); }
     const auto relation = _tables.catalog.finder().findRelation(model.value, name.value);
     if (!relation) {
         return _tables.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
@@ -290,13 +271,13 @@ KiottySpecStatus SpecParser::parseRelation(const KispFields& fields, uint32_t re
 
 KiottySpecStatus SpecParser::parseDecision(const KispFields& fields)
 {
-    if (fields.count != DECISION_FIELDS) { return reject(_tables.failure, DECISION_TABLE); }
+    if (fields.count != DECISION_FIELDS) { return reject(DECISION_TABLE); }
     const auto kind_text = readField(fields, DECISION_KIND_FIELD);
     const auto kind = parseKindName(fields, DECISION_KIND_FIELD);
     const auto checkpoint = parseSequence(fields, DECISION_CHECKPOINT_FIELD);
     const auto text = readText(fields, DECISION_TEXT_FIELD, MAX_DECISION_BYTES);
     const bool is_valid = kind_text && kind && checkpoint && text;
-    if (!is_valid) { return reject(_tables.failure, DECISION_TABLE); }
+    if (!is_valid) { return reject(DECISION_TABLE); }
     const auto slot =
         _tables.decisions.versions().slot(static_cast<uint32_t>(kind.value), checkpoint.value);
     if (!slot) {
@@ -315,15 +296,15 @@ KiottySpecStatus SpecParser::parseDecision(const KispFields& fields)
 
 KiottySpecStatus SpecParser::parseBody(const KispFields& fields)
 {
-    if (fields.count != BODY_FIELDS) { return reject(_tables.failure, BODY_TABLE); }
+    if (fields.count != BODY_FIELDS) { return reject(BODY_TABLE); }
     const auto key_text = readField(fields, BODY_KEY_FIELD);
     const auto key = parseKey(fields, BODY_KEY_FIELD);
     const auto text = readText(fields, BODY_TEXT_FIELD, entity::MAX_BODY_LENGTH);
     const bool is_valid = key_text && key && text && text.value.length() > 0;
-    if (!is_valid) { return reject(_tables.failure, BODY_TABLE); }
+    if (!is_valid) { return reject(BODY_TABLE); }
     ItemTables& tables = _tables.items.tables();
     const auto known = tables.names.find(key.value);
-    if (!known) { return reject(_tables.failure, BODY_TABLE); }
+    if (!known) { return reject(BODY_TABLE); }
     const size_t existing_length = tables.bodies.find(key.value).length();
     if (existing_length > 0) {
         return _tables.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT,
@@ -337,91 +318,10 @@ KiottySpecStatus SpecParser::parseBody(const KispFields& fields)
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-namespace {
-
-KiottySpecStatus reject(entity::Failure& failure, std::string_view table)
+KiottySpecStatus SpecParser::reject(std::string_view table)
 {
-    return failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_FILE_LINE,
-                         spanOf(table));
-}
-
-KeyResult parseOptionalKey(const KispFields& fields, size_t index)
-{
-    const std::string_view value = viewField(fields, index);
-    if (value == NONE_MARKER) { return KeyResult::success(entity::NO_KEY); }
-    return parseKey(fields, index);
-}
-
-KeyResult parseKey(const KispFields& fields, size_t index)
-{
-    const auto text = readField(fields, index);
-    if (!text) { return KeyResult::failure(text.code); }
-    const auto number = parseHex(text.value, KEY_DIGITS);
-    const bool is_key = number && number.value != entity::NO_KEY;
-    if (!is_key) { return KeyResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    return KeyResult::success(static_cast<uint32_t>(number.value));
-}
-
-KeyResult parseSequence(const KispFields& fields, size_t index)
-{
-    const auto number = parseNumber(fields, index, MAX_SEQUENCE);
-    const bool is_sequence = number && number.value != 0;
-    if (!is_sequence) { return KeyResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    return KeyResult::success(static_cast<uint32_t>(number.value));
-}
-
-NumberResult parseNumber(const KispFields& fields, size_t index, uint64_t maximum)
-{
-    const auto text = readField(fields, index);
-    if (!text) { return NumberResult::failure(text.code); }
-    return parseDecimal(text.value, maximum);
-}
-
-NumberResult parseHash(const KispFields& fields, size_t index)
-{
-    const std::string_view value = viewField(fields, index);
-    if (value == NONE_MARKER) { return NumberResult::success(0); }
-    const auto text = readField(fields, index);
-    if (!text) { return NumberResult::failure(text.code); }
-    return parseHex(text.value, HASH_DIGITS);
-}
-
-Result<ItemKind, KiottySpecStatus> parseKindName(const KispFields& fields, size_t index)
-{
-    const uint32_t kind = entity::parseKind(viewField(fields, index));
-    if (kind == 0) {
-        return Result<ItemKind, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
-    }
-    return Result<ItemKind, KiottySpecStatus>::success(static_cast<ItemKind>(kind));
-}
-
-FieldResult readText(const KispFields& fields, size_t index, size_t limit)
-{
-    const auto text = readField(fields, index);
-    if (!text) { return text; }
-    const bool is_fitting = fits(text.value, limit);
-    if (!is_fitting) { return FieldResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    return text;
-}
-
-std::string_view viewField(const KispFields& fields, size_t index)
-{
-    const auto text = readField(fields, index);
-    if (!text) { return std::string_view(); }
-    return viewOf(text.value);
-}
-
-FieldResult readField(const KispFields& fields, size_t index)
-{
-    const Span<const Span<const char>> values(fields.values, fields.count);
-    const auto value = values.at(index);
-    if (!value) { return FieldResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    return FieldResult::success(*value.value);
-}
-
-bool fits(Span<const char> text, size_t limit)
-{ return text.length() <= limit && isValidUtf8(text); }
-
+    return _tables.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
+                                 KIOTTY_SPEC_SUBJECT_FILE_LINE, spanOf(table));
 }
 
 }
