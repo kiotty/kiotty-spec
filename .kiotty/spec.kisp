@@ -12,7 +12,8 @@ checkpoint	O	6	5	8	done	1794318201	기능 요구사항 31개의 시스템 테스
 checkpoint	O	7	6	9	done	1794359510	시스템 테스트 31개 실행 (f7650c6, Debug)
 checkpoint	O	8	7	10	done	1794360973	개발 수칙 74개 코드 검사 (f7650c6)
 checkpoint	O	9	8	1	done	1794365856	코드 검사(CP-0008) 위반 중 모듈 간 수정 6건
-checkpoint	O	10	9	7	running	1794367530	코드 검사 위반 중 모듈 내 수정
+checkpoint	O	10	9	7	done	1794367530	코드 검사 위반 중 모듈 내 수정
+checkpoint	O	11	10	1	running	1794451117	개발 수칙 4.17 동사 이름 예외 변경 요청
 TABLE	item	O/X	key	id
 item	O	00593058	CIR-020
 item	O	00ab1435	DSN-078
@@ -399,6 +400,7 @@ item	O	b55ce5f3	UI-023
 item	O	b5d0f058	DSN-053
 item	O	b67bfcf0	UI-117
 item	O	b69ec9db	UI-103
+item	O	b6c305df	CR-007
 item	O	b77be631	UI-094
 item	O	b798d6af	UT-010
 item	O	b7bb9da8	UI-003
@@ -968,6 +970,7 @@ item_version	O	b5d0f058	4	design	-	ItemTags (data/repository/kiotty_item_tags.h)
 item_version	O	b5d0f058	10	design	-	ItemTags (data/repository/kiotty_item_tags.h)	ItemStore 의 태그 풀을 읽는 쪽 (개발수칙 4.18).	9ed9951b373d1569
 item_version	O	b67bfcf0	3	external_interface	f0dc6547	KiottySpecStepRunPage	단계 구간 페이지	17c2a9d11ce6f75b
 item_version	O	b69ec9db	3	external_interface	48a9ab3c	KiottySpecCheckpoint	체크포인트 레코드	91489235c6b56563
+item_version	O	b6c305df	11	change_request	-	method 이름 동사 규칙의 예외	속성 조회 · 타입 변환 · 색인 · 커서 next() 는 동사가 아니어도 허용한다	d37141113b5aba4d
 item_version	O	b77be631	3	external_interface	a415fab7	KiottySpecCheckpointHandle	체크포인트 핸들 (하위 32 비트가 순번)	caa7ae3d85c40191
 item_version	O	b798d6af	5	unit_test_plan	def6c251	fixed vector (testFixedVector)		a89edeeab4de9622
 item_version	O	b7bb9da8	3	external_interface	-	항목	항목을 만들고 읽고 고치고 지운다	abf06b763a793f5e
@@ -1574,6 +1577,9 @@ tag	O	b5d0f058	구현 상태	4	구현 완료
 tag	O	b5d0f058	구현 상태	10	변경 필요
 tag	O	b67bfcf0	인터페이스 종류	3	C 타입
 tag	O	b69ec9db	인터페이스 종류	3	C 타입
+tag	O	b6c305df	출처	11	사용자 피드백
+tag	O	b6c305df	상태	11	열림
+tag	O	b6c305df	진입 단계	11	Step 2
 tag	O	b77be631	인터페이스 종류	3	C 타입
 tag	O	b798d6af	구현 상태	5	구현 완료
 tag	O	b7bb9da8	인터페이스 종류	3	C 함수
@@ -2328,6 +2334,7 @@ relation	O	b2ee85aa	design	의존 설계 사항	9ea5c49d	4
 relation	O	b5d0f058	design	관련 요구사항	b9f7ebe2	4
 relation	O	b5d0f058	design	의존 설계 사항	89f09ead	4
 relation	O	b5d0f058	design	의존 설계 사항	9ea5c49d	4
+relation	O	b6c305df	change_request	영향 개발 수칙	54741482	11
 relation	O	b798d6af	unit_test_plan	검증 설계 사항	a942eff9	5
 relation	O	b7bb9da8	external_interface	관련 요구사항	14beca10	3
 relation	O	b7bb9da8	external_interface	관련 요구사항	522dcd2d	3
@@ -2937,6 +2944,7 @@ body	O	b55ce5f3	## 시그니처\n```c\nKiottySpecStatusResult KiottySpec_initPro
 body	O	b5d0f058	## 책임\nItemStore 의 태그 풀을 읽는 쪽 (개발수칙 4.19). 레코드는 (item index, tag) 순으로 정렬되어 있다.\n\n## 모듈 인터페이스\n```cpp\n// class ItemTags\nexplicit ItemTags(Span<const entity::TagRecord> tags);\nSpan<const entity::TagRecord> all() const;\nSpan<const entity::TagRecord> of(entity::ItemHandle handle) const;\nuint64_t value(entity::ItemHandle handle, uint32_t tag) const;\nsize_t position(uint32_t index, uint32_t tag) const;\n```\n\n## 멤버 변수\n```cpp\n// ItemTags\nSpan<const entity::TagRecord> _tags;\n```\n\n## 의존 모듈\n- DSN-032 Span\n- DSN-058 item_records\n
 body	O	b67bfcf0	## 정의\n```c\ntypedef struct KiottySpecStepRunPage    { size_t length; KiottySpecStepRun    elements[KIOTTY_SPEC_PAGE_CAPACITY]; } KiottySpecStepRunPage;\n```\n\n## 의미\n단계 구간 페이지\n
 body	O	b69ec9db	## 정의\n```c\ntypedef struct KiottySpecCheckpoint {\n    int64_t                    created_at;\n    KiottySpecCheckpointHandle previous;\n    KiottySpecStep             step;\n    KiottySpecCheckpointState  state;\n    char                       description[KIOTTY_SPEC_MAX_DESCRIPTION_LENGTH + 1];\n} KiottySpecCheckpoint;                          /* 88 바이트 */\n```\n\n## 의미\n체크포인트 레코드\n
+body	O	b6c305df	## 요구\n개발 수칙 4.17 (method 이름은 짧은 동사) 에 동사가 아니어도 되는 이름의 예외를 더한다.\n\n1. 속성 돌려주기: 그 값을 보는 일 자체가 조회 기능이면 `tags()`, `reader()`, `capacity()` 처럼 명사를 쓴다. 가능하면 struct 가 아닌 자료구조 class 에서 쓰고, 멤버 변수를 그대로 드러내는 용도로는 권하지 않는다.\n2. 타입 변환: 다른 타입으로 바꿔 돌려주는 method 는 `to` + 타입 이름으로 쓴다. 예: `toKindDiff`.\n3. 색인: 위치·번호를 찾아 돌려주는 method 는 `...Of` 로 쓴다. 예: `indexOf`, `rowOf`.\n4. 커서의 `next()` 를 허용한다.\n\n## 근거\nCP-0008 코드 검사에서 4.17 위반 약 224 건 대부분이 위 네 경우였다 (CIR-050). 사용자가 이 이름들은 동사가 아니어도 읽기 쉽다고 판단했다.\n\n## 반영\n- RULE-050 본문, docs/requirements/개발수칙.md 4.17, 수칙 결정 기록을 고친다.\n- tools/lint.js 의 4.17 검사에 위 예외를 넣는다.\n- 반영 뒤 바뀐 수칙으로 코드 검사(Step 10)를 처음부터 다시 한다.\n
 body	O	b77be631	## 정의\n```c\ntypedef uint64_t KiottySpecCheckpointHandle;  /* reserved   << 32 | sequence */\n```\n\n## 의미\n체크포인트 핸들 (하위 32 비트가 순번)\n
 body	O	b798d6af	## 대상\ntests/core/core_test.cpp 의 testFixedVector\n\n## 전제 조건\ncore/ 헤더와 kiotty_text_diff.cpp 만 링크한 실행 파일. 파일 · 사양 파일을 쓰지 않는다\n\n## 행동\ntestFixedVector 를 실행한다\n\n## 기대 결과\n- first append\n- second append\n- third append fails\n- index access\n- at past length fails\n- clear resets length\n
 body	O	b7bb9da8	## 목적\n항목을 만들고 읽고 고치고 지운다\n\n## 포함\n- KiottySpec_createItem\n- KiottySpec_renameItem\n- KiottySpec_readItem\n- KiottySpec_readItemByHandle\n- KiottySpec_findItem\n- KiottySpec_updateItem\n- KiottySpec_setItemParent\n- KiottySpec_removeItem\n- KiottySpec_writeItemBody\n- KiottySpec_readItemBody\n
