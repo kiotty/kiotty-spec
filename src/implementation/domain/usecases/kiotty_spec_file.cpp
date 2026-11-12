@@ -5,6 +5,7 @@
 #include "implementation/domain/usecases/kiotty_spec_writer.h"
 
 #include <string_view>
+#include <utility>
 
 namespace kiotty::spec::implementation {
 
@@ -29,14 +30,30 @@ KiottySpecStatus SpecFile::save()
 {
     const KiottySpecStatus unchanged = checkUnchanged();
     if (unchanged != KIOTTY_SPEC_STATUS_SUCCESS) { return unchanged; }
-    const WorkAreas areas = splitWork();
-    KispFileWriter file(_file_system);
-    KiottySpecStatus status = file.open(_database.view());
-    if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
+    OpenedFileResult opened = openTemporaryFile();
+    if (!opened) {
         return _tables.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE,
                                      _database.view());
     }
-    status = SpecWriter(_tables, file, areas.line).write();
+    return writeLines(std::move(opened.value));
+}
+
+OpenedFileResult SpecFile::openTemporaryFile()
+{
+    KiottySpecStatus status = _temporary_path.assign(_database.view());
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
+        status = _temporary_path.append(literalText(KISP_TEMPORARY_SUFFIX));
+    }
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return OpenedFileResult::failure(status); }
+    return OpenedFile::openForWriting(_file_system, _temporary_path.view());
+}
+
+KiottySpecStatus SpecFile::writeLines(OpenedFile temporary_file)
+{
+    const WorkAreas areas = splitWork();
+    KispFileWriter file(_file_system, std::move(temporary_file), _database.view(),
+                        _temporary_path.view());
+    KiottySpecStatus status = SpecWriter(_tables, file, areas.line).write();
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
     status = file.commit();
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
@@ -60,15 +77,6 @@ KiottySpecStatus SpecFile::checkUnchanged()
                                  _database.view());
 }
 
-KiottySpecStatus SpecFile::open(Span<const char> database)
-{
-    const KiottySpecStatus status = _database.assign(database);
-    if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return _tables.failure.raise(status, KIOTTY_SPEC_SUBJECT_FILE, database);
-    }
-    return load();
-}
-
 KiottySpecStatus SpecFile::load()
 {
     clear();
@@ -89,13 +97,20 @@ void SpecFile::clear()
 
 Result<uint64_t, KiottySpecStatus> SpecFile::readLines()
 {
-    const WorkAreas areas = splitWork();
-    KispFileReader reader(_file_system, areas.buffer, areas.line);
-    const KiottySpecStatus opened = reader.open(_database.view());
-    if (opened != KIOTTY_SPEC_STATUS_SUCCESS && opened != KIOTTY_SPEC_STATUS_NOT_FOUND) {
+    OpenedFileResult opened = openKispFile(_file_system, _database.view());
+    const bool is_missing = opened.code == KIOTTY_SPEC_STATUS_NOT_FOUND;
+    if (is_missing) { return HashResult::success(EMPTY_KISP_HASH); }
+    if (!opened) {
         return HashResult::failure(
-            _tables.failure.raise(opened, KIOTTY_SPEC_SUBJECT_FILE, _database.view()));
+            _tables.failure.raise(opened.code, KIOTTY_SPEC_SUBJECT_FILE, _database.view()));
     }
+    return readOpenedLines(std::move(opened.value));
+}
+
+Result<uint64_t, KiottySpecStatus> SpecFile::readOpenedLines(OpenedFile file)
+{
+    const WorkAreas areas = splitWork();
+    KispFileReader reader(std::move(file), areas.buffer, areas.line);
     Result<bool, KiottySpecStatus> next = reader.next();
     for (; next && next.value; next = reader.next()) {
         const KiottySpecStatus status = readLine(reader);

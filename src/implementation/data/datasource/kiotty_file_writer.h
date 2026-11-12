@@ -2,26 +2,26 @@
 
 #include "kiotty_spec.h"
 #include "implementation/core/kiotty_span.h"
-#include "implementation/data/datasource/kiotty_file_system.h"
+#include "implementation/data/datasource/kiotty_opened_file.h"
+
+#include <utility>
 
 namespace kiotty::spec::implementation {
 
 class FileWriter
 {
 public:
-    explicit FileWriter(const FileSystem& file_system) : _file_system(file_system) {}
-    ~FileWriter();
+    explicit FileWriter(OpenedFile file) : _file(std::move(file)) {}
 
     FileWriter(const FileWriter&) = delete;
     FileWriter& operator=(const FileWriter&) = delete;
 
-    KiottySpecStatus open(Span<const char> path);
     KiottySpecStatus write(Span<const char> content);
-    void close();
+    bool isOpen() const { return _file.isOpen(); }
+    void close() { _file.close(); }
 
 private:
-    const FileSystem& _file_system;
-    int _descriptor {CLOSED_DESCRIPTOR};
+    OpenedFile _file;
 };
 
 }

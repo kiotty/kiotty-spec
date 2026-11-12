@@ -25,6 +25,7 @@ constexpr uint32_t SHIFT = 32;
 constexpr uint64_t LOW_MASK = 0xFFFFFFFFu;
 
 using TextResult = impl::Result<impl::Span<const char>, KiottySpecStatus>;
+using OpenedResult = impl::OpenedContextResult;
 using ConfigurationResult = impl::Result<impl::Configuration, KiottySpecStatus>;
 
 using HandleResult = impl::Result<entity::ItemHandle, KiottySpecStatus>;
@@ -33,20 +34,34 @@ using LabelResult = impl::Result<const entity::ItemLabel&, KiottySpecStatus>;
 
 enum class Field : uint8_t { ID, TITLE, SUMMARY, BODY, DECISION, DESCRIPTION, PATH, PROJECT_NAME };
 
+class FieldParser
+{
+public:
+    explicit FieldParser(entity::Failure& failure) : _failure(failure) {}
+
+    TextResult parse(KiottySpecText text, Field field) const;
+
+private:
+    entity::Failure& _failure;
+};
+
 class Boundary
 {
 public:
-    explicit Boundary(impl::Context& context) : _context(context) {}
+    explicit Boundary(impl::OpenedContext& context) : _context(context) {}
 
     TextResult parse(KiottySpecText text, Field field) const;
     HandleResult resolve(KiottySpecText id) const;
     RecordResult read(KiottySpecItemHandle item) const;
     KiottySpecCursorResult wrap(const impl::CursorIdResult& opened) const;
+    KiottySpecStatus checkTag(entity::ItemKind kind, uint32_t tag,
+                              impl::Span<const char> id) const;
 
 private:
-    impl::Context& _context;
+    impl::OpenedContext& _context;
 };
 
+OpenedResult findOpenedContext(KiottySpecContext* context);
 TextResult parseText(KiottySpecText text, size_t max_length);
 ConfigurationResult parseConfiguration(const KiottySpecConfiguration& configuration);
 

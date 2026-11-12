@@ -35,14 +35,31 @@ HandleResult Boundary::resolve(KiottySpecText id) const
 }
 
 TextResult Boundary::parse(KiottySpecText text, Field field) const
+{ return FieldParser(_context.failure()).parse(text, field); }
+
+OpenedResult findOpenedContext(KiottySpecContext* context)
+{
+    if (context == nullptr) { return OpenedResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    return context->context.opened();
+}
+
+TextResult FieldParser::parse(KiottySpecText text, Field field) const
 {
     const TextResult parsed = parseText(text, pickLimit(field));
     if (!parsed) {
         const impl::Span<const char> shown = echoOf(text, pickEcho(field));
-        return TextResult::failure(
-            _context.failure().raise(parsed.code, pickSubject(field), shown));
+        return TextResult::failure(_failure.raise(parsed.code, pickSubject(field), shown));
     }
     return parsed;
+}
+
+KiottySpecStatus Boundary::checkTag(entity::ItemKind kind, uint32_t tag,
+                                    impl::Span<const char> id) const
+{
+    const size_t tag_count = _context.readSide().catalog().model(kind).tags.length;
+    if (tag < tag_count) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    return _context.failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_TAG,
+                                    id);
 }
 
 RecordResult Boundary::read(KiottySpecItemHandle item) const

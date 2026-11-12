@@ -1,10 +1,10 @@
 #include "implementation/context/kiotty_context.h"
 
-#include "implementation/core/kiotty_decimal.h"
 #include "implementation/core/kiotty_fixed_string.h"
-#include "implementation/core/kiotty_text.h"
 #include "implementation/core/kiotty_text_view.h"
 #include "implementation/data/datasource/kiotty_file_writer.h"
+
+#include <utility>
 
 namespace kiotty::spec::implementation {
 
@@ -24,7 +24,7 @@ Context::Context(const Configuration& configuration)
                  configuration.max_relation_versions),
       _decisions(_failure, configuration.max_decision_versions),
       _file(SpecTables { _failure, _catalog, _meta, _checkpoints, _items, _relations, _decisions },
-            _work, _file_system),
+            _work, _file_system, _database),
       _workspace(Workspace { _file, _failure, _catalog, _meta, _checkpoints, _items, _relations,
                              _decisions }),
       _checker(_workspace, configuration.max_items), _lifecycle(_workspace, _checker),
@@ -49,19 +49,39 @@ KiottySpecStatus Context::open(Span<const char> database)
     if (catalog != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(catalog, KIOTTY_SPEC_SUBJECT_MODEL);
     }
-    const bool is_existing = _file_system.isFile(absolute_path.view());
-    const KiottySpecStatus loaded = _file.open(absolute_path.view());
+    const KiottySpecStatus loaded = loadSpecFile(absolute_path.view());
     if (loaded != KIOTTY_SPEC_STATUS_SUCCESS) { return loaded; }
-    const KiottySpecStatus created =
-        is_existing ? KIOTTY_SPEC_STATUS_SUCCESS : createSpecFile(directory);
-    if (created != KIOTTY_SPEC_STATUS_SUCCESS) { return created; }
-    _is_opened = true;
+    _opened.emplace(_workspace, ContextWriteSide(_editor, _relation_editor, _lifecycle),
+                    ContextReadSide(_catalog, _finder, _differ, _cursors), _root);
     return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+OpenedContextResult Context::opened()
+{
+    const bool is_opened = _opened.has_value();
+    if (!is_opened) {
+        return OpenedContextResult::failure(
+            _failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_FILE));
+    }
+    return OpenedContextResult::success(*_opened);
+}
+
+KiottySpecStatus Context::loadSpecFile(Span<const char> absolute_path)
+{
+    const KiottySpecStatus assigned = _database.assign(absolute_path);
+    if (assigned != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return _failure.raise(assigned, KIOTTY_SPEC_SUBJECT_FILE, absolute_path);
+    }
+    const bool is_existing = _file_system.isFile(absolute_path);
+    const KiottySpecStatus loaded = _file.load();
+    if (loaded != KIOTTY_SPEC_STATUS_SUCCESS) { return loaded; }
+    if (is_existing) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    return createSpecFile(parentOf(absolute_path));
 }
 
 KiottySpecStatus Context::checkDatabase(Span<const char> database)
 {
-    const bool is_opened = _is_opened;
+    const bool is_opened = _opened.has_value();
     if (is_opened) {
         return _failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_FILE, database);
     }
@@ -93,23 +113,6 @@ KiottySpecStatus Context::createSpecFile(Span<const char> directory)
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-KiottySpecStatus Context::initialize(Span<const char> name)
-{
-    const KiottySpecStatus fresh = _workspace.refresh();
-    if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return fresh; }
-    const Span<const char> project = name.length() > 0 ? name : fileNameOf(_root.view());
-    KiottySpecStatus status = _meta.set(literalText("project.name"), project);
-    if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
-        status = _failure.raise(status, KIOTTY_SPEC_SUBJECT_PROJECT_NAME, project);
-    }
-    const int64_t seconds = nowEpochSeconds();
-    const DecimalText now = formatDecimal(seconds > 0 ? static_cast<uint64_t>(seconds) : 0);
-    if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
-        status = _meta.set(literalText("project.created_at"), now.view());
-    }
-    return _workspace.finish(status);
-}
-
 namespace {
 
 ItemCapacity buildItemCapacity(const Configuration& configuration)
@@ -127,9 +130,9 @@ KiottySpecStatus writeMergeAttributes(const PathResolver& path_resolver,
     const SystemPath& attributes_path = *path.value;
     const bool is_file = file_system.isFile(attributes_path.view());
     if (is_file) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    FileWriter writer(file_system);
-    const KiottySpecStatus opened = writer.open(attributes_path.view());
-    if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return opened; }
+    OpenedFileResult opened = OpenedFile::openForWriting(file_system, attributes_path.view());
+    if (!opened) { return opened.code; }
+    FileWriter writer(std::move(opened.value));
     return writer.write(literalText("*.kisp text eol=lf merge=union\n"));
 }
 

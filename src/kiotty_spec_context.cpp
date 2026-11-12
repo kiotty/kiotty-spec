@@ -36,7 +36,7 @@ KiottySpecContextResult KiottySpec_createContext(const KiottySpecConfiguration* 
 KiottySpecStatusResult KiottySpec_open(KiottySpecContext* context, KiottySpecText path)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    const TextResult parsed = Boundary(context->context).parse(path, Field::PATH);
+    const TextResult parsed = FieldParser(context->context.failure()).parse(path, Field::PATH);
     if (!parsed) { return status(parsed.code); }
     return status(context->context.open(parsed.value));
 }
@@ -63,10 +63,11 @@ KiottySpecErrorResult KiottySpec_readLastError(KiottySpecContext* context)
 KiottySpecStatusResult KiottySpec_initializeProject(KiottySpecContext* context,
                                                     KiottySpecText project_name)
 {
-    if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    const TextResult parsed = Boundary(context->context).parse(project_name, Field::PROJECT_NAME);
+    const OpenedResult spec = findOpenedContext(context);
+    if (!spec) { return status(spec.code); }
+    const TextResult parsed = Boundary(*spec.value).parse(project_name, Field::PROJECT_NAME);
     if (!parsed) { return status(parsed.code); }
-    return status(context->context.initialize(parsed.value));
+    return status(spec.value->initialize(parsed.value));
 }
 
 KiottySpecNameResult KiottySpec_formatStatus(KiottySpecStatus status_code)

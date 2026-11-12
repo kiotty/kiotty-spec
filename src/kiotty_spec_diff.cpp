@@ -19,9 +19,11 @@ KiottySpecDiffSummaryResult KiottySpec_summarizeDiff(KiottySpecContext* context,
                                                      const KiottySpecDiffQuery* query)
 {
     KiottySpecDiffSummaryResult result {};
-    result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
-    if (context == nullptr || query == nullptr) { return result; }
-    impl::Differ& differ = context->context.readSide().differ();
+    const OpenedResult spec = findOpenedContext(context);
+    result.code = spec ? KIOTTY_SPEC_STATUS_INVALID_ARGUMENT : spec.code;
+    const bool has_arguments = spec && query != nullptr;
+    if (!has_arguments) { return result; }
+    impl::Differ& differ = spec.value->readSide().differ();
     const auto range = differ.range(query->from, query->to);
     if (!range) {
         result.code = range.code;
@@ -40,28 +42,29 @@ KiottySpecDiffSummaryResult KiottySpec_summarizeDiff(KiottySpecContext* context,
 KiottySpecCursorResult KiottySpec_openItemDiffCursor(KiottySpecContext* context,
                                                      const KiottySpecDiffQuery* query)
 {
-    if (context == nullptr || query == nullptr) {
-        return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
-    }
-    const auto range = context->context.readSide().differ().range(query->from, query->to);
+    const OpenedResult spec = findOpenedContext(context);
+    if (!spec) { return cursorFailure(spec.code); }
+    if (query == nullptr) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    const auto range = spec.value->readSide().differ().range(query->from, query->to);
     if (!range) { return cursorFailure(range.code); }
-    const impl::CursorIdResult opened = context->context.readSide().differ().items(
+    const impl::CursorIdResult opened = spec.value->readSide().differ().items(
         range.value, query->kind_mask, query->field_mask);
-    return Boundary(context->context).wrap(opened);
+    return Boundary(*spec.value).wrap(opened);
 }
 
 KiottySpecStatusResult KiottySpec_fetchItemDiffPage(KiottySpecContext* context,
                                                     KiottySpecCursor cursor,
                                                     KiottySpecItemDiffPage* page)
 {
-    if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    const OpenedResult spec = findOpenedContext(context);
+    if (!spec) { return status(spec.code); }
     if (page == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     page->length = 0;
-    const auto rows = context->context.readSide().cursors().fetch(
+    const auto rows = spec.value->readSide().cursors().fetch(
         cursor, impl::CursorKind::ITEM_DIFF, KIOTTY_SPEC_PAGE_CAPACITY);
     if (!rows) { return status(rows.code); }
     const impl::Span<KiottySpecItemDiff> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
-    const impl::ItemReader reader = context->context.workspace().items.reader();
+    const impl::ItemReader reader = spec.value->workspace().items.reader();
     for (const impl::CursorRow& row : rows.value) {
         const impl::ItemDiffRow diff = impl::unpackItemDiff(row);
         const auto slot = elements.at(page->length);
@@ -83,24 +86,25 @@ KiottySpecStatusResult KiottySpec_fetchItemDiffPage(KiottySpecContext* context,
 KiottySpecCursorResult KiottySpec_openRelationDiffCursor(KiottySpecContext* context,
                                                          const KiottySpecDiffQuery* query)
 {
-    if (context == nullptr || query == nullptr) {
-        return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
-    }
-    const auto range = context->context.readSide().differ().range(query->from, query->to);
+    const OpenedResult spec = findOpenedContext(context);
+    if (!spec) { return cursorFailure(spec.code); }
+    if (query == nullptr) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    const auto range = spec.value->readSide().differ().range(query->from, query->to);
     if (!range) { return cursorFailure(range.code); }
     const impl::CursorIdResult opened =
-        context->context.readSide().differ().relations(range.value, query->kind_mask);
-    return Boundary(context->context).wrap(opened);
+        spec.value->readSide().differ().relations(range.value, query->kind_mask);
+    return Boundary(*spec.value).wrap(opened);
 }
 
 KiottySpecStatusResult KiottySpec_fetchRelationDiffPage(KiottySpecContext* context,
                                                         KiottySpecCursor cursor,
                                                         KiottySpecRelationDiffPage* page)
 {
-    if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    const OpenedResult spec = findOpenedContext(context);
+    if (!spec) { return status(spec.code); }
     if (page == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     page->length = 0;
-    const auto rows = context->context.readSide().cursors().fetch(
+    const auto rows = spec.value->readSide().cursors().fetch(
         cursor, impl::CursorKind::RELATION_DIFF, KIOTTY_SPEC_PAGE_CAPACITY);
     if (!rows) { return status(rows.code); }
     const impl::Span<KiottySpecRelationDiff> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
@@ -125,14 +129,15 @@ KiottySpecItemResult KiottySpec_readItemAt(KiottySpecContext* context, KiottySpe
                                            KiottySpecCheckpointHandle checkpoint)
 {
     KiottySpecItemResult result {};
-    result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
-    if (context == nullptr) { return result; }
-    const TextResult parsed = Boundary(context->context).parse(id, Field::ID);
+    const OpenedResult spec = findOpenedContext(context);
+    result.code = spec ? KIOTTY_SPEC_STATUS_INVALID_ARGUMENT : spec.code;
+    if (!spec) { return result; }
+    const TextResult parsed = Boundary(*spec.value).parse(id, Field::ID);
     if (!parsed) {
         result.code = parsed.code;
         return result;
     }
-    impl::Differ& differ = context->context.readSide().differ();
+    impl::Differ& differ = spec.value->readSide().differ();
     const auto point = differ.point(checkpoint);
     if (!point) {
         result.code = point.code;
@@ -141,7 +146,7 @@ KiottySpecItemResult KiottySpec_readItemAt(KiottySpecContext* context, KiottySpe
     const auto version = differ.past().itemAt(parsed.value, point.value);
     result.code = version.code;
     if (!version) { return result; }
-    result.handle = findCurrentHandle(context->context.workspace().items.reader(), parsed.value);
+    result.handle = findCurrentHandle(spec.value->workspace().items.reader(), parsed.value);
     result.value = toItem(version.value.state, version.value.label);
     return result;
 }
@@ -150,14 +155,15 @@ KiottySpecTagResult KiottySpec_readItemTagAt(KiottySpecContext* context, KiottyS
                                              uint32_t tag, KiottySpecCheckpointHandle checkpoint)
 {
     KiottySpecTagResult result {};
-    result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
-    if (context == nullptr) { return result; }
-    const TextResult parsed = Boundary(context->context).parse(id, Field::ID);
+    const OpenedResult spec = findOpenedContext(context);
+    result.code = spec ? KIOTTY_SPEC_STATUS_INVALID_ARGUMENT : spec.code;
+    if (!spec) { return result; }
+    const TextResult parsed = Boundary(*spec.value).parse(id, Field::ID);
     if (!parsed) {
         result.code = parsed.code;
         return result;
     }
-    impl::Differ& differ = context->context.readSide().differ();
+    impl::Differ& differ = spec.value->readSide().differ();
     const auto point = differ.point(checkpoint);
     if (!point) {
         result.code = point.code;
@@ -167,15 +173,11 @@ KiottySpecTagResult KiottySpec_readItemTagAt(KiottySpecContext* context, KiottyS
     result.code = version.code;
     if (!version) { return result; }
     const entity::ItemKind kind = version.value.state.kind;
-    const size_t tag_count = context->context.readSide().catalog().model(kind).tags.length;
-    if (tag >= tag_count) {
-        result.code = context->context.failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
-                                                       KIOTTY_SPEC_SUBJECT_TAG, parsed.value);
-        return result;
-    }
+    result.code = Boundary(*spec.value).checkTag(kind, tag, parsed.value);
+    if (result.code != KIOTTY_SPEC_STATUS_SUCCESS) { return result; }
     const auto value = differ.past().tagAt(parsed.value, tag, point.value);
     result.code = value.code;
-    const impl::ItemReader reader = context->context.workspace().items.reader();
+    const impl::ItemReader reader = spec.value->workspace().items.reader();
     result.value = toTag(findCurrentHandle(reader, parsed.value),
                          static_cast<KiottySpecItemKind>(kind), tag, value ? value.value : 0);
     return result;
@@ -185,10 +187,11 @@ KiottySpecSizeResult KiottySpec_readItemBodyAt(KiottySpecContext* context, Kiott
                                                KiottySpecCheckpointHandle checkpoint,
                                                KiottySpecBuffer buffer)
 {
-    if (context == nullptr) { return sizeResult(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, 0); }
-    const TextResult parsed = Boundary(context->context).parse(id, Field::ID);
+    const OpenedResult spec = findOpenedContext(context);
+    if (!spec) { return sizeResult(spec.code, 0); }
+    const TextResult parsed = Boundary(*spec.value).parse(id, Field::ID);
     if (!parsed) { return sizeResult(parsed.code, 0); }
-    impl::Differ& differ = context->context.readSide().differ();
+    impl::Differ& differ = spec.value->readSide().differ();
     const auto point = differ.point(checkpoint);
     if (!point) { return sizeResult(point.code, 0); }
     const impl::Span<char> target = toSpan(buffer);
@@ -200,16 +203,17 @@ KiottySpecSizeResult KiottySpec_readDecisionAt(KiottySpecContext* context, Kiott
                                                KiottySpecCheckpointHandle checkpoint,
                                                KiottySpecBuffer buffer)
 {
-    if (context == nullptr) { return sizeResult(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, 0); }
+    const OpenedResult spec = findOpenedContext(context);
+    if (!spec) { return sizeResult(spec.code, 0); }
     const bool is_valid_kind = isKind(kind);
     const bool has_decision =
         is_valid_kind && entity::hasDecision(static_cast<entity::ItemKind>(kind));
     if (!has_decision) {
-        return sizeResult(context->context.failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
-                                                           KIOTTY_SPEC_SUBJECT_KIND),
+        return sizeResult(spec.value->failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
+                                                      KIOTTY_SPEC_SUBJECT_KIND),
                           0);
     }
-    impl::Differ& differ = context->context.readSide().differ();
+    impl::Differ& differ = spec.value->readSide().differ();
     const auto point = differ.point(checkpoint);
     if (!point) { return sizeResult(point.code, 0); }
     const impl::Span<char> target = toSpan(buffer);
@@ -223,18 +227,18 @@ KiottySpecCursorResult KiottySpec_openTextDiffCursor(KiottySpecContext* context,
                                                      KiottySpecTextField field,
                                                      const KiottySpecDiffQuery* range)
 {
-    if (context == nullptr || range == nullptr) {
-        return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
-    }
+    const OpenedResult spec = findOpenedContext(context);
+    if (!spec) { return cursorFailure(spec.code); }
+    if (range == nullptr) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     const bool is_text_field = isTextField(field);
     if (!is_text_field) {
-        return cursorFailure(context->context.failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
-                                                              KIOTTY_SPEC_SUBJECT_TEXT_FIELD));
+        return cursorFailure(spec.value->failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
+                                                         KIOTTY_SPEC_SUBJECT_TEXT_FIELD));
     }
-    const Boundary boundary(context->context);
+    const Boundary boundary(*spec.value);
     const RecordResult record = boundary.read(item);
     if (!record) { return cursorFailure(record.code); }
-    impl::Differ& differ = context->context.readSide().differ();
+    impl::Differ& differ = spec.value->readSide().differ();
     const auto points = differ.range(range->from, range->to);
     if (!points) { return cursorFailure(points.code); }
     const impl::CursorIdResult opened =
@@ -246,10 +250,11 @@ KiottySpecStatusResult KiottySpec_fetchTextDiffPage(KiottySpecContext* context,
                                                     KiottySpecCursor cursor,
                                                     KiottySpecTextDiffPage* page)
 {
-    if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    const OpenedResult spec = findOpenedContext(context);
+    if (!spec) { return status(spec.code); }
     if (page == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     page->length = 0;
-    impl::TextDiffer differ = context->context.readSide().differ().text();
+    impl::TextDiffer differ = spec.value->readSide().differ().text();
     const impl::Span<KiottySpecTextDiff> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     while (page->length < KIOTTY_SPEC_PAGE_CAPACITY) {
         const auto piece = differ.next(cursor);

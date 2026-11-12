@@ -3,6 +3,7 @@
 #include "implementation/context/kiotty_cursor_pool.h"
 #include "implementation/context/kiotty_differ.h"
 #include "implementation/context/kiotty_finder.h"
+#include "implementation/context/kiotty_opened_context.h"
 #include "implementation/domain/entity/kiotty_failure.h"
 #include "implementation/core/kiotty_text_buffer.h"
 #include "implementation/data/datasource/kiotty_file_system.h"
@@ -20,6 +21,7 @@
 #include "implementation/domain/usecases/kiotty_workspace.h"
 
 #include <cstddef>
+#include <optional>
 
 namespace kiotty::spec::implementation {
 
@@ -52,43 +54,6 @@ struct Configuration {
 
 static_assert(sizeof(Configuration) == 104, "unexpected padding");
 
-class ContextWriteSide
-{
-public:
-    ContextWriteSide(Editor& editor, RelationEditor& relation_editor, Lifecycle& lifecycle)
-        : _editor(editor), _relation_editor(relation_editor), _lifecycle(lifecycle)
-    {}
-
-    Editor& editor() const { return _editor; }
-    RelationEditor& relationEditor() const { return _relation_editor; }
-    Lifecycle& lifecycle() const { return _lifecycle; }
-
-private:
-    Editor& _editor;
-    RelationEditor& _relation_editor;
-    Lifecycle& _lifecycle;
-};
-
-class ContextReadSide
-{
-public:
-    ContextReadSide(const ModelCatalog& catalog, Finder& finder, Differ& differ,
-                    CursorPool& cursors)
-        : _catalog(catalog), _finder(finder), _differ(differ), _cursors(cursors)
-    {}
-
-    const ModelCatalog& catalog() const { return _catalog; }
-    Finder& finder() const { return _finder; }
-    Differ& differ() const { return _differ; }
-    CursorPool& cursors() const { return _cursors; }
-
-private:
-    const ModelCatalog& _catalog;
-    Finder& _finder;
-    Differ& _differ;
-    CursorPool& _cursors;
-};
-
 class Context {
 public:
     explicit Context(const Configuration& configuration);
@@ -97,20 +62,16 @@ public:
     Context& operator=(const Context&) = delete;
 
     KiottySpecStatus open(Span<const char> database);
-    KiottySpecStatus initialize(Span<const char> name);
-
+    OpenedContextResult opened();
     entity::Failure& failure() { return _failure; }
-    Workspace& workspace() { return _workspace; }
-    ContextWriteSide writeSide()
-    { return ContextWriteSide(_editor, _relation_editor, _lifecycle); }
-    ContextReadSide readSide() { return ContextReadSide(_catalog, _finder, _differ, _cursors); }
 
 private:
     KiottySpecStatus checkDatabase(Span<const char> database);
+    KiottySpecStatus loadSpecFile(Span<const char> absolute_path);
     KiottySpecStatus createSpecFile(Span<const char> directory);
 
-    bool _is_opened {false};
     SystemPath _root {};
+    SystemPath _database {};
     PathArea _paths {};
     PathResolver _path_resolver;
     FileSystem _file_system;
@@ -132,6 +93,7 @@ private:
     TextDiffStore _text_diffs;
     Finder _finder;
     Differ _differ;
+    std::optional<OpenedContext> _opened {};
 };
 
 }

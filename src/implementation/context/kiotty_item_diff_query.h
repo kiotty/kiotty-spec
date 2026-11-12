@@ -27,11 +27,11 @@ class ItemDiffQuery
 {
 public:
     ItemDiffQuery(ItemStore& items, DiffRange range, uint32_t kind_mask, uint32_t field_mask)
-        : _items(items), _range(range), _kind_mask(kind_mask), _field_mask(field_mask)
+        : _items(items), _range(range), _kind_mask(kind_mask), _field_mask(field_mask),
+          _keys(items.history().keysByIdentity())
     {
     }
 
-    KiottySpecStatus open();
     Result<bool, KiottySpecStatus> next();
     const ItemDiffRow& current() const { return _current; }
 
@@ -44,7 +44,7 @@ private:
     DiffRange _range;
     uint32_t _kind_mask;
     uint32_t _field_mask;
-    Span<const uint32_t> _keys {};
+    const Span<const uint32_t> _keys;
     size_t _position {0};
     ItemDiffRow _current {};
 };

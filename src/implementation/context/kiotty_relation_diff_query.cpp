@@ -14,13 +14,6 @@ bool isLive(const VersionResult& version);
 
 }
 
-KiottySpecStatus RelationDiffQuery::open()
-{
-    _firsts = _relations.relationsInDiffOrder();
-    _position = 0;
-    return KIOTTY_SPEC_STATUS_SUCCESS;
-}
-
 Result<bool, KiottySpecStatus> RelationDiffQuery::next()
 {
     const Span<const uint32_t> firsts = _firsts;

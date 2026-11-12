@@ -29,11 +29,11 @@ class RelationDiffQuery
 public:
     RelationDiffQuery(ItemStore& items, RelationStore& relations, DiffRange range,
                       uint32_t kind_mask)
-        : _items(items), _relations(relations), _range(range), _kind_mask(kind_mask)
+        : _items(items), _relations(relations), _range(range), _kind_mask(kind_mask),
+          _firsts(relations.relationsInDiffOrder())
     {
     }
 
-    KiottySpecStatus open();
     Result<bool, KiottySpecStatus> next();
     const RelationDiffRow& current() const { return _current; }
 
@@ -44,7 +44,7 @@ private:
     RelationStore& _relations;
     DiffRange _range;
     uint32_t _kind_mask;
-    Span<const uint32_t> _firsts {};
+    const Span<const uint32_t> _firsts;
     size_t _position {0};
     RelationDiffRow _current {};
 };

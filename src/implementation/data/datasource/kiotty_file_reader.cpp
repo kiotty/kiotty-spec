@@ -20,9 +20,6 @@ struct LineWindow {
 
 static_assert(sizeof(LineWindow) == 48, "unexpected padding");
 
-void closeOpenDescriptor(int descriptor);
-KiottySpecStatus checkOpened(int descriptor);
-bool isClosedDescriptor(int descriptor);
 LineWindow readLine(int descriptor, Span<char> buffer, const LineWindow& initial);
 LineWindow readMore(int descriptor, Span<char> buffer, const LineWindow& window);
 LineWindow copyToFront(Span<char> buffer, const LineWindow& window);
@@ -32,29 +29,14 @@ bool isCarriageReturnAt(Span<const char> buffer, size_t index);
 
 }
 
-FileReader::~FileReader() { closeOpenDescriptor(_descriptor); }
-
-KiottySpecStatus FileReader::open(Span<const char> path)
-{
-    closeOpenDescriptor(_descriptor);
-    const DescriptorResult opened = _file_system.openForReading(path);
-    _descriptor = opened ? opened.value : CLOSED_DESCRIPTOR;
-    _start = 0;
-    _end = 0;
-    _is_finished = false;
-    return checkOpened(_descriptor);
-}
-
 Result<bool, KiottySpecStatus> FileReader::next()
 {
     using LineResult = Result<bool, KiottySpecStatus>;
-    const bool is_closed = isClosedDescriptor(_descriptor);
-    if (is_closed) { return LineResult::failure(KIOTTY_SPEC_STATUS_PRECONDITION); }
     LineWindow window {};
     window.start = _start;
     window.end = _end;
     window.is_finished = _is_finished;
-    window = readLine(_descriptor, _buffer, window);
+    window = readLine(_file.descriptor(), _buffer, window);
     _start = window.start;
     _end = window.end;
     _is_finished = window.is_finished;
@@ -64,16 +46,6 @@ Result<bool, KiottySpecStatus> FileReader::next()
 }
 
 namespace {
-
-void closeOpenDescriptor(int descriptor)
-{
-    if (descriptor >= 0) { closeDescriptor(descriptor); }
-}
-
-KiottySpecStatus checkOpened(int descriptor)
-{ return descriptor >= 0 ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_NOT_FOUND; }
-
-bool isClosedDescriptor(int descriptor) { return descriptor < 0; }
 
 LineWindow readLine(int descriptor, Span<char> buffer, const LineWindow& initial)
 {

@@ -45,15 +45,17 @@ bool testFileReaderLines()
     const core::Span<const char> path = core::literalText("kiotty_file_reader_test.txt");
     bool ok = true;
     {
-        core::FileWriter writer(file_system);
-        ok = expectTrue(writer.open(path) == KIOTTY_SPEC_STATUS_SUCCESS, "open writer") && ok;
+        core::OpenedFileResult opened = core::OpenedFile::openForWriting(file_system, path);
+        ok = expectTrue(static_cast<bool>(opened), "open writer") && ok;
+        core::FileWriter writer(std::move(opened.value));
         writer.write(core::literalText("first\r\n\nsecond  \n"));
         writer.write(core::literalText("third-without-newline"));
     }
     {
         char buffer[24] {};
-        core::FileReader reader(file_system, core::Span<char>(buffer, sizeof(buffer)));
-        ok = expectTrue(reader.open(path) == KIOTTY_SPEC_STATUS_SUCCESS, "open reader") && ok;
+        core::OpenedFileResult opened = core::OpenedFile::openForReading(file_system, path);
+        ok = expectTrue(static_cast<bool>(opened), "open reader") && ok;
+        core::FileReader reader(std::move(opened.value), core::Span<char>(buffer, sizeof(buffer)));
         const char* const expected[] = {"first", "", "second  ", "third-without-newline"};
         for (const char* line : expected) {
             const auto next = reader.next();
@@ -63,15 +65,14 @@ bool testFileReaderLines()
         ok = expectTrue(end && !end.value, "end of file") && ok;
 
         char small[8] {};
-        core::FileReader tight(file_system, core::Span<char>(small, sizeof(small)));
-        tight.open(path);
+        core::FileReader tight(std::move(core::OpenedFile::openForReading(file_system, path).value), core::Span<char>(small, sizeof(small)));
         tight.next();
         tight.next();
         const auto too_long = tight.next();
         ok = expectTrue(too_long.code == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "line longer than buffer") && ok;
 
-        core::FileReader missing(file_system, core::Span<char>(buffer, sizeof(buffer)));
-        ok = expectTrue(missing.open(core::literalText("no_such_kiotty_file.txt")) == KIOTTY_SPEC_STATUS_NOT_FOUND, "missing file") && ok;
+        const core::OpenedFileResult missing = core::OpenedFile::openForReading(file_system, core::literalText("no_such_kiotty_file.txt"));
+        ok = expectTrue(missing.code == KIOTTY_SPEC_STATUS_NOT_FOUND, "missing file") && ok;
     }
     file_system.removeFile(path);
     return ok;
@@ -185,8 +186,9 @@ bool testUnicodePath()
     const core::Span<const char> path = core::literalText("kiotty_경로_\xF0\x9F\x98\x80.txt");
     bool ok = true;
     {
-        core::FileWriter writer(file_system);
-        ok = expectTrue(writer.open(path) == KIOTTY_SPEC_STATUS_SUCCESS, "open unicode writer") && ok;
+        core::OpenedFileResult opened = core::OpenedFile::openForWriting(file_system, path);
+        ok = expectTrue(static_cast<bool>(opened), "open unicode writer") && ok;
+        core::FileWriter writer(std::move(opened.value));
         writer.write(core::literalText("x"));
     }
     ok = expectTrue(file_system.isFile(path), "unicode file exists") && ok;
@@ -206,9 +208,13 @@ bool testKispFileWriteAndHash()
     char buffer[64] {};
     bool ok = expectTrue(core::hashKispFile(file_system, path, core::Span<char>(buffer, sizeof(buffer))).value == core::EMPTY_KISP_HASH, "missing file hash");
     uint64_t written = 0;
+    core::SystemPath temporary_path {};
+    temporary_path.assign(path);
+    temporary_path.append(core::literalText(core::KISP_TEMPORARY_SUFFIX));
     {
-        core::KispFileWriter writer(file_system);
-        ok = expectTrue(writer.open(path) == KIOTTY_SPEC_STATUS_SUCCESS, "open kisp writer") && ok;
+        core::OpenedFileResult opened = core::OpenedFile::openForWriting(file_system, temporary_path.view());
+        ok = expectTrue(static_cast<bool>(opened), "open kisp writer") && ok;
+        core::KispFileWriter writer(file_system, std::move(opened.value), path, temporary_path.view());
         writer.write(core::literalText("#kisp 2 model 1\n"));
         writer.write(core::literalText("meta\tO\tproject.name\tx\n"));
         ok = expectTrue(!file_system.isFile(path), "nothing replaced before commit") && ok;
@@ -217,16 +223,16 @@ bool testKispFileWriteAndHash()
     }
     ok = expectTrue(core::hashKispFile(file_system, path, core::Span<char>(buffer, sizeof(buffer))).value == written, "reader hash matches writer hash") && ok;
     {
-        core::KispFileWriter abandoned(file_system);
-        abandoned.open(path);
+        core::OpenedFileResult opened = core::OpenedFile::openForWriting(file_system, temporary_path.view());
+        core::KispFileWriter abandoned(file_system, std::move(opened.value), path, temporary_path.view());
         abandoned.write(core::literalText("partial"));
     }
     ok = expectTrue(core::hashKispFile(file_system, path, core::Span<char>(buffer, sizeof(buffer))).value == written, "abandoned write leaves file") && ok;
     ok = expectTrue(!file_system.isFile(core::literalText("kiotty_kisp_test.kisp.tmp")), "temporary file removed") && ok;
     {
         char line_area[64] {};
-        core::KispFileReader reader(file_system, core::Span<char>(buffer, sizeof(buffer)), core::Span<char>(line_area, sizeof(line_area)));
-        reader.open(path);
+        core::OpenedFileResult opened = core::openKispFile(file_system, path);
+        core::KispFileReader reader(std::move(opened.value), core::Span<char>(buffer, sizeof(buffer)), core::Span<char>(line_area, sizeof(line_area)));
         reader.next();
         reader.next();
         const auto fields = reader.fields();

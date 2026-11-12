@@ -103,8 +103,6 @@ KiottySpecStatus Differ::countItems(DiffRange range, uint32_t kind_mask, uint32_
                                     KindCounts (&counts)[entity::ITEM_KIND_COUNT])
 {
     ItemDiffQuery query(_workspace.items, range, kind_mask, field_mask);
-    const KiottySpecStatus opened = query.open();
-    if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return opened; }
     const Span<KindCounts> kind_counts(counts, entity::ITEM_KIND_COUNT);
     Result<bool, KiottySpecStatus> next = query.next();
     for (; next && next.value; next = query.next()) {
@@ -124,8 +122,6 @@ KiottySpecStatus Differ::countRelations(DiffRange range, uint32_t kind_mask,
                                         KindCounts (&counts)[entity::ITEM_KIND_COUNT])
 {
     RelationDiffQuery query(_workspace.items, _workspace.relations, range, kind_mask);
-    const KiottySpecStatus opened = query.open();
-    if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return opened; }
     const Span<KindCounts> kind_counts(counts, entity::ITEM_KIND_COUNT);
     Result<bool, KiottySpecStatus> next = query.next();
     for (; next && next.value; next = query.next()) {
@@ -168,10 +164,8 @@ CursorIdResult Differ::items(DiffRange range, uint32_t kind_mask, uint32_t field
         return CursorIdResult::failure(makeCursorWriter().raiseCursorFull(cursor.code));
     }
     ItemDiffQuery query(_workspace.items, range, kind_mask, field_mask);
-    KiottySpecStatus status = query.open();
-    Result<bool, KiottySpecStatus> next = status == KIOTTY_SPEC_STATUS_SUCCESS
-                                              ? query.next()
-                                              : Result<bool, KiottySpecStatus>::failure(status);
+    KiottySpecStatus status = KIOTTY_SPEC_STATUS_SUCCESS;
+    Result<bool, KiottySpecStatus> next = query.next();
     for (; next && next.value && status == KIOTTY_SPEC_STATUS_SUCCESS; next = query.next()) {
         status = makeCursorWriter().pushRow(cursor.value, packItemDiff(query.current()));
     }
@@ -188,10 +182,8 @@ CursorIdResult Differ::relations(DiffRange range, uint32_t kind_mask)
         return CursorIdResult::failure(makeCursorWriter().raiseCursorFull(cursor.code));
     }
     RelationDiffQuery query(_workspace.items, _workspace.relations, range, kind_mask);
-    KiottySpecStatus status = query.open();
-    Result<bool, KiottySpecStatus> next = status == KIOTTY_SPEC_STATUS_SUCCESS
-                                              ? query.next()
-                                              : Result<bool, KiottySpecStatus>::failure(status);
+    KiottySpecStatus status = KIOTTY_SPEC_STATUS_SUCCESS;
+    Result<bool, KiottySpecStatus> next = query.next();
     for (; next && next.value && status == KIOTTY_SPEC_STATUS_SUCCESS; next = query.next()) {
         status = makeCursorWriter().pushRow(cursor.value, packRelationDiff(query.current()));
     }
