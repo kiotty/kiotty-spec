@@ -32,7 +32,6 @@ private:
     Result<entity::ItemHandle, KiottySpecStatus> resolveParent(entity::ItemHandle item,
                                                                Span<const char> id,
                                                                Span<const char> parent_id);
-    KiottySpecStatus checkId(Span<const char> id);
     KiottySpecStatus checkNoChildren(entity::ItemHandle item);
 
     Workspace& _workspace;
@@ -45,7 +44,7 @@ public:
 
     KiottySpecStatus updateItem(Span<const char> id, OptionalText title, OptionalText summary);
     KiottySpecStatus writeBody(Span<const char> id, Span<const char> body);
-    KiottySpecStatus setTag(entity::ItemHandle item, uint32_t tag, uint64_t value);
+    KiottySpecStatus setTag(const entity::TagRecord& tag);
     KiottySpecStatus writeDecision(entity::ItemKind kind, Span<const char> text);
 
 private:

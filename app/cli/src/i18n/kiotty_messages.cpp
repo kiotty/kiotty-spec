@@ -91,6 +91,7 @@ constexpr Message MESSAGES[] = {
     { MessageKey::MODEL_SYNOPSIS, "[KIND]" },
     { MessageKey::MODEL_SUMMARY, "Kind 목록, 또는 Kind 의 태그 · 관계 정의" },
     { MessageKey::UNKNOWN_COMMAND, "알 수 없는 명령 '{0}'. `ks help` 참고" },
+    { MessageKey::UNKNOWN_ACTOR, "알 수 없는 actor '{0}'. --actor ai|user" },
     { MessageKey::ITEM_ADD_USAGE, "ks item add KIND --title T" },
     { MessageKey::ITEM_SET_USAGE,
       "ks item set ID [--title T] [--summary S] [--parent ID|-] [--body "

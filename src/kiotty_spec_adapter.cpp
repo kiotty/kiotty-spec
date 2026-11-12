@@ -3,6 +3,7 @@
 #include "implementation/core/kiotty_checked.h"
 #include "implementation/core/kiotty_utf8.h"
 #include "implementation/data/datasource/kiotty_file_system.h"
+#include "implementation/domain/entity/kiotty_item_id.h"
 
 namespace kiotty::spec::adapter {
 
@@ -34,6 +35,16 @@ HandleResult Boundary::resolve(KiottySpecText id) const
     return _context.workspace().resolve(parsed.value);
 }
 
+TextResult Boundary::parseNewId(KiottySpecText id) const
+{
+    const TextResult parsed = parse(id, Field::ID);
+    if (!parsed) { return parsed; }
+    const size_t length = parsed.value.length();
+    if (length > 0) { return parsed; }
+    return TextResult::failure(
+        _context.failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_ID));
+}
+
 TextResult Boundary::parse(KiottySpecText text, Field field) const
 { return FieldParser(_context.failure()).parse(text, field); }
 
@@ -46,9 +57,11 @@ OpenedResult findOpenedContext(KiottySpecContext* context)
 TextResult FieldParser::parse(KiottySpecText text, Field field) const
 {
     const TextResult parsed = parseText(text, pickLimit(field));
-    if (!parsed) {
+    const bool is_given_id = parsed && field == Field::ID && parsed.value.length() > 0;
+    const KiottySpecStatus code = is_given_id ? entity::validateItemId(parsed.value) : parsed.code;
+    if (code != KIOTTY_SPEC_STATUS_SUCCESS) {
         const impl::Span<const char> shown = echoOf(text, pickEcho(field));
-        return TextResult::failure(_failure.raise(parsed.code, pickSubject(field), shown));
+        return TextResult::failure(_failure.raise(code, pickSubject(field), shown));
     }
     return parsed;
 }

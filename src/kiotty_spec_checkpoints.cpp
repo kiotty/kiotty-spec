@@ -10,7 +10,6 @@ namespace {
 
 KiottySpecStepRun convertStepRun(const impl::CursorRow& row);
 KiottySpecUnmetCondition convertUnmetCondition(const impl::CursorRow& row);
-bool hasDecisionKind(KiottySpecItemKind kind);
 
 }
 
@@ -24,13 +23,18 @@ KiottySpecCheckpointHandleResult KiottySpec_startCheckpoint(KiottySpecContext* c
     const OpenedResult spec = findOpenedContext(context);
     result.code = spec ? KIOTTY_SPEC_STATUS_INVALID_ARGUMENT : spec.code;
     if (!spec) { return result; }
+    const StepResult parsed_step = ValueParser(*spec.value).parseStep(step);
+    if (!parsed_step) {
+        result.code = parsed_step.code;
+        return result;
+    }
     const TextResult parsed = Boundary(*spec.value).parse(description, Field::DESCRIPTION);
     if (!parsed) {
         result.code = parsed.code;
         return result;
     }
-    const auto started = spec.value->writeSide().lifecycle().start(
-        static_cast<entity::Step>(step), parsed.value);
+    const auto started =
+        spec.value->writeSide().lifecycle().start(parsed_step.value, parsed.value);
     result.code = started.code;
     result.value = started ? started.value : 0;
     return result;
@@ -48,7 +52,9 @@ KiottySpecStatusResult KiottySpec_completeCheckpoint(KiottySpecContext* context,
 {
     const OpenedResult spec = findOpenedContext(context);
     if (!spec) { return status(spec.code); }
-    return status(spec.value->writeSide().lifecycle().complete(actor));
+    const ActorResult parsed = ValueParser(*spec.value).parseActor(actor);
+    if (!parsed) { return status(parsed.code); }
+    return status(spec.value->writeSide().lifecycle().complete(parsed.value));
 }
 
 KiottySpecCursorResult KiottySpec_openUnmetConditionCursor(KiottySpecContext* context)
@@ -88,10 +94,14 @@ KiottySpecCheckpointResult KiottySpec_readCheckpoint(KiottySpecContext* context,
         result.code = spec.code;
         return result;
     }
+    const SequenceResult parsed = ValueParser(*spec.value).parseCheckpoint(handle);
+    if (!parsed) {
+        result.code = parsed.code;
+        return result;
+    }
     impl::CheckpointStore& checkpoints = spec.value->workspace().checkpoints;
-    const uint32_t sequence = handle == KIOTTY_SPEC_CHECKPOINT_CURRENT
-                                  ? checkpoints.latest()
-                                  : static_cast<uint32_t>(handle & LOW_MASK);
+    const uint32_t sequence =
+        handle == KIOTTY_SPEC_CHECKPOINT_CURRENT ? checkpoints.latest() : parsed.value;
     const auto record = checkpoints.get(sequence);
     if (!record) {
         result.code = spec.value->failure().raise(KIOTTY_SPEC_STATUS_NOT_FOUND,
@@ -151,8 +161,13 @@ KiottySpecSizeResult KiottySpec_pruneCheckpoints(KiottySpecContext* context, Kio
 {
     const OpenedResult spec = findOpenedContext(context);
     if (!spec) { return sizeResult(spec.code, 0); }
-    const auto pruned = spec.value->writeSide().lifecycle().prune(
-        actor, static_cast<uint32_t>(base & LOW_MASK));
+    const ValueParser parser(*spec.value);
+    const ActorResult parsed_actor = parser.parseActor(actor);
+    if (!parsed_actor) { return sizeResult(parsed_actor.code, 0); }
+    const SequenceResult parsed_base = parser.parseCheckpoint(base);
+    if (!parsed_base) { return sizeResult(parsed_base.code, 0); }
+    const auto pruned =
+        spec.value->writeSide().lifecycle().prune(parsed_actor.value, parsed_base.value);
     return sizeResult(pruned.code, pruned ? pruned.value : 0);
 }
 
@@ -163,8 +178,10 @@ KiottySpecStatusResult KiottySpec_writeDecision(KiottySpecContext* context, Kiot
     if (!spec) { return status(spec.code); }
     const TextResult parsed = Boundary(*spec.value).parse(text, Field::DECISION);
     if (!parsed) { return status(parsed.code); }
-    return status(spec.value->writeSide().editor().content().writeDecision(
-        static_cast<entity::ItemKind>(kind), parsed.value));
+    const KindResult parsed_kind = ValueParser(*spec.value).parseDecisionKind(kind);
+    if (!parsed_kind) { return status(parsed_kind.code); }
+    return status(
+        spec.value->writeSide().editor().content().writeDecision(parsed_kind.value, parsed.value));
 }
 
 KiottySpecSizeResult KiottySpec_readDecision(KiottySpecContext* context, KiottySpecItemKind kind,
@@ -172,15 +189,10 @@ KiottySpecSizeResult KiottySpec_readDecision(KiottySpecContext* context, KiottyS
 {
     const OpenedResult spec = findOpenedContext(context);
     if (!spec) { return sizeResult(spec.code, 0); }
-    const bool has_decision = hasDecisionKind(kind);
-    if (!has_decision) {
-        return sizeResult(spec.value->failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
-                                                      KIOTTY_SPEC_SUBJECT_KIND),
-                          0);
-    }
+    const KindResult parsed = ValueParser(*spec.value).parseDecisionKind(kind);
+    if (!parsed) { return sizeResult(parsed.code, 0); }
     const impl::Span<char> target = toSpan(buffer);
-    const auto read = spec.value->workspace().decisions.read(
-        static_cast<entity::ItemKind>(kind), UINT32_MAX, target);
+    const auto read = spec.value->workspace().decisions.read(parsed.value, UINT32_MAX, target);
     return sizeResult(read.code, read.value);
 }
 
@@ -254,8 +266,5 @@ KiottySpecUnmetCondition convertUnmetCondition(const impl::CursorRow& row)
     unmet.condition = static_cast<KiottySpecCondition>(row.third);
     return unmet;
 }
-
-bool hasDecisionKind(KiottySpecItemKind kind)
-{ return isKind(kind) && entity::hasDecision(static_cast<entity::ItemKind>(kind)); }
 
 }

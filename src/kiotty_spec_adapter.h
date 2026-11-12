@@ -31,6 +31,11 @@ using ConfigurationResult = impl::Result<impl::Configuration, KiottySpecStatus>;
 using HandleResult = impl::Result<entity::ItemHandle, KiottySpecStatus>;
 using RecordResult = impl::Result<const entity::ItemState&, KiottySpecStatus>;
 using LabelResult = impl::Result<const entity::ItemLabel&, KiottySpecStatus>;
+using KindResult = impl::Result<entity::ItemKind, KiottySpecStatus>;
+using StepResult = impl::Result<entity::Step, KiottySpecStatus>;
+using ActorResult = impl::Result<entity::Actor, KiottySpecStatus>;
+using SequenceResult = impl::Result<uint32_t, KiottySpecStatus>;
+using TagResult = impl::Result<entity::TagRecord, KiottySpecStatus>;
 
 enum class Field : uint8_t { ID, TITLE, SUMMARY, BODY, DECISION, DESCRIPTION, PATH, PROJECT_NAME };
 
@@ -51,6 +56,7 @@ public:
     explicit Boundary(impl::OpenedContext& context) : _context(context) {}
 
     TextResult parse(KiottySpecText text, Field field) const;
+    TextResult parseNewId(KiottySpecText id) const;
     HandleResult resolve(KiottySpecText id) const;
     RecordResult read(KiottySpecItemHandle item) const;
     KiottySpecCursorResult wrap(const impl::CursorIdResult& opened) const;
@@ -58,6 +64,24 @@ public:
                               impl::Span<const char> id) const;
 
 private:
+    impl::OpenedContext& _context;
+};
+
+class ValueParser
+{
+public:
+    explicit ValueParser(impl::OpenedContext& context) : _context(context) {}
+
+    KindResult parseKind(KiottySpecItemKind kind) const;
+    KindResult parseDecisionKind(KiottySpecItemKind kind) const;
+    StepResult parseStep(KiottySpecStep step) const;
+    ActorResult parseActor(KiottySpecActor actor) const;
+    SequenceResult parseCheckpoint(KiottySpecCheckpointHandle handle) const;
+    TagResult parseTag(KiottySpecItemHandle item, uint32_t tag, uint64_t value) const;
+
+private:
+    KiottySpecStatus raise(KiottySpecStatus code, KiottySpecSubject subject) const;
+
     impl::OpenedContext& _context;
 };
 

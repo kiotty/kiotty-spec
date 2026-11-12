@@ -27,7 +27,7 @@ int runCommand(const CommandEntry& command, const Arguments& arguments);
 void printHelp();
 void printCommandHelp(const CommandEntry& command);
 std::optional<CommandMatch> findCommand(const std::vector<std::string>& tokens);
-KiottySpecActor findActor(const Arguments& arguments);
+std::string findActorName(const Arguments& arguments);
 std::string findRoot(const Arguments& arguments);
 std::string makeDatabasePath(const std::string& root);
 int openAndRun(const CommandEntry& command, const Session& session);
@@ -89,10 +89,13 @@ int runTokens(const std::vector<std::string>& tokens)
 
 int runCommand(const CommandEntry& command, const Arguments& arguments)
 {
+    const std::string actor_name = findActorName(arguments);
+    const std::optional<KiottySpecActor> actor = parseActor(actor_name);
+    if (!actor) { return usage(formatMessage(MessageKey::UNKNOWN_ACTOR, {actor_name})); }
     KiottySpecConfiguration configuration {};
     const KiottySpecContextResult created = KiottySpec_createContext(&configuration);
     if (created.code != KIOTTY_SPEC_STATUS_SUCCESS) { return failWithoutContext(created.code); }
-    const Session session {*created.value, findActor(arguments), arguments};
+    const Session session {*created.value, *actor, arguments};
     const int code = openAndRun(command, session);
     KiottySpec_releaseContext(&session.context);
     return code;
@@ -141,12 +144,8 @@ std::optional<CommandMatch> findCommand(const std::vector<std::string>& tokens)
     return std::nullopt;
 }
 
-KiottySpecActor findActor(const Arguments& arguments)
-{
-    const std::string name =
-        arguments.option("actor").value_or(readEnvironment("KIOTTY_SPEC_ACTOR"));
-    return name == "user" ? KIOTTY_SPEC_ACTOR_USER : KIOTTY_SPEC_ACTOR_AI;
-}
+std::string findActorName(const Arguments& arguments)
+{ return arguments.option("actor").value_or(readEnvironment("KIOTTY_SPEC_ACTOR")); }
 
 std::string findRoot(const Arguments& arguments)
 {

@@ -49,6 +49,7 @@ void printRow(const std::vector<std::string>& cells);
 std::string checkpointName(KiottySpecCheckpointHandle handle);
 std::optional<KiottySpecCheckpointHandle> parseCheckpoint(std::string_view text);
 std::optional<uint32_t> parseNumber(std::string_view text);
+std::optional<KiottySpecActor> parseActor(std::string_view text);
 std::optional<std::string> readFileText(const std::string& path);
 std::optional<KiottySpecItemKind> kindArgument(const Session& session, std::string_view text);
 std::string itemId(const Session& session, KiottySpecItemHandle handle);

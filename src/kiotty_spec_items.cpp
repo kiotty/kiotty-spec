@@ -5,34 +5,32 @@ namespace impl = kiotty::spec::implementation;
 namespace entity = kiotty::spec::implementation::entity;
 using namespace kiotty::spec::adapter;
 
+namespace {
+
+KiottySpecIdResult makeIdFailure(KiottySpecStatus code);
+
+}
+
 extern "C" {
 
 KiottySpecIdResult KiottySpec_createItem(KiottySpecContext* context,
                                          const KiottySpecItemDraft* draft)
 {
-    KiottySpecIdResult result {};
     const OpenedResult spec = findOpenedContext(context);
-    result.code = spec ? KIOTTY_SPEC_STATUS_INVALID_ARGUMENT : spec.code;
-    const bool has_arguments = spec && draft != nullptr;
-    if (!has_arguments) { return result; }
+    if (!spec) { return makeIdFailure(spec.code); }
+    if (draft == nullptr) { return makeIdFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     const Boundary boundary(*spec.value);
     const TextResult id = boundary.parse(draft->id, Field::ID);
-    if (!id) {
-        result.code = id.code;
-        return result;
-    }
+    if (!id) { return makeIdFailure(id.code); }
     const TextResult title = boundary.parse(draft->title, Field::TITLE);
-    if (!title) {
-        result.code = title.code;
-        return result;
-    }
+    if (!title) { return makeIdFailure(title.code); }
     const TextResult summary = boundary.parse(draft->summary, Field::SUMMARY);
-    if (!summary) {
-        result.code = summary.code;
-        return result;
-    }
+    if (!summary) { return makeIdFailure(summary.code); }
+    const KindResult kind = ValueParser(*spec.value).parseKind(draft->kind);
+    if (!kind) { return makeIdFailure(kind.code); }
+    KiottySpecIdResult result {};
     const auto created = spec.value->writeSide().editor().structure().createItem(
-        static_cast<entity::ItemKind>(draft->kind), id.value, title.value, summary.value);
+        kind.value, id.value, title.value, summary.value);
     result.code = created.code;
     if (created) { copyText(result.value, created.value); }
     return result;
@@ -46,7 +44,7 @@ KiottySpecStatusResult KiottySpec_renameItem(KiottySpecContext* context, KiottyS
     const Boundary boundary(*spec.value);
     const TextResult current = boundary.parse(id, Field::ID);
     if (!current) { return status(current.code); }
-    const TextResult next = boundary.parse(new_id, Field::ID);
+    const TextResult next = boundary.parseNewId(new_id);
     if (!next) { return status(next.code); }
     return status(
         spec.value->writeSide().editor().structure().renameItem(current.value, next.value));
@@ -171,8 +169,9 @@ KiottySpecStatusResult KiottySpec_setItemTag(KiottySpecContext* context, KiottyS
 {
     const OpenedResult spec = findOpenedContext(context);
     if (!spec) { return status(spec.code); }
-    return status(
-        spec.value->writeSide().editor().content().setTag(fromHandle(item), tag, value));
+    const TagResult parsed = ValueParser(*spec.value).parseTag(item, tag, value);
+    if (!parsed) { return status(parsed.code); }
+    return status(spec.value->writeSide().editor().content().setTag(parsed.value));
 }
 
 KiottySpecTagResult KiottySpec_readItemTag(KiottySpecContext* context, KiottySpecItemHandle item,
@@ -233,6 +232,17 @@ KiottySpecStatusResult KiottySpec_fetchTagPage(KiottySpecContext* context, Kiott
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);
+}
+
+}
+
+namespace {
+
+KiottySpecIdResult makeIdFailure(KiottySpecStatus code)
+{
+    KiottySpecIdResult result {};
+    result.code = code;
+    return result;
 }
 
 }

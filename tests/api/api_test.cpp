@@ -109,6 +109,36 @@ bool testItemsTagsRelations(KiottySpecContext* context)
     return passed;
 }
 
+// enum · 정수 인자와 ID 형식은 C 인터페이스에서 거절되고, 아무것도 쓰지 않는다 (2.1).
+bool testValueBoundaries(KiottySpecContext* context)
+{
+    const KiottySpecStatus invalid = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
+    const KiottySpecItemKind no_kind = static_cast<KiottySpecItemKind>(0);
+    const KiottySpecItemKind past_kind = static_cast<KiottySpecItemKind>(14);
+    const KiottySpecCheckpointHandle high_bits = (KiottySpecCheckpointHandle{1} << 32) | 1;
+    bool passed = expectTrue(createItem(context, no_kind, textOf(""), textOf("a"), textOf("")).code == invalid, "kind 0");
+    passed = expectTrue(createItem(context, past_kind, textOf(""), textOf("a"), textOf("")).code == invalid, "kind past the last") && passed;
+    passed = expectTrue(createItem(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, textOf("A B"), textOf("a"), textOf("")).code == invalid,
+                        "malformed given id") && passed;
+    passed = expectTrue(KiottySpec_findItem(context, textOf("-A")).code == invalid, "malformed id lookup") && passed;
+    passed = expectTrue(KiottySpec_renameItem(context, textOf("REQ-001"), textOf("")).code == invalid, "empty new id") && passed;
+    const KiottySpecItemHandle handle = KiottySpec_findItem(context, textOf("REQ-001")).value;
+    passed = expectTrue(KiottySpec_setItemTag(context, handle, 99, 1).code == invalid, "tag past the model") && passed;
+    passed = expectTrue(!ok(KiottySpec_setItemTag(context, KIOTTY_SPEC_INVALID_ITEM_HANDLE, 0, 1).code), "invalid item handle") && passed;
+    passed = expectTrue(KiottySpec_writeDecision(context, no_kind, textOf("- x")).code == invalid, "decision kind 0") && passed;
+    passed = expectTrue(KiottySpec_readDecision(context, past_kind, KiottySpecBuffer{nullptr, 0}).code == invalid, "read decision kind") && passed;
+    passed = expectTrue(KiottySpec_startCheckpoint(context, static_cast<KiottySpecStep>(0), textOf("")).code == invalid, "step 0") && passed;
+    passed = expectTrue(KiottySpec_startCheckpoint(context, static_cast<KiottySpecStep>(13), textOf("")).code == invalid, "step past the last") && passed;
+    passed = expectTrue(KiottySpec_completeCheckpoint(context, static_cast<KiottySpecActor>(0)).code == invalid, "actor 0") && passed;
+    passed = expectTrue(KiottySpec_completeCheckpoint(context, static_cast<KiottySpecActor>(3)).code == invalid, "actor past the last") && passed;
+    passed = expectTrue(KiottySpec_pruneCheckpoints(context, static_cast<KiottySpecActor>(3), 1).code == invalid, "prune actor") && passed;
+    passed = expectTrue(KiottySpec_pruneCheckpoints(context, KIOTTY_SPEC_ACTOR_USER, high_bits).code == invalid, "prune high bits") && passed;
+    passed = expectTrue(KiottySpec_readCheckpoint(context, high_bits).code == invalid, "read checkpoint high bits") && passed;
+    passed = expectTrue(KiottySpec_readCheckpoint(context, KIOTTY_SPEC_CHECKPOINT_CURRENT).value.state == KIOTTY_SPEC_CHECKPOINT_STATE_RUNNING,
+                        "checkpoint stays running") && passed;
+    return passed;
+}
+
 bool testComplete(KiottySpecContext* context)
 {
     bool passed = expectTrue(KiottySpec_completeCheckpoint(context, KIOTTY_SPEC_ACTOR_AI).code == KIOTTY_SPEC_STATUS_PERMISSION, "ai cannot complete");
@@ -728,6 +758,7 @@ int main()
     const std::pair<const char*, Failure> tests[] = {
         {"writes need checkpoint", testWritesNeedCheckpoint},
         {"items tags relations", testItemsTagsRelations},
+        {"value boundaries", testValueBoundaries},
         {"complete", testComplete},
         {"reopen", testReopen},
         {"outside change", testOutsideChange},

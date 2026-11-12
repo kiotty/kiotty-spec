@@ -234,6 +234,14 @@ std::optional<uint32_t> parseNumber(std::string_view text)
     return static_cast<uint32_t>(value);
 }
 
+std::optional<KiottySpecActor> parseActor(std::string_view text)
+{
+    const bool is_ai = text.empty() || text == "ai";
+    if (is_ai) { return KIOTTY_SPEC_ACTOR_AI; }
+    if (text == "user") { return KIOTTY_SPEC_ACTOR_USER; }
+    return std::nullopt;
+}
+
 std::optional<std::string> readFileText(const std::string& path)
 {
     std::ifstream stream(pathFromUtf8(path), std::ios::binary);

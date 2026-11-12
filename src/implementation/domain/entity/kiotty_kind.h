@@ -47,8 +47,16 @@ enum class CheckpointState : uint32_t {
     DONE
 };
 
+enum class Actor : uint32_t {
+    USER = 1,
+    AI
+};
+
+constexpr size_t ACTOR_COUNT = 2;
+
 inline bool isValidKind(uint32_t value) { return value >= 1 && value <= ITEM_KIND_COUNT; }
 inline bool isValidStep(uint32_t value) { return value >= 1 && value <= STEP_COUNT; }
+inline bool isValidActor(uint32_t value) { return value >= 1 && value <= ACTOR_COUNT; }
 inline size_t kindIndex(ItemKind kind) { return static_cast<size_t>(kind) - 1; }
 
 std::string_view kindName(ItemKind kind);

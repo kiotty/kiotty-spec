@@ -47,6 +47,23 @@ bool testParseNumber()
     return passed;
 }
 
+bool testParseActor()
+{
+    const std::optional<KiottySpecActor> empty = parseActor("");
+    const std::optional<KiottySpecActor> longest = parseActor("user");
+    const std::optional<KiottySpecActor> too_long = parseActor("users");
+    const std::optional<KiottySpecActor> with_null = parseActor(appendNullByte("user"));
+    const std::optional<KiottySpecActor> with_bad_text = parseActor("ai" + INVALID_UTF8_SUFFIX);
+    bool passed = true;
+    passed = expectTrue(empty == KIOTTY_SPEC_ACTOR_AI, "empty actor is ai") && passed;
+    passed = expectTrue(longest == KIOTTY_SPEC_ACTOR_USER, "user actor is accepted") && passed;
+    passed = expectTrue(!too_long, "longer actor is rejected") && passed;
+    passed = expectTrue(!with_null, "actor with null byte is rejected") && passed;
+    passed = expectTrue(!with_bad_text, "actor with bad UTF-8 is rejected") && passed;
+    passed = expectTrue(parseActor("ai") == KIOTTY_SPEC_ACTOR_AI, "ai actor is accepted") && passed;
+    return passed;
+}
+
 bool testParseCheckpoint()
 {
     const KiottySpecCheckpointHandle seventh {7};
@@ -198,6 +215,7 @@ int main()
 {
     const std::pair<const char*, Check> tests[] = {
         {"parse number", testParseNumber},
+        {"parse actor", testParseActor},
         {"parse checkpoint", testParseCheckpoint},
         {"parse checkpoint argument", testParseCheckpointArgument},
         {"parse tag spec", testParseTagSpec},

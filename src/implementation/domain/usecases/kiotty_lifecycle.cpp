@@ -16,11 +16,6 @@ using SequenceResult = Result<uint32_t, KiottySpecStatus>;
 
 SequenceResult Lifecycle::start(entity::Step step, Span<const char> description)
 {
-    const bool is_valid_step = entity::isValidStep(static_cast<uint32_t>(step));
-    if (!is_valid_step) {
-        return SequenceResult::failure(_workspace.failure.raise(
-            KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_STEP));
-    }
     const KiottySpecStatus fresh = _workspace.refresh();
     if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(fresh); }
     const SequenceResult created =
@@ -36,7 +31,7 @@ KiottySpecStatus Lifecycle::resume()
     return scope.finish(KIOTTY_SPEC_STATUS_SUCCESS);
 }
 
-KiottySpecStatus Lifecycle::complete(KiottySpecActor actor)
+KiottySpecStatus Lifecycle::complete(entity::Actor actor)
 {
     const KiottySpecStatus allowed = requireUser(actor);
     if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) { return allowed; }
@@ -60,7 +55,7 @@ KiottySpecStatus Lifecycle::complete(KiottySpecActor actor)
         _workspace.checkpoints.writer().setState(latest, CheckpointState::DONE));
 }
 
-Result<size_t, KiottySpecStatus> Lifecycle::prune(KiottySpecActor actor, uint32_t base)
+Result<size_t, KiottySpecStatus> Lifecycle::prune(entity::Actor actor, uint32_t base)
 {
     using CountResult = Result<size_t, KiottySpecStatus>;
     const KiottySpecStatus allowed = requireUser(actor);
@@ -88,9 +83,9 @@ Result<size_t, KiottySpecStatus> Lifecycle::prune(KiottySpecActor actor, uint32_
     return dropped;
 }
 
-KiottySpecStatus Lifecycle::requireUser(KiottySpecActor actor)
+KiottySpecStatus Lifecycle::requireUser(entity::Actor actor)
 {
-    if (actor == KIOTTY_SPEC_ACTOR_USER) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    if (actor == entity::Actor::USER) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     return _workspace.failure.raise(KIOTTY_SPEC_STATUS_PERMISSION, KIOTTY_SPEC_SUBJECT_ACTOR);
 }
 

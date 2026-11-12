@@ -1,7 +1,6 @@
 #include "implementation/domain/usecases/kiotty_editor.h"
 
 #include "implementation/core/kiotty_text_view.h"
-#include "implementation/domain/entity/kiotty_item_id.h"
 #include "implementation/domain/usecases/kiotty_write_scope.h"
 
 namespace kiotty::spec::implementation {
@@ -24,24 +23,17 @@ StructureEditor::createItem(ItemKind kind, Span<const char> id, Span<const char>
                             Span<const char> summary)
 {
     using IdResult = Result<IdText, KiottySpecStatus>;
-    const bool is_valid_kind = entity::isValidKind(static_cast<uint32_t>(kind));
-    if (!is_valid_kind) {
-        return IdResult::failure(_workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
-                                                          KIOTTY_SPEC_SUBJECT_KIND));
-    }
     const size_t title_length = title.length();
     if (title_length == 0) {
         return IdResult::failure(_workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
                                                           KIOTTY_SPEC_SUBJECT_TITLE));
     }
-    KiottySpecStatus status = id.length() > 0 ? checkId(id) : KIOTTY_SPEC_STATUS_SUCCESS;
-    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return IdResult::failure(status); }
     WriteScope scope(_workspace);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return IdResult::failure(scope.finish(sequence.code)); }
     const ItemLabel draft = makeDraftLabel(title, summary);
     const IdResult created = insertItem(kind, draft, id, sequence.value);
-    status = scope.finish(created.code);
+    const KiottySpecStatus status = scope.finish(created.code);
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return IdResult::failure(status); }
     return created;
 }
@@ -78,18 +70,9 @@ KiottySpecStatus StructureEditor::renameItem(Span<const char> id, Span<const cha
     if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return fresh; }
     const auto item = _workspace.resolve(id);
     if (!item) { return item.code; }
-    const KiottySpecStatus valid = checkId(new_id);
-    if (valid != KIOTTY_SPEC_STATUS_SUCCESS) { return valid; }
     IdText next {};
     next.assign(new_id);
     return _workspace.finish(_workspace.items.writer().rename(item.value, next));
-}
-
-KiottySpecStatus StructureEditor::checkId(Span<const char> id)
-{
-    const KiottySpecStatus valid = entity::validateItemId(id);
-    if (valid == KIOTTY_SPEC_STATUS_SUCCESS) { return valid; }
-    return _workspace.failure.raise(valid, KIOTTY_SPEC_SUBJECT_ID, id);
 }
 
 KiottySpecStatus StructureEditor::setParent(Span<const char> id, Span<const char> parent_id)
@@ -231,35 +214,17 @@ KiottySpecStatus ContentEditor::markNeedsChange(ItemHandle item, uint32_t sequen
                                             sequence);
 }
 
-KiottySpecStatus ContentEditor::setTag(ItemHandle item, uint32_t tag, uint64_t value)
+KiottySpecStatus ContentEditor::setTag(const entity::TagRecord& tag)
 {
-    const auto found = _workspace.items.reader().get(item);
-    if (!found) { return _workspace.failure.raise(found.code, KIOTTY_SPEC_SUBJECT_ITEM); }
-    const ItemKind kind = (*found.value).kind;
-    const IdText id = (*_workspace.items.reader().label(item).value).id;
-    const size_t tag_count = _workspace.catalog.model(kind).tags.length;
-    if (tag >= tag_count) {
-        return _workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
-                                        KIOTTY_SPEC_SUBJECT_TAG, id.view());
-    }
-    const KiottySpecStatus allowed = _workspace.catalog.checkTagValue(kind, tag, value);
-    if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return _workspace.failure.raise(allowed, KIOTTY_SPEC_SUBJECT_TAG_VALUE, id.view());
-    }
     WriteScope scope(_workspace);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }
-    return scope.finish(_workspace.items.writer().setTag(item, tag, value, sequence.value));
+    return scope.finish(
+        _workspace.items.writer().setTag(tag.item, tag.tag, tag.value, sequence.value));
 }
 
 KiottySpecStatus ContentEditor::writeDecision(ItemKind kind, Span<const char> text)
 {
-    const bool is_valid_kind = entity::isValidKind(static_cast<uint32_t>(kind));
-    const bool has_decision = is_valid_kind && entity::hasDecision(kind);
-    if (!has_decision) {
-        return _workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
-                                        KIOTTY_SPEC_SUBJECT_KIND);
-    }
     WriteScope scope(_workspace);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }

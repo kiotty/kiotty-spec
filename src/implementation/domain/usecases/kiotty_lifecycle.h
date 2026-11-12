@@ -19,11 +19,11 @@ public:
 
     Result<uint32_t, KiottySpecStatus> start(entity::Step step, Span<const char> description);
     KiottySpecStatus resume();
-    KiottySpecStatus complete(KiottySpecActor actor);
-    Result<size_t, KiottySpecStatus> prune(KiottySpecActor actor, uint32_t base);
+    KiottySpecStatus complete(entity::Actor actor);
+    Result<size_t, KiottySpecStatus> prune(entity::Actor actor, uint32_t base);
 
 private:
-    KiottySpecStatus requireUser(KiottySpecActor actor);
+    KiottySpecStatus requireUser(entity::Actor actor);
 
     Workspace& _workspace;
     Checker& _checker;
