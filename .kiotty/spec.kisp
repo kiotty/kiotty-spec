@@ -20,7 +20,7 @@ checkpoint	O	14	13	10	done	1794455328	CR-007 반영 후 전체 수칙 코드 검
 checkpoint	O	15	14	1	done	1794456068	CP-0014 검사 결과 중 모듈 간 수정 · 편차 4건
 checkpoint	O	16	15	2	done	1794456083	CR-011 편차 기록 반영
 checkpoint	O	17	16	4	done	1794459920	CR-008 · 009 · 010 설계 반영
-checkpoint	O	18	17	10	running	1794459988	CR-008 ~ 011 반영 후 코드 검사
+checkpoint	O	18	17	10	done	1794459988	CR-008 ~ 011 반영 후 코드 검사
 TABLE	item	O/X	key	id
 item	O	00593058	CIR-020
 item	O	00ab1435	DSN-078
