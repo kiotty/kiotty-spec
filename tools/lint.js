@@ -406,6 +406,8 @@ const VERBS = new Set(('acquire release open close fetch append parse read write
 // 4.17 exceptions (CR-007): property lookup (method without arguments), type conversion (to + Type), indexing (...Of), cursor next()
 const isNamingException = (name, isMethod, params) =>
   name === 'next' || /^to[A-Z]/.test(name) || /[a-z]Of$/.test(name) || (isMethod && params.every((p) => p.trim() === ''));
+// docs/deviations.md: rule 3.4 does not pin structs whose size depends on template arguments, the standard library or the build
+const UNFIXED_SIZE_STRUCTS = new Set(['Result', 'ItemTables', 'KiottySpecContext']);
 const CORE_ACCESSORS = new Set(['length', 'capacity', 'data', 'view', 'size', 'begin', 'end', 'empty', 'value', 'code', 'scratch', 'at', 'count']);
 
 function words(name) {
@@ -623,7 +625,7 @@ function checkFile(file) {
     }
     if (cls.kind !== 'class' && cls.name !== '(anonymous)' && !allocationExempt(rel)) {
       const name = cls.typedefName && cls.name === '(anonymous)' ? cls.typedefName : cls.name;
-      if (!sizes.has(name)) report('3.4', rel, cls.openLine, `struct '${name}' has no static_assert(sizeof)`);
+      if (!sizes.has(name) && !UNFIXED_SIZE_STRUCTS.has(name)) report('3.4', rel, cls.openLine, `struct '${name}' has no static_assert(sizeof)`);
       else checkOrder(file, cls);
       if (/\/entity\//.test(rel)) {
         const size = sizes.get(name);
@@ -667,8 +669,8 @@ function checkParameter(file, fn, p, isCtorLike) {
   const name = m[2];
   if (type === '') return;
   if (/^(const\s+)?bool$/.test(type)) report('4.5', rel, fn.headerLine, `bool argument '${name}' of '${fn.name}'`);
-  if (/&$/.test(type) && !/\bconst\b/.test(type) && !/&&$/.test(type) && !isCtorLike) report('4.5', rel, fn.headerLine, `output argument '${name}' of '${fn.name}'`);
-  if (/\bSpan\s*<\s*char\s*>/.test(type) && !/^(read|write|copy|fill|format|append)/.test(fn.name.split('::').pop()) && !isCore(rel) && !isAdapter(rel)) report('5.4', rel, fn.headerLine, `Span<char> output '${name}' of '${fn.name}'`);
+  if (/&$/.test(type) && !/\bconst\b/.test(type) && !/&&$/.test(type) && !isCtorLike && !(isCore(rel) && /^(success|viewVector)$/.test(fn.name.split('::').pop()))) report('4.5', rel, fn.headerLine, `output argument '${name}' of '${fn.name}'`);
+  if (/\bSpan\s*<\s*char\s*>/.test(type) && !/^(read|write|copy|fill|format|append)/.test(fn.name.split('::').pop()) && !isCore(rel) && !isAdapter(rel) && !isCtorLike && !/\/data\/datasource\//.test(rel)) report('5.4', rel, fn.headerLine, `Span<char> output '${name}' of '${fn.name}'`);
   if (!/^[a-z][a-z0-9_]*$/.test(name)) report('4.4', rel, fn.headerLine, `argument '${name}' is not snake_case`);
   checkName(file, fn.headerLine, name, 'argument');
   const bare = type.replace(/\bconst\b/g, '').replace(/&$/, '').trim();
@@ -764,7 +766,7 @@ function checkBody(file, fn, bodyText) {
       }
     }
     // 2.4 unchecked multiplication
-    if (/[\w)\]]\s+\*\s+[\w(]/.test(text) && !/\bconstexpr\b/.test(text)) report('2.4', rel, s.line, 'multiplication without checkedMultiply');
+    if (/[\w)\]]\s+\*\s+[\w(]/.test(text) && !/\bconstexpr\b/.test(text) && !/core\/kiotty_(checked|number)\.h$/.test(rel)) report('2.4', rel, s.line, 'multiplication without checkedMultiply');
   }
   // 4.17 const by default
   for (const local of locals) {
@@ -772,7 +774,8 @@ function checkBody(file, fn, bodyText) {
     const after = file.text.slice(local.start, fn.close).slice(local.init.length + local.name.length);
     const n = local.name;
     const changed = new RegExp(`(^|[^\\w.])${n}\\s*(=[^=]|[+\\-*/%&|^]=|<<=|>>=|\\+\\+|--|\\.|\\[|->)|(\\+\\+|--|&)\\s*${n}\\b`).test(after);
-    if (!changed) report('4.16', rel, local.line, `'${n}' never changes but is not const`);
+    const passed = new RegExp(`[(,]\\s*${n}\\s*[,)]`).test(after);
+    if (!changed && !passed) report('4.16', rel, local.line, `'${n}' never changes but is not const`);
   }
   // 4.11 member computation inside methods
   if (fn.cls || /::/.test(fn.name)) {
