@@ -696,6 +696,23 @@ void st021(const fs::path& root)
         check(completeFailure(spec).find(unmet(KIOTTY_SPEC_CONDITION_PASSING_RESULT, "STR-001")) != std::string::npos, "5 FAIL 인 결과가 있으면 그 ID 와 함께 거부");
     }
     {
+        Spec spec(root / "step11");
+        spec.start(KIOTTY_SPEC_STEP_END_TO_END_TEST_DISCUSSING);
+        spec.add(KIOTTY_SPEC_ITEM_KIND_EXTERNAL_INTERFACE, "UI-001");
+        spec.add(KIOTTY_SPEC_ITEM_KIND_EXTERNAL_INTERFACE, "UI-002");
+        spec.add(KIOTTY_SPEC_ITEM_KIND_EXTERNAL_INTERFACE, "UI-003");
+        KiottySpec_setItemParent(spec.context, textOf("UI-002"), textOf("UI-001"));
+        spec.add(KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST_PLAN, "E2E-001");
+        spec.link("E2E-001", KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST_PLAN, "검증 외부 인터페이스", "UI-001");
+        const std::string unmet_items = completeFailure(spec);
+        check(unmet_items.find(unmet(KIOTTY_SPEC_CONDITION_END_TO_END_TEST_PAIR, "UI-003")) != std::string::npos &&
+                  unmet_items.find("UI-002") == std::string::npos,
+              "8 E2E 테스트가 없는 묶음(상위 없는 외부 인터페이스)은 그 ID 와 함께 거부, 하위 항목은 짝을 보지 않는다");
+        spec.add(KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST_PLAN, "E2E-002");
+        spec.link("E2E-002", KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST_PLAN, "검증 외부 인터페이스", "UI-003");
+        check(ok(spec.complete()), "9 묶음마다 E2E 테스트가 하나면 확정된다");
+    }
+    {
         Spec spec(root / "step4");
         spec.start(KIOTTY_SPEC_STEP_DESIGN_DISCUSSING);
         spec.add(DESIGN);

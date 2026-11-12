@@ -52,7 +52,7 @@ Span<const UnmetCondition> Checker::collect(entity::Step step)
         checkOneToOne(PairRule { END_TO_END_TEST_INTERFACE_RELATION, ItemKind::EXTERNAL_INTERFACE,
                                  ItemKind::END_TO_END_TEST_PLAN,
                                  KIOTTY_SPEC_CONDITION_END_TO_END_TEST_PAIR,
-                                 TargetFilter::ALL_TARGETS });
+                                 TargetFilter::TOP_LEVEL_TARGETS });
         break;
     case entity::Step::END_TO_END_TEST_RUN: checkResults(); break;
     case entity::Step::EXTERNAL_INTERFACE_DISCUSSING:
@@ -175,6 +175,7 @@ void Checker::checkOneToOne(const PairRule& rule)
 void Checker::checkTargetPairs(const PairRule& rule, uint32_t relation)
 {
     const bool is_functional_only = rule.filter == TargetFilter::FUNCTIONAL_REQUIREMENTS;
+    const bool is_top_level_only = rule.filter == TargetFilter::TOP_LEVEL_TARGETS;
     const TagBit functional = is_functional_only ? tagBit(ItemKind::REQUIREMENT,
                                                           REQUIREMENT_KIND_TAG,
                                                           FUNCTIONAL_REQUIREMENT_BIT)
@@ -188,6 +189,8 @@ void Checker::checkTargetPairs(const PairRule& rule, uint32_t relation)
         if (!is_target) { continue; }
         const uint64_t kind_value = readValue(kinds, index);
         if (is_functional_only && (kind_value & functional.bit) == 0) { continue; }
+        const bool is_child = is_top_level_only && hasParent(index);
+        if (is_child) { continue; }
         const uint32_t test_count = readCount(test_counts, index);
         if (test_count != 1) { add(rule.pair_condition, index); }
     }
@@ -269,6 +272,14 @@ ItemKind Checker::readKind(size_t index) const
     const auto item = _workspace.items.reader().get(handle);
     if (!item) { return ItemKind {}; }
     return (*item.value).kind;
+}
+
+bool Checker::hasParent(size_t index) const
+{
+    const ItemHandle handle = _workspace.items.slots().handleAt(index);
+    const auto item = _workspace.items.reader().get(handle);
+    if (!item) { return false; }
+    return (*item.value).parent.isValid();
 }
 
 Span<const uint64_t> Checker::loadStates(uint32_t tag)

@@ -32,7 +32,8 @@ static_assert(sizeof(TagBit) == 16, "unexpected padding");
 
 enum class TargetFilter : uint32_t {
     ALL_TARGETS = 1,
-    FUNCTIONAL_REQUIREMENTS
+    FUNCTIONAL_REQUIREMENTS,
+    TOP_LEVEL_TARGETS
 };
 
 struct PairRule {
@@ -64,6 +65,7 @@ private:
     TagBit openBits();
     uint32_t relationIndex(entity::ItemKind kind, std::string_view name);
     entity::ItemKind readKind(size_t index) const;
+    bool hasParent(size_t index) const;
     bool isOpenAt(size_t index, Span<const uint64_t> states, TagBit open) const;
     Span<const uint64_t> loadStates(uint32_t tag);
     Span<const uint64_t> loadTags(entity::ItemKind model, uint32_t tag);
