@@ -4,14 +4,9 @@
 
 ## 지금 어디까지 왔나 (2026-11-12)
 
-- 마지막 체크포인트는 CP-0021 (Step 5 유닛 테스트 계획, 확정). 확정은 사용자가 하거나 사용자가 시킬 때만 한다 (`ks checkpoint complete --actor user`).
-- CP-0018 검사 뒤 남은 위반을 고치는 중이다. 계획:
-  1. 변경 요청 CR-001 ~ CR-006 을 코드부터 하나씩 해결한다 (4.17 메서드 이름 수칙은 제외).
-  2. 다음 체크포인트에서 바뀐 모듈의 요구사항 · 설계 · 유닛 테스트 항목을 갱신한다.
-  3. 그다음 체크포인트에서 코드 검사를 다시 돌린다.
-- 완료: CR-001 ~ CR-011 모두 코드에 반영했다 (계획 1 끝). 남은 lint 위반은 4.17 이 대부분이다.
-- 계획 2 끝: CP-0019 (외부 인터페이스 UI-*), CP-0020 (설계 DSN-*), CP-0021 (유닛 테스트 계획 UT-*) 에서 항목을 코드에 맞췄다. 요구사항은 바뀌지 않았다 (CR 진입 단계가 3 · 4). 갱신 스크립트는 git 밖의 `temp/ui_*.js`, `temp/dsn_v3/`, `temp/ut_update.js`.
-- 다음: 계획 3. Step 10 체크포인트를 열고 코드 검사를 다시 돌린다. `build/record_inspection.py` 는 git 밖(build/)에 있어 이 PC 에는 없고, Python 도 없다 (Store 바로가기만 있음). 스크립트를 가져오거나 node 로 다시 만들어야 한다.
+- 마지막 체크포인트는 CP-0022 (Step 10 코드 검사, 확정). 확정은 사용자가 하거나 사용자가 시킬 때만 한다 (`ks checkpoint complete --actor user`).
+- CP-0018 검사 뒤의 계획(CR-001 ~ 006 코드 반영 → CP-0019 ~ 0021 에서 인터페이스 · 설계 · 유닛 테스트 항목 갱신 → CP-0022 에서 다시 검사)을 마쳤다.
+- CP-0022 검사에서 남은 FAIL: 2.1 (22건, 다른 C 함수의 enum · relation · checkpoint 인자가 ValueParser 를 지나지 않음), 3.3 (5건, Finder 내보내기 · diff 질의 순회), 4.2 (11건), 4.17 (122건, 계획에서 제외), 6.1 (5건), 6.3 (1건), 6.4 (2건, .kisp 형식 때문), 6.6 (2건, CLI). 다음에 할 일은 사용자와 정한다 (변경 요청 등록 여부 포함).
 
 ## 확인할 ks 명령
 
@@ -21,12 +16,12 @@ ks checkpoint list                                   # 체크포인트 이력
 ks item list --kind change_request --tag 상태        # 변경 요청과 상태
 ks item body CR-004                                  # 변경 요청 내용
 ks item list --kind code_inspection_result | grep FAIL   # 마지막 코드 검사의 위반 수칙
-ks item body CIR-013                                 # 수칙별 위반 위치
+ks item body CIR-015                                 # 수칙별 위반 위치
 ```
 
 ## 검사 · 빌드
 
 - 정적 검사: `node tools/lint.js` (수칙별 건수), `node tools/lint.js --rule 1.10 --list` (위치).
-- 검사 결과 기록: `python build/record_inspection.py <lint --list 출력> build/manual_inspection.json --update`.
+- 검사 결과 기록 (Step 10 체크포인트 안에서): `node tools/record_inspection.js <수동 검토 결과 파일> [--dry]`. lint 수칙은 다시 돌려 채우고, 수동 검토 수칙은 파일의 `=== <수칙>` 블록(결과 · 근거 · 판단 · 위반 위치)을, 절 항목은 하위 수칙을 합쳐 채운다. 수동 검토 결과 형식은 지금 CIR 본문을 보면 된다.
 - 빌드: `cmake --build build --config Debug` (경고 0). 테스트: `build/Debug/kiotty_*_test.exe` 7 개 (system 테스트는 다른 테스트와 동시에 돌리지 않는다).
 - 개발 수칙: `docs/requirements/개발수칙.md`, 편차: `docs/deviations.md`.
