@@ -19,15 +19,11 @@ constexpr uint32_t CHECKPOINT_NUMBER_MASK = 0xFFFFFFFFu;
 constexpr size_t CHECKPOINT_PREFIX_LENGTH = 3;
 constexpr size_t MAX_CHECKPOINT_DIGITS = 9;
 
-bool isFlag(std::string_view name);
+bool isFlag(std::string_view name, const std::vector<std::string_view>& extra_flags);
 std::vector<std::string> split(std::string_view text, char separator);
-std::string describeTextProblem(MessageKey field, KiottySpecStatus status);
-std::string appendText(MessageKey sentence, std::string_view text);
 std::string listNames(const std::string& names);
-std::string describeCondition(KiottySpecCondition condition);
-std::string listUnmetConditions(Session& session);
-std::string describeCompletionFailure(Session& session);
-std::string describeFailure(Session& session, const KiottySpecError& error);
+uint64_t findBits(const KiottySpecTagDefinition& definition, std::string_view name);
+std::string listKnownBitNames(const KiottySpecTagDefinition& definition);
 
 }
 
@@ -66,36 +62,20 @@ Arguments parseArguments(const std::vector<std::string>& tokens, size_t first,
         const std::string& token = tokens[index];
         const bool is_option = token.size() > OPTION_PREFIX_LENGTH &&
                                token.compare(0, OPTION_PREFIX_LENGTH, "--") == 0;
-        if (is_option) {
-            const std::string name = token.substr(OPTION_PREFIX_LENGTH);
-            bool is_extra_flag = false;
-            for (const std::string_view flag : extra_flags) {
-                is_extra_flag = is_extra_flag || flag == name;
-            }
-            const bool is_flag = isFlag(name) || is_extra_flag || index + 1 >= count;
-            if (is_flag) {
-                arguments.flags.push_back(name);
-            } else {
-                ++index;
-                arguments.options.emplace_back(name, tokens[index]);
-            }
+        if (!is_option) {
+            arguments.positional.push_back(token);
             continue;
         }
-        arguments.positional.push_back(token);
+        const std::string name = token.substr(OPTION_PREFIX_LENGTH);
+        const bool is_flag = isFlag(name, extra_flags) || index + 1 >= count;
+        if (is_flag) {
+            arguments.flags.push_back(name);
+            continue;
+        }
+        ++index;
+        arguments.options.emplace_back(name, tokens[index]);
     }
     return arguments;
-}
-
-int fail(Session& session, KiottySpecStatus status)
-{
-    std::cerr << "error: " << KiottySpec_formatStatus(status).value.value;
-    const KiottySpecErrorResult last = KiottySpec_readLastError(session.context);
-    const bool is_described = last.code == KIOTTY_SPEC_STATUS_SUCCESS &&
-                              last.value.status == status &&
-                              last.value.subject != KIOTTY_SPEC_SUBJECT_NONE;
-    if (is_described) { std::cerr << ": " << describeFailure(session, last.value); }
-    std::cerr << "\n";
-    return 1;
 }
 
 int usage(std::string_view message)
@@ -104,7 +84,7 @@ int usage(std::string_view message)
     return USAGE_EXIT_CODE;
 }
 
-std::optional<KiottySpecItemKind> kindArgument(Session& session, std::string_view text)
+std::optional<KiottySpecItemKind> kindArgument(const Session& session, std::string_view text)
 {
     const KiottySpecItemKind kind = KiottySpec_parseKind(textOf(text));
     if (kind != 0) { return kind; }
@@ -122,7 +102,8 @@ std::optional<KiottySpecItemKind> kindArgument(Session& session, std::string_vie
     return std::nullopt;
 }
 
-std::optional<TagColumn> findTag(Session& session, KiottySpecItemKind kind, std::string_view name)
+std::optional<TagColumn> findTag(const Session& session, KiottySpecItemKind kind,
+                                 std::string_view name)
 {
     const KiottySpecModelResult model = KiottySpec_readModel(session.context, kind);
     std::string names {};
@@ -141,7 +122,7 @@ std::optional<TagColumn> findTag(Session& session, KiottySpecItemKind kind, std:
     return std::nullopt;
 }
 
-std::optional<uint32_t> findRelation(Session& session, KiottySpecItemKind kind,
+std::optional<uint32_t> findRelation(const Session& session, KiottySpecItemKind kind,
                                      std::string_view name)
 {
     const KiottySpecModelResult model = KiottySpec_readModel(session.context, kind);
@@ -167,6 +148,22 @@ std::string kindName(KiottySpecItemKind kind) { return KiottySpec_formatKind(kin
 
 std::string stateName(KiottySpecCheckpointState state)
 { return KiottySpec_formatCheckpointState(state).value.value; }
+
+std::string quote(std::string_view text)
+{
+    std::string value = "\"";
+    for (const char letter : escape(text)) {
+        if (letter == '"') { value += '\\'; }
+        value += letter;
+    }
+    return value + "\"";
+}
+
+std::string escape(std::string_view text)
+{
+    std::string value = cell(text);
+    return text.empty() ? std::string() : value;
+}
 
 std::string cell(std::string_view value)
 {
@@ -231,7 +228,7 @@ std::optional<std::string> readFileText(const std::string& path)
     return content.str();
 }
 
-std::string itemId(Session& session, KiottySpecItemHandle handle)
+std::string itemId(const Session& session, KiottySpecItemHandle handle)
 {
     if (handle == KIOTTY_SPEC_INVALID_ITEM_HANDLE) { return "-"; }
     const KiottySpecItemResult item = KiottySpec_readItemByHandle(session.context, handle);
@@ -244,26 +241,16 @@ std::optional<uint64_t> parseBits(const KiottySpecTagDefinition& definition, std
     if (names == "-") { return uint64_t{0}; }
     uint64_t value = 0;
     for (const std::string& name : split(names, ',')) {
-        bool has_match = false;
-        for (size_t bit = 0; bit < KIOTTY_SPEC_TAG_BIT_COUNT; ++bit) {
-            if (definition.bit_names[bit][0] != '\0' && name == definition.bit_names[bit]) {
-                value |= uint64_t{1} << bit;
-                has_match = true;
-            }
-        }
-        if (!has_match) {
-            std::string known {};
-            for (size_t bit = 0; bit < KIOTTY_SPEC_TAG_BIT_COUNT; ++bit) {
-                if (definition.bit_names[bit][0] != '\0') {
-                    known += (known.empty() ? "" : ", ") + std::string(definition.bit_names[bit]);
-                }
-            }
+        const uint64_t bits = findBits(definition, name);
+        if (bits == 0) {
+            const std::string known = listKnownBitNames(definition);
             std::cerr << "error: "
                       << formatMessage(MessageKey::UNKNOWN_TAG_VALUE,
                                        {definition.name, name, known})
                       << "\n";
             return std::nullopt;
         }
+        value |= bits;
     }
     return value;
 }
@@ -283,170 +270,44 @@ std::string bitNames(const KiottySpecTagDefinition& definition, uint64_t value)
 
 namespace {
 
-bool isFlag(std::string_view name)
+bool isFlag(std::string_view name, const std::vector<std::string_view>& extra_flags)
 {
     for (const std::string_view flag : FLAG_NAMES) {
+        if (flag == name) { return true; }
+    }
+    for (const std::string_view flag : extra_flags) {
         if (flag == name) { return true; }
     }
     return false;
 }
 
-std::string describeFailure(Session& session, const KiottySpecError& error)
+uint64_t findBits(const KiottySpecTagDefinition& definition, std::string_view name)
 {
-    using Key = MessageKey;
-    const std::string line_number = std::to_string(error.line);
-    const std::string line =
-        error.line > 0 ? formatMessage(Key::FAILURE_LINE, {line_number}) : std::string();
-    const KiottySpecStatus status = error.status;
-    const std::string_view text(error.text);
-    switch (error.subject) {
-    case KIOTTY_SPEC_SUBJECT_NONE: return std::string();
-    case KIOTTY_SPEC_SUBJECT_FILE: return line + appendText(Key::FILE_UNUSABLE, text);
-    case KIOTTY_SPEC_SUBJECT_FILE_LINE:
-        return line + appendText(Key::FILE_LINE_INVALID, text);
-    case KIOTTY_SPEC_SUBJECT_MERGE_MARKER:
-        return line + std::string(findMessage(Key::MERGE_MARKER_LEFT));
-    case KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE:
-        return line + appendText(Key::DUPLICATE_LINE, text);
-    case KIOTTY_SPEC_SUBJECT_FILE_CHANGED: return appendText(Key::FILE_CHANGED, text);
-    case KIOTTY_SPEC_SUBJECT_FILE_FORMAT:
-        return line + std::string(findMessage(Key::FILE_FORMAT_MISMATCH));
-    case KIOTTY_SPEC_SUBJECT_CONFIGURATION:
-        return line + appendText(Key::CAPACITY_REACHED, text);
-    case KIOTTY_SPEC_SUBJECT_MODEL: return std::string(findMessage(Key::MODEL_UNLOADABLE));
-    case KIOTTY_SPEC_SUBJECT_KIND: return std::string(findMessage(Key::KIND_INVALID));
-    case KIOTTY_SPEC_SUBJECT_ITEM:
-        return text.empty() ? std::string(findMessage(Key::ITEM_HANDLE_INVALID))
-                            : appendText(Key::ITEM_MISSING, text);
-    case KIOTTY_SPEC_SUBJECT_ID:
-        if (status == KIOTTY_SPEC_STATUS_CONFLICT) { return appendText(Key::ID_TAKEN, text); }
-        return appendText(Key::ID_INVALID, text);
-    case KIOTTY_SPEC_SUBJECT_ID_IN_HISTORY: return appendText(Key::ID_IN_HISTORY, text);
-    case KIOTTY_SPEC_SUBJECT_TITLE: return describeTextProblem(Key::FIELD_TITLE, status);
-    case KIOTTY_SPEC_SUBJECT_SUMMARY: return describeTextProblem(Key::FIELD_SUMMARY, status);
-    case KIOTTY_SPEC_SUBJECT_BODY: return describeTextProblem(Key::FIELD_BODY, status);
-    case KIOTTY_SPEC_SUBJECT_PAST_BODY: return appendText(Key::PAST_BODY_IN_GIT, text);
-    case KIOTTY_SPEC_SUBJECT_PARENT: return appendText(Key::PARENT_CYCLE, text);
-    case KIOTTY_SPEC_SUBJECT_CHILD: return appendText(Key::CHILD_EXISTS, text);
-    case KIOTTY_SPEC_SUBJECT_TAG: return line + appendText(Key::TAG_NOT_IN_MODEL, text);
-    case KIOTTY_SPEC_SUBJECT_TAG_VALUE:
-        return line + appendText(Key::TAG_VALUE_INVALID, text);
-    case KIOTTY_SPEC_SUBJECT_RELATION:
-        if (status == KIOTTY_SPEC_STATUS_CONFLICT) { return appendText(Key::RELATION_TAKEN, text); }
-        if (status == KIOTTY_SPEC_STATUS_NOT_FOUND) {
-            return appendText(Key::RELATION_MISSING, text);
-        }
-        return line + appendText(Key::RELATION_NOT_IN_MODEL, text);
-    case KIOTTY_SPEC_SUBJECT_DECISION: return describeTextProblem(Key::FIELD_DECISION, status);
-    case KIOTTY_SPEC_SUBJECT_CHECKPOINT:
-        if (status == KIOTTY_SPEC_STATUS_CONFIRMED) {
-            return std::string(findMessage(Key::CHECKPOINT_DONE));
-        }
-        if (status == KIOTTY_SPEC_STATUS_PRECONDITION) {
-            return std::string(findMessage(Key::CHECKPOINT_PRECONDITION));
-        }
-        return std::string(findMessage(Key::CHECKPOINT_MISSING));
-    case KIOTTY_SPEC_SUBJECT_DESCRIPTION:
-        return describeTextProblem(Key::FIELD_DESCRIPTION, status);
-    case KIOTTY_SPEC_SUBJECT_STEP: return std::string(findMessage(Key::STEP_RANGE));
-    case KIOTTY_SPEC_SUBJECT_ACTOR: return std::string(findMessage(Key::USER_ONLY));
-    case KIOTTY_SPEC_SUBJECT_CURSOR: return std::string(findMessage(Key::CURSOR_LIMIT));
-    case KIOTTY_SPEC_SUBJECT_CURSOR_ROWS: return std::string(findMessage(Key::CURSOR_ROWS_LIMIT));
-    case KIOTTY_SPEC_SUBJECT_DIFF_RANGE: return std::string(findMessage(Key::DIFF_RANGE_INVALID));
-    case KIOTTY_SPEC_SUBJECT_TEXT_FIELD: return std::string(findMessage(Key::TEXT_DIFF_FIELD));
-    case KIOTTY_SPEC_SUBJECT_PROJECT_NAME:
-        return describeTextProblem(Key::FIELD_PROJECT_NAME, status);
-    case KIOTTY_SPEC_SUBJECT_COMPLETION: return describeCompletionFailure(session);
+    uint64_t value = 0;
+    for (size_t bit = 0; bit < KIOTTY_SPEC_TAG_BIT_COUNT; ++bit) {
+        const bool is_match =
+            definition.bit_names[bit][0] != '\0' && name == definition.bit_names[bit];
+        if (is_match) { value |= uint64_t{1} << bit; }
     }
-    return std::string();
+    return value;
 }
 
-std::string describeTextProblem(MessageKey field, KiottySpecStatus status)
+std::string listKnownBitNames(const KiottySpecTagDefinition& definition)
 {
-    const std::string_view name = findMessage(field);
-    if (status == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED) {
-        return formatMessage(MessageKey::TEXT_TOO_LONG, {name});
+    std::string known {};
+    for (size_t bit = 0; bit < KIOTTY_SPEC_TAG_BIT_COUNT; ++bit) {
+        const bool is_named = definition.bit_names[bit][0] != '\0';
+        if (is_named) {
+            known += (known.empty() ? "" : ", ") + std::string(definition.bit_names[bit]);
+        }
     }
-    if (status == KIOTTY_SPEC_STATUS_INVALID_UTF8) {
-        return formatMessage(MessageKey::TEXT_NOT_UTF8, {name});
-    }
-    return formatMessage(MessageKey::TEXT_EMPTY_OR_NULL, {name});
-}
-
-std::string appendText(MessageKey sentence, std::string_view text)
-{
-    const std::string message(findMessage(sentence));
-    return text.empty() ? message : message + ": " + std::string(text);
+    return known;
 }
 
 std::string listNames(const std::string& names)
 {
     const bool has_names = !names.empty();
     return has_names ? names : std::string(findMessage(MessageKey::NOTHING_LISTED));
-}
-
-std::string describeCompletionFailure(Session& session)
-{
-    const KiottySpecCheckpointResult checkpoint =
-        KiottySpec_readCheckpoint(session.context, KIOTTY_SPEC_CHECKPOINT_CURRENT);
-    const std::string step = std::to_string(static_cast<int>(checkpoint.value.step));
-    const std::string failure =
-        checkpoint.code == KIOTTY_SPEC_STATUS_SUCCESS
-            ? formatMessage(MessageKey::COMPLETION_UNMET_AT_STEP, {step})
-            : std::string(findMessage(MessageKey::COMPLETION_UNMET));
-    return failure + listUnmetConditions(session);
-}
-
-std::string listUnmetConditions(Session& session)
-{
-    const KiottySpecCursorResult cursor = KiottySpec_openUnmetConditionCursor(session.context);
-    if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return std::string(); }
-    std::string text {};
-    bool is_first = true;
-    KiottySpecCondition current = KIOTTY_SPEC_CONDITION_ENTRY_STEP;
-    KiottySpecUnmetConditionPage page {};
-    while (true) {
-        const KiottySpecStatusResult fetched =
-            KiottySpec_fetchUnmetConditionPage(session.context, cursor.value, &page);
-        if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
-        for (size_t index = 0; index < page.length; ++index) {
-            const KiottySpecUnmetCondition& unmet = page.elements[index];
-            if (is_first || unmet.condition != current) {
-                text += "\n- " + describeCondition(unmet.condition) + ":";
-            }
-            is_first = false;
-            current = unmet.condition;
-            text += std::string(" ") + unmet.id;
-        }
-    }
-    KiottySpec_closeCursor(session.context, cursor.value);
-    return text;
-}
-
-std::string describeCondition(KiottySpecCondition condition)
-{
-    using Key = MessageKey;
-    switch (condition) {
-    case KIOTTY_SPEC_CONDITION_ENTRY_STEP:
-        return std::string(findMessage(Key::CONDITION_ENTRY_STEP));
-    case KIOTTY_SPEC_CONDITION_ACCEPTANCE_CRITERIA:
-        return std::string(findMessage(Key::CONDITION_ACCEPTANCE_CRITERIA));
-    case KIOTTY_SPEC_CONDITION_MILESTONE_COVERAGE:
-        return std::string(findMessage(Key::CONDITION_MILESTONE_COVERAGE));
-    case KIOTTY_SPEC_CONDITION_SYSTEM_TEST_PAIR:
-        return std::string(findMessage(Key::CONDITION_SYSTEM_TEST_PAIR));
-    case KIOTTY_SPEC_CONDITION_END_TO_END_TEST_PAIR:
-        return std::string(findMessage(Key::CONDITION_END_TO_END_TEST_PAIR));
-    case KIOTTY_SPEC_CONDITION_CODE_INSPECTION_PAIR:
-        return std::string(findMessage(Key::CONDITION_CODE_INSPECTION_PAIR));
-    case KIOTTY_SPEC_CONDITION_SINGLE_TARGET:
-        return std::string(findMessage(Key::CONDITION_SINGLE_TARGET));
-    case KIOTTY_SPEC_CONDITION_PASSING_RESULT:
-        return std::string(findMessage(Key::CONDITION_PASSING_RESULT));
-    case KIOTTY_SPEC_CONDITION_CLOSED_CHANGE_REQUEST:
-        return std::string(findMessage(Key::CONDITION_CLOSED_CHANGE_REQUEST));
-    }
-    return std::to_string(static_cast<int>(condition));
 }
 
 std::vector<std::string> split(std::string_view text, char separator)

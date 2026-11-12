@@ -34,34 +34,37 @@ struct Session {
 constexpr int USAGE_EXIT_CODE = 2;
 constexpr int DECIMAL_BASE = 10;
 
-int fail(Session& session, KiottySpecStatus status);
+int fail(const Session& session, KiottySpecStatus status);
 int usage(std::string_view message);
 
 KiottySpecText textOf(std::string_view text);
 std::string kindName(KiottySpecItemKind kind);
 std::string stateName(KiottySpecCheckpointState state);
 std::string cell(std::string_view value);
+std::string quote(std::string_view text);
+std::string escape(std::string_view text);
 void printRow(const std::vector<std::string>& cells);
 
 std::string checkpointName(KiottySpecCheckpointHandle handle);
 std::optional<KiottySpecCheckpointHandle> parseCheckpoint(std::string_view text);
 std::optional<std::string> readFileText(const std::string& path);
-std::optional<KiottySpecItemKind> kindArgument(Session& session, std::string_view text);
-std::string itemId(Session& session, KiottySpecItemHandle handle);
+std::optional<KiottySpecItemKind> kindArgument(const Session& session, std::string_view text);
+std::string itemId(const Session& session, KiottySpecItemHandle handle);
 
 struct TagColumn {
     uint32_t index {};
     KiottySpecTagDefinition definition {};
 };
 
-std::optional<TagColumn> findTag(Session& session, KiottySpecItemKind kind, std::string_view name);
-std::optional<uint32_t> findRelation(Session& session, KiottySpecItemKind kind,
+std::optional<TagColumn> findTag(const Session& session, KiottySpecItemKind kind,
+                                 std::string_view name);
+std::optional<uint32_t> findRelation(const Session& session, KiottySpecItemKind kind,
                                      std::string_view name);
 std::optional<uint64_t> parseBits(const KiottySpecTagDefinition& definition,
                                   std::string_view names);
 std::string bitNames(const KiottySpecTagDefinition& definition, uint64_t value);
 
-using Command = int (*)(Session&);
+using Command = int (*)(const Session&);
 
 struct CommandEntry {
     std::string_view group {};
@@ -73,7 +76,7 @@ struct CommandEntry {
 
 const std::vector<CommandEntry>& commands();
 
-int runDiff(Session& session);
+int runDiff(const Session& session);
 extern const std::vector<std::string_view> DIFF_FLAGS;
 
 }

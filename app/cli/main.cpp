@@ -5,6 +5,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <system_error>
 #include <vector>
@@ -15,9 +16,16 @@ using namespace kiotty::cli;
 
 constexpr size_t GROUP_AND_VERB_TOKENS = 2;
 
-int run(const std::vector<std::string>& tokens);
+struct CommandMatch {
+    size_t index {};
+    size_t consumed {};
+};
+
+int runTokens(const std::vector<std::string>& tokens);
+int runCommand(const CommandEntry& command, const Arguments& arguments);
 void printHelp();
-const CommandEntry* findCommand(const std::vector<std::string>& tokens, size_t& consumed);
+void printCommandHelp(const CommandEntry& command);
+std::optional<CommandMatch> findCommand(const std::vector<std::string>& tokens);
 KiottySpecActor findActor(const Arguments& arguments);
 std::string findRoot(const Arguments& arguments);
 std::string makeDatabasePath(const std::string& root);
@@ -38,18 +46,18 @@ int wmain(int argc, wchar_t** argv)
         WideCharToMultiByte(CP_UTF8, 0, argv[index], -1, token.data(), size, nullptr, nullptr);
         tokens.push_back(std::move(token));
     }
-    return run(tokens);
+    return runTokens(tokens);
 }
 #else
 int main(int argc, char** argv)
 {
-    return run(std::vector<std::string>(argv + 1, argv + argc));
+    return runTokens(std::vector<std::string>(argv + 1, argv + argc));
 }
 #endif
 
 namespace {
 
-int run(const std::vector<std::string>& tokens)
+int runTokens(const std::vector<std::string>& tokens)
 {
     const std::string first_token = tokens.empty() ? std::string() : tokens.front();
     const bool is_help = tokens.empty() || first_token == "help" || first_token == "--help" ||
@@ -58,26 +66,32 @@ int run(const std::vector<std::string>& tokens)
         printHelp();
         return 0;
     }
-    size_t consumed = 0;
-    const CommandEntry* command = findCommand(tokens, consumed);
-    if (command == nullptr) {
+    const std::optional<CommandMatch> match = findCommand(tokens);
+    if (!match) {
         const bool has_verb_token = tokens.size() > 1;
         const std::string verb_token = has_verb_token ? " " + tokens.at(1) : std::string();
         return usage(formatMessage(MessageKey::UNKNOWN_COMMAND, {first_token + verb_token}));
     }
-    Session session {};
-    const bool is_diff = command->group == "diff";
-    session.args =
-        parseArguments(tokens, consumed, is_diff ? DIFF_FLAGS : std::vector<std::string_view>());
-    const bool has_help_flag = session.args.flag("help");
+    const CommandMatch found = *match;
+    const CommandEntry& command = commands().at(found.index);
+    const bool is_diff = command.group == "diff";
+    const std::vector<std::string_view> extra_flags =
+        is_diff ? DIFF_FLAGS : std::vector<std::string_view>();
+    const Arguments arguments = parseArguments(tokens, found.consumed, extra_flags);
+    const bool has_help_flag = arguments.flag("help");
     if (has_help_flag) {
-        std::cout << "ks " << command->group << (command->verb.empty() ? "" : " ")
-                  << command->verb << " " << findMessage(command->usage) << "\n  "
-                  << findMessage(command->summary) << "\n";
+        printCommandHelp(command);
         return 0;
     }
-    session.actor = findActor(session.args);
-    const std::string database = makeDatabasePath(findRoot(session.args));
+    return runCommand(command, arguments);
+}
+
+int runCommand(const CommandEntry& command, const Arguments& arguments)
+{
+    Session session {};
+    session.args = arguments;
+    session.actor = findActor(arguments);
+    const std::string database = makeDatabasePath(findRoot(arguments));
     KiottySpecConfiguration configuration {};
     const KiottySpecContextResult created = KiottySpec_createContext(&configuration);
     session.context = created.value;
@@ -85,7 +99,7 @@ int run(const std::vector<std::string>& tokens)
                                         ? KiottySpec_open(session.context, textOf(database)).code
                                         : created.code;
     const int code =
-        opened != KIOTTY_SPEC_STATUS_SUCCESS ? fail(session, opened) : command->run(session);
+        opened != KIOTTY_SPEC_STATUS_SUCCESS ? fail(session, opened) : command.run(session);
     KiottySpec_releaseContext(session.context);
     return code;
 }
@@ -100,24 +114,29 @@ void printHelp()
     }
 }
 
-const CommandEntry* findCommand(const std::vector<std::string>& tokens, size_t& consumed)
+void printCommandHelp(const CommandEntry& command)
+{
+    std::cout << "ks " << command.group << (command.verb.empty() ? "" : " ") << command.verb
+              << " " << findMessage(command.usage) << "\n  " << findMessage(command.summary)
+              << "\n";
+}
+
+std::optional<CommandMatch> findCommand(const std::vector<std::string>& tokens)
 {
     const std::string_view group = tokens.front();
     const bool has_verb_token = tokens.size() > 1;
     const std::string_view verb = has_verb_token ? std::string_view(tokens.at(1)) : "";
-    for (const CommandEntry& command : commands()) {
+    const std::vector<CommandEntry>& entries = commands();
+    const size_t count = entries.size();
+    for (size_t index = 0; index < count; ++index) {
+        const CommandEntry& command = entries[index];
         if (group != command.group) { continue; }
         const bool is_group_only = command.verb.empty();
-        if (is_group_only) {
-            consumed = 1;
-            return &command;
-        }
-        if (has_verb_token && verb == command.verb) {
-            consumed = GROUP_AND_VERB_TOKENS;
-            return &command;
-        }
+        if (is_group_only) { return CommandMatch{index, 1}; }
+        const bool is_verb_match = has_verb_token && verb == command.verb;
+        if (is_verb_match) { return CommandMatch{index, GROUP_AND_VERB_TOKENS}; }
     }
-    return nullptr;
+    return std::nullopt;
 }
 
 KiottySpecActor findActor(const Arguments& arguments)
@@ -135,7 +154,7 @@ std::string findRoot(const Arguments& arguments)
     const bool has_environment_root = !environment_root.empty();
     if (has_environment_root) { return environment_root; }
     std::error_code error {};
-    const auto current = std::filesystem::current_path(error);
+    const std::filesystem::path current = std::filesystem::current_path(error);
     std::filesystem::path probe = current;
     while (true) {
         const bool is_empty = probe.empty();
