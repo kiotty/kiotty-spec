@@ -183,22 +183,15 @@ KiottySpecTagResult KiottySpec_readItemTag(KiottySpecContext* context, KiottySpe
         result.code = spec.code;
         return result;
     }
-    impl::Workspace& workspace = spec.value->workspace();
-    const RecordResult record = Boundary(*spec.value).read(item);
-    if (!record) {
-        result.code = record.code;
+    const TagResult parsed = ValueParser(*spec.value).parseTag(item, tag, 0);
+    if (!parsed) {
+        result.code = parsed.code;
         return result;
     }
-    const size_t tag_count = workspace.catalog.model(record.value->kind).tags.length;
-    if (tag >= tag_count) {
-        result.code = spec.value->failure().raise(
-            KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_TAG,
-            workspace.items.reader().label(fromHandle(item)).value->id.view());
-        return result;
-    }
+    const entity::TagRecord& found = parsed.value;
     result.code = KIOTTY_SPEC_STATUS_SUCCESS;
-    result.value = toTag(item, static_cast<KiottySpecItemKind>(record.value->kind), tag,
-                         workspace.items.tags().value(fromHandle(item), tag));
+    result.value = toTag(item, static_cast<KiottySpecItemKind>(found.model), found.tag,
+                         spec.value->workspace().items.tags().value(found.item, found.tag));
     return result;
 }
 

@@ -37,8 +37,8 @@ public:
         : _workspace(workspace), _cursors(cursors), _store(store)
     {}
 
-    Result<DiffRange, KiottySpecStatus> range(uint64_t from, uint64_t to);
-    Result<uint32_t, KiottySpecStatus> point(uint64_t checkpoint);
+    Result<DiffRange, KiottySpecStatus> range(uint32_t from, uint32_t to);
+    Result<uint32_t, KiottySpecStatus> point(uint32_t checkpoint);
 
     KiottySpecStatus summarize(DiffRange range, uint32_t kind_mask, uint32_t field_mask,
                                KindCounts (&counts)[entity::ITEM_KIND_COUNT]);

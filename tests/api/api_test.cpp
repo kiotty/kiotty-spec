@@ -139,6 +139,46 @@ bool testValueBoundaries(KiottySpecContext* context)
     return passed;
 }
 
+// 질의 · 비교 함수의 enum · 정수 · 체크포인트 인자도 C 인터페이스에서 거절된다 (2.1, CR-014).
+bool testQueryBoundaries(KiottySpecContext* context)
+{
+    const KiottySpecStatus invalid = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
+    const KiottySpecCheckpointHandle high_bits = (KiottySpecCheckpointHandle{1} << 32) | 1;
+    const KiottySpecItemHandle item = KiottySpec_findItem(context, textOf("REQ-001")).value;
+    KiottySpecDiffQuery high_range {};
+    high_range.from = high_bits;
+    bool passed = expectTrue(KiottySpec_summarizeDiff(context, &high_range).code == invalid, "diff from high bits");
+    passed = expectTrue(KiottySpec_openItemDiffCursor(context, &high_range).code == invalid, "item diff high bits") && passed;
+    passed = expectTrue(KiottySpec_openRelationDiffCursor(context, &high_range).code == invalid, "relation diff high bits") && passed;
+    passed = expectTrue(KiottySpec_readItemAt(context, textOf("REQ-001"), high_bits).code == invalid, "read at high bits") && passed;
+    passed = expectTrue(KiottySpec_readDecisionAt(context, KIOTTY_SPEC_ITEM_KIND_CHANGE_REQUEST, 1, KiottySpecBuffer{nullptr, 0}).code == invalid,
+                        "decision at kind without decision") && passed;
+    KiottySpecTagQuery tag_query {};
+    tag_query.kind = KIOTTY_SPEC_ITEM_KIND_REQUIREMENT;
+    tag_query.tag_index = 99;
+    passed = expectTrue(KiottySpec_openItemCursor(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, &tag_query, 1).code == invalid,
+                        "tag query past the model") && passed;
+    passed = expectTrue(KiottySpec_openItemCursor(context, static_cast<KiottySpecItemKind>(14), nullptr, 0).code == invalid,
+                        "item cursor kind past the last") && passed;
+    passed = expectTrue(KiottySpec_openRelationCursor(context, textOf("REQ-001"), static_cast<KiottySpecDirection>(9)).code == invalid,
+                        "direction past the last") && passed;
+    passed = expectTrue(KiottySpec_openRelationCursorByModel(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, 99).code == invalid,
+                        "relation index past the model") && passed;
+    passed = expectTrue(KiottySpec_addRelation(context, textOf("REQ-001"), 99, textOf("REQ-001")).code == invalid,
+                        "add relation past the model") && passed;
+    passed = expectTrue(KiottySpec_openCheckpointCursor(context, static_cast<KiottySpecStep>(13)).code == invalid, "step filter past the last") && passed;
+    const KiottySpecCursorResult all_steps = KiottySpec_openCheckpointCursor(context, static_cast<KiottySpecStep>(0));
+    passed = expectTrue(ok(all_steps.code), "step filter 0 is all steps") && passed;
+    KiottySpec_closeCursor(context, all_steps.value);
+    KiottySpecDiffQuery current {};
+    current.from = 1;
+    passed = expectTrue(KiottySpec_openTextDiffCursor(context, item, static_cast<KiottySpecTextField>(KIOTTY_SPEC_CHANGED_FIELD_BODY), &current).code == invalid,
+                        "text field body") && passed;
+    passed = expectTrue(KiottySpec_readItemTag(context, item, 99).code == invalid, "read tag past the model") && passed;
+    passed = expectTrue(KiottySpec_formatCheckpointState(static_cast<KiottySpecCheckpointState>(0)).code == invalid, "state 0 name") && passed;
+    return passed;
+}
+
 bool testComplete(KiottySpecContext* context)
 {
     bool passed = expectTrue(KiottySpec_completeCheckpoint(context, KIOTTY_SPEC_ACTOR_AI).code == KIOTTY_SPEC_STATUS_PERMISSION, "ai cannot complete");
@@ -759,6 +799,7 @@ int main()
         {"writes need checkpoint", testWritesNeedCheckpoint},
         {"items tags relations", testItemsTagsRelations},
         {"value boundaries", testValueBoundaries},
+        {"query boundaries", testQueryBoundaries},
         {"complete", testComplete},
         {"reopen", testReopen},
         {"outside change", testOutsideChange},

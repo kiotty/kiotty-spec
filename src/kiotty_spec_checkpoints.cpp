@@ -119,12 +119,10 @@ KiottySpecCursorResult KiottySpec_openCheckpointCursor(KiottySpecContext* contex
 {
     const OpenedResult spec = findOpenedContext(context);
     if (!spec) { return cursorFailure(spec.code); }
-    const bool is_valid_step = entity::isValidStep(step);
-    const bool is_accepted_step = step == 0 || is_valid_step;
-    if (!is_accepted_step) {
-        return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
-    }
-    return Boundary(*spec.value).wrap(spec.value->readSide().finder().history().checkpoints(step));
+    const FilterResult parsed = QueryParser(*spec.value).parseStepFilter(step);
+    if (!parsed) { return cursorFailure(parsed.code); }
+    return Boundary(*spec.value).wrap(
+        spec.value->readSide().finder().history().checkpoints(parsed.value));
 }
 
 KiottySpecStatusResult KiottySpec_fetchCheckpointPage(KiottySpecContext* context,

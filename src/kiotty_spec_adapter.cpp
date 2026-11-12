@@ -177,8 +177,6 @@ KiottySpecNameResult nameResult(std::string_view name)
     return result;
 }
 
-bool isKind(uint32_t kind) { return entity::isValidKind(kind); }
-
 impl::Span<char> toSpan(KiottySpecBuffer buffer)
 {
     const bool has_data = buffer.data != nullptr;

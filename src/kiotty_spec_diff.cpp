@@ -9,7 +9,6 @@ namespace {
 
 KiottySpecKindDiff convertKindDiff(const impl::KindCounts& count);
 KiottySpecItemHandle findCurrentHandle(impl::ItemReader reader, impl::Span<const char> id);
-bool isTextField(KiottySpecTextField field);
 
 }
 
@@ -21,10 +20,9 @@ KiottySpecDiffSummaryResult KiottySpec_summarizeDiff(KiottySpecContext* context,
     KiottySpecDiffSummaryResult result {};
     const OpenedResult spec = findOpenedContext(context);
     result.code = spec ? KIOTTY_SPEC_STATUS_INVALID_ARGUMENT : spec.code;
-    const bool has_arguments = spec && query != nullptr;
-    if (!has_arguments) { return result; }
+    if (!spec) { return result; }
     impl::Differ& differ = spec.value->readSide().differ();
-    const auto range = differ.range(query->from, query->to);
+    const RangeResult range = RangeParser(*spec.value).parseRange(query);
     if (!range) {
         result.code = range.code;
         return result;
@@ -44,8 +42,7 @@ KiottySpecCursorResult KiottySpec_openItemDiffCursor(KiottySpecContext* context,
 {
     const OpenedResult spec = findOpenedContext(context);
     if (!spec) { return cursorFailure(spec.code); }
-    if (query == nullptr) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    const auto range = spec.value->readSide().differ().range(query->from, query->to);
+    const RangeResult range = RangeParser(*spec.value).parseRange(query);
     if (!range) { return cursorFailure(range.code); }
     const impl::CursorIdResult opened = spec.value->readSide().differ().items(
         range.value, query->kind_mask, query->field_mask);
@@ -88,8 +85,7 @@ KiottySpecCursorResult KiottySpec_openRelationDiffCursor(KiottySpecContext* cont
 {
     const OpenedResult spec = findOpenedContext(context);
     if (!spec) { return cursorFailure(spec.code); }
-    if (query == nullptr) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    const auto range = spec.value->readSide().differ().range(query->from, query->to);
+    const RangeResult range = RangeParser(*spec.value).parseRange(query);
     if (!range) { return cursorFailure(range.code); }
     const impl::CursorIdResult opened =
         spec.value->readSide().differ().relations(range.value, query->kind_mask);
@@ -138,7 +134,7 @@ KiottySpecItemResult KiottySpec_readItemAt(KiottySpecContext* context, KiottySpe
         return result;
     }
     impl::Differ& differ = spec.value->readSide().differ();
-    const auto point = differ.point(checkpoint);
+    const auto point = RangeParser(*spec.value).parsePoint(checkpoint);
     if (!point) {
         result.code = point.code;
         return result;
@@ -164,7 +160,7 @@ KiottySpecTagResult KiottySpec_readItemTagAt(KiottySpecContext* context, KiottyS
         return result;
     }
     impl::Differ& differ = spec.value->readSide().differ();
-    const auto point = differ.point(checkpoint);
+    const auto point = RangeParser(*spec.value).parsePoint(checkpoint);
     if (!point) {
         result.code = point.code;
         return result;
@@ -192,7 +188,7 @@ KiottySpecSizeResult KiottySpec_readItemBodyAt(KiottySpecContext* context, Kiott
     const TextResult parsed = Boundary(*spec.value).parse(id, Field::ID);
     if (!parsed) { return sizeResult(parsed.code, 0); }
     impl::Differ& differ = spec.value->readSide().differ();
-    const auto point = differ.point(checkpoint);
+    const auto point = RangeParser(*spec.value).parsePoint(checkpoint);
     if (!point) { return sizeResult(point.code, 0); }
     const impl::Span<char> target = toSpan(buffer);
     const auto read = differ.past().readBodyAt(parsed.value, point.value, target);
@@ -205,20 +201,14 @@ KiottySpecSizeResult KiottySpec_readDecisionAt(KiottySpecContext* context, Kiott
 {
     const OpenedResult spec = findOpenedContext(context);
     if (!spec) { return sizeResult(spec.code, 0); }
-    const bool is_valid_kind = isKind(kind);
-    const bool has_decision =
-        is_valid_kind && entity::hasDecision(static_cast<entity::ItemKind>(kind));
-    if (!has_decision) {
-        return sizeResult(spec.value->failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
-                                                      KIOTTY_SPEC_SUBJECT_KIND),
-                          0);
-    }
+    const KindResult parsed_kind = ValueParser(*spec.value).parseDecisionKind(kind);
+    if (!parsed_kind) { return sizeResult(parsed_kind.code, 0); }
     impl::Differ& differ = spec.value->readSide().differ();
-    const auto point = differ.point(checkpoint);
+    const auto point = RangeParser(*spec.value).parsePoint(checkpoint);
     if (!point) { return sizeResult(point.code, 0); }
     const impl::Span<char> target = toSpan(buffer);
     const auto read =
-        differ.past().readDecisionAt(static_cast<entity::ItemKind>(kind), point.value, target);
+        differ.past().readDecisionAt(parsed_kind.value, point.value, target);
     return sizeResult(read.code, read.value);
 }
 
@@ -229,20 +219,16 @@ KiottySpecCursorResult KiottySpec_openTextDiffCursor(KiottySpecContext* context,
 {
     const OpenedResult spec = findOpenedContext(context);
     if (!spec) { return cursorFailure(spec.code); }
-    if (range == nullptr) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    const bool is_text_field = isTextField(field);
-    if (!is_text_field) {
-        return cursorFailure(spec.value->failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
-                                                         KIOTTY_SPEC_SUBJECT_TEXT_FIELD));
-    }
+    const FilterResult text_field = QueryParser(*spec.value).parseTextField(field);
+    if (!text_field) { return cursorFailure(text_field.code); }
     const Boundary boundary(*spec.value);
     const RecordResult record = boundary.read(item);
     if (!record) { return cursorFailure(record.code); }
     impl::Differ& differ = spec.value->readSide().differ();
-    const auto points = differ.range(range->from, range->to);
+    const RangeResult points = RangeParser(*spec.value).parseRange(range);
     if (!points) { return cursorFailure(points.code); }
     const impl::CursorIdResult opened =
-        differ.text().open(fromHandle(item), static_cast<uint32_t>(field), points.value);
+        differ.text().open(fromHandle(item), text_field.value, points.value);
     return boundary.wrap(opened);
 }
 
@@ -294,8 +280,5 @@ KiottySpecItemHandle findCurrentHandle(impl::ItemReader reader, impl::Span<const
     const auto handle = reader.find(id);
     return handle ? toHandle(handle.value) : KIOTTY_SPEC_INVALID_ITEM_HANDLE;
 }
-
-bool isTextField(KiottySpecTextField field)
-{ return field == KIOTTY_SPEC_TEXT_FIELD_TITLE || field == KIOTTY_SPEC_TEXT_FIELD_SUMMARY; }
 
 }

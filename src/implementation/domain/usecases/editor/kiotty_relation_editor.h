@@ -15,12 +15,11 @@ class RelationEditor
 public:
     explicit RelationEditor(Workspace& workspace) : _workspace(workspace) {}
 
-    KiottySpecStatus add(Span<const char> from_id, uint32_t relation, Span<const char> to_id);
-    KiottySpecStatus remove(Span<const char> from_id, uint32_t relation, Span<const char> to_id);
+    KiottySpecStatus add(const entity::RelationRecord& relation);
+    KiottySpecStatus remove(const entity::RelationRecord& relation);
 
 private:
-    Result<entity::RelationRecord, KiottySpecStatus>
-    relationOf(Span<const char> from_id, uint32_t relation, Span<const char> to_id);
+    Span<const char> idOf(entity::ItemHandle item) const;
 
     Workspace& _workspace;
 };

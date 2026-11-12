@@ -74,7 +74,11 @@ KiottySpecNameResult KiottySpec_formatStatus(KiottySpecStatus status_code)
 { return nameResult(describeStatus(status_code)); }
 
 KiottySpecNameResult KiottySpec_formatKind(KiottySpecItemKind kind)
-{ return nameResult(entity::kindName(static_cast<entity::ItemKind>(kind))); }
+{
+    const KindResult parsed = parseKindCode(kind);
+    if (!parsed) { return nameResult(std::string_view()); }
+    return nameResult(entity::kindName(parsed.value));
+}
 
 KiottySpecItemKind KiottySpec_parseKind(KiottySpecText name)
 {
@@ -85,7 +89,9 @@ KiottySpecItemKind KiottySpec_parseKind(KiottySpecText name)
 
 KiottySpecNameResult KiottySpec_formatCheckpointState(KiottySpecCheckpointState state)
 {
-    return nameResult(entity::stateName(static_cast<entity::CheckpointState>(state)));
+    const StateResult parsed = parseStateCode(state);
+    if (!parsed) { return nameResult(std::string_view()); }
+    return nameResult(entity::stateName(parsed.value));
 }
 
 }

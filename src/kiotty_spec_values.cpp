@@ -77,6 +77,27 @@ TagResult ValueParser::parseTag(KiottySpecItemHandle item, uint32_t tag, uint64_
     return TagResult::success(parsed);
 }
 
+RelationResult ValueParser::parseRelation(KiottySpecText from_id, uint32_t relation,
+                                          KiottySpecText to_id) const
+{
+    const Boundary boundary(_context);
+    const HandleResult from = boundary.resolve(from_id);
+    if (!from) { return RelationResult::failure(from.code); }
+    const HandleResult to = boundary.resolve(to_id);
+    if (!to) { return RelationResult::failure(to.code); }
+    const impl::ItemReader reader = _context.workspace().items.reader();
+    const entity::ItemKind from_kind = reader.get(from.value).value->kind;
+    const entity::ItemKind to_kind = reader.get(to.value).value->kind;
+    const KiottySpecStatus allowed =
+        _context.workspace().catalog.checkRelation(from_kind, relation, to_kind);
+    if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return RelationResult::failure(_context.failure().raise(
+            allowed, KIOTTY_SPEC_SUBJECT_RELATION, reader.label(from.value).value->id.view()));
+    }
+    return RelationResult::success(entity::RelationRecord {from.value, to.value, from_kind,
+                                                           relation});
+}
+
 KiottySpecStatus ValueParser::raise(KiottySpecStatus code, KiottySpecSubject subject) const
 { return _context.failure().raise(code, subject); }
 

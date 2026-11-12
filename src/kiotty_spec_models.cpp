@@ -28,13 +28,12 @@ KiottySpecModelResult KiottySpec_readModel(KiottySpecContext* context, KiottySpe
         result.code = spec.code;
         return result;
     }
-    const bool is_valid_kind = isKind(kind);
-    if (!is_valid_kind) {
-        result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
+    const KindResult parsed = ValueParser(*spec.value).parseKind(kind);
+    if (!parsed) {
+        result.code = parsed.code;
         return result;
     }
-    const entity::Model& model =
-        spec.value->readSide().catalog().model(static_cast<entity::ItemKind>(kind));
+    const entity::Model& model = spec.value->readSide().catalog().model(parsed.value);
     result.code = KIOTTY_SPEC_STATUS_SUCCESS;
     copyText(result.value.name, model.name);
     copyText(result.value.id_prefix, model.id_prefix);
@@ -50,11 +49,11 @@ KiottySpecCursorResult KiottySpec_openTagDefinitionCursor(KiottySpecContext* con
 {
     const OpenedResult spec = findOpenedContext(context);
     if (!spec) { return cursorFailure(spec.code); }
-    const bool is_valid_kind = isKind(kind);
-    if (!is_valid_kind) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    const KindResult parsed = ValueParser(*spec.value).parseKind(kind);
+    if (!parsed) { return cursorFailure(parsed.code); }
     impl::ModelDefinitionFinder finder(spec.value->workspace(), spec.value->readSide().cursors());
     const impl::CursorIdResult opened =
-        finder.openTagDefinitions(static_cast<entity::ItemKind>(kind));
+        finder.openTagDefinitions(parsed.value);
     return Boundary(*spec.value).wrap(opened);
 }
 
@@ -84,11 +83,11 @@ KiottySpecCursorResult KiottySpec_openRelationDefinitionCursor(KiottySpecContext
 {
     const OpenedResult spec = findOpenedContext(context);
     if (!spec) { return cursorFailure(spec.code); }
-    const bool is_valid_kind = isKind(kind);
-    if (!is_valid_kind) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    const KindResult parsed = ValueParser(*spec.value).parseKind(kind);
+    if (!parsed) { return cursorFailure(parsed.code); }
     impl::ModelDefinitionFinder finder(spec.value->workspace(), spec.value->readSide().cursors());
     const impl::CursorIdResult opened =
-        finder.openRelationDefinitions(static_cast<entity::ItemKind>(kind));
+        finder.openRelationDefinitions(parsed.value);
     return Boundary(*spec.value).wrap(opened);
 }
 

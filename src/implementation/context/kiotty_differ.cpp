@@ -23,7 +23,6 @@ constexpr uint32_t RELATION_ID_MASK = 0xFFFFu;
 constexpr uint32_t RELATION_MODEL_SHIFT = 48;
 constexpr uint32_t RELATION_MODEL_MASK = 0xFFu;
 constexpr uint32_t RELATION_CHANGE_SHIFT = 56;
-constexpr uint32_t CHECKPOINT_SEQUENCE_MASK = 0xFFFFFFFFu;
 
 constexpr uint32_t MAX_KIND_BIT = 32;
 
@@ -57,7 +56,7 @@ RelationDiffRow unpackRelationDiff(const CursorRow& row)
                              static_cast<uint32_t>(number >> RELATION_CHANGE_SHIFT) };
 }
 
-Result<DiffRange, KiottySpecStatus> Differ::range(uint64_t from, uint64_t to)
+Result<DiffRange, KiottySpecStatus> Differ::range(uint32_t from, uint32_t to)
 {
     using RangeResult = Result<DiffRange, KiottySpecStatus>;
     if (from == KIOTTY_SPEC_CHECKPOINT_CURRENT) {
@@ -75,12 +74,11 @@ Result<DiffRange, KiottySpecStatus> Differ::range(uint64_t from, uint64_t to)
     return RangeResult::success(DiffRange{start.value, end.value});
 }
 
-Result<uint32_t, KiottySpecStatus> Differ::point(uint64_t checkpoint)
+Result<uint32_t, KiottySpecStatus> Differ::point(uint32_t checkpoint)
 {
     using PointResult = Result<uint32_t, KiottySpecStatus>;
-    const uint32_t sequence = checkpoint == KIOTTY_SPEC_CHECKPOINT_CURRENT
-                                  ? _workspace.checkpoints.latest()
-                                  : static_cast<uint32_t>(checkpoint & CHECKPOINT_SEQUENCE_MASK);
+    const uint32_t sequence =
+        checkpoint == KIOTTY_SPEC_CHECKPOINT_CURRENT ? _workspace.checkpoints.latest() : checkpoint;
     const auto checkpoint_record = _workspace.checkpoints.get(sequence);
     if (!checkpoint_record) {
         return PointResult::failure(

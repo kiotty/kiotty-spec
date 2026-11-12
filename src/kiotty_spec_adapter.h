@@ -2,6 +2,8 @@
 
 #include "kiotty_spec.h"
 #include "implementation/context/kiotty_context.h"
+#include "implementation/context/kiotty_diff_range.h"
+#include "implementation/context/kiotty_finder.h"
 #include "implementation/core/kiotty_fixed_string.h"
 #include "implementation/core/kiotty_text_view.h"
 
@@ -36,6 +38,12 @@ using StepResult = impl::Result<entity::Step, KiottySpecStatus>;
 using ActorResult = impl::Result<entity::Actor, KiottySpecStatus>;
 using SequenceResult = impl::Result<uint32_t, KiottySpecStatus>;
 using TagResult = impl::Result<entity::TagRecord, KiottySpecStatus>;
+using RelationResult = impl::Result<entity::RelationRecord, KiottySpecStatus>;
+using StateResult = impl::Result<entity::CheckpointState, KiottySpecStatus>;
+using FilterResult = impl::Result<uint32_t, KiottySpecStatus>;
+using DirectionResult = impl::Result<KiottySpecDirection, KiottySpecStatus>;
+using TagQueryResult = impl::Result<impl::TagQuery, KiottySpecStatus>;
+using RangeResult = impl::Result<impl::DiffRange, KiottySpecStatus>;
 
 enum class Field : uint8_t { ID, TITLE, SUMMARY, BODY, DECISION, DESCRIPTION, PATH, PROJECT_NAME };
 
@@ -78,6 +86,8 @@ public:
     ActorResult parseActor(KiottySpecActor actor) const;
     SequenceResult parseCheckpoint(KiottySpecCheckpointHandle handle) const;
     TagResult parseTag(KiottySpecItemHandle item, uint32_t tag, uint64_t value) const;
+    RelationResult parseRelation(KiottySpecText from_id, uint32_t relation,
+                                 KiottySpecText to_id) const;
 
 private:
     KiottySpecStatus raise(KiottySpecStatus code, KiottySpecSubject subject) const;
@@ -85,6 +95,38 @@ private:
     impl::OpenedContext& _context;
 };
 
+class QueryParser
+{
+public:
+    explicit QueryParser(impl::OpenedContext& context) : _context(context) {}
+
+    FilterResult parseKindFilter(KiottySpecItemKind kind) const;
+    FilterResult parseStepFilter(KiottySpecStep step) const;
+    DirectionResult parseDirection(KiottySpecDirection direction) const;
+    FilterResult parseTextField(KiottySpecTextField field) const;
+    TagQueryResult parseTagQuery(KiottySpecTagQuery query) const;
+    FilterResult parseRelationIndex(entity::ItemKind kind, uint32_t relation) const;
+
+private:
+    KiottySpecStatus raise(KiottySpecSubject subject) const;
+
+    impl::OpenedContext& _context;
+};
+
+class RangeParser
+{
+public:
+    explicit RangeParser(impl::OpenedContext& context) : _context(context) {}
+
+    RangeResult parseRange(const KiottySpecDiffQuery* query) const;
+    SequenceResult parsePoint(KiottySpecCheckpointHandle checkpoint) const;
+
+private:
+    impl::OpenedContext& _context;
+};
+
+KindResult parseKindCode(KiottySpecItemKind kind);
+StateResult parseStateCode(KiottySpecCheckpointState state);
 OpenedResult findOpenedContext(KiottySpecContext* context);
 TextResult parseText(KiottySpecText text, size_t max_length);
 ConfigurationResult parseConfiguration(const KiottySpecConfiguration& configuration);
@@ -101,7 +143,6 @@ KiottySpecStatusResult status(KiottySpecStatus code);
 KiottySpecSizeResult sizeResult(KiottySpecStatus code, size_t value);
 KiottySpecCursorResult cursorFailure(KiottySpecStatus code);
 KiottySpecNameResult nameResult(std::string_view name);
-bool isKind(uint32_t kind);
 void copyTerminated(impl::Span<char> target, impl::Span<const char> source);
 impl::Span<char> toSpan(KiottySpecBuffer buffer);
 impl::OptionalText toOptionalText(impl::Span<const char> text);
