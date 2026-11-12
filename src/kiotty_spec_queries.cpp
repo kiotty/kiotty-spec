@@ -17,9 +17,10 @@ KiottySpecStatusResult KiottySpec_addRelation(KiottySpecContext* context, Kiotty
                                               uint32_t relation, KiottySpecText to_id)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    const TextResult from = parseId(context->context, from_id);
+    const Boundary boundary(context->context);
+    const TextResult from = boundary.parse(from_id, Field::ID);
     if (!from) { return status(from.code); }
-    const TextResult to = parseId(context->context, to_id);
+    const TextResult to = boundary.parse(to_id, Field::ID);
     if (!to) { return status(to.code); }
     return status(context->context.relationEditor().add(from.value, relation, to.value));
 }
@@ -28,9 +29,10 @@ KiottySpecStatusResult KiottySpec_removeRelation(KiottySpecContext* context, Kio
                                                  uint32_t relation, KiottySpecText to_id)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    const TextResult from = parseId(context->context, from_id);
+    const Boundary boundary(context->context);
+    const TextResult from = boundary.parse(from_id, Field::ID);
     if (!from) { return status(from.code); }
-    const TextResult to = parseId(context->context, to_id);
+    const TextResult to = boundary.parse(to_id, Field::ID);
     if (!to) { return status(to.code); }
     return status(context->context.relationEditor().remove(from.value, relation, to.value));
 }
@@ -42,10 +44,12 @@ KiottySpecCursorResult KiottySpec_openRelationCursor(KiottySpecContext* context,
     if (direction < KIOTTY_SPEC_DIRECTION_UPSTREAM || direction > KIOTTY_SPEC_DIRECTION_BOTH) {
         return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
-    const auto handle = resolve(context->context, id);
+    const Boundary boundary(context->context);
+    const HandleResult handle = boundary.resolve(id);
     if (!handle) { return cursorFailure(handle.code); }
-    return cursorResult(context->context,
-                        context->context.finder().relations(handle.value, direction));
+    const impl::CursorIdResult opened =
+        context->context.finder().relations(handle.value, direction);
+    return boundary.wrap(opened);
 }
 
 KiottySpecCursorResult KiottySpec_openRelationCursorByModel(KiottySpecContext* context,
@@ -63,8 +67,9 @@ KiottySpecCursorResult KiottySpec_openRelationCursorByModel(KiottySpecContext* c
         return cursorFailure(context->context.failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
                                                               KIOTTY_SPEC_SUBJECT_RELATION));
     }
-    return cursorResult(context->context, context->context.finder().relationsByModel(
-                                              static_cast<entity::ItemKind>(kind), relation));
+    const impl::CursorIdResult opened = context->context.finder().relationsByModel(
+        static_cast<entity::ItemKind>(kind), relation);
+    return Boundary(context->context).wrap(opened);
 }
 
 KiottySpecStatusResult KiottySpec_fetchRelationPage(KiottySpecContext* context,
@@ -114,26 +119,28 @@ KiottySpecCursorResult KiottySpec_openItemCursor(KiottySpecContext* context,
         queries[index] = impl::TagQuery { static_cast<entity::ItemKind>(tag_queries[index].kind),
                                           tag_queries[index].tag_index, tag_queries[index].mask };
     }
-    return cursorResult(
-        context->context,
-        context->context.finder().items(kind, impl::Span<const impl::TagQuery>(queries, count)));
+    const impl::CursorIdResult opened =
+        context->context.finder().items(kind, impl::Span<const impl::TagQuery>(queries, count));
+    return Boundary(context->context).wrap(opened);
 }
 
 KiottySpecCursorResult KiottySpec_openChildCursor(KiottySpecContext* context, KiottySpecText id)
 {
     if (context == nullptr) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    const auto handle = resolve(context->context, id);
+    const Boundary boundary(context->context);
+    const HandleResult handle = boundary.resolve(id);
     if (!handle) { return cursorFailure(handle.code); }
-    return cursorResult(context->context, context->context.finder().children(handle.value));
+    return boundary.wrap(context->context.finder().children(handle.value));
 }
 
 KiottySpecCursorResult KiottySpec_openImpactCursor(KiottySpecContext* context, KiottySpecText id,
                                                    uint32_t depth)
 {
     if (context == nullptr) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    const auto handle = resolve(context->context, id);
+    const Boundary boundary(context->context);
+    const HandleResult handle = boundary.resolve(id);
     if (!handle) { return cursorFailure(handle.code); }
-    return cursorResult(context->context, context->context.finder().impact(handle.value, depth));
+    return boundary.wrap(context->context.finder().impact(handle.value, depth));
 }
 
 KiottySpecStatusResult KiottySpec_fetchItemPage(KiottySpecContext* context, KiottySpecCursor cursor,
@@ -148,7 +155,7 @@ KiottySpecStatusResult KiottySpec_fetchItemPage(KiottySpecContext* context, Kiot
     if (!rows) { return status(rows.code); }
     const impl::Span<KiottySpecItem> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
-        const auto record = items.reader().get(fromHandle(row.first));
+        const RecordResult record = items.reader().get(fromHandle(row.first));
         if (!record) { continue; }
         const auto element = elements.at(page->length);
         if (!element) { return status(element.code); }
@@ -170,7 +177,7 @@ KiottySpecStatusResult KiottySpec_fetchIdPage(KiottySpecContext* context, Kiotty
     if (!rows) { return status(rows.code); }
     const impl::Span<IdElement> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
-        const auto record = items.reader().get(fromHandle(row.first));
+        const RecordResult record = items.reader().get(fromHandle(row.first));
         if (!record) { continue; }
         const auto element = elements.at(page->length);
         if (!element) { return status(element.code); }

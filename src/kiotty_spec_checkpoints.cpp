@@ -23,7 +23,7 @@ KiottySpecCheckpointHandleResult KiottySpec_startCheckpoint(KiottySpecContext* c
     KiottySpecCheckpointHandleResult result {};
     result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
     if (context == nullptr) { return result; }
-    const TextResult parsed = parseDescription(context->context, description);
+    const TextResult parsed = Boundary(context->context).parse(description, Field::DESCRIPTION);
     if (!parsed) {
         result.code = parsed.code;
         return result;
@@ -51,7 +51,7 @@ KiottySpecStatusResult KiottySpec_completeCheckpoint(KiottySpecContext* context,
 KiottySpecCursorResult KiottySpec_openUnmetConditionCursor(KiottySpecContext* context)
 {
     if (context == nullptr) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    return cursorResult(context->context, context->context.finder().history().unmetConditions());
+    return Boundary(context->context).wrap(context->context.finder().history().unmetConditions());
 }
 
 KiottySpecStatusResult KiottySpec_fetchUnmetConditionPage(KiottySpecContext* context,
@@ -107,7 +107,7 @@ KiottySpecCursorResult KiottySpec_openCheckpointCursor(KiottySpecContext* contex
     if (!has_valid_arguments) {
         return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
-    return cursorResult(context->context, context->context.finder().history().checkpoints(step));
+    return Boundary(context->context).wrap(context->context.finder().history().checkpoints(step));
 }
 
 KiottySpecStatusResult KiottySpec_fetchCheckpointPage(KiottySpecContext* context,
@@ -150,7 +150,7 @@ KiottySpecStatusResult KiottySpec_writeDecision(KiottySpecContext* context, Kiot
                                                 KiottySpecText text)
 {
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    const TextResult parsed = parseDecision(context->context, text);
+    const TextResult parsed = Boundary(context->context).parse(text, Field::DECISION);
     if (!parsed) { return status(parsed.code); }
     return status(
         context->context.editor().writeDecision(static_cast<entity::ItemKind>(kind), parsed.value));
@@ -260,7 +260,7 @@ KiottySpecPositionResult KiottySpec_readPosition(KiottySpecContext* context)
 KiottySpecCursorResult KiottySpec_openStepRunCursor(KiottySpecContext* context)
 {
     if (context == nullptr) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    return cursorResult(context->context, context->context.finder().history().stepRuns());
+    return Boundary(context->context).wrap(context->context.finder().history().stepRuns());
 }
 
 KiottySpecStatusResult KiottySpec_fetchStepRunPage(KiottySpecContext* context,

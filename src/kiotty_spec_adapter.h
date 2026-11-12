@@ -27,15 +27,26 @@ constexpr uint64_t LOW_MASK = 0xFFFFFFFFu;
 using TextResult = impl::Result<impl::Span<const char>, KiottySpecStatus>;
 using ConfigurationResult = impl::Result<impl::Configuration, KiottySpecStatus>;
 
+using HandleResult = impl::Result<entity::ItemHandle, KiottySpecStatus>;
+using RecordResult = impl::Result<const entity::ItemRecord*, KiottySpecStatus>;
+
+enum class Field : uint8_t { ID, TITLE, SUMMARY, BODY, DECISION, DESCRIPTION, PATH, PROJECT_NAME };
+
+class Boundary
+{
+public:
+    explicit Boundary(impl::Context& context) : _context(context) {}
+
+    TextResult parse(KiottySpecText text, Field field) const;
+    HandleResult resolve(KiottySpecText id) const;
+    RecordResult read(KiottySpecItemHandle item) const;
+    KiottySpecCursorResult wrap(const impl::CursorIdResult& opened) const;
+
+private:
+    impl::Context& _context;
+};
+
 TextResult parseText(KiottySpecText text, size_t max_length);
-TextResult parseId(impl::Context& context, KiottySpecText id);
-TextResult parseTitle(impl::Context& context, KiottySpecText title);
-TextResult parseSummary(impl::Context& context, KiottySpecText summary);
-TextResult parseBody(impl::Context& context, KiottySpecText body);
-TextResult parseDecision(impl::Context& context, KiottySpecText decision);
-TextResult parseDescription(impl::Context& context, KiottySpecText description);
-TextResult parsePath(impl::Context& context, KiottySpecText path);
-TextResult parseProjectName(impl::Context& context, KiottySpecText project_name);
 ConfigurationResult parseConfiguration(const KiottySpecConfiguration& configuration);
 
 KiottySpecItemHandle toHandle(entity::ItemHandle handle);
@@ -48,11 +59,8 @@ KiottySpecTag toTag(KiottySpecItemHandle item, KiottySpecItemKind model, uint32_
 KiottySpecStatusResult status(KiottySpecStatus code);
 KiottySpecSizeResult sizeResult(KiottySpecStatus code, size_t value);
 KiottySpecCursorResult cursorFailure(KiottySpecStatus code);
-KiottySpecCursorResult cursorResult(impl::Context& context, const impl::CursorIdResult& opened);
 KiottySpecNameResult nameResult(std::string_view name);
 bool isKind(uint32_t kind);
-impl::Result<entity::ItemHandle, KiottySpecStatus> resolve(impl::Context& context,
-                                                           KiottySpecText id);
 void copyTerminated(impl::Span<char> target, impl::Span<const char> source);
 
 }
