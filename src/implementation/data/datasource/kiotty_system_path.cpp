@@ -25,11 +25,10 @@ bool isSeparatorAt(Span<const char> path, size_t index);
 
 }
 
-SystemPathResult absolutePath(Span<const char> path) { return platform::absolutePath(path); }
-
-SystemPathResult joinPath(Span<const char> base, Span<const char> part)
+SystemPathResult PathResolver::joinPath(Span<const char> base, Span<const char> part) const
 {
-    SystemPath joined {};
+    SystemPath& joined = _area.joined;
+    joined.clear();
     SlashedPathWriter writer(joined);
     const KiottySpecStatus copied = writer.appendSlashed(base);
     if (copied != KIOTTY_SPEC_STATUS_SUCCESS) { return SystemPathResult::failure(copied); }

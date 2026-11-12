@@ -11,18 +11,20 @@ namespace kiotty::spec::implementation {
 namespace {
 
 ItemCapacity buildItemCapacity(const Configuration& configuration);
-KiottySpecStatus writeMergeAttributes(Span<const char> directory);
+KiottySpecStatus writeMergeAttributes(const PathResolver& path_resolver,
+                                      const FileSystem& file_system, Span<const char> directory);
 
 }
 
 Context::Context(const Configuration& configuration)
-    : _work(configuration.work_buffer_bytes), _checkpoints(_failure, configuration.max_checkpoints),
+    : _path_resolver(_paths), _file_system(_paths), _work(configuration.work_buffer_bytes),
+      _checkpoints(_failure, configuration.max_checkpoints),
       _items(_failure, buildItemCapacity(configuration)),
       _relations(_failure, _items, configuration.max_relations,
                  configuration.max_relation_versions),
       _decisions(_failure, configuration.max_decision_versions),
       _file(SpecTables { _failure, _catalog, _meta, _checkpoints, _items, _relations, _decisions },
-            _work),
+            _work, _file_system),
       _workspace(Workspace { _file, _failure, _catalog, _meta, _checkpoints, _items, _relations,
                              _decisions }),
       _checker(_workspace, configuration.max_items), _lifecycle(_workspace, _checker),
@@ -38,16 +40,17 @@ KiottySpecStatus Context::open(Span<const char> database)
 {
     const KiottySpecStatus checked = checkDatabase(database);
     if (checked != KIOTTY_SPEC_STATUS_SUCCESS) { return checked; }
-    const auto absolute = absolutePath(database);
+    const SystemPathResult absolute = _path_resolver.resolveAbsolutePath(database);
     if (!absolute) { return _failure.raise(absolute.code, KIOTTY_SPEC_SUBJECT_FILE, database); }
-    const Span<const char> directory = parentOf(absolute.value.view());
+    const SystemPath& absolute_path = *absolute.value;
+    const Span<const char> directory = parentOf(absolute_path.view());
     _root.assign(parentOf(directory));
     const KiottySpecStatus catalog = _catalog.load();
     if (catalog != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(catalog, KIOTTY_SPEC_SUBJECT_MODEL);
     }
-    const bool is_existing = isFile(absolute.value.view());
-    const KiottySpecStatus loaded = _file.open(absolute.value.view());
+    const bool is_existing = _file_system.isFile(absolute_path.view());
+    const KiottySpecStatus loaded = _file.open(absolute_path.view());
     if (loaded != KIOTTY_SPEC_STATUS_SUCCESS) { return loaded; }
     const KiottySpecStatus created =
         is_existing ? KIOTTY_SPEC_STATUS_SUCCESS : createSpecFile(directory);
@@ -66,7 +69,7 @@ KiottySpecStatus Context::checkDatabase(Span<const char> database)
     if (database_length == 0) {
         return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_FILE);
     }
-    const bool is_directory = isDirectory(database);
+    const bool is_directory = _file_system.isDirectory(database);
     if (is_directory) {
         return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_FILE,
                               database);
@@ -76,13 +79,14 @@ KiottySpecStatus Context::checkDatabase(Span<const char> database)
 
 KiottySpecStatus Context::createSpecFile(Span<const char> directory)
 {
-    const KiottySpecStatus prepared = createDirectories(directory);
+    const KiottySpecStatus prepared = _file_system.createDirectories(directory);
     if (prepared != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE, directory);
     }
     const KiottySpecStatus saved = _file.save();
     if (saved != KIOTTY_SPEC_STATUS_SUCCESS) { return saved; }
-    const KiottySpecStatus attributed = writeMergeAttributes(directory);
+    const KiottySpecStatus attributed =
+        writeMergeAttributes(_path_resolver, _file_system, directory);
     if (attributed != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(attributed, KIOTTY_SPEC_SUBJECT_FILE, directory);
     }
@@ -115,14 +119,16 @@ ItemCapacity buildItemCapacity(const Configuration& configuration)
                           configuration.max_body_bytes };
 }
 
-KiottySpecStatus writeMergeAttributes(Span<const char> directory)
+KiottySpecStatus writeMergeAttributes(const PathResolver& path_resolver,
+                                      const FileSystem& file_system, Span<const char> directory)
 {
-    const SystemPathResult path = joinPath(directory, literalText(".gitattributes"));
+    const SystemPathResult path = path_resolver.joinPath(directory, literalText(".gitattributes"));
     if (!path) { return path.code; }
-    const bool is_file = isFile(path.value.view());
+    const SystemPath& attributes_path = *path.value;
+    const bool is_file = file_system.isFile(attributes_path.view());
     if (is_file) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    FileWriter writer {};
-    const KiottySpecStatus opened = writer.open(path.value.view());
+    FileWriter writer(file_system);
+    const KiottySpecStatus opened = writer.open(attributes_path.view());
     if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return opened; }
     return writer.write(literalText("*.kisp text eol=lf merge=union\n"));
 }

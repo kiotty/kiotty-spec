@@ -1,4 +1,3 @@
-
 #include "implementation/data/datasource/kiotty_file_system.h"
 
 #include "implementation/data/datasource/backend/kiotty_platform.h"
@@ -14,28 +13,69 @@ KiottySpecStatus writeAll(int descriptor, Span<const char> content);
 
 }
 
-KiottySpecStatus createDirectories(Span<const char> path)
+KiottySpecStatus FileSystem::createDirectories(Span<const char> path) const
 {
     const size_t root = platform::rootLength(path);
     const size_t length = path.length();
     for (size_t index = root; index < length; ++index) {
         const bool is_separator = platform::isSeparator(path[index]);
-        if (is_separator) {
-            platform::makeDirectory(Span<const char>(path.data(), index));
-        }
+        if (is_separator) { makeDirectory(Span<const char>(path.data(), index)); }
     }
-    platform::makeDirectory(path);
-    return platform::isDirectory(path) ? KIOTTY_SPEC_STATUS_SUCCESS
-                                       : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
+    makeDirectory(path);
+    const bool is_directory = isDirectory(path);
+    return is_directory ? KIOTTY_SPEC_STATUS_SUCCESS : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 }
 
-bool isDirectory(Span<const char> path) { return platform::isDirectory(path); }
+DescriptorResult FileSystem::openForReading(Span<const char> path) const
+{
+    const KiottySpecStatus converted = convertSource(path);
+    if (converted != KIOTTY_SPEC_STATUS_SUCCESS) { return DescriptorResult::failure(converted); }
+    return platform::openFile(_area.source, platform::OpenMode::READ);
+}
 
-DescriptorResult openForReading(Span<const char> path)
-{ return platform::openFile(path, platform::OpenMode::READ); }
+DescriptorResult FileSystem::openForWriting(Span<const char> path) const
+{
+    const KiottySpecStatus converted = convertSource(path);
+    if (converted != KIOTTY_SPEC_STATUS_SUCCESS) { return DescriptorResult::failure(converted); }
+    return platform::openFile(_area.source, platform::OpenMode::WRITE);
+}
 
-DescriptorResult openForWriting(Span<const char> path)
-{ return platform::openFile(path, platform::OpenMode::WRITE); }
+KiottySpecStatus FileSystem::removeFile(Span<const char> path) const
+{
+    const bool is_file = isFile(path);
+    if (!is_file) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    return platform::removeFile(_area.source);
+}
+
+KiottySpecStatus FileSystem::renameFile(Span<const char> from, Span<const char> to) const
+{
+    const KiottySpecStatus source = convertSource(from);
+    const KiottySpecStatus target = platform::convertPath(to, _area.target.letters());
+    if (source != KIOTTY_SPEC_STATUS_SUCCESS) { return source; }
+    if (target != KIOTTY_SPEC_STATUS_SUCCESS) { return target; }
+    return platform::renameFile(_area.source, _area.target);
+}
+
+bool FileSystem::isFile(Span<const char> path) const
+{
+    const KiottySpecStatus converted = convertSource(path);
+    return converted == KIOTTY_SPEC_STATUS_SUCCESS && platform::isFile(_area.source);
+}
+
+bool FileSystem::isDirectory(Span<const char> path) const
+{
+    const KiottySpecStatus converted = convertSource(path);
+    return converted == KIOTTY_SPEC_STATUS_SUCCESS && platform::isDirectory(_area.source);
+}
+
+bool FileSystem::makeDirectory(Span<const char> path) const
+{
+    const KiottySpecStatus converted = convertSource(path);
+    return converted == KIOTTY_SPEC_STATUS_SUCCESS && platform::makeDirectory(_area.source);
+}
+
+KiottySpecStatus FileSystem::convertSource(Span<const char> path) const
+{ return platform::convertPath(path, _area.source.letters()); }
 
 int readDescriptor(int descriptor, Span<char> buffer)
 { return platform::readSome(descriptor, buffer.data(), fitChunk(buffer.length())); }
@@ -44,18 +84,6 @@ KiottySpecStatus writeDescriptor(int descriptor, Span<const char> content)
 { return writeAll(descriptor, content); }
 
 void closeDescriptor(int descriptor) { platform::closeFile(descriptor); }
-
-KiottySpecStatus removeFile(Span<const char> path)
-{
-    const bool is_file = platform::isFile(path);
-    if (!is_file) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    return platform::removeFile(path);
-}
-
-bool isFile(Span<const char> path) { return platform::isFile(path); }
-
-KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
-{ return platform::renameFile(from, to); }
 
 namespace {
 

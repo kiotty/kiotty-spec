@@ -22,9 +22,11 @@ KiottySpecStatus DecisionStore::write(entity::ItemKind kind, Span<const char> te
 Result<size_t, KiottySpecStatus> DecisionStore::read(entity::ItemKind kind, uint32_t checkpoint,
                                                      Span<char> buffer) const
 {
-    const auto version = _versions.latest(static_cast<uint32_t>(kind), checkpoint);
-    const Span<const char> text = version ? (*version.value).text.view() : Span<const char>();
-    return copyBody(text, buffer);
+    const DecisionVersionResult version =
+        _versions.latest(static_cast<uint32_t>(kind), checkpoint);
+    if (!version) { return copyBody(Span<const char>(), buffer); }
+    const entity::DecisionVersion& latest = *version.value;
+    return copyBody(latest.text.view(), buffer);
 }
 
 }

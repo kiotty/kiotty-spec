@@ -13,9 +13,10 @@ uint64_t hashLine(Span<const char> line, uint64_t hash);
 
 }
 
-Result<uint64_t, KiottySpecStatus> hashKispFile(Span<const char> path, Span<char> buffer)
+Result<uint64_t, KiottySpecStatus> hashKispFile(const FileSystem& file_system,
+                                                Span<const char> path, Span<char> buffer)
 {
-    KispFileReader reader(buffer, Span<char>());
+    KispFileReader reader(file_system, buffer, Span<char>());
     const KiottySpecStatus opened = reader.open(path);
     if (opened == KIOTTY_SPEC_STATUS_NOT_FOUND) {
         return Result<uint64_t, KiottySpecStatus>::success(EMPTY_KISP_HASH);
@@ -33,7 +34,7 @@ KiottySpecStatus KispFileReader::open(Span<const char> path)
 {
     _line_number = 0;
     _hash = EMPTY_KISP_HASH;
-    const bool is_present = isFile(path);
+    const bool is_present = _file_system.isFile(path);
     _is_present = is_present;
     if (is_present) {
         return _file.open(path) == KIOTTY_SPEC_STATUS_SUCCESS ? KIOTTY_SPEC_STATUS_SUCCESS
@@ -59,7 +60,7 @@ KispFileWriter::~KispFileWriter()
     const bool is_open = _is_open;
     if (is_open) {
         _file.close();
-        removeFile(_temporary.view());
+        _file_system.removeFile(_temporary.view());
     }
 }
 
@@ -87,8 +88,8 @@ KiottySpecStatus KispFileWriter::commit()
 {
     _file.close();
     _is_open = false;
-    const KiottySpecStatus renamed = renameFile(_temporary.view(), _path.view());
-    if (renamed != KIOTTY_SPEC_STATUS_SUCCESS) { removeFile(_temporary.view()); }
+    const KiottySpecStatus renamed = _file_system.renameFile(_temporary.view(), _path.view());
+    if (renamed != KIOTTY_SPEC_STATUS_SUCCESS) { _file_system.removeFile(_temporary.view()); }
     return renamed;
 }
 

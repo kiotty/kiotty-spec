@@ -79,6 +79,9 @@ private:
 
     bool _is_opened {false};
     SystemPath _root {};
+    PathArea _paths {};
+    PathResolver _path_resolver;
+    FileSystem _file_system;
     entity::Failure _failure {};
     TextBuffer _work;
     ModelCatalog _catalog {};

@@ -9,7 +9,7 @@ namespace kiotty::spec::implementation {
 class FileWriter
 {
 public:
-    FileWriter() = default;
+    explicit FileWriter(const FileSystem& file_system) : _file_system(file_system) {}
     ~FileWriter();
 
     FileWriter(const FileWriter&) = delete;
@@ -20,6 +20,7 @@ public:
     void close();
 
 private:
+    const FileSystem& _file_system;
     int _descriptor {CLOSED_DESCRIPTOR};
 };
 

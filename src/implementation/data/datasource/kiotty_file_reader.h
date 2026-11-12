@@ -12,7 +12,9 @@ namespace kiotty::spec::implementation {
 class FileReader
 {
 public:
-    explicit FileReader(Span<char> buffer) : _buffer(buffer) {}
+    FileReader(const FileSystem& file_system, Span<char> buffer)
+        : _file_system(file_system), _buffer(buffer)
+    {}
     ~FileReader();
 
     FileReader(const FileReader&) = delete;
@@ -23,6 +25,7 @@ public:
     Span<const char> line() const { return _line; }
 
 private:
+    const FileSystem& _file_system;
     Span<char> _buffer;
     Span<const char> _line {};
     int _descriptor {CLOSED_DESCRIPTOR};

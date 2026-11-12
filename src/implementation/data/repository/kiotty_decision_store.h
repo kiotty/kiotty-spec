@@ -15,6 +15,8 @@ namespace kiotty::spec::implementation {
 
 constexpr size_t MAX_DECISION_BYTES = entity::MAX_DECISION_VERSION_LENGTH;
 
+using DecisionVersionResult = Result<const entity::DecisionVersion&, KiottySpecStatus>;
+
 class DecisionStore
 {
 public:

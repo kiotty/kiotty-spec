@@ -150,8 +150,8 @@ KiottySpecStatus Differ::countDecisions(DiffRange range, uint32_t kind_mask,
         if (!found) { return found.code; }
         KindCounts& count = *found.value;
         const VersionTable<entity::DecisionVersion>& versions = _workspace.decisions.versions();
-        const auto before = versions.latest(kind, range.from);
-        const auto after = versions.latest(kind, range.to);
+        const DecisionVersionResult before = versions.latest(kind, range.from);
+        const DecisionVersionResult after = versions.latest(kind, range.to);
         const bool has_changed = before.value != after.value;
         const bool is_in_mask = isKindInMask(kind_mask, kind);
         if (is_in_mask && has_changed) { count.has_decision_change = true; }

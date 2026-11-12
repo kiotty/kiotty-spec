@@ -37,7 +37,7 @@ FileReader::~FileReader() { closeOpenDescriptor(_descriptor); }
 KiottySpecStatus FileReader::open(Span<const char> path)
 {
     closeOpenDescriptor(_descriptor);
-    const DescriptorResult opened = openForReading(path);
+    const DescriptorResult opened = _file_system.openForReading(path);
     _descriptor = opened ? opened.value : CLOSED_DESCRIPTOR;
     _start = 0;
     _end = 0;

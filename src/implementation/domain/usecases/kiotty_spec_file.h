@@ -22,7 +22,9 @@ static_assert(sizeof(WorkAreas) == 32, "unexpected padding");
 class SpecFile
 {
 public:
-    SpecFile(const SpecTables& tables, TextBuffer& work) : _tables(tables), _work(work) {}
+    SpecFile(const SpecTables& tables, TextBuffer& work, const FileSystem& file_system)
+        : _tables(tables), _work(work), _file_system(file_system)
+    {}
 
     KiottySpecStatus open(Span<const char> database);
     KiottySpecStatus load();
@@ -39,6 +41,7 @@ private:
 
     SpecTables _tables;
     TextBuffer& _work;
+    const FileSystem& _file_system;
     SystemPath _database {};
     uint64_t _hash {EMPTY_KISP_HASH};
 };

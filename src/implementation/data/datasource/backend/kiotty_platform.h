@@ -16,17 +16,17 @@ enum class OpenMode : uint32_t {
 
 bool isSeparator(char letter);
 size_t rootLength(Span<const char> path);
-SystemPathResult absolutePath(Span<const char> path);
+KiottySpecStatus convertPath(Span<const char> path, Span<NativeLetter> native);
 
-DescriptorResult openFile(Span<const char> path, OpenMode mode);
+DescriptorResult openFile(const NativePath& path, OpenMode mode);
 int readSome(int descriptor, char* buffer, size_t length);
 int writeSome(int descriptor, const char* buffer, size_t length);
 void closeFile(int descriptor);
 
-bool makeDirectory(Span<const char> path);
-bool isDirectory(Span<const char> path);
-bool isFile(Span<const char> path);
-KiottySpecStatus removeFile(Span<const char> path);
-KiottySpecStatus renameFile(Span<const char> from, Span<const char> to);
+bool makeDirectory(const NativePath& path);
+bool isDirectory(const NativePath& path);
+bool isFile(const NativePath& path);
+KiottySpecStatus removeFile(const NativePath& path);
+KiottySpecStatus renameFile(const NativePath& from, const NativePath& to);
 
 }

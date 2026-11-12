@@ -17,7 +17,7 @@ FileWriter::~FileWriter() { close(); }
 KiottySpecStatus FileWriter::open(Span<const char> path)
 {
     close();
-    const DescriptorResult opened = openForWriting(path);
+    const DescriptorResult opened = _file_system.openForWriting(path);
     _descriptor = opened ? opened.value : CLOSED_DESCRIPTOR;
     return checkOpened(_descriptor);
 }

@@ -30,7 +30,7 @@ KiottySpecStatus SpecFile::save()
     const KiottySpecStatus unchanged = checkUnchanged();
     if (unchanged != KIOTTY_SPEC_STATUS_SUCCESS) { return unchanged; }
     const WorkAreas areas = splitWork();
-    KispFileWriter file {};
+    KispFileWriter file(_file_system);
     KiottySpecStatus status = file.open(_database.view());
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _tables.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE,
@@ -50,7 +50,7 @@ KiottySpecStatus SpecFile::save()
 KiottySpecStatus SpecFile::checkUnchanged()
 {
     const WorkAreas areas = splitWork();
-    const HashResult current = hashKispFile(_database.view(), areas.buffer);
+    const HashResult current = hashKispFile(_file_system, _database.view(), areas.buffer);
     if (!current) {
         return _tables.failure.raise(current.code, KIOTTY_SPEC_SUBJECT_FILE, _database.view());
     }
@@ -90,7 +90,7 @@ void SpecFile::clear()
 Result<uint64_t, KiottySpecStatus> SpecFile::readLines()
 {
     const WorkAreas areas = splitWork();
-    KispFileReader reader(areas.buffer, areas.line);
+    KispFileReader reader(_file_system, areas.buffer, areas.line);
     const KiottySpecStatus opened = reader.open(_database.view());
     if (opened != KIOTTY_SPEC_STATUS_SUCCESS && opened != KIOTTY_SPEC_STATUS_NOT_FOUND) {
         return HashResult::failure(
