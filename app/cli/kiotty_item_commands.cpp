@@ -140,8 +140,9 @@ int listItems(const Session& session)
     }
     const ColumnPlan columns = plan.value_or(ColumnPlan {});
     const std::vector<KiottySpecTagQuery>& queries = columns.queries;
+    const size_t count = queries.size();
     const KiottySpecCursorResult cursor =
-        KiottySpec_openItemCursor(&session.context, kind, queries.data(), queries.size());
+        KiottySpec_openItemCursor(&session.context, kind, queries.data(), count);
     return printItemCursor(session, cursor, columns);
 }
 

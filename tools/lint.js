@@ -49,7 +49,7 @@ const pointerExempt = (f) => isCore(f) || isBackend(f) || isAdapter(f) || isPubl
 // docs/deviations.md: the CLI may allocate (1.1) with standard containers (1.6) whose sizes are not fixed (3.4);
 // raw pointers are allowed where the CLI crosses the C ABI (1.10).
 const allocationExempt = (f) => isCli(f);
-const C_ABI_LINE = /\bKiottySpec_?[A-Z]\w*|\b(?:std::)?(?:fwrite|fread|fputs|fflush|fopen|fclose|strtoul|strtoull|strtol)\s*\(|\b(?:_dupenv_s|_wdupenv_s|free|MultiByteToWideChar|WideCharToMultiByte|GetCommandLineW|CommandLineToArgvW|LocalFree|SetConsoleOutputCP|GetStdHandle|GetConsoleMode|SetConsoleMode)\s*\(/;
+const C_ABI_LINE = /\bKiottySpec(?:_\w+|[A-Z]\w*)|\b(?:std::)?(?:fwrite|fread|fputs|fflush|fopen|fclose|strtoul|strtoull|strtol)\s*\(|\b(?:_dupenv_s|_wdupenv_s|free|MultiByteToWideChar|WideCharToMultiByte|GetCommandLineW|CommandLineToArgvW|LocalFree|SetConsoleOutputCP|GetStdHandle|GetConsoleMode|SetConsoleMode)\s*\(/;
 const cAbiBoundary = (f, line) => isCli(f) && C_ABI_LINE.test(line);
 
 // ---------------------------------------------------------------- lexing
