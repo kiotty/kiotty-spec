@@ -147,3 +147,18 @@ add_executable(kiotty_system_test tests/system/system_test.cpp)
 target_link_libraries(kiotty_system_test PRIVATE kiotty_spec)
 kiotty_warnings(kiotty_system_test)
 kiotty_no_exceptions(kiotty_system_test)
+
+# E2E 테스트: 빌드된 라이브러리를 C 프로그램이 include/ 헤더만으로 구동한다 (E2E-001 ~ E2E-019).
+add_executable(kiotty_e2e_test tests/e2e/e2e_test.c)
+target_link_libraries(kiotty_e2e_test PRIVATE kiotty_spec)
+set_target_properties(kiotty_e2e_test PROPERTIES
+    C_STANDARD 11
+    C_STANDARD_REQUIRED ON
+    C_EXTENSIONS OFF
+    LINKER_LANGUAGE CXX)
+if(MSVC)
+    target_compile_options(kiotty_e2e_test PRIVATE /W4 /utf-8)
+    target_compile_definitions(kiotty_e2e_test PRIVATE _CRT_SECURE_NO_WARNINGS)
+else()
+    target_compile_options(kiotty_e2e_test PRIVATE -Wall -Wextra)
+endif()
