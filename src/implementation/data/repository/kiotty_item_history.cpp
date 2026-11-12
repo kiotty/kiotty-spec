@@ -28,6 +28,10 @@ static_assert(sizeof(IdParts) == 24, "unexpected padding");
 IdParts splitId(Span<const char> id);
 size_t collectKeys(Span<uint32_t> order, Span<const ItemVersion> versions);
 void sortByKindId(Span<uint32_t> keys, const ItemTables& tables);
+uint32_t kindOf(const ItemTables& tables, uint32_t key);
+bool hasVersion(const ItemTables& tables, uint32_t key);
+bool isTagBeforeKey(const TagVersion& tag, uint32_t key);
+bool isKeyBeforeTag(uint32_t key, const TagVersion& tag);
 
 }
 
@@ -49,8 +53,8 @@ Result<IdText, KiottySpecStatus> ItemHistory::idOf(uint32_t key) const
 
 uint32_t ItemHistory::lastWriteAt(uint32_t key, uint32_t checkpoint) const
 {
-    const ItemVersion* version = _tables.versions.latest(key, checkpoint);
-    uint32_t last = version == nullptr ? 0 : version->checkpoint;
+    const auto version = _tables.versions.latest(key, checkpoint);
+    uint32_t last = version ? (*version.value).checkpoint : 0;
     for (const TagVersion& tag : tagsOf(key)) {
         if (tag.checkpoint <= checkpoint && tag.checkpoint > last) { last = tag.checkpoint; }
     }
@@ -70,21 +74,20 @@ bool ItemHistory::tagsDiffer(uint32_t key, uint32_t from, uint32_t to) const
 Span<const TagVersion> ItemHistory::tagsOf(uint32_t key) const
 {
     const Span<const TagVersion> all = _tables.tag_versions.all();
-    const TagVersion* first =
-        std::lower_bound(all.begin(), all.end(), key,
-                         [](const TagVersion& tag, uint32_t value) { return tag.key < value; });
-    const TagVersion* last =
-        std::upper_bound(first, all.end(), key,
-                         [](uint32_t value, const TagVersion& tag) { return value < tag.key; });
-    return Span<const TagVersion>(first, static_cast<size_t>(last - first));
+    const size_t first = static_cast<size_t>(
+        std::lower_bound(all.begin(), all.end(), key, isTagBeforeKey) - all.begin());
+    const size_t last = static_cast<size_t>(
+        std::upper_bound(all.begin() + first, all.end(), key, isKeyBeforeTag) - all.begin());
+    const Result<Span<const TagVersion>, KiottySpecStatus> tags = all.subspan(first, last - first);
+    return tags.value;
 }
 
 uint64_t ItemHistory::tagAt(uint32_t key, uint32_t tag, uint32_t checkpoint) const
 {
-    const TagVersion* version =
-        _tables.tag_versions.latest(entity::TagIdentity{key, tag}, checkpoint);
-    if (version == nullptr || version->removed != 0) { return 0; }
-    return version->value;
+    const auto version = _tables.tag_versions.latest(entity::TagIdentity{key, tag}, checkpoint);
+    const bool is_live = version && (*version.value).removed == 0;
+    if (!is_live) { return 0; }
+    return (*version.value).value;
 }
 
 Result<IdText, KiottySpecStatus> ItemHistory::nextId(Span<const char> prefix) const
@@ -122,13 +125,12 @@ void ItemHistory::prune(uint32_t base)
 {
     _tables.versions.prune(base);
     const ItemTables& tables = _tables;
-    _tables.tag_versions.retain([&tables](const TagVersion& tag) {
-        return tables.versions.latest(tag.key, UINT32_MAX) != nullptr;
-    });
+    _tables.tag_versions.retain(
+        [&tables](const TagVersion& tag) { return hasVersion(tables, tag.key); });
     _tables.tag_versions.prune(base);
     for (size_t index = _tables.names.length(); index > 0; --index) {
         const uint32_t key = _tables.names.keyAt(index - 1);
-        const bool has_version = _tables.versions.latest(key, UINT32_MAX) != nullptr;
+        const bool has_version = hasVersion(_tables, key);
         if (has_version) { continue; }
         _tables.bodies.erase(key);
         _tables.names.erase(key);
@@ -147,10 +149,11 @@ IdParts splitId(Span<const char> id)
         if (is_dash) { dash = index - 1; }
     }
     IdParts parts {};
-    parts.prefix = Span<const char>(id.data(), dash);
+    const auto prefix = id.subspan(0, dash);
+    parts.prefix = prefix.value;
     if (dash == length) { return parts; }
-    const Result<uint64_t, KiottySpecStatus> number =
-        parseDecimal(Span<const char>(id.data() + dash + 1, length - dash - 1), MAX_ID_NUMBER);
+    const auto digits = id.subspan(dash + 1, length - dash - 1);
+    const Result<uint64_t, KiottySpecStatus> number = parseDecimal(digits.value, MAX_ID_NUMBER);
     parts.number = number ? static_cast<uint32_t>(number.value) : 0;
     return parts;
 }
@@ -174,14 +177,28 @@ size_t collectKeys(Span<uint32_t> order, Span<const ItemVersion> versions)
 void sortByKindId(Span<uint32_t> keys, const ItemTables& tables)
 {
     std::sort(keys.begin(), keys.end(), [&tables](uint32_t left, uint32_t right) {
-        const uint32_t left_kind =
-            static_cast<uint32_t>(tables.versions.latest(left, UINT32_MAX)->kind);
-        const uint32_t right_kind =
-            static_cast<uint32_t>(tables.versions.latest(right, UINT32_MAX)->kind);
+        const uint32_t left_kind = kindOf(tables, left);
+        const uint32_t right_kind = kindOf(tables, right);
         if (left_kind != right_kind) { return left_kind < right_kind; }
         return tables.names.find(left).value < tables.names.find(right).value;
     });
 }
+
+uint32_t kindOf(const ItemTables& tables, uint32_t key)
+{
+    const auto version = tables.versions.latest(key, UINT32_MAX);
+    return version ? static_cast<uint32_t>((*version.value).kind) : 0;
+}
+
+bool hasVersion(const ItemTables& tables, uint32_t key)
+{
+    const auto version = tables.versions.latest(key, UINT32_MAX);
+    return static_cast<bool>(version);
+}
+
+bool isTagBeforeKey(const TagVersion& tag, uint32_t key) { return tag.key < key; }
+
+bool isKeyBeforeTag(uint32_t key, const TagVersion& tag) { return key < tag.key; }
 
 }
 

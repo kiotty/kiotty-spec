@@ -18,7 +18,7 @@ public:
 
     Result<entity::ItemHandle, KiottySpecStatus> find(Span<const char> id) const;
     Result<entity::ItemHandle, KiottySpecStatus> findKey(uint32_t key) const;
-    Result<const entity::ItemRecord*, KiottySpecStatus> get(entity::ItemHandle handle) const;
+    Result<const entity::ItemRecord&, KiottySpecStatus> get(entity::ItemHandle handle) const;
     entity::ItemHandle handleInIdOrder(size_t position) const
     { return _tables.items.handleAt(_tables.id_index.valueAt(position)); }
     entity::ItemHandle handleAt(size_t index) const { return _tables.items.handleAt(index); }
@@ -26,8 +26,7 @@ public:
     uint32_t key(entity::ItemHandle handle) const;
     size_t count() const { return _tables.id_index.length(); }
 
-    Result<size_t, KiottySpecStatus> readBody(entity::ItemHandle handle, char* buffer,
-                                              size_t capacity) const;
+    Result<size_t, KiottySpecStatus> readBody(entity::ItemHandle handle, Span<char> buffer) const;
 
 private:
     ItemTables& _tables;

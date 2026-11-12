@@ -57,7 +57,7 @@ bool Finder::isSelected(ItemHandle handle, uint32_t kind, Span<const TagQuery> q
 {
     const auto item = _workspace.items.reader().get(handle);
     if (!item) { return false; }
-    const ItemKind item_kind = item.value->kind;
+    const ItemKind item_kind = (*item.value).kind;
     const bool is_other_kind = kind != 0 && static_cast<uint32_t>(item_kind) != kind;
     if (is_other_kind) { return false; }
     for (const TagQuery& query : queries) {
@@ -79,7 +79,7 @@ CursorIdResult Finder::children(ItemHandle parent)
         const ItemHandle handle = _workspace.items.reader().handleInIdOrder(position);
         const auto item = _workspace.items.reader().get(handle);
         if (!item) { continue; }
-        const ItemHandle item_parent = item.value->parent;
+        const ItemHandle item_parent = (*item.value).parent;
         const bool has_parent = item_parent.isValid();
         const bool is_child = has_parent && item_parent.index == parent.index;
         if (!is_child) { continue; }

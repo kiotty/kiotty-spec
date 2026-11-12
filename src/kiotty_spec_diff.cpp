@@ -191,7 +191,8 @@ KiottySpecSizeResult KiottySpec_readItemBodyAt(KiottySpecContext* context, Kiott
     impl::Differ& differ = context->context.differ();
     const auto point = differ.point(checkpoint);
     if (!point) { return sizeResult(point.code, 0); }
-    const auto read = differ.past().bodyAt(parsed.value, point.value, buffer.data, buffer.capacity);
+    const impl::Span<char> target = toSpan(buffer);
+    const auto read = differ.past().readBodyAt(parsed.value, point.value, target);
     return sizeResult(read.code, read.value);
 }
 
@@ -211,8 +212,9 @@ KiottySpecSizeResult KiottySpec_readDecisionAt(KiottySpecContext* context, Kiott
     impl::Differ& differ = context->context.differ();
     const auto point = differ.point(checkpoint);
     if (!point) { return sizeResult(point.code, 0); }
-    const auto read = differ.past().decisionAt(static_cast<entity::ItemKind>(kind), point.value,
-                                               buffer.data, buffer.capacity);
+    const impl::Span<char> target = toSpan(buffer);
+    const auto read =
+        differ.past().readDecisionAt(static_cast<entity::ItemKind>(kind), point.value, target);
     return sizeResult(read.code, read.value);
 }
 

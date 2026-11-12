@@ -28,7 +28,7 @@ using TextResult = impl::Result<impl::Span<const char>, KiottySpecStatus>;
 using ConfigurationResult = impl::Result<impl::Configuration, KiottySpecStatus>;
 
 using HandleResult = impl::Result<entity::ItemHandle, KiottySpecStatus>;
-using RecordResult = impl::Result<const entity::ItemRecord*, KiottySpecStatus>;
+using RecordResult = impl::Result<const entity::ItemRecord&, KiottySpecStatus>;
 
 enum class Field : uint8_t { ID, TITLE, SUMMARY, BODY, DECISION, DESCRIPTION, PATH, PROJECT_NAME };
 
@@ -62,5 +62,7 @@ KiottySpecCursorResult cursorFailure(KiottySpecStatus code);
 KiottySpecNameResult nameResult(std::string_view name);
 bool isKind(uint32_t kind);
 void copyTerminated(impl::Span<char> target, impl::Span<const char> source);
+impl::Span<char> toSpan(KiottySpecBuffer buffer);
+impl::OptionalText toOptionalText(impl::Span<const char> text);
 
 }

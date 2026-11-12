@@ -148,6 +148,20 @@ KiottySpecNameResult nameResult(std::string_view name)
 
 bool isKind(uint32_t kind) { return entity::isValidKind(kind); }
 
+impl::Span<char> toSpan(KiottySpecBuffer buffer)
+{
+    const bool has_data = buffer.data != nullptr;
+    if (!has_data) { return impl::Span<char>(); }
+    return impl::Span<char>(buffer.data, buffer.capacity);
+}
+
+impl::OptionalText toOptionalText(impl::Span<const char> text)
+{
+    const bool has_data = text.data() != nullptr;
+    if (!has_data) { return std::nullopt; }
+    return text;
+}
+
 void copyTerminated(impl::Span<char> target, impl::Span<const char> source)
 {
     const size_t source_length = source.length();

@@ -97,8 +97,9 @@ LineWindow readMore(int descriptor, Span<char> buffer, const LineWindow& window)
     const bool is_full = moved.end == capacity;
     if (is_full) { moved.status = KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
     if (moved.status != KIOTTY_SPEC_STATUS_SUCCESS) { return moved; }
-    const int count =
-        readDescriptor(descriptor, Span<char>(buffer.data() + moved.end, capacity - moved.end));
+    const Result<Span<char>, KiottySpecStatus> free_space =
+        buffer.subspan(moved.end, capacity - moved.end);
+    const int count = readDescriptor(descriptor, free_space.value);
     if (count < 0) {
         moved.status = KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
         return moved;
@@ -135,7 +136,9 @@ LineWindow cutLine(Span<const char> buffer, const LineWindow& window)
     const bool has_carriage_return = last > window.start && isCarriageReturnAt(buffer, last - 1);
     if (has_carriage_return) { --last; }
     LineWindow cut = window;
-    cut.line = Span<const char>(buffer.data() + window.start, last - window.start);
+    const Result<Span<const char>, KiottySpecStatus> line =
+        buffer.subspan(window.start, last - window.start);
+    cut.line = line.value;
     cut.start = window.scan < window.end ? window.scan + 1 : window.end;
     cut.has_line = true;
     return cut;

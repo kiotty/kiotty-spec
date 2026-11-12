@@ -33,10 +33,11 @@ KiottySpecStatus CursorPool::push(CursorId cursor, const CursorRow &row)
     const Handle handle = decode(cursor);
     const auto slot = _slots.get(handle);
     if (!slot) { return slot.code; }
-    const Result<CursorRow&, KiottySpecStatus> target = rowsOf(handle).at(slot.value->length);
+    CursorSlot& state = *slot.value;
+    const Result<CursorRow&, KiottySpecStatus> target = rowsOf(handle).at(state.length);
     if (!target) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
     *target.value = row;
-    ++slot.value->length;
+    ++state.length;
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
@@ -45,21 +46,24 @@ CursorRowsResult CursorPool::fetch(CursorId cursor, CursorKind kind, size_t max_
     const Handle handle = decode(cursor);
     const auto slot = _slots.get(handle);
     if (!slot) { return CursorRowsResult::failure(slot.code); }
-    if (slot.value->kind != kind) {
+    CursorSlot& state = *slot.value;
+    if (state.kind != kind) {
         return CursorRowsResult::failure(KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE);
     }
-    const size_t left = slot.value->length - slot.value->position;
+    const size_t left = state.length - state.position;
     const size_t count = left < max_count ? left : max_count;
-    const Span<const CursorRow> page(rowsOf(handle).data() + slot.value->position, count);
-    slot.value->position += count;
-    return CursorRowsResult::success(page);
+    const Result<Span<CursorRow>, KiottySpecStatus> page =
+        rowsOf(handle).subspan(state.position, count);
+    if (!page) { return CursorRowsResult::failure(page.code); }
+    state.position += count;
+    return CursorRowsResult::success(page.value);
 }
 
 Result<size_t, KiottySpecStatus> CursorPool::total(CursorId cursor)
 {
     const auto slot = _slots.get(decode(cursor));
     if (!slot) { return Result<size_t, KiottySpecStatus>::failure(slot.code); }
-    return Result<size_t, KiottySpecStatus>::success(slot.value->length);
+    return Result<size_t, KiottySpecStatus>::success((*slot.value).length);
 }
 
 KiottySpecStatus CursorPool::close(CursorId cursor) { return _slots.release(decode(cursor)); }
@@ -69,10 +73,11 @@ Result<CursorSpace, KiottySpecStatus> CursorPool::space(CursorId cursor, CursorK
     const Handle handle = decode(cursor);
     const auto slot = _slots.get(handle);
     if (!slot) { return Result<CursorSpace, KiottySpecStatus>::failure(slot.code); }
-    if (slot.value->kind != kind) {
+    const bool is_other_kind = (*slot.value).kind != kind;
+    if (is_other_kind) {
         return Result<CursorSpace, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE);
     }
-    const CursorSpace cursor_space {rowsOf(handle), slot.value, handle.index};
+    const CursorSpace cursor_space {rowsOf(handle), handle.index};
     return Result<CursorSpace, KiottySpecStatus>::success(cursor_space);
 }
 

@@ -7,6 +7,7 @@ namespace kiotty::spec::implementation {
 namespace {
 
 using entity::ItemVersion;
+using VersionResult = Result<const ItemVersion&, KiottySpecStatus>;
 
 }
 
@@ -38,45 +39,47 @@ Result<uint64_t, KiottySpecStatus> PastReader::tagAt(Span<const char> id, uint32
 {
     const auto version = versionAt(id, checkpoint);
     if (!version) { return Result<uint64_t, KiottySpecStatus>::failure(version.code); }
+    const uint32_t key = (*version.value).key;
     return Result<uint64_t, KiottySpecStatus>::success(
-        _workspace.items.history().tagAt(version.value->key, tag, checkpoint));
+        _workspace.items.history().tagAt(key, tag, checkpoint));
 }
 
-Result<size_t, KiottySpecStatus> PastReader::bodyAt(Span<const char> id, uint32_t checkpoint,
-                                                    char* buffer, size_t capacity)
+Result<size_t, KiottySpecStatus> PastReader::readBodyAt(Span<const char> id, uint32_t checkpoint,
+                                                        Span<char> buffer)
 {
     using SizeResult = Result<size_t, KiottySpecStatus>;
     const auto version = versionAt(id, checkpoint);
     if (!version) { return SizeResult::failure(version.code); }
-    const ItemVersion* current =
-        _workspace.items.tables().versions.latest(version.value->key, UINT32_MAX);
-    const bool is_same_body = current != nullptr && current->removed == 0 &&
-                              current->body_hash == version.value->body_hash;
+    const ItemVersion& past = *version.value;
+    const VersionResult current = _workspace.items.tables().versions.latest(past.key, UINT32_MAX);
+    const bool is_same_body = current && (*current.value).removed == 0 &&
+                              (*current.value).body_hash == past.body_hash;
     if (!is_same_body) {
         return SizeResult::failure(_workspace.failure.raise(
             KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_PAST_BODY, id));
     }
-    return copyBody(_workspace.items.tables().bodies.find(version.value->key), buffer, capacity);
+    return copyBody(_workspace.items.tables().bodies.find(past.key), buffer);
 }
 
-Result<size_t, KiottySpecStatus> PastReader::decisionAt(entity::ItemKind kind, uint32_t checkpoint,
-                                                        char* buffer, size_t capacity)
+Result<size_t, KiottySpecStatus> PastReader::readDecisionAt(entity::ItemKind kind,
+                                                            uint32_t checkpoint, Span<char> buffer)
 {
-    return _workspace.decisions.read(kind, checkpoint, buffer, capacity);
+    return _workspace.decisions.read(kind, checkpoint, buffer);
 }
 
-Result<const ItemVersion*, KiottySpecStatus> PastReader::versionAt(Span<const char> id,
+Result<const ItemVersion&, KiottySpecStatus> PastReader::versionAt(Span<const char> id,
                                                                    uint32_t checkpoint)
 {
-    using VersionResult = Result<const ItemVersion*, KiottySpecStatus>;
     const auto key = _workspace.items.history().keyOf(id);
-    const ItemVersion* version =
-        key ? _workspace.items.tables().versions.latest(key.value, checkpoint) : nullptr;
-    if (version == nullptr || version->removed != 0) {
+    const ItemTables& tables = _workspace.items.tables();
+    const VersionResult version = key ? tables.versions.latest(key.value, checkpoint)
+                                      : VersionResult::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
+    const bool is_live = version && (*version.value).removed == 0;
+    if (!is_live) {
         return VersionResult::failure(
             _workspace.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_ITEM, id));
     }
-    return VersionResult::success(version);
+    return version;
 }
 
 }

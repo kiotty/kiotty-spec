@@ -52,8 +52,8 @@ RelationEditor::relationOf(Span<const char> from_id, uint32_t relation, Span<con
     if (!from) { return RelationResult::failure(from.code); }
     const auto to = _workspace.resolve(to_id);
     if (!to) { return RelationResult::failure(to.code); }
-    const ItemKind from_kind = _workspace.items.reader().get(from.value).value->kind;
-    const ItemKind to_kind = _workspace.items.reader().get(to.value).value->kind;
+    const ItemKind from_kind = (*_workspace.items.reader().get(from.value).value).kind;
+    const ItemKind to_kind = (*_workspace.items.reader().get(to.value).value).kind;
     const KiottySpecStatus allowed = _workspace.catalog.checkRelation(from_kind, relation, to_kind);
     if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) {
         return RelationResult::failure(

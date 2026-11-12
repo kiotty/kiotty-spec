@@ -159,8 +159,10 @@ KiottySpecStatus SpecFile::finishLoad()
 WorkAreas SpecFile::splitWork()
 {
     const Span<char> all = _work.scratch();
-    return WorkAreas { Span<char>(all.data(), READ_BUFFER_BYTES),
-                       Span<char>(all.data() + READ_BUFFER_BYTES, LINE_BYTES) };
+    const Result<Span<char>, KiottySpecStatus> read_area = all.subspan(0, READ_BUFFER_BYTES);
+    const Result<Span<char>, KiottySpecStatus> line_area =
+        all.subspan(READ_BUFFER_BYTES, LINE_BYTES);
+    return WorkAreas {read_area.value, line_area.value};
 }
 
 namespace {

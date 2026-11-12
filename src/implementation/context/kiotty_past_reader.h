@@ -27,13 +27,13 @@ public:
     Result<ItemVersionView, KiottySpecStatus> itemAt(Span<const char> id, uint32_t checkpoint);
     Result<uint64_t, KiottySpecStatus> tagAt(Span<const char> id, uint32_t tag,
                                              uint32_t checkpoint);
-    Result<size_t, KiottySpecStatus> bodyAt(Span<const char> id, uint32_t checkpoint, char* buffer,
-                                            size_t capacity);
-    Result<size_t, KiottySpecStatus> decisionAt(entity::ItemKind kind, uint32_t checkpoint,
-                                                char* buffer, size_t capacity);
+    Result<size_t, KiottySpecStatus> readBodyAt(Span<const char> id, uint32_t checkpoint,
+                                                Span<char> buffer);
+    Result<size_t, KiottySpecStatus> readDecisionAt(entity::ItemKind kind, uint32_t checkpoint,
+                                                    Span<char> buffer);
 
 private:
-    Result<const entity::ItemVersion*, KiottySpecStatus> versionAt(Span<const char> id,
+    Result<const entity::ItemVersion&, KiottySpecStatus> versionAt(Span<const char> id,
                                                                    uint32_t checkpoint);
 
     Workspace& _workspace;

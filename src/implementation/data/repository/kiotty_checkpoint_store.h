@@ -24,8 +24,7 @@ public:
     KiottySpecStatus put(uint32_t sequence, const entity::CheckpointRecord& record);
 
     uint32_t latest() const { return _latest; }
-    Result<const entity::CheckpointRecord*, KiottySpecStatus> get(uint32_t sequence) const;
-    const entity::CheckpointRecord* at(uint32_t sequence) const;
+    Result<const entity::CheckpointRecord&, KiottySpecStatus> get(uint32_t sequence) const;
 
     CheckpointWriter writer() { return CheckpointWriter(_failure, _records, _exists, _latest); }
 

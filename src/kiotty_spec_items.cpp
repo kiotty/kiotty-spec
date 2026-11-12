@@ -102,8 +102,9 @@ KiottySpecStatusResult KiottySpec_updateItem(KiottySpecContext* context, KiottyS
     if (!parsed_title) { return status(parsed_title.code); }
     const TextResult parsed_summary = boundary.parse(summary, Field::SUMMARY);
     if (!parsed_summary) { return status(parsed_summary.code); }
-    return status(context->context.editor().updateItem(parsed_id.value, parsed_title.value,
-                                                       parsed_summary.value));
+    return status(context->context.editor().updateItem(parsed_id.value,
+                                                       toOptionalText(parsed_title.value),
+                                                       toOptionalText(parsed_summary.value)));
 }
 
 KiottySpecStatusResult KiottySpec_setItemParent(KiottySpecContext* context, KiottySpecText id,
@@ -144,8 +145,8 @@ KiottySpecSizeResult KiottySpec_readItemBody(KiottySpecContext* context, KiottyS
     if (context == nullptr) { return sizeResult(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, 0); }
     const HandleResult handle = Boundary(context->context).resolve(id);
     if (!handle) { return sizeResult(handle.code, 0); }
-    const auto read = context->context.workspace().items.reader().readBody(
-        handle.value, buffer.data, buffer.capacity);
+    const impl::Span<char> target = toSpan(buffer);
+    const auto read = context->context.workspace().items.reader().readBody(handle.value, target);
     return sizeResult(read.code, read.value);
 }
 

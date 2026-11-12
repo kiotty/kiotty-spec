@@ -27,7 +27,7 @@ public:
     ItemHistory history() { return ItemHistory(_tables); }
     ItemReader reader() { return ItemReader(_tables); }
     ItemTags tags() const
-    { return ItemTags(Span<const entity::TagRecord>(_tables.tags.data(), _tables.tag_count)); }
+    { return ItemTags(viewVector(_tables.tags).subspan(0, _tables.tag_count).value); }
     ItemWriter writer() { return ItemWriter(_tables, _failure); }
 
 private:

@@ -20,10 +20,11 @@ CursorIdResult HistoryFinder::checkpoints(uint32_t step)
     if (!cursor) { return CursorIdResult::failure(writer.raiseCursorFull(cursor.code)); }
     const uint32_t latest = _workspace.checkpoints.latest();
     for (uint32_t sequence = 1; sequence <= latest; ++sequence) {
-        const CheckpointRecord* record = _workspace.checkpoints.at(sequence);
-        if (record == nullptr || (step != 0 && static_cast<uint32_t>(record->step) != step)) {
-            continue;
-        }
+        const auto record = _workspace.checkpoints.get(sequence);
+        if (!record) { continue; }
+        const uint32_t record_step = static_cast<uint32_t>((*record.value).step);
+        const bool is_other_step = step != 0 && record_step != step;
+        if (is_other_step) { continue; }
         CursorRow row {};
         row.number = sequence;
         const KiottySpecStatus pushed = writer.pushRow(cursor.value, row);
@@ -41,9 +42,10 @@ CursorIdResult HistoryFinder::stepRuns()
     uint32_t step = 0;
     const uint32_t latest = _workspace.checkpoints.latest();
     for (uint32_t sequence = 1; sequence <= latest; ++sequence) {
-        const CheckpointRecord* record = _workspace.checkpoints.at(sequence);
-        if (record == nullptr) { continue; }
-        const uint32_t next = static_cast<uint32_t>(record->step);
+        const auto found = _workspace.checkpoints.get(sequence);
+        if (!found) { continue; }
+        const CheckpointRecord& record = *found.value;
+        const uint32_t next = static_cast<uint32_t>(record.step);
         const bool is_new_run = next != step;
         const KiottySpecStatus pushed =
             is_new_run ? pushStepRun(cursor.value, step, run) : KIOTTY_SPEC_STATUS_SUCCESS;
@@ -54,7 +56,7 @@ CursorIdResult HistoryFinder::stepRuns()
             step = next;
         }
         run.second = sequence;
-        run.third = step | (static_cast<uint64_t>(record->state) << SHIFT);
+        run.third = step | (static_cast<uint64_t>(record.state) << SHIFT);
         ++run.number;
     }
     const KiottySpecStatus pushed = pushStepRun(cursor.value, step, run);
@@ -64,15 +66,16 @@ CursorIdResult HistoryFinder::stepRuns()
 
 CursorIdResult HistoryFinder::unmetConditions()
 {
-    const CheckpointRecord* record = _workspace.checkpoints.at(_workspace.checkpoints.latest());
-    if (record == nullptr) {
+    const auto record = _workspace.checkpoints.get(_workspace.checkpoints.latest());
+    if (!record) {
         return CursorIdResult::failure(
             _workspace.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
     const auto cursor = _cursors.open(CursorKind::UNMET_CONDITION);
     CursorWriter writer = makeCursorWriter();
     if (!cursor) { return CursorIdResult::failure(writer.raiseCursorFull(cursor.code)); }
-    for (const UnmetCondition& unmet : _checker.collect(record->step)) {
+    const entity::Step step = (*record.value).step;
+    for (const UnmetCondition& unmet : _checker.collect(step)) {
         CursorRow row {};
         row.first = packIdWord(unmet.id, 0);
         row.second = packIdWord(unmet.id, PACKED_ID_WORD_BYTES);
@@ -88,20 +91,20 @@ Result<Position, KiottySpecStatus> HistoryFinder::position()
     Position position {};
     position.open_change_requests = _checker.openChangeRequestCount();
     const uint32_t latest = _workspace.checkpoints.latest();
-    const CheckpointRecord* record = _workspace.checkpoints.at(latest);
-    if (record == nullptr) {
+    const auto found = _workspace.checkpoints.get(latest);
+    if (!found) {
         position.next_step = static_cast<uint32_t>(entity::Step::CHANGE_REQUEST_REPORTED);
         return Result<Position, KiottySpecStatus>::success(position);
     }
+    const CheckpointRecord& record = *found.value;
     position.current = latest;
-    position.step = static_cast<uint32_t>(record->step);
-    position.state = static_cast<uint32_t>(record->state);
-    if (record->state == CheckpointState::RUNNING) {
-        position.pending_writes = countWrites(latest);
-    }
-    if (record->state != CheckpointState::DONE) {
+    position.step = static_cast<uint32_t>(record.step);
+    position.state = static_cast<uint32_t>(record.state);
+    const bool is_running = record.state == CheckpointState::RUNNING;
+    position.pending_writes = is_running ? countWrites(latest) : 0;
+    if (record.state != CheckpointState::DONE) {
         position.next_step = position.step;
-    } else if (record->step == entity::Step::CHANGE_REQUEST_REPORTED) {
+    } else if (record.step == entity::Step::CHANGE_REQUEST_REPORTED) {
         const uint32_t entry = _checker.earliestEntryStep();
         position.next_step =
             entry != 0 ? entry : static_cast<uint32_t>(entity::Step::REQUIREMENT_DISCUSSING);

@@ -40,16 +40,17 @@ SequenceResult Lifecycle::beginWrite()
     const KiottySpecStatus fresh = _workspace.refresh();
     if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(fresh); }
     const uint32_t latest = _workspace.checkpoints.latest();
-    const CheckpointRecord* record = _workspace.checkpoints.at(latest);
-    if (record == nullptr) {
+    const auto found = _workspace.checkpoints.get(latest);
+    if (!found) {
         return SequenceResult::failure(_workspace.failure.raise(
             KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
-    if (record->state == CheckpointState::DONE) {
+    const CheckpointRecord& record = *found.value;
+    if (record.state == CheckpointState::DONE) {
         return SequenceResult::failure(
             _workspace.failure.raise(KIOTTY_SPEC_STATUS_CONFIRMED, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
-    if (record->state == CheckpointState::STARTED) {
+    if (record.state == CheckpointState::STARTED) {
         const KiottySpecStatus running =
             _workspace.checkpoints.writer().setState(latest, CheckpointState::RUNNING);
         if (running != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(running); }
@@ -64,13 +65,14 @@ KiottySpecStatus Lifecycle::complete(KiottySpecActor actor)
     const KiottySpecStatus fresh = _workspace.refresh();
     if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return fresh; }
     const uint32_t latest = _workspace.checkpoints.latest();
-    const CheckpointRecord* record = _workspace.checkpoints.at(latest);
-    if (record == nullptr) {
+    const auto found = _workspace.checkpoints.get(latest);
+    if (!found) {
         return _workspace.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND,
                                         KIOTTY_SPEC_SUBJECT_CHECKPOINT);
     }
-    if (record->state == CheckpointState::DONE) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    const Span<const UnmetCondition> unmet = _checker.collect(record->step);
+    const CheckpointRecord& record = *found.value;
+    if (record.state == CheckpointState::DONE) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    const Span<const UnmetCondition> unmet = _checker.collect(record.step);
     const size_t unmet_count = unmet.length();
     if (unmet_count > 0) {
         return _workspace.failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION,
@@ -87,12 +89,13 @@ Result<size_t, KiottySpecStatus> Lifecycle::prune(KiottySpecActor actor, uint32_
     if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(allowed); }
     const KiottySpecStatus fresh = _workspace.refresh();
     if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(fresh); }
-    const CheckpointRecord* record = _workspace.checkpoints.at(base);
-    if (record == nullptr) {
+    const auto record = _workspace.checkpoints.get(base);
+    if (!record) {
         return CountResult::failure(
             _workspace.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
-    if (record->state != CheckpointState::DONE) {
+    const bool is_done = (*record.value).state == CheckpointState::DONE;
+    if (!is_done) {
         return CountResult::failure(_workspace.failure.raise(
             KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }

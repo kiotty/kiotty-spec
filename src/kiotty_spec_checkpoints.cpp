@@ -124,14 +124,14 @@ KiottySpecStatusResult KiottySpec_fetchCheckpointPage(KiottySpecContext* context
     const impl::Span<KiottySpecCheckpointHandle> handles(page->handles, KIOTTY_SPEC_PAGE_CAPACITY);
     const impl::Span<KiottySpecCheckpoint> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
-        const entity::CheckpointRecord* record = checkpoints.at(static_cast<uint32_t>(row.number));
-        if (record == nullptr) { continue; }
+        const auto record = checkpoints.get(static_cast<uint32_t>(row.number));
+        if (!record) { continue; }
         const auto handle = handles.at(page->length);
         const auto element = elements.at(page->length);
         const bool has_slot = handle && element;
         if (!has_slot) { return status(KIOTTY_SPEC_STATUS_OUT_OF_RANGE); }
         *handle.value = static_cast<KiottySpecCheckpointHandle>(row.number);
-        *element.value = toCheckpointRecord(*record);
+        *element.value = toCheckpointRecord(*record.value);
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);
@@ -166,8 +166,9 @@ KiottySpecSizeResult KiottySpec_readDecision(KiottySpecContext* context, KiottyS
                                                            KIOTTY_SPEC_SUBJECT_KIND),
                           0);
     }
+    const impl::Span<char> target = toSpan(buffer);
     const auto read = context->context.workspace().decisions.read(
-        static_cast<entity::ItemKind>(kind), UINT32_MAX, buffer.data, buffer.capacity);
+        static_cast<entity::ItemKind>(kind), UINT32_MAX, target);
     return sizeResult(read.code, read.value);
 }
 

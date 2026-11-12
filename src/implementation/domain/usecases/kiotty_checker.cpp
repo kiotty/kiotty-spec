@@ -60,7 +60,7 @@ Span<const UnmetCondition> Checker::collect(entity::Step step)
     case entity::Step::IMPLEMENTING:
     case entity::Step::SYSTEM_TEST_RUN: break;
     }
-    return Span<const UnmetCondition>(_rows.data(), _length);
+    return viewVector(_rows).subspan(0, _length).value;
 }
 
 size_t Checker::openChangeRequestCount()
@@ -70,7 +70,7 @@ size_t Checker::openChangeRequestCount()
     for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _workspace.items.reader().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
-        const bool is_change_request = item && item.value->kind == ItemKind::CHANGE_REQUEST;
+        const bool is_change_request = item && (*item.value).kind == ItemKind::CHANGE_REQUEST;
         if (!is_change_request) { continue; }
         const bool is_open = isOpenChangeRequest(handle);
         if (is_open) { ++count; }
@@ -88,7 +88,7 @@ uint32_t Checker::earliestEntryStep()
     for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _workspace.items.reader().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
-        const bool is_change_request = item && item.value->kind == ItemKind::CHANGE_REQUEST;
+        const bool is_change_request = item && (*item.value).kind == ItemKind::CHANGE_REQUEST;
         if (!is_change_request) { continue; }
         const bool is_open = isOpenChangeRequest(handle);
         if (!is_open) { continue; }
@@ -107,13 +107,13 @@ void Checker::checkEntrySteps()
     for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _workspace.items.reader().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
-        const bool is_change_request = item && item.value->kind == ItemKind::CHANGE_REQUEST;
+        const bool is_change_request = item && (*item.value).kind == ItemKind::CHANGE_REQUEST;
         if (!is_change_request) { continue; }
         const bool is_open = isOpenChangeRequest(handle);
         if (!is_open) { continue; }
         const uint64_t entry_step = entry ? _workspace.items.tags().value(handle, entry.value) : 0;
         if (entry_step != 0) { continue; }
-        add(KIOTTY_SPEC_CONDITION_ENTRY_STEP, item.value->id);
+        add(KIOTTY_SPEC_CONDITION_ENTRY_STEP, (*item.value).id);
     }
 }
 
@@ -127,15 +127,17 @@ void Checker::checkAcceptanceCriteria()
     for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _workspace.items.reader().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
-        const bool is_requirement = item && item.value->kind == ItemKind::REQUIREMENT;
+        const bool is_requirement = item && (*item.value).kind == ItemKind::REQUIREMENT;
         if (!is_requirement) { continue; }
         const uint64_t kind_value = _workspace.items.tags().value(handle, functional.tag_index);
         if ((kind_value & functional.bit) == 0) { continue; }
+        const Span<char> body = viewVector(buffer);
         const Result<size_t, KiottySpecStatus> length =
-            _workspace.items.reader().readBody(handle, buffer.data(), buffer.size());
-        const size_t criteria_count =
-            length ? countAcceptanceCriteria(Span<const char>(buffer.data(), length.value)) : 0;
-        if (criteria_count == 0) { add(KIOTTY_SPEC_CONDITION_ACCEPTANCE_CRITERIA, item.value->id); }
+            _workspace.items.reader().readBody(handle, body);
+        const auto text = body.subspan(0, length.value);
+        const size_t criteria_count = length ? countAcceptanceCriteria(text.value) : 0;
+        if (criteria_count != 0) { continue; }
+        add(KIOTTY_SPEC_CONDITION_ACCEPTANCE_CRITERIA, (*item.value).id);
     }
 }
 
@@ -149,12 +151,12 @@ void Checker::checkMilestoneCoverage()
         const auto item = _workspace.items.reader().get(handle);
         if (!item) { continue; }
         uint32_t relation = MISSING;
-        if (item.value->kind == ItemKind::DESIGN) { relation = designs; }
-        if (item.value->kind == ItemKind::UNIT_TEST_PLAN) { relation = tests; }
+        if ((*item.value).kind == ItemKind::DESIGN) { relation = designs; }
+        if ((*item.value).kind == ItemKind::UNIT_TEST_PLAN) { relation = tests; }
         if (relation == MISSING) { continue; }
         const size_t count =
             countRelations(ItemKind::MILESTONE, relation, handle, RelationSide::TO);
-        if (count == 0) { add(KIOTTY_SPEC_CONDITION_MILESTONE_COVERAGE, item.value->id); }
+        if (count == 0) { add(KIOTTY_SPEC_CONDITION_MILESTONE_COVERAGE, (*item.value).id); }
     }
 }
 
@@ -176,7 +178,7 @@ void Checker::checkTargetPairs(const PairRule& rule, uint32_t relation)
     for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _workspace.items.reader().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
-        const bool is_target = item && item.value->kind == rule.target_kind;
+        const bool is_target = item && (*item.value).kind == rule.target_kind;
         if (!is_target) { continue; }
         const bool can_read_tag = is_functional_only && functional.tag_index != MISSING;
         const uint64_t kind_value =
@@ -184,7 +186,7 @@ void Checker::checkTargetPairs(const PairRule& rule, uint32_t relation)
         if (is_functional_only && (kind_value & functional.bit) == 0) { continue; }
         const size_t test_count =
             countRelations(rule.test_kind, relation, handle, RelationSide::TO);
-        if (test_count != 1) { add(rule.pair_condition, item.value->id); }
+        if (test_count != 1) { add(rule.pair_condition, (*item.value).id); }
     }
 }
 
@@ -194,11 +196,11 @@ void Checker::checkSingleTargets(ItemKind test_kind, uint32_t relation)
     for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _workspace.items.reader().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
-        const bool is_test = item && item.value->kind == test_kind;
+        const bool is_test = item && (*item.value).kind == test_kind;
         if (!is_test) { continue; }
         const size_t target_count =
             countRelations(test_kind, relation, handle, RelationSide::FROM);
-        if (target_count != 1) { add(KIOTTY_SPEC_CONDITION_SINGLE_TARGET, item.value->id); }
+        if (target_count != 1) { add(KIOTTY_SPEC_CONDITION_SINGLE_TARGET, (*item.value).id); }
     }
 }
 
@@ -232,14 +234,14 @@ void Checker::checkPassingResults()
     for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _workspace.items.reader().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
-        const bool is_result = item && isResultKind(item.value->kind);
+        const bool is_result = item && isResultKind((*item.value).kind);
         if (!is_result) { continue; }
-        const TagBit pass = tagBit(item.value->kind, RESULT_TAG, PASS_BIT);
+        const TagBit pass = tagBit((*item.value).kind, RESULT_TAG, PASS_BIT);
         const bool has_pass_tag = pass.tag_index != MISSING;
         const uint64_t result_value =
             has_pass_tag ? _workspace.items.tags().value(handle, pass.tag_index) : 0;
         if (pass.tag_index == MISSING || result_value != pass.bit) {
-            add(KIOTTY_SPEC_CONDITION_PASSING_RESULT, item.value->id);
+            add(KIOTTY_SPEC_CONDITION_PASSING_RESULT, (*item.value).id);
         }
     }
 }
@@ -250,10 +252,10 @@ void Checker::checkClosedChangeRequests()
     for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _workspace.items.reader().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
-        const bool is_change_request = item && item.value->kind == ItemKind::CHANGE_REQUEST;
+        const bool is_change_request = item && (*item.value).kind == ItemKind::CHANGE_REQUEST;
         if (!is_change_request) { continue; }
         const bool is_open = isOpenChangeRequest(handle);
-        if (is_open) { add(KIOTTY_SPEC_CONDITION_CLOSED_CHANGE_REQUEST, item.value->id); }
+        if (is_open) { add(KIOTTY_SPEC_CONDITION_CLOSED_CHANGE_REQUEST, (*item.value).id); }
     }
 }
 
@@ -280,7 +282,7 @@ TagBit Checker::tagBit(ItemKind kind, std::string_view tag, std::string_view bit
 
 void Checker::add(KiottySpecCondition condition, entity::IdText id)
 {
-    const Span<UnmetCondition> rows(_rows.data(), _rows.size());
+    const Span<UnmetCondition> rows = viewVector(_rows);
     _length = appendCondition(rows, _length, UnmetCondition{id, condition});
 }
 

@@ -87,24 +87,23 @@ KiottySpecStatus Editor::checkId(Span<const char> id)
     return _workspace.failure.raise(valid, KIOTTY_SPEC_SUBJECT_ID, id);
 }
 
-KiottySpecStatus Editor::updateItem(Span<const char> id, Span<const char> title,
-                                    Span<const char> summary)
+KiottySpecStatus Editor::updateItem(Span<const char> id, OptionalText title, OptionalText summary)
 {
     const auto item = _workspace.resolve(id);
     if (!item) { return item.code; }
     ItemRecord record = *_workspace.items.reader().get(item.value).value;
-    const bool has_title = title.data() != nullptr;
+    const bool has_title = title.has_value();
     if (has_title) {
-        const size_t title_length = title.length();
+        const size_t title_length = (*title).length();
         if (title_length == 0) {
             return _workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
                                             KIOTTY_SPEC_SUBJECT_TITLE);
         }
-        record.title.assign(title);
+        record.title.assign(*title);
     }
-    const bool has_summary = summary.data() != nullptr;
+    const bool has_summary = summary.has_value();
     if (has_summary) {
-        record.summary.assign(summary);
+        record.summary.assign(*summary);
     }
     WriteScope scope(_workspace, _lifecycle);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
@@ -154,12 +153,13 @@ KiottySpecStatus Editor::removeItem(Span<const char> id)
     for (size_t index = 0; index < capacity; ++index) {
         const ItemHandle handle = _workspace.items.reader().handleAt(index);
         const auto child = _workspace.items.reader().get(handle);
-        const bool is_child = child && child.value->parent.index == item.value.index;
-        if (!is_child) { continue; }
-        const bool has_parent = child.value->parent.isValid();
-        if (has_parent) {
+        if (!child) { continue; }
+        const ItemRecord& record = *child.value;
+        const bool is_child = record.parent.index == item.value.index;
+        const bool has_parent = record.parent.isValid();
+        if (is_child && has_parent) {
             return _workspace.failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION,
-                                            KIOTTY_SPEC_SUBJECT_CHILD, child.value->id.view());
+                                            KIOTTY_SPEC_SUBJECT_CHILD, record.id.view());
         }
     }
     WriteScope scope(_workspace, _lifecycle);
@@ -190,7 +190,7 @@ KiottySpecStatus Editor::markNeedsChange(ItemHandle item, uint32_t sequence)
 {
     const auto record = _workspace.items.reader().get(item);
     if (!record) { return record.code; }
-    const ItemKind kind = record.value->kind;
+    const ItemKind kind = (*record.value).kind;
     if (kind != ItemKind::DESIGN && kind != ItemKind::UNIT_TEST_PLAN) {
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
@@ -214,18 +214,17 @@ KiottySpecStatus Editor::markNeedsChange(ItemHandle item, uint32_t sequence)
 
 KiottySpecStatus Editor::setTag(ItemHandle item, uint32_t tag, uint64_t value)
 {
-    const auto record = _workspace.items.reader().get(item);
-    if (!record) { return _workspace.failure.raise(record.code, KIOTTY_SPEC_SUBJECT_ITEM); }
-    const size_t tag_count = _workspace.catalog.model(record.value->kind).tags.length();
+    const auto found = _workspace.items.reader().get(item);
+    if (!found) { return _workspace.failure.raise(found.code, KIOTTY_SPEC_SUBJECT_ITEM); }
+    const ItemRecord& record = *found.value;
+    const size_t tag_count = _workspace.catalog.model(record.kind).tags.length();
     if (tag >= tag_count) {
         return _workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
-                                        KIOTTY_SPEC_SUBJECT_TAG, record.value->id.view());
+                                        KIOTTY_SPEC_SUBJECT_TAG, record.id.view());
     }
-    const KiottySpecStatus allowed =
-        _workspace.catalog.checkTagValue(record.value->kind, tag, value);
+    const KiottySpecStatus allowed = _workspace.catalog.checkTagValue(record.kind, tag, value);
     if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return _workspace.failure.raise(allowed, KIOTTY_SPEC_SUBJECT_TAG_VALUE,
-                                        record.value->id.view());
+        return _workspace.failure.raise(allowed, KIOTTY_SPEC_SUBJECT_TAG_VALUE, record.id.view());
     }
     WriteScope scope(_workspace, _lifecycle);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
@@ -267,7 +266,7 @@ bool isInParentChain(const ItemReader& reader, ItemHandle start, ItemHandle item
         if (probe.index == item.index) { return true; }
         const auto above = reader.get(probe);
         if (!above) { return false; }
-        probe = above.value->parent;
+        probe = (*above.value).parent;
         is_valid = probe.isValid();
     }
     return false;

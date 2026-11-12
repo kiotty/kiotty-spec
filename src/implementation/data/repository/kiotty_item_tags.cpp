@@ -37,7 +37,7 @@ Span<const TagRecord> findItemTags(Span<const TagRecord> tags, uint32_t index)
         if (is_other_item) { break; }
         last = position + 1;
     }
-    return Span<const TagRecord>(tags.data() + first, last - first);
+    return tags.subspan(first, last - first).value;
 }
 
 uint64_t findTagValue(Span<const TagRecord> tags, uint32_t index, uint32_t tag)

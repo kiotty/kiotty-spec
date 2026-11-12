@@ -298,9 +298,9 @@ bool testVersionTableLatest()
     table.append(Probe{1, 1, 0, 11});
     table.append(Probe{2, 2, 0, 22});
     table.sort();
-    bool ok = expectTrue(table.latest(1, 2)->value == 11 && table.latest(1, 3)->value == 13 && table.latest(1, 99)->value == 13, "latest at checkpoint");
-    ok = expectTrue(table.latest(2, 1) == nullptr && table.latest(3, UINT32_MAX) == nullptr, "nothing before first version") && ok;
-    ok = expectTrue(table.latest(2, UINT32_MAX)->value == 25, "latest overall") && ok;
+    bool ok = expectTrue(table.latest(1, 2).value->value == 11 && table.latest(1, 3).value->value == 13 && table.latest(1, 99).value->value == 13, "latest at checkpoint");
+    ok = expectTrue(!table.latest(2, 1) && !table.latest(3, UINT32_MAX), "nothing before first version") && ok;
+    ok = expectTrue(table.latest(2, UINT32_MAX).value->value == 25, "latest overall") && ok;
     ok = expectTrue(!table.findDuplicate(), "no duplicate") && ok;
     table.append(Probe{1, 3, 0, 99});
     table.sort();
@@ -313,7 +313,7 @@ bool testVersionTableWrite()
     core::VersionTable<Probe> table(3);
     bool ok = expectTrue(table.write(Probe{1, 1, 0, 11}) == KIOTTY_SPEC_STATUS_SUCCESS, "write first");
     table.write(Probe{1, 1, 0, 12});
-    ok = expectTrue(table.all().length() == 1 && table.latest(1, 1)->value == 12, "same checkpoint replaces") && ok;
+    ok = expectTrue(table.all().length() == 1 && table.latest(1, 1).value->value == 12, "same checkpoint replaces") && ok;
     table.write(Probe{0, 4, 0, 4});
     table.write(Probe{1, 2, 0, 21});
     ok = expectTrue(table.all()[0].id == 0 && table.all()[2].checkpoint == 2, "insert keeps order") && ok;

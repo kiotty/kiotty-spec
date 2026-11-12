@@ -8,8 +8,11 @@
 #include "implementation/domain/usecases/kiotty_workspace.h"
 
 #include <cstdint>
+#include <optional>
 
 namespace kiotty::spec::implementation {
+
+using OptionalText = std::optional<Span<const char>>;
 
 class Editor
 {
@@ -22,8 +25,7 @@ public:
                                                         Span<const char> title,
                                                         Span<const char> summary);
     KiottySpecStatus renameItem(Span<const char> id, Span<const char> new_id);
-    KiottySpecStatus updateItem(Span<const char> id, Span<const char> title,
-                                Span<const char> summary);
+    KiottySpecStatus updateItem(Span<const char> id, OptionalText title, OptionalText summary);
     KiottySpecStatus setParent(Span<const char> id, Span<const char> parent_id);
     KiottySpecStatus removeItem(Span<const char> id);
     KiottySpecStatus writeBody(Span<const char> id, Span<const char> body);

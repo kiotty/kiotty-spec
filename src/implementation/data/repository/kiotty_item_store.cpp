@@ -94,9 +94,9 @@ void ItemStore::linkParents()
         const bool is_skipped = !is_valid || parent_key == entity::NO_KEY;
         if (is_skipped) { continue; }
         const auto parent = _tables.key_index.find(parent_key);
-        if (parent) {
-            _tables.items.get(handle).value->parent = _tables.items.handleAt(parent.value);
-        }
+        if (!parent) { continue; }
+        ItemRecord& record = *_tables.items.get(handle).value;
+        record.parent = _tables.items.handleAt(parent.value);
     }
 }
 

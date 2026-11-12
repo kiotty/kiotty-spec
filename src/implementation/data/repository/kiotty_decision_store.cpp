@@ -13,18 +13,18 @@ KiottySpecStatus DecisionStore::write(entity::ItemKind kind, Span<const char> te
         return _failure.raise(slot.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
                               literalText("max_decision_versions"));
     }
-    slot.value->kind = kind;
-    slot.value->removed = 0;
-    return slot.value->text.assign(text);
+    entity::DecisionVersion& version = *slot.value;
+    version.kind = kind;
+    version.removed = 0;
+    return version.text.assign(text);
 }
 
 Result<size_t, KiottySpecStatus> DecisionStore::read(entity::ItemKind kind, uint32_t checkpoint,
-                                                     char* buffer, size_t capacity) const
+                                                     Span<char> buffer) const
 {
-    const entity::DecisionVersion* version =
-        _versions.latest(static_cast<uint32_t>(kind), checkpoint);
-    const Span<const char> text = version == nullptr ? Span<const char>() : version->text.view();
-    return copyBody(text, buffer, capacity);
+    const auto version = _versions.latest(static_cast<uint32_t>(kind), checkpoint);
+    const Span<const char> text = version ? (*version.value).text.view() : Span<const char>();
+    return copyBody(text, buffer);
 }
 
 }

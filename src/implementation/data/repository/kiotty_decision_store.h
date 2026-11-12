@@ -24,8 +24,8 @@ public:
 
     VersionTable<entity::DecisionVersion>& versions() { return _versions; }
     KiottySpecStatus write(entity::ItemKind kind, Span<const char> text, uint32_t sequence);
-    Result<size_t, KiottySpecStatus> read(entity::ItemKind kind, uint32_t checkpoint, char* buffer,
-                                          size_t capacity) const;
+    Result<size_t, KiottySpecStatus> read(entity::ItemKind kind, uint32_t checkpoint,
+                                          Span<char> buffer) const;
 
 private:
     entity::Failure& _failure;

@@ -89,7 +89,9 @@ Result<KispFields, KiottySpecStatus> fillFields(Span<const char> line, Span<char
         }
         const Result<Span<const char>&, KiottySpecStatus> slot = slots.at(fields.count);
         if (!slot) { return FieldsResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-        *slot.value = Span<const char>(area.data() + start, cursor.written - start);
+        const Result<Span<char>, KiottySpecStatus> field =
+            area.subspan(start, cursor.written - start);
+        *slot.value = field.value;
         ++fields.count;
         ++cursor.index;
     }

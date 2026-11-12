@@ -86,20 +86,21 @@ KiottySpecStatus SpecWriter::writeCheckpoints()
     const uint32_t latest = _tables.checkpoints.latest();
     for (uint32_t sequence = 1; sequence <= latest && status == KIOTTY_SPEC_STATUS_SUCCESS;
          ++sequence) {
-        const CheckpointRecord* record = _tables.checkpoints.at(sequence);
-        if (record == nullptr) { continue; }
+        const auto found = _tables.checkpoints.get(sequence);
+        if (!found) { continue; }
+        const CheckpointRecord& record = *found.value;
         SpecLine line(KispLineEncoder(_area), CHECKPOINT_TABLE, 0);
         line.addDecimal(sequence);
-        const bool has_previous = record->previous.isValid();
+        const bool has_previous = record.previous.isValid();
         if (has_previous) {
-            line.addDecimal(record->previous.sequence);
+            line.addDecimal(record.previous.sequence);
         } else {
             line.add(spanOf(NONE_MARKER));
         }
-        line.addDecimal(static_cast<uint64_t>(record->step));
-        line.add(spanOf(entity::stateName(record->state)));
-        line.addDecimal(record->created_at > 0 ? static_cast<uint64_t>(record->created_at) : 0);
-        line.add(record->description.view());
+        line.addDecimal(static_cast<uint64_t>(record.step));
+        line.add(spanOf(entity::stateName(record.state)));
+        line.addDecimal(record.created_at > 0 ? static_cast<uint64_t>(record.created_at) : 0);
+        line.add(record.description.view());
         status = emit(line.finish());
     }
     return status;
@@ -143,9 +144,10 @@ KiottySpecStatus SpecWriter::writeTags()
     const ItemTables& tables = _tables.items.tables();
     for (const TagVersion& version : tables.tag_versions.all()) {
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
-        const ItemVersion* item = tables.versions.latest(version.key, UINT32_MAX);
-        if (item == nullptr) { continue; }
-        const Span<const entity::TagDefinition> tags = _tables.catalog.model(item->kind).tags;
+        const auto item = tables.versions.latest(version.key, UINT32_MAX);
+        if (!item) { continue; }
+        const ItemKind kind = (*item.value).kind;
+        const Span<const entity::TagDefinition> tags = _tables.catalog.model(kind).tags;
         const auto found = tags.at(version.tag);
         if (!found) { return _tables.failure.raise(found.code, KIOTTY_SPEC_SUBJECT_TAG); }
         const entity::TagDefinition& definition = *found.value;

@@ -29,7 +29,7 @@ public:
     KiottySpecStatus rebuild();
 
     Span<const entity::RelationRecord> all() const
-    { return Span<const entity::RelationRecord>(_records.data(), _length); }
+    { return viewVector(_records).subspan(0, _length).value; }
     bool contains(const entity::RelationRecord& relation) const;
 
     KiottySpecStatus add(const entity::RelationRecord& relation, uint32_t sequence);

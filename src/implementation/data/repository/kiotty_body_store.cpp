@@ -30,7 +30,7 @@ KiottySpecStatus BodyStore::put(uint32_t key, Span<const char> body)
     if (is_short) { compact(); }
     const bool is_still_short = isShortOfSpace(byte_capacity, _used, length);
     if (is_still_short) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-    const Span<char> bytes(_bytes.data(), byte_capacity);
+    const Span<char> bytes = viewVector(_bytes);
     const SliceResult written = writeBody(bytes, body, _used);
     if (!written) { return written.code; }
     const KiottySpecStatus inserted = _slices.insert(key, written.value);
@@ -65,29 +65,27 @@ Span<const char> BodyStore::bodyAt(size_t index) const
 void BodyStore::compact()
 {
     const size_t count = _slices.length();
-    const Span<uint32_t> order(_order.data(), count);
-    sortByOffset(order, _slices);
+    const Result<Span<uint32_t>, KiottySpecStatus> order = viewVector(_order).subspan(0, count);
+    sortByOffset(order.value, _slices);
     const Span<char> bytes = viewVector(_bytes);
     size_t used = 0;
     for (size_t position = 0; position < count; ++position) {
-        BodySlice& slice = _slices.valueAt(order[position]);
+        BodySlice& slice = _slices.valueAt(order.value[position]);
         slice = copySlice(bytes, slice, used);
         used += slice.length;
     }
     _used = used;
 }
 
-Result<size_t, KiottySpecStatus> copyBody(Span<const char> body, char* buffer, size_t capacity)
+Result<size_t, KiottySpecStatus> copyBody(Span<const char> body, Span<char> buffer)
 {
     using SizeResult = Result<size_t, KiottySpecStatus>;
     const size_t length = body.length();
-    if (buffer == nullptr || capacity <= length) {
-        return SizeResult { KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, length + 1 };
-    }
-    const Span<char> target(buffer, capacity);
-    const KiottySpecStatus copied = target.copyFrom(body);
+    const bool is_too_small = buffer.length() <= length;
+    if (is_too_small) { return SizeResult { KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, length + 1 }; }
+    const KiottySpecStatus copied = buffer.copyFrom(body);
     if (copied != KIOTTY_SPEC_STATUS_SUCCESS) { return SizeResult { copied, length + 1 }; }
-    const Result<char&, KiottySpecStatus> terminator = target.at(length);
+    const Result<char&, KiottySpecStatus> terminator = buffer.at(length);
     if (!terminator) { return SizeResult { KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, length + 1 }; }
     *terminator.value = '\0';
     return SizeResult::success(length);

@@ -43,11 +43,10 @@ Result<TextPiece, KiottySpecStatus> TextDiffer::next(CursorId cursor)
     using PieceResult = Result<TextPiece, KiottySpecStatus>;
     const auto space = _cursors.space(cursor, CursorKind::TEXT_DIFF);
     if (!space) { return PieceResult::failure(space.code); }
-    CursorSlot& slot = *space.value.slot;
-    if (slot.position >= slot.length) { return PieceResult::success(TextPiece{}); }
-    const Result<CursorRow&, KiottySpecStatus> row = space.value.rows.at(slot.position);
-    if (!row) { return PieceResult::failure(row.code); }
-    ++slot.position;
+    const CursorRowsResult rows = _cursors.fetch(cursor, CursorKind::TEXT_DIFF, 1);
+    if (!rows) { return PieceResult::failure(rows.code); }
+    const Result<const CursorRow&, KiottySpecStatus> row = rows.value.at(0);
+    if (!row) { return PieceResult::success(TextPiece{}); }
     const TextSegment segment = unpackSegment(*row.value);
     const auto text = _store.textOf(space.value.index, segment.source);
     if (!text) { return PieceResult::failure(text.code); }
@@ -64,7 +63,7 @@ Result<entity::IdText, KiottySpecStatus> TextDiffer::readItemId(entity::ItemHand
         return IdResult::failure(
             _workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_HANDLE, KIOTTY_SPEC_SUBJECT_ITEM));
     }
-    return IdResult::success(record.value->id);
+    return IdResult::success((*record.value).id);
 }
 
 KiottySpecStatus TextDiffer::fillSegments(CursorId cursor, const TextPair& texts)

@@ -219,11 +219,9 @@ Result<ItemKind, KiottySpecStatus> SpecParser::kindOfKey(uint32_t key)
     const bool is_sorted = _has_sorted_versions;
     if (!is_sorted) { versions.sort(); }
     _has_sorted_versions = true;
-    const ItemVersion* version = versions.latest(key, UINT32_MAX);
-    if (version == nullptr) {
-        return Result<ItemKind, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
-    }
-    return Result<ItemKind, KiottySpecStatus>::success(version->kind);
+    const auto version = versions.latest(key, UINT32_MAX);
+    if (!version) { return Result<ItemKind, KiottySpecStatus>::failure(version.code); }
+    return Result<ItemKind, KiottySpecStatus>::success((*version.value).kind);
 }
 
 Result<uint64_t, KiottySpecStatus> SpecParser::parseTagValue(ItemKind kind, uint32_t tag,
@@ -234,9 +232,10 @@ Result<uint64_t, KiottySpecStatus> SpecParser::parseTagValue(ItemKind kind, uint
     const size_t length = names.length();
     for (size_t index = 0; index <= length; ++index) {
         if (index < length && names[index] != ',') { continue; }
-        const Span<const char> name(names.data() + start, index - start);
+        const Result<Span<const char>, KiottySpecStatus> name =
+            names.subspan(start, index - start);
         const Result<uint32_t, KiottySpecStatus> bit =
-            _tables.catalog.finder().findTagBit(kind, tag, name);
+            _tables.catalog.finder().findTagBit(kind, tag, name.value);
         if (!bit) { return Result<uint64_t, KiottySpecStatus>::failure(bit.code); }
         value |= uint64_t{1} << bit.value;
         start = index + 1;
@@ -284,14 +283,15 @@ KiottySpecStatus SpecParser::parseDecision(const KispFields& fields)
         return _tables.failure.raise(slot.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
                                      literalText("max_decision_versions"));
     }
-    const size_t existing_length = slot.value->text.length();
+    entity::DecisionVersion& version = *slot.value;
+    const size_t existing_length = version.text.length();
     if (existing_length > 0) {
         return _tables.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT,
                                      KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE, kind_text.value);
     }
-    slot.value->kind = kind.value;
-    slot.value->removed = 0;
-    return slot.value->text.assign(text.value);
+    version.kind = kind.value;
+    version.removed = 0;
+    return version.text.assign(text.value);
 }
 
 KiottySpecStatus SpecParser::parseBody(const KispFields& fields)

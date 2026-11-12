@@ -34,37 +34,33 @@ using entity::Cardinality;
 using entity::ItemKind;
 using entity::Step;
 
-constexpr size_t TAG_NAME_LIMIT = entity::MAX_TAG_NAME_LENGTH + 1;
-constexpr size_t MODEL_NAME_LIMIT = entity::MAX_MODEL_NAME_LENGTH + 1;
-constexpr size_t ID_PREFIX_LIMIT = entity::MAX_ID_LENGTH + 1;
-
 struct ModelSource
 {
-    const char* name {};
-    const char* id_prefix {};
+    std::string_view name {};
+    std::string_view id_prefix {};
     ItemKind kind {};
     Step created_in {};
 };
 
 struct TagSource
 {
-    const char* bits[entity::TAG_BIT_COUNT] {};
-    const char* name {};
+    std::string_view bits[entity::TAG_BIT_COUNT] {};
+    std::string_view name {};
     ItemKind kind {};
     Cardinality cardinality {};
 };
 
 struct RelationSource
 {
-    const char* name {};
+    std::string_view name {};
     ItemKind kind {};
     ItemKind target_kind {};
     Cardinality cardinality {};
 };
 
-static_assert(sizeof(ModelSource) == 24, "unexpected padding");
-static_assert(sizeof(TagSource) == 400, "unexpected padding");
-static_assert(sizeof(RelationSource) == 24, "unexpected padding");
+static_assert(sizeof(ModelSource) == 40, "unexpected padding");
+static_assert(sizeof(TagSource) == 792, "unexpected padding");
+static_assert(sizeof(RelationSource) == 32, "unexpected padding");
 
 const ModelSource MODEL_SOURCES[] = {
     {"변경 요청", "CR", ItemKind::CHANGE_REQUEST, Step::CHANGE_REQUEST_REPORTED},
@@ -192,10 +188,10 @@ KiottySpecStatus ModelCatalog::loadTags()
         const TagSource& source = TAG_SOURCES[index];
         entity::TagDefinition& definition = _tags[index];
         KiottySpecStatus status =
-            definition.name.assign(viewTerminated(source.name, TAG_NAME_LIMIT));
+            definition.name.assign(spanOf(source.name));
         for (size_t bit = 0; bit < entity::TAG_BIT_COUNT && status == KIOTTY_SPEC_STATUS_SUCCESS;
              ++bit) {
-            const Span<const char> bit_name = viewTerminated(source.bits[bit], TAG_NAME_LIMIT);
+            const Span<const char> bit_name = spanOf(source.bits[bit]);
             status = definition.bit_names[bit].assign(bit_name);
         }
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
@@ -210,7 +206,7 @@ KiottySpecStatus ModelCatalog::loadRelations()
         const RelationSource& source = RELATION_SOURCES[index];
         entity::RelationDefinition& definition = _relations[index];
         const KiottySpecStatus status =
-            definition.name.assign(viewTerminated(source.name, TAG_NAME_LIMIT));
+            definition.name.assign(spanOf(source.name));
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
         definition.target_kind = source.target_kind;
         definition.cardinality = source.cardinality;
@@ -294,9 +290,9 @@ buildModel(const ModelSource& source, size_t index, Span<const entity::TagDefini
     model.tags = Span<const entity::TagDefinition>(first_tag.value, tag_range.value.length);
     model.relations =
         Span<const entity::RelationDefinition>(first_relation.value, relation_range.value.length);
-    KiottySpecStatus status = model.name.assign(viewTerminated(source.name, MODEL_NAME_LIMIT));
+    KiottySpecStatus status = model.name.assign(spanOf(source.name));
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
-        status = model.id_prefix.assign(viewTerminated(source.id_prefix, ID_PREFIX_LIMIT));
+        status = model.id_prefix.assign(spanOf(source.id_prefix));
     }
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return ModelResult::failure(status); }
     return ModelResult::success(model);

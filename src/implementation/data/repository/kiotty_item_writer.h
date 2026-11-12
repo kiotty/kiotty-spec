@@ -32,7 +32,7 @@ public:
 private:
     ItemReader reader() const { return ItemReader(_tables); }
     ItemTags tags() const
-    { return ItemTags(Span<const entity::TagRecord>(_tables.tags.data(), _tables.tag_count)); }
+    { return ItemTags(viewVector(_tables.tags).subspan(0, _tables.tag_count).value); }
     KiottySpecStatus checkUnused(entity::IdText id);
     Result<uint32_t, KiottySpecStatus> newKey(entity::IdText id) const;
     KiottySpecStatus writeVersion(entity::ItemHandle handle, const entity::ItemVersion& version);

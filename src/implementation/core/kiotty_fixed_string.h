@@ -117,12 +117,4 @@ void copyText(char (&target)[Size], const FixedString<Capacity>& source)
     target[length] = '\0';
 }
 
-
-inline Span<const char> viewTerminated(const char* text, size_t limit)
-{
-    size_t length = 0;
-    while (text != nullptr && length < limit && text[length] != '\0') { ++length; }
-    return Span<const char>(text, length);
-}
-
 }

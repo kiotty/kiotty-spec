@@ -33,7 +33,7 @@ inline Span<const char> cutAtCharacter(Span<const char> text, size_t limit)
         if (!is_continuation) { break; }
         --length;
     }
-    return Span<const char>(text.data(), length);
+    return text.subspan(0, length).value;
 }
 
 inline uint64_t keepFirstLine(uint64_t current_line, uint64_t line)

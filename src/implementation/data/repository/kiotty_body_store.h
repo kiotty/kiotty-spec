@@ -40,6 +40,6 @@ private:
     size_t _used {0};
 };
 
-Result<size_t, KiottySpecStatus> copyBody(Span<const char> body, char* buffer, size_t capacity);
+Result<size_t, KiottySpecStatus> copyBody(Span<const char> body, Span<char> buffer);
 
 }

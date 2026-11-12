@@ -65,14 +65,15 @@ public:
         return Result<Record&, KiottySpecStatus>::success(_records[position]);
     }
 
-    const Record* latest(Identity identity, uint32_t checkpoint) const
+    Result<const Record&, KiottySpecStatus> latest(Identity identity, uint32_t checkpoint) const
     {
+        using RecordResult = Result<const Record&, KiottySpecStatus>;
         const size_t after = lowerBound(all(), identity, static_cast<uint64_t>(checkpoint) + 1);
-        if (after == 0) { return nullptr; }
-        const Identity last_identity = _records[after - 1].identity();
-        const bool is_same_identity = last_identity == identity;
-        if (is_same_identity) { return &_records[after - 1]; }
-        return nullptr;
+        if (after == 0) { return RecordResult::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
+        const Record& last = _records[after - 1];
+        const bool is_same_identity = last.identity() == identity;
+        if (!is_same_identity) { return RecordResult::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
+        return RecordResult::success(last);
     }
 
     size_t countAt(uint32_t checkpoint) const { return countRecordsAt(all(), checkpoint); }

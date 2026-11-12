@@ -79,8 +79,8 @@ Result<uint32_t, KiottySpecStatus> Differ::point(uint64_t checkpoint)
     const uint32_t sequence = checkpoint == KIOTTY_SPEC_CHECKPOINT_CURRENT
                                   ? _workspace.checkpoints.latest()
                                   : static_cast<uint32_t>(checkpoint & CHECKPOINT_SEQUENCE_MASK);
-    const bool has_checkpoint = _workspace.checkpoints.at(sequence) != nullptr;
-    if (!has_checkpoint) {
+    const auto checkpoint_record = _workspace.checkpoints.get(sequence);
+    if (!checkpoint_record) {
         return PointResult::failure(
             _workspace.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
@@ -150,9 +150,9 @@ KiottySpecStatus Differ::countDecisions(DiffRange range, uint32_t kind_mask,
         if (!found) { return found.code; }
         KindCounts& count = *found.value;
         const VersionTable<entity::DecisionVersion>& versions = _workspace.decisions.versions();
-        const entity::DecisionVersion* before = versions.latest(kind, range.from);
-        const entity::DecisionVersion* after = versions.latest(kind, range.to);
-        const bool has_changed = before != after;
+        const auto before = versions.latest(kind, range.from);
+        const auto after = versions.latest(kind, range.to);
+        const bool has_changed = before.value != after.value;
         const bool is_in_mask = isKindInMask(kind_mask, kind);
         if (is_in_mask && has_changed) { count.has_decision_change = true; }
     }

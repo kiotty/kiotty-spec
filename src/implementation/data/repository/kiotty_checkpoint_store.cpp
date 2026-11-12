@@ -39,24 +39,16 @@ KiottySpecStatus CheckpointStore::put(uint32_t sequence, const CheckpointRecord&
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-Result<const CheckpointRecord*, KiottySpecStatus> CheckpointStore::get(uint32_t sequence) const
+Result<const CheckpointRecord&, KiottySpecStatus> CheckpointStore::get(uint32_t sequence) const
 {
-    const CheckpointRecord* record = at(sequence);
-    if (record == nullptr) {
-        return Result<const CheckpointRecord*, KiottySpecStatus>::failure(
-            KIOTTY_SPEC_STATUS_NOT_FOUND);
-    }
-    return Result<const CheckpointRecord*, KiottySpecStatus>::success(record);
-}
-
-const CheckpointRecord* CheckpointStore::at(uint32_t sequence) const
-{
+    using RecordResult = Result<const CheckpointRecord&, KiottySpecStatus>;
     const Span<const CheckpointRecord> records = viewVector(_records);
     const Span<const uint8_t> exists = viewVector(_exists);
-    const Result<const CheckpointRecord&, KiottySpecStatus> record = records.at(sequence - 1);
+    const RecordResult record = records.at(sequence - 1);
     const Result<const uint8_t&, KiottySpecStatus> flag = exists.at(sequence - 1);
     const bool is_present = record && flag && *flag.value != 0;
-    return is_present ? record.value : nullptr;
+    if (!is_present) { return RecordResult::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
+    return record;
 }
 
 }
