@@ -3,6 +3,7 @@
 #include "implementation/core/kiotty_lazy_pool.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
+#include "implementation/domain/entity/kiotty_item_records.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -44,13 +45,6 @@ static_assert(sizeof(CursorSlot) == 24, "unexpected padding");
 
 using CursorId = uint64_t;
 
-struct CursorSpace {
-    Span<CursorRow> rows {};
-    size_t index {0};
-};
-
-static_assert(sizeof(CursorSpace) == 24, "unexpected padding");
-
 using CursorIdResult = Result<CursorId, KiottySpecStatus>;
 using CursorRowsResult = Result<Span<const CursorRow>, KiottySpecStatus>;
 
@@ -63,14 +57,14 @@ public:
     CursorRowsResult fetch(CursorId cursor, CursorKind kind, size_t max_count);
     Result<size_t, KiottySpecStatus> total(CursorId cursor);
     KiottySpecStatus close(CursorId cursor);
-    Result<CursorSpace, KiottySpecStatus> space(CursorId cursor, CursorKind kind);
+    Result<entity::CursorHandle, KiottySpecStatus> locate(CursorId cursor, CursorKind kind);
     size_t capacity() const { return _slots.capacity(); }
 
 private:
-    static Handle decode(CursorId cursor);
+    static entity::CursorHandle decode(CursorId cursor);
     Span<CursorRow> rowsOf(Handle handle);
 
-    LazyPool<CursorSlot> _slots;
+    LazyPool<CursorSlot, entity::CursorHandle> _slots;
     std::vector<CursorRow> _rows;
     size_t _max_rows;
 };

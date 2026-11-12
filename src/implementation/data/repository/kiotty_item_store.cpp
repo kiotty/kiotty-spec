@@ -11,7 +11,8 @@ namespace {
 using entity::CheckpointHandle;
 using entity::IdText;
 using entity::ItemHandle;
-using entity::ItemRecord;
+using entity::ItemLabel;
+using entity::ItemState;
 using entity::ItemVersion;
 using entity::TagRecord;
 using entity::TagVersion;
@@ -21,7 +22,8 @@ bool isLastVersion(Span<const ItemVersion> versions, size_t next_index, uint32_t
 bool isLastTag(Span<const TagVersion> versions, size_t next_index, const TagVersion& tag);
 void sortById(Span<uint32_t> latest, Span<const ItemVersion> versions, const ItemTables& tables);
 uint32_t readItemKey(Span<const ItemVersion> versions, uint32_t index);
-ItemRecord buildRecord(const ItemVersion& version, IdText id);
+ItemState buildState(const ItemVersion& version);
+ItemLabel buildLabel(const entity::ItemVersionLabel& version_label, IdText id);
 KiottySpecStatus writeLinks(Span<uint32_t> keys, Span<uint32_t> parents, uint32_t index,
                             const ItemVersion& version);
 KiottySpecStatus writeAt(Span<uint32_t> values, uint32_t index, uint32_t value);
@@ -78,17 +80,20 @@ KiottySpecStatus ItemMaintenance::place(const ItemVersion& version)
         return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
                               literalText("max_items"));
     }
-    ItemRecord& record = *_tables.items.get(handle).value;
-    record = buildRecord(version, id.value);
+    *_tables.items.get(handle).value = buildState(version);
+    const Result<ItemLabel&, KiottySpecStatus> slot = viewVector(_tables.labels).at(handle.index);
+    if (!slot) { return slot.code; }
+    ItemLabel& label = *slot.value;
+    label = buildLabel(_tables.version_labels.read(version.label), id.value);
     const Span<uint32_t> keys = viewVector(_tables.keys);
     const Span<uint32_t> parents = viewVector(_tables.parents);
     const KiottySpecStatus linked = writeLinks(keys, parents, handle.index, version);
     if (linked != KIOTTY_SPEC_STATUS_SUCCESS) { return linked; }
     _tables.key_index.insert(version.key, handle.index);
-    const KiottySpecStatus indexed = _tables.id_index.insert(record.id, handle.index);
+    const KiottySpecStatus indexed = _tables.id_index.insert(label.id, handle.index);
     if (indexed != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE,
-                              record.id.view());
+                              label.id.view());
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
@@ -104,8 +109,8 @@ void ItemMaintenance::linkParents()
         if (is_skipped) { continue; }
         const auto parent = _tables.key_index.find(parent_key);
         if (!parent) { continue; }
-        ItemRecord& record = *_tables.items.get(handle).value;
-        record.parent = _tables.items.handleAt(parent.value);
+        ItemState& state = *_tables.items.get(handle).value;
+        state.parent = _tables.items.handleAt(parent.value);
     }
 }
 
@@ -118,13 +123,13 @@ KiottySpecStatus ItemMaintenance::loadTags()
         const TagVersion& tag = versions[index];
         const bool is_last = isLastTag(versions, index + 1, tag);
         const auto position =
-            is_last ? _tables.key_index.find(tag.key)
+            is_last ? _tables.key_index.find(tag.item.index)
                     : Result<uint32_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
         if (!position) { continue; }
         const ItemHandle handle = _tables.items.handleAt(position.value);
-        ItemRecord& record = *_tables.items.get(handle).value;
-        if (tag.checkpoint > record.checkpoint.sequence) {
-            record.checkpoint = CheckpointHandle { tag.checkpoint, 0 };
+        ItemState& state = *_tables.items.get(handle).value;
+        if (tag.checkpoint > state.checkpoint.sequence) {
+            state.checkpoint = CheckpointHandle { tag.checkpoint, 0 };
         }
         if (tag.removed != 0 || tag.value == 0) { continue; }
         const Result<TagRecord&, KiottySpecStatus> slot = tags.at(_tables.tag_count);
@@ -132,7 +137,7 @@ KiottySpecStatus ItemMaintenance::loadTags()
             return _failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL,
                                   KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_tags"));
         }
-        *slot.value = TagRecord{tag.value, handle, record.kind, tag.tag};
+        *slot.value = TagRecord{tag.value, handle, state.kind, tag.tag};
         ++_tables.tag_count;
     }
     const Span<TagRecord> loaded(tags.begin(), _tables.tag_count);
@@ -146,7 +151,7 @@ void ItemMaintenance::prune(uint32_t base)
     _tables.versions.batch().prune(base);
     const ItemTables& tables = _tables;
     _tables.tag_versions.batch().retain(
-        [&tables](const TagVersion& tag) { return hasVersion(tables, tag.key); });
+        [&tables](const TagVersion& tag) { return hasVersion(tables, tag.item.index); });
     _tables.tag_versions.batch().prune(base);
     for (size_t index = _tables.names.length(); index > 0; --index) {
         const uint32_t key = _tables.names.keyAt(index - 1);
@@ -206,16 +211,22 @@ uint32_t readItemKey(Span<const ItemVersion> versions, uint32_t index)
     return version ? (*version.value).key : entity::NO_KEY;
 }
 
-ItemRecord buildRecord(const ItemVersion& version, IdText id)
+ItemState buildState(const ItemVersion& version)
 {
-    ItemRecord record {};
-    record.checkpoint = CheckpointHandle{version.checkpoint, 0};
-    record.parent = entity::INVALID_ITEM_HANDLE;
-    record.kind = version.kind;
-    record.id = id;
-    record.title = version.title;
-    record.summary = version.summary;
-    return record;
+    ItemState state {};
+    state.checkpoint = CheckpointHandle{version.checkpoint, 0};
+    state.parent = entity::INVALID_ITEM_HANDLE;
+    state.kind = version.kind;
+    return state;
+}
+
+ItemLabel buildLabel(const entity::ItemVersionLabel& version_label, IdText id)
+{
+    ItemLabel label {};
+    label.id = id;
+    label.title = version_label.title;
+    label.summary = version_label.summary;
+    return label;
 }
 
 KiottySpecStatus writeLinks(Span<uint32_t> keys, Span<uint32_t> parents, uint32_t index,
@@ -223,7 +234,7 @@ KiottySpecStatus writeLinks(Span<uint32_t> keys, Span<uint32_t> parents, uint32_
 {
     const KiottySpecStatus key_written = writeAt(keys, index, version.key);
     if (key_written != KIOTTY_SPEC_STATUS_SUCCESS) { return key_written; }
-    return writeAt(parents, index, version.parent);
+    return writeAt(parents, index, version.parent.index);
 }
 
 KiottySpecStatus writeAt(Span<uint32_t> values, uint32_t index, uint32_t value)

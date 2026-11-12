@@ -3,6 +3,7 @@
 #include "kiotty_spec.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
+#include "implementation/data/repository/kiotty_relation_store.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 #include "implementation/domain/usecases/kiotty_workspace.h"
 
@@ -34,11 +35,6 @@ enum class TargetFilter : uint32_t {
     FUNCTIONAL_REQUIREMENTS
 };
 
-enum class RelationSide : uint32_t {
-    FROM = 1,
-    TO
-};
-
 struct PairRule {
     std::string_view relation_name {};
     entity::ItemKind target_kind {};
@@ -53,24 +49,32 @@ class Checker
 {
 public:
     Checker(Workspace& workspace, size_t max_items)
-        : _workspace(workspace), _body(entity::MAX_BODY_LENGTH + 1), _rows(max_items)
+        : _workspace(workspace), _body(entity::MAX_BODY_LENGTH + 1), _rows(max_items),
+          _state_values(max_items, 0), _tag_values(max_items, 0), _relation_counts(max_items, 0),
+          _second_relation_counts(max_items, 0)
     {}
 
     Span<const UnmetCondition> collect(entity::Step step);
 
-    bool isOpenChangeRequest(entity::ItemHandle handle);
     size_t openChangeRequestCount();
     uint32_t earliestEntryStep();
 
 private:
     TagBit tagBit(entity::ItemKind kind, std::string_view tag, std::string_view bit);
+    TagBit openBits();
     uint32_t relationIndex(entity::ItemKind kind, std::string_view name);
-    size_t countRelations(entity::ItemKind model, uint32_t relation, entity::ItemHandle item,
-                          RelationSide side);
-    void add(KiottySpecCondition condition, entity::IdText id);
+    entity::ItemKind readKind(size_t index) const;
+    bool isOpenAt(size_t index, Span<const uint64_t> states, TagBit open) const;
+    Span<const uint64_t> loadStates(uint32_t tag);
+    Span<const uint64_t> loadTags(entity::ItemKind model, uint32_t tag);
+    Span<const uint64_t> loadResultTags();
+    Span<const uint32_t> loadRelationCounts(RelationEnd end);
+    Span<const uint32_t> loadSecondRelationCounts(RelationEnd end);
+    void add(KiottySpecCondition condition, size_t index);
 
     void checkEntrySteps();
     void checkAcceptanceCriteria();
+    bool hasAcceptanceCriteria(size_t index);
     void checkMilestoneCoverage();
     void checkOneToOne(const PairRule& rule);
     void checkTargetPairs(const PairRule& rule, uint32_t relation);
@@ -82,6 +86,10 @@ private:
     Workspace& _workspace;
     std::vector<char> _body;
     std::vector<UnmetCondition> _rows;
+    std::vector<uint64_t> _state_values;
+    std::vector<uint64_t> _tag_values;
+    std::vector<uint32_t> _relation_counts;
+    std::vector<uint32_t> _second_relation_counts;
     size_t _length {0};
 };
 

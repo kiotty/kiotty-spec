@@ -27,8 +27,8 @@ class Finder
 {
 public:
     Finder(Workspace& workspace, CursorPool& cursors, Checker& checker, size_t max_items)
-        : _workspace(workspace), _cursors(cursors), _checker(checker), _visited(max_items, 0),
-          _queue(max_items, 0)
+        : _workspace(workspace), _cursors(cursors), _checker(checker), _tag_values(max_items, 0),
+          _marks(max_items, 0)
     {
     }
 
@@ -43,15 +43,19 @@ public:
 
 private:
     CursorWriter makeCursorWriter() { return CursorWriter(_cursors, _workspace.failure); }
-    bool isSelected(entity::ItemHandle handle, uint32_t kind, Span<const TagQuery> queries);
-    KiottySpecStatus pushRelationsFrom(CursorId cursor, entity::ItemHandle from,
+    void markKind(uint32_t kind);
+    void keepTagged(TagQuery query);
+    void markChildren(entity::ItemHandle parent);
+    void markSources(entity::ItemKind kind, uint32_t relation_index);
+    KiottySpecStatus pushMarked(CursorId cursor);
+    KiottySpecStatus pushRelationsFrom(CursorId cursor, uint32_t from_index,
                                        entity::ItemKind kind, uint32_t relation_index);
 
     Workspace& _workspace;
     CursorPool& _cursors;
     Checker& _checker;
-    std::vector<uint8_t> _visited;
-    std::vector<uint32_t> _queue;
+    std::vector<uint64_t> _tag_values;
+    std::vector<uint8_t> _marks;
 };
 
 uint64_t packHandle(entity::ItemHandle handle);

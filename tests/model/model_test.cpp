@@ -40,11 +40,11 @@ const impl::ModelCatalog& catalog()
 bool testRecordSizes()
 {
     bool ok = true;
-    ok = expectTrue(sizeof(entity::ItemRecord) == 424, "item record 424") && ok;
+    ok = expectTrue(sizeof(entity::ItemState) == 24, "item state 24") && ok;
+    ok = expectTrue(sizeof(entity::ItemLabel) == 400, "item label 400") && ok;
     ok = expectTrue(sizeof(entity::TagRecord) == 24, "tag record 24") && ok;
     ok = expectTrue(sizeof(entity::RelationRecord) == 24, "relation record 24") && ok;
-    ok = expectTrue(sizeof(entity::CheckpointRecord) == 88, "checkpoint record 88") && ok;
-    ok = expectTrue(sizeof(entity::DecisionRecord) == 2064, "decision record 2064") && ok;
+    ok = expectTrue(sizeof(entity::CheckpointRecord) == 24, "checkpoint record 24") && ok;
     ok = expectTrue(sizeof(entity::RelationDefinition) == 72, "relation definition 72") && ok;
     return ok;
 }
@@ -74,9 +74,9 @@ bool testModels()
     ok = expectTrue(std::strcmp(models.model(ItemKind::DESIGN).name.terminated(), "설계 사항") == 0, "design name") && ok;
     ok = expectTrue(std::strcmp(models.model(ItemKind::END_TO_END_TEST_RESULT).id_prefix.terminated(), "E2ER") == 0, "e2e result prefix") && ok;
     ok = expectTrue(models.model(ItemKind::CODE_INSPECTION_RESULT).created_in == entity::Step::CODE_INSPECTING, "inspection step") && ok;
-    ok = expectTrue(models.model(ItemKind::CHANGE_REQUEST).tags.length() == 3, "change request tags") && ok;
-    ok = expectTrue(models.model(ItemKind::MILESTONE).tags.length() == 0, "milestone has no tags") && ok;
-    ok = expectTrue(models.model(ItemKind::CHANGE_REQUEST).relations.length() == 5, "change request relations") && ok;
+    ok = expectTrue(models.model(ItemKind::CHANGE_REQUEST).tags.length == 3, "change request tags") && ok;
+    ok = expectTrue(models.model(ItemKind::MILESTONE).tags.length == 0, "milestone has no tags") && ok;
+    ok = expectTrue(models.model(ItemKind::CHANGE_REQUEST).relations.length == 5, "change request relations") && ok;
     return ok;
 }
 
@@ -125,7 +125,7 @@ bool testRelations()
     ok = expectTrue(models.checkRelation(ItemKind::CHANGE_REQUEST, 4, ItemKind::MILESTONE) == KIOTTY_SPEC_STATUS_SUCCESS, "change request milestone") && ok;
     ok = expectTrue(models.checkRelation(ItemKind::CHANGE_REQUEST, 0, ItemKind::UNIT_TEST_PLAN) == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "change request does not touch outputs") && ok;
     const auto inspected = models.finder().findRelation(ItemKind::CODE_INSPECTION_RESULT, textOf("검사 개발 수칙"));
-    ok = expectTrue(static_cast<bool>(inspected) && models.model(ItemKind::CODE_INSPECTION_RESULT).relations[inspected.value].cardinality == entity::Cardinality::SINGLE, "inspection is one to one") && ok;
+    ok = expectTrue(static_cast<bool>(inspected) && models.finder().relationsOf(ItemKind::CODE_INSPECTION_RESULT)[inspected.value].cardinality == entity::Cardinality::SINGLE, "inspection is one to one") && ok;
     return ok;
 }
 

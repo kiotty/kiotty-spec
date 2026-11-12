@@ -66,7 +66,7 @@ KiottySpecCursorResult KiottySpec_openRelationCursorByModel(KiottySpecContext* c
     const size_t relation_count = context->context.readSide()
                                       .catalog()
                                       .model(static_cast<entity::ItemKind>(kind))
-                                      .relations.length();
+                                      .relations.length;
     if (relation >= relation_count) {
         return cursorFailure(context->context.failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
                                                               KIOTTY_SPEC_SUBJECT_RELATION));
@@ -161,10 +161,12 @@ KiottySpecStatusResult KiottySpec_fetchItemPage(KiottySpecContext* context, Kiot
     const impl::Span<KiottySpecItem> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
         const RecordResult record = items.reader().get(fromHandle(row.first));
-        if (!record) { continue; }
+        const LabelResult label = items.reader().label(fromHandle(row.first));
+        const bool is_live = record && label;
+        if (!is_live) { continue; }
         const auto element = elements.at(page->length);
         if (!element) { return status(element.code); }
-        *element.value = toItem(*record.value);
+        *element.value = toItem(*record.value, *label.value);
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);
@@ -182,11 +184,11 @@ KiottySpecStatusResult KiottySpec_fetchIdPage(KiottySpecContext* context, Kiotty
     if (!rows) { return status(rows.code); }
     const impl::Span<IdElement> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
-        const RecordResult record = items.reader().get(fromHandle(row.first));
-        if (!record) { continue; }
+        const LabelResult label = items.reader().label(fromHandle(row.first));
+        if (!label) { continue; }
         const auto element = elements.at(page->length);
         if (!element) { return status(element.code); }
-        copyText(*element.value, record.value->id);
+        copyText(*element.value, label.value->id);
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);

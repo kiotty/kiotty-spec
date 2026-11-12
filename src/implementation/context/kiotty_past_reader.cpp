@@ -20,17 +20,19 @@ Result<ItemVersionView, KiottySpecStatus> PastReader::itemAt(Span<const char> id
     const ItemVersion& found = *version.value;
     ItemVersionView view {};
     const uint32_t written = _workspace.items.history().lastWriteAt(found.key, checkpoint);
-    view.record.checkpoint = entity::CheckpointHandle { written, 0 };
-    view.record.kind = found.kind;
-    view.record.parent = entity::INVALID_ITEM_HANDLE;
-    view.record.id.assign(id);
-    view.record.title = found.title;
-    view.record.summary = found.summary;
-    const auto parent_id = _workspace.items.history().idOf(found.parent);
+    view.state.checkpoint = entity::CheckpointHandle { written, 0 };
+    view.state.kind = found.kind;
+    view.state.parent = entity::INVALID_ITEM_HANDLE;
+    view.label.id.assign(id);
+    const entity::ItemVersionLabel& version_label =
+        _workspace.items.tables().version_labels.read(found.label);
+    view.label.title = version_label.title;
+    view.label.summary = version_label.summary;
+    const auto parent_id = _workspace.items.history().idOf(found.parent.index);
     if (!parent_id) { return ViewResult::success(view); }
     view.parent_id = parent_id.value;
-    const auto parent = _workspace.items.reader().findKey(found.parent);
-    if (parent) { view.record.parent = parent.value; }
+    const auto parent = _workspace.items.reader().findKey(found.parent.index);
+    if (parent) { view.state.parent = parent.value; }
     return ViewResult::success(view);
 }
 

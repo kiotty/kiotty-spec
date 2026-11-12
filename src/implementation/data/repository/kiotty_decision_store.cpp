@@ -5,6 +5,12 @@
 
 namespace kiotty::spec::implementation {
 
+namespace {
+
+Handle pickTextHandle(const entity::DecisionVersion& version) { return version.text; }
+
+}
+
 KiottySpecStatus DecisionStore::write(entity::ItemKind kind, Span<const char> text,
                                       uint32_t sequence)
 {
@@ -16,7 +22,15 @@ KiottySpecStatus DecisionStore::write(entity::ItemKind kind, Span<const char> te
     entity::DecisionVersion& version = *slot.value;
     version.kind = kind;
     version.removed = 0;
-    return version.text.assign(text);
+    const auto handle = reserveText(version.text);
+    if (!handle) {
+        return _failure.raise(handle.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
+                              literalText("max_decision_versions"));
+    }
+    version.text = handle.value;
+    const auto stored = _texts.get(handle.value);
+    if (!stored) { return stored.code; }
+    return (*stored.value).assign(text);
 }
 
 Result<size_t, KiottySpecStatus> DecisionStore::read(entity::ItemKind kind, uint32_t checkpoint,
@@ -26,7 +40,16 @@ Result<size_t, KiottySpecStatus> DecisionStore::read(entity::ItemKind kind, uint
         _versions.latest(static_cast<uint32_t>(kind), checkpoint);
     if (!version) { return copyBody(Span<const char>(), buffer); }
     const entity::DecisionVersion& latest = *version.value;
-    return copyBody(latest.text.view(), buffer);
+    return copyBody(_texts.read(latest.text).view(), buffer);
+}
+
+Result<entity::DecisionTextHandle, KiottySpecStatus>
+DecisionStore::reserveText(entity::DecisionTextHandle current)
+{
+    using HandleResult = Result<entity::DecisionTextHandle, KiottySpecStatus>;
+    const bool has_text = current.isValid();
+    if (has_text) { return HandleResult::success(current); }
+    return _texts.acquire(_versions.all(), pickTextHandle);
 }
 
 }

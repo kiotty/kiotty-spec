@@ -27,6 +27,8 @@ size_t insertRelation(Span<RelationRecord> records, size_t length, size_t positi
 size_t removeRelation(Span<RelationRecord> used, size_t position);
 bool isRelationBefore(const RelationRecord& left, const RelationRecord& right);
 bool isSameRelation(const RelationRecord& left, const RelationRecord& right);
+void countRelationEnds(Span<const RelationRecord> relations, RelationEnd end,
+                       Span<uint32_t> counts);
 
 }
 
@@ -41,8 +43,8 @@ KiottySpecStatus RelationStore::rebuild()
         const bool is_superseded =
             !isDistinctAt(versions, index + 1, version) || version.removed != 0;
         if (is_superseded) { continue; }
-        const auto from = _items.reader().findKey(version.from);
-        const auto to = _items.reader().findKey(version.to);
+        const auto from = _items.reader().findKey(version.from.index);
+        const auto to = _items.reader().findKey(version.to.index);
         const bool is_dangling = !from || !to;
         if (is_dangling) { continue; }
         const Result<RelationRecord&, KiottySpecStatus> slot = records.at(_length);
@@ -66,6 +68,9 @@ Span<const uint32_t> RelationStore::relationsInDiffOrder()
     sortForDiff(firsts, versions, _items.tables());
     return firsts;
 }
+
+void RelationStore::countEnds(RelationEnd end, Span<uint32_t> counts) const
+{ countRelationEnds(all(), end, counts); }
 
 bool RelationStore::contains(const RelationRecord& relation) const
 { return isStoredAt(all(), lowerBound(relation), relation); }
@@ -136,7 +141,12 @@ KiottySpecStatus RelationWriter::writeVersion(const RelationRecord& relation, ui
     if (from == entity::NO_KEY || to == entity::NO_KEY) {
         return KIOTTY_SPEC_STATUS_INVALID_HANDLE;
     }
-    const RelationVersion version {from, relation.relation, to, sequence, removed, relation.model};
+    const RelationVersion version {entity::makeItemKey(from),
+                                   entity::makeItemKey(to),
+                                   relation.relation,
+                                   sequence,
+                                   removed,
+                                   relation.model};
     const KiottySpecStatus written = _versions.write(version);
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
@@ -180,11 +190,11 @@ void sortForDiff(Span<uint32_t> firsts, Span<const RelationVersion> versions,
         if (a.model != b.model) {
             return static_cast<uint32_t>(a.model) < static_cast<uint32_t>(b.model);
         }
-        const auto a_from = tables.names.find(a.from).value;
-        const auto b_from = tables.names.find(b.from).value;
+        const auto a_from = tables.names.find(a.from.index).value;
+        const auto b_from = tables.names.find(b.from.index).value;
         if (!(a_from == b_from)) { return a_from < b_from; }
         if (a.relation != b.relation) { return a.relation < b.relation; }
-        return tables.names.find(a.to).value < tables.names.find(b.to).value;
+        return tables.names.find(a.to.index).value < tables.names.find(b.to.index).value;
     });
 }
 
@@ -241,6 +251,19 @@ bool isSameRelation(const RelationRecord& left, const RelationRecord& right)
 {
     return left.from.index == right.from.index && left.relation == right.relation &&
            left.to.index == right.to.index;
+}
+
+void countRelationEnds(Span<const RelationRecord> relations, RelationEnd end,
+                       Span<uint32_t> counts)
+{
+    for (uint32_t& count : counts) { count = 0; }
+    for (const RelationRecord& record : relations) {
+        const bool is_wanted = record.model == end.model && record.relation == end.relation;
+        if (!is_wanted) { continue; }
+        const ItemHandle endpoint = end.side == RelationSide::TO ? record.to : record.from;
+        const Result<uint32_t&, KiottySpecStatus> count = counts.at(endpoint.index);
+        if (count) { ++*count.value; }
+    }
 }
 
 }

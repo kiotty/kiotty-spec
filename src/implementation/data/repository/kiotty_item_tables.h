@@ -1,5 +1,6 @@
 #pragma once
 
+#include "implementation/core/kiotty_detail_pool.h"
 #include "implementation/core/kiotty_fixed_map.h"
 #include "implementation/core/kiotty_lazy_pool.h"
 #include "implementation/core/kiotty_version_table.h"
@@ -12,6 +13,8 @@
 #include <vector>
 
 namespace kiotty::spec::implementation {
+
+using ItemLabelPool = DetailPool<entity::ItemVersionLabel, entity::ItemLabelHandle>;
 
 struct ItemCapacity {
     size_t items {};
@@ -28,7 +31,9 @@ struct ItemTables {
         : names(capacity.versions),
           versions(capacity.versions),
           tag_versions(capacity.tag_versions),
+          version_labels(capacity.versions + 1),
           items(capacity.items),
+          labels(capacity.items),
           id_index(capacity.items),
           key_index(capacity.items),
           keys(capacity.items, entity::NO_KEY),
@@ -42,8 +47,10 @@ struct ItemTables {
     FixedMap<uint32_t, entity::IdText> names;
     VersionTable<entity::ItemVersion> versions;
     VersionTable<entity::TagVersion> tag_versions;
+    ItemLabelPool version_labels;
 
-    LazyPool<entity::ItemRecord> items;
+    LazyPool<entity::ItemState, entity::ItemHandle> items;
+    std::vector<entity::ItemLabel> labels;
     FixedMap<entity::IdText, uint32_t> id_index;
     FixedMap<uint32_t, uint32_t> key_index;
     std::vector<uint32_t> keys;
@@ -54,5 +61,7 @@ struct ItemTables {
     std::vector<uint32_t> order;
     BodyStore bodies;
 };
+
+inline Handle pickLabelHandle(const entity::ItemVersion& version) { return version.label; }
 
 }

@@ -173,9 +173,9 @@ uint32_t kindOf(const ItemTables& tables, uint32_t key)
     return version ? static_cast<uint32_t>((*version.value).kind) : 0;
 }
 
-bool isTagBeforeKey(const TagVersion& tag, uint32_t key) { return tag.key < key; }
+bool isTagBeforeKey(const TagVersion& tag, uint32_t key) { return tag.item.index < key; }
 
-bool isKeyBeforeTag(uint32_t key, const TagVersion& tag) { return key < tag.key; }
+bool isKeyBeforeTag(uint32_t key, const TagVersion& tag) { return key < tag.item.index; }
 
 }
 

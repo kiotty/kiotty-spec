@@ -75,8 +75,11 @@ KiottySpecItemResult KiottySpec_readItemByHandle(KiottySpecContext* context,
     const RecordResult record = Boundary(context->context).read(item);
     result.code = record.code;
     if (!record) { return result; }
+    const LabelResult label = context->context.workspace().items.reader().label(fromHandle(item));
+    result.code = label.code;
+    if (!label) { return result; }
     result.handle = item;
-    result.value = toItem(*record.value);
+    result.value = toItem(*record.value, *label.value);
     return result;
 }
 
@@ -174,10 +177,11 @@ KiottySpecTagResult KiottySpec_readItemTag(KiottySpecContext* context, KiottySpe
         result.code = record.code;
         return result;
     }
-    const size_t tag_count = workspace.catalog.model(record.value->kind).tags.length();
+    const size_t tag_count = workspace.catalog.model(record.value->kind).tags.length;
     if (tag >= tag_count) {
         result.code = context->context.failure().raise(
-            KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_TAG, record.value->id.view());
+            KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_TAG,
+            workspace.items.reader().label(fromHandle(item)).value->id.view());
         return result;
     }
     result.code = KIOTTY_SPEC_STATUS_SUCCESS;

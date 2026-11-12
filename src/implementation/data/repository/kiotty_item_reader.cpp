@@ -6,7 +6,8 @@ namespace kiotty::spec::implementation {
 
 using entity::IdText;
 using entity::ItemHandle;
-using entity::ItemRecord;
+using entity::ItemLabel;
+using entity::ItemState;
 
 namespace {
 
@@ -54,12 +55,18 @@ Result<ItemHandle, KiottySpecStatus> ItemReader::find(Span<const char> id) const
     return Result<ItemHandle, KiottySpecStatus>::success(_tables.items.handleAt(index.value));
 }
 
-Result<const ItemRecord&, KiottySpecStatus> ItemReader::get(ItemHandle handle) const
+Result<const ItemState&, KiottySpecStatus> ItemReader::get(ItemHandle handle) const
 {
-    using RecordResult = Result<const ItemRecord&, KiottySpecStatus>;
-    const auto record = _tables.items.get(handle);
-    if (!record) { return RecordResult::failure(record.code); }
-    return RecordResult::success(*record.value);
+    return _tables.items.find(handle);
+}
+
+Result<const ItemLabel&, KiottySpecStatus> ItemReader::label(ItemHandle handle) const
+{
+    using LabelResult = Result<const ItemLabel&, KiottySpecStatus>;
+    const auto state = _tables.items.find(handle);
+    if (!state) { return LabelResult::failure(state.code); }
+    const Span<const ItemLabel> labels = viewVector(_tables.labels);
+    return labels.at(handle.index);
 }
 
 namespace {

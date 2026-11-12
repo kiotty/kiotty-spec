@@ -16,7 +16,8 @@ using entity::CheckpointHandle;
 using entity::IdText;
 using entity::ItemHandle;
 using entity::ItemKind;
-using entity::ItemRecord;
+using entity::ItemLabel;
+using entity::ItemState;
 using entity::ItemVersion;
 using entity::TagRecord;
 using entity::TagVersion;
@@ -26,8 +27,7 @@ using CountResult = Result<size_t, KiottySpecStatus>;
 constexpr uint32_t MAX_KEY_ATTEMPTS = 64;
 constexpr uint32_t KEY_SHIFT = 32;
 
-ItemVersion buildVersion(const ItemRecord& record, uint32_t key, uint32_t sequence,
-                         uint32_t parent);
+ItemVersion buildVersion(entity::ItemKind kind, uint32_t key, uint32_t sequence, uint32_t parent);
 KiottySpecStatus writeLinks(Span<uint32_t> keys, Span<uint32_t> parents, uint32_t index,
                             const ItemVersion& version);
 KiottySpecStatus writeAt(Span<uint32_t> values, uint32_t index, uint32_t value);
@@ -42,10 +42,11 @@ size_t removeItemTags(Span<TagRecord> used, uint32_t index);
 
 }
 
-Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record, uint32_t sequence)
+Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemLabel& label,
+                                                        const ItemState& state, uint32_t sequence)
 {
     using HandleResult = Result<ItemHandle, KiottySpecStatus>;
-    const KiottySpecStatus unused = checkUnused(record.id);
+    const KiottySpecStatus unused = checkUnused(label.id);
     if (unused != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(unused); }
     const bool is_full = isAtCapacity(_tables.id_index.length(), _tables.items.capacity());
     if (is_full) {
@@ -53,45 +54,69 @@ Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record
                                                     KIOTTY_SPEC_SUBJECT_CONFIGURATION,
                                                     literalText("max_items")));
     }
-    const auto key = newKey(record.id);
-    if (!key) { return HandleResult::failure(key.code); }
-    const uint32_t parent = reader().key(record.parent);
-    const ItemVersion version = buildVersion(record, key.value, sequence, parent);
-    KiottySpecStatus status = _tables.names.insert(key.value, record.id);
+    const Result<ItemVersion, KiottySpecStatus> version = recordVersion(label, state, sequence);
+    if (!version) { return HandleResult::failure(version.code); }
+    return storeItem(label, state, version.value);
+}
+
+Result<ItemVersion, KiottySpecStatus>
+ItemWriter::recordVersion(const ItemLabel& label, const ItemState& state, uint32_t sequence)
+{
+    using VersionResult = Result<ItemVersion, KiottySpecStatus>;
+    const Result<uint32_t, KiottySpecStatus> key = newKey(label.id);
+    if (!key) { return VersionResult::failure(key.code); }
+    const Result<entity::ItemLabelHandle, KiottySpecStatus> version_label = storeLabel(label);
+    if (!version_label) { return VersionResult::failure(version_label.code); }
+    const uint32_t parent = reader().key(state.parent);
+    ItemVersion version = buildVersion(state.kind, key.value, sequence, parent);
+    version.label = version_label.value;
+    KiottySpecStatus status = _tables.names.insert(key.value, label.id);
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = _tables.versions.write(version); }
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return HandleResult::failure(
+        return VersionResult::failure(
             _failure.raise(status, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items")));
     }
+    return VersionResult::success(version);
+}
+
+Result<ItemHandle, KiottySpecStatus> ItemWriter::storeItem(const ItemLabel& label,
+                                                           const ItemState& state,
+                                                           const ItemVersion& version)
+{
+    using HandleResult = Result<ItemHandle, KiottySpecStatus>;
     const ItemHandle handle = _tables.items.acquire();
-    const bool is_valid = handle.isValid();
-    if (!is_valid) { return HandleResult::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL); }
-    ItemRecord& stored = *_tables.items.get(handle).value;
-    stored = record;
-    stored.checkpoint = CheckpointHandle{sequence, 0};
-    status = writeLinks(viewKeys(), viewParents(), handle.index, version);
-    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(status); }
-    _tables.id_index.insert(stored.id, handle.index);
-    _tables.key_index.insert(key.value, handle.index);
+    const Result<ItemLabel&, KiottySpecStatus> stored_label = labelOf(handle);
+    if (!stored_label) { return HandleResult::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL); }
+    *stored_label.value = label;
+    ItemState& stored = *_tables.items.get(handle).value;
+    stored = state;
+    stored.checkpoint = CheckpointHandle{version.checkpoint, 0};
+    const KiottySpecStatus linked = writeLinks(viewKeys(), viewParents(), handle.index, version);
+    if (linked != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(linked); }
+    _tables.id_index.insert(label.id, handle.index);
+    _tables.key_index.insert(version.key, handle.index);
     return HandleResult::success(handle);
 }
 
-KiottySpecStatus ItemWriter::update(ItemHandle handle, const ItemRecord& record, uint32_t sequence)
+KiottySpecStatus ItemWriter::update(ItemHandle handle, const ItemLabel& label, ItemHandle parent,
+                                    uint32_t sequence)
 {
     auto version = currentVersion(handle);
     if (!version) { return version.code; }
+    const auto version_label = storeLabel(label);
+    if (!version_label) { return version_label.code; }
     version.value.checkpoint = sequence;
-    version.value.title = record.title;
-    version.value.summary = record.summary;
-    version.value.parent = reader().key(record.parent);
+    version.value.label = version_label.value;
+    version.value.parent = entity::makeItemKey(reader().key(parent));
     const KiottySpecStatus written = writeVersion(handle, version.value);
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
-    ItemRecord& stored = *_tables.items.get(handle).value;
-    stored.title = record.title;
-    stored.summary = record.summary;
-    stored.parent = record.parent;
+    const Result<ItemLabel&, KiottySpecStatus> stored = labelOf(handle);
+    if (!stored) { return stored.code; }
+    (*stored.value).title = label.title;
+    (*stored.value).summary = label.summary;
+    (*_tables.items.get(handle).value).parent = parent;
     const Span<uint32_t> parents = viewParents();
-    return writeAt(parents, handle.index, version.value.parent);
+    return writeAt(parents, handle.index, version.value.parent.index);
 }
 
 KiottySpecStatus ItemWriter::setTag(ItemHandle handle, uint32_t tag, uint64_t value,
@@ -106,14 +131,15 @@ KiottySpecStatus ItemWriter::setTag(ItemHandle handle, uint32_t tag, uint64_t va
                               literalText("max_tags"));
     }
     const uint32_t key = reader().key(handle);
-    const TagVersion version {value, key, tag, sequence, value == 0 ? 1u : 0u};
+    const uint32_t removed = value == 0 ? 1u : 0u;
+    const TagVersion version {value, entity::makeItemKey(key), tag, sequence, removed};
     const KiottySpecStatus written = _tables.tag_versions.write(version);
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_tags"));
     }
-    ItemRecord& record = *stored.value;
-    record.checkpoint = CheckpointHandle{sequence, 0};
-    return applyTag(handle, record.kind, tag, value);
+    ItemState& state = *stored.value;
+    state.checkpoint = CheckpointHandle{sequence, 0};
+    return applyTag(handle, state.kind, tag, value);
 }
 
 KiottySpecStatus ItemWriter::writeBody(ItemHandle handle, Span<const char> body, uint32_t sequence)
@@ -139,8 +165,8 @@ KiottySpecStatus ItemWriter::remove(ItemHandle handle, uint32_t sequence)
     const KiottySpecStatus written = writeVersion(handle, version.value);
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return written; }
     dropTags(handle);
-    const ItemRecord& record = *_tables.items.get(handle).value;
-    _tables.id_index.erase(record.id);
+    const Result<ItemLabel&, KiottySpecStatus> label = labelOf(handle);
+    if (label) { _tables.id_index.erase((*label.value).id); }
     _tables.key_index.erase(version.value.key);
     const Span<uint32_t> keys = viewKeys();
     const KiottySpecStatus cleared = writeAt(keys, handle.index, entity::NO_KEY);
@@ -157,9 +183,10 @@ KiottySpecStatus ItemWriter::rename(ItemHandle handle, IdText id)
     const uint32_t key = reader().key(handle);
     _tables.names.erase(key);
     _tables.names.insert(key, id);
-    ItemRecord& record = *stored.value;
-    _tables.id_index.erase(record.id);
-    record.id = id;
+    const Result<ItemLabel&, KiottySpecStatus> label = labelOf(handle);
+    if (!label) { return label.code; }
+    _tables.id_index.erase((*label.value).id);
+    (*label.value).id = id;
     return _tables.id_index.insert(id, handle.index);
 }
 
@@ -212,9 +239,24 @@ KiottySpecStatus ItemWriter::writeVersion(ItemHandle handle, const ItemVersion& 
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(written, KIOTTY_SPEC_SUBJECT_CONFIGURATION, literalText("max_items"));
     }
-    ItemRecord& record = *_tables.items.get(handle).value;
-    record.checkpoint = CheckpointHandle{version.checkpoint, 0};
+    ItemState& state = *_tables.items.get(handle).value;
+    state.checkpoint = CheckpointHandle{version.checkpoint, 0};
     return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+Result<entity::ItemLabelHandle, KiottySpecStatus> ItemWriter::storeLabel(const ItemLabel& label)
+{
+    using LabelResult = Result<entity::ItemLabelHandle, KiottySpecStatus>;
+    const LabelResult handle =
+        _tables.version_labels.acquire(_tables.versions.all(), pickLabelHandle);
+    if (!handle) {
+        return LabelResult::failure(_failure.raise(handle.code, KIOTTY_SPEC_SUBJECT_CONFIGURATION,
+                                                   literalText("max_items")));
+    }
+    entity::ItemVersionLabel& stored = *_tables.version_labels.get(handle.value).value;
+    stored.title = label.title;
+    stored.summary = label.summary;
+    return handle;
 }
 
 KiottySpecStatus ItemWriter::applyTag(ItemHandle handle, ItemKind kind, uint32_t tag,
@@ -237,16 +279,13 @@ void ItemWriter::dropTags(ItemHandle handle)
 
 namespace {
 
-ItemVersion buildVersion(const ItemRecord& record, uint32_t key, uint32_t sequence,
-                         uint32_t parent)
+ItemVersion buildVersion(entity::ItemKind kind, uint32_t key, uint32_t sequence, uint32_t parent)
 {
     ItemVersion version {};
     version.key = key;
     version.checkpoint = sequence;
-    version.parent = parent;
-    version.kind = record.kind;
-    version.title = record.title;
-    version.summary = record.summary;
+    version.parent = entity::makeItemKey(parent);
+    version.kind = kind;
     return version;
 }
 
@@ -255,7 +294,7 @@ KiottySpecStatus writeLinks(Span<uint32_t> keys, Span<uint32_t> parents, uint32_
 {
     const KiottySpecStatus key_written = writeAt(keys, index, version.key);
     if (key_written != KIOTTY_SPEC_STATUS_SUCCESS) { return key_written; }
-    return writeAt(parents, index, version.parent);
+    return writeAt(parents, index, version.parent.index);
 }
 
 KiottySpecStatus writeAt(Span<uint32_t> values, uint32_t index, uint32_t value)

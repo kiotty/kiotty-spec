@@ -95,7 +95,7 @@ KiottySpecCheckpointResult KiottySpec_readCheckpoint(KiottySpecContext* context,
     }
     result.code = KIOTTY_SPEC_STATUS_SUCCESS;
     result.handle = sequence;
-    result.value = toCheckpointRecord(*record.value);
+    result.value = toCheckpointRecord(*record.value, checkpoints.describe(sequence));
     return result;
 }
 
@@ -133,7 +133,8 @@ KiottySpecStatusResult KiottySpec_fetchCheckpointPage(KiottySpecContext* context
         const bool has_slot = handle && element;
         if (!has_slot) { return status(KIOTTY_SPEC_STATUS_OUT_OF_RANGE); }
         *handle.value = static_cast<KiottySpecCheckpointHandle>(row.number);
-        *element.value = toCheckpointRecord(*record.value);
+        const uint32_t sequence = static_cast<uint32_t>(row.number);
+        *element.value = toCheckpointRecord(*record.value, checkpoints.describe(sequence));
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);
@@ -190,8 +191,8 @@ KiottySpecModelResult KiottySpec_readModel(KiottySpecContext* context, KiottySpe
     copyText(result.value.id_prefix, model.id_prefix);
     result.value.kind = kind;
     result.value.created_in = static_cast<KiottySpecStep>(model.created_in);
-    result.value.tag_count = static_cast<uint32_t>(model.tags.length());
-    result.value.relation_count = static_cast<uint32_t>(model.relations.length());
+    result.value.tag_count = static_cast<uint32_t>(model.tags.length);
+    result.value.relation_count = static_cast<uint32_t>(model.relations.length);
     return result;
 }
 
@@ -204,13 +205,14 @@ KiottySpecStatusResult KiottySpec_readTagDefinition(KiottySpecContext* context,
     if (!has_valid_arguments) {
         return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT);
     }
-    const entity::Model& model =
-        context->context.readSide().catalog().model(static_cast<entity::ItemKind>(kind));
-    const auto source = model.tags.at(index);
+    const impl::ModelFinder finder = context->context.readSide().catalog().finder();
+    const entity::ItemKind item_kind = static_cast<entity::ItemKind>(kind);
+    const auto source = finder.tagsOf(item_kind).at(index);
     if (!source) { return status(source.code); }
     copyText(definition->name, source.value->name);
+    const impl::Span<const entity::TagName> bit_names = finder.bitNamesOf(item_kind, index);
     for (size_t bit = 0; bit < KIOTTY_SPEC_TAG_BIT_COUNT; ++bit) {
-        copyText(definition->bit_names[bit], source.value->bit_names[bit]);
+        copyText(definition->bit_names[bit], bit_names[bit]);
     }
     definition->cardinality = static_cast<KiottySpecCardinality>(source.value->cardinality);
     return status(KIOTTY_SPEC_STATUS_SUCCESS);
@@ -227,9 +229,8 @@ KiottySpecRelationDefinitionResult KiottySpec_readRelationDefinition(KiottySpecC
         result.code = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
         return result;
     }
-    const entity::Model& model =
-        context->context.readSide().catalog().model(static_cast<entity::ItemKind>(kind));
-    const auto definition = model.relations.at(index);
+    const impl::ModelFinder finder = context->context.readSide().catalog().finder();
+    const auto definition = finder.relationsOf(static_cast<entity::ItemKind>(kind)).at(index);
     if (!definition) {
         result.code = definition.code;
         return result;

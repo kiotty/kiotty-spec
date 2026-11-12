@@ -30,7 +30,9 @@ CheckpointWriter::create(entity::Step step, Span<const char> description, int64_
     const Span<uint8_t> exists = viewFlags();
     const RecordResult slot = records.at(sequence - 1);
     const Result<uint8_t&, KiottySpecStatus> flag = exists.at(sequence - 1);
-    const bool is_out_of_range = !slot || !flag;
+    const Span<entity::DescriptionText> descriptions = viewVector(_descriptions);
+    const auto text = descriptions.at(sequence - 1);
+    const bool is_out_of_range = !slot || !flag || !text;
     if (is_out_of_range) {
         return SequenceResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED,
                                                       KIOTTY_SPEC_SUBJECT_CONFIGURATION,
@@ -42,7 +44,7 @@ CheckpointWriter::create(entity::Step step, Span<const char> description, int64_
     record.previous = CheckpointHandle{_latest, 0};
     record.step = step;
     record.state = CheckpointState::STARTED;
-    record.description.assign(description);
+    (*text.value).assign(description);
     *flag.value = 1;
     _latest = sequence;
     return SequenceResult::success(sequence);

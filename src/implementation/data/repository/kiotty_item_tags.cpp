@@ -13,6 +13,8 @@ Span<const TagRecord> findItemTags(Span<const TagRecord> tags, uint32_t index);
 uint64_t findTagValue(Span<const TagRecord> tags, uint32_t index, uint32_t tag);
 size_t findTagPosition(Span<const TagRecord> tags, uint32_t index, uint32_t tag);
 bool isRecordBefore(const TagRecord& record, uint32_t index, uint32_t tag);
+void copyTagValues(Span<const TagRecord> tags, entity::ItemKind model, uint32_t tag,
+                   Span<uint64_t> values);
 
 }
 
@@ -25,7 +27,21 @@ uint64_t ItemTags::value(ItemHandle handle, uint32_t tag) const
 size_t ItemTags::position(uint32_t index, uint32_t tag) const
 { return findTagPosition(_tags, index, tag); }
 
+void ItemTags::copyValues(entity::ItemKind model, uint32_t tag, Span<uint64_t> values) const
+{ copyTagValues(_tags, model, tag, values); }
+
 namespace {
+
+void copyTagValues(Span<const TagRecord> tags, entity::ItemKind model, uint32_t tag,
+                   Span<uint64_t> values)
+{
+    for (const TagRecord& record : tags) {
+        const bool is_wanted = record.model == model && record.tag == tag;
+        if (!is_wanted) { continue; }
+        const Result<uint64_t&, KiottySpecStatus> slot = values.at(record.item.index);
+        if (slot) { *slot.value = record.value; }
+    }
+}
 
 Span<const TagRecord> findItemTags(Span<const TagRecord> tags, uint32_t index)
 {

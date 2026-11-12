@@ -1,5 +1,6 @@
 #include "kiotty_model_catalog.h"
 
+#include "implementation/core/kiotty_checked.h"
 #include "implementation/core/kiotty_search.h"
 #include "implementation/core/kiotty_text_view.h"
 
@@ -187,12 +188,17 @@ KiottySpecStatus ModelCatalog::loadTags()
     for (size_t index = 0; index < TAG_COUNT; ++index) {
         const TagSource& source = TAG_SOURCES[index];
         entity::TagDefinition& definition = _tags[index];
+        const Result<size_t, KiottySpecStatus> first_bit =
+            checkedMultiply(index, entity::TAG_BIT_COUNT);
+        const Span<entity::TagName> all_names(_bit_names, BIT_NAME_COUNT);
+        const Span<entity::TagName> names =
+            all_names.subspan(first_bit.value, entity::TAG_BIT_COUNT).value;
+        const size_t bit_count = names.length();
         KiottySpecStatus status =
             definition.name.assign(spanOf(source.name));
-        for (size_t bit = 0; bit < entity::TAG_BIT_COUNT && status == KIOTTY_SPEC_STATUS_SUCCESS;
-             ++bit) {
+        for (size_t bit = 0; bit < bit_count && status == KIOTTY_SPEC_STATUS_SUCCESS; ++bit) {
             const Span<const char> bit_name = spanOf(source.bits[bit]);
-            status = definition.bit_names[bit].assign(bit_name);
+            status = names[bit].assign(bit_name);
         }
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
         definition.cardinality = source.cardinality;
@@ -232,15 +238,16 @@ KiottySpecStatus ModelCatalog::loadModel(size_t index)
 
 KiottySpecStatus ModelCatalog::checkTagValue(ItemKind kind, uint32_t tag, uint64_t value) const
 {
-    const Span<const entity::TagDefinition> tags = model(kind).tags;
+    const Span<const entity::TagDefinition> tags = finder().tagsOf(kind);
     const auto found = tags.at(tag);
     if (!found) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     if (value == 0) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     if ((value & ~entity::TAG_VALUE_MASK) != 0) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     const entity::TagDefinition& definition = *found.value;
+    const Span<const entity::TagName> bit_names = finder().bitNamesOf(kind, tag);
     for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
         const bool is_set = (value & (uint64_t { 1 } << bit)) != 0;
-        const bool is_unnamed = definition.bit_names[bit].empty();
+        const bool is_unnamed = bit_names[bit].empty();
         if (is_set && is_unnamed) {
             return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
         }
@@ -254,7 +261,7 @@ KiottySpecStatus ModelCatalog::checkTagValue(ItemKind kind, uint32_t tag, uint64
 
 KiottySpecStatus ModelCatalog::checkRelation(ItemKind from, uint32_t relation, ItemKind to) const
 {
-    const Span<const entity::RelationDefinition> relations = model(from).relations;
+    const Span<const entity::RelationDefinition> relations = finder().relationsOf(from);
     const auto found = relations.at(relation);
     if (!found) { return KIOTTY_SPEC_STATUS_INVALID_ARGUMENT; }
     const entity::RelationDefinition& definition = *found.value;
@@ -287,9 +294,8 @@ buildModel(const ModelSource& source, size_t index, Span<const entity::TagDefini
     entity::Model model {};
     model.kind = source.kind;
     model.created_in = source.created_in;
-    model.tags = Span<const entity::TagDefinition>(first_tag.value, tag_range.value.length);
-    model.relations =
-        Span<const entity::RelationDefinition>(first_relation.value, relation_range.value.length);
+    model.tags = tag_range.value;
+    model.relations = relation_range.value;
     KiottySpecStatus status = model.name.assign(spanOf(source.name));
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
         status = model.id_prefix.assign(spanOf(source.id_prefix));

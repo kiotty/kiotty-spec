@@ -142,7 +142,7 @@ KiottySpecItemResult KiottySpec_readItemAt(KiottySpecContext* context, KiottySpe
     result.code = version.code;
     if (!version) { return result; }
     result.handle = findCurrentHandle(context->context.workspace().items.reader(), parsed.value);
-    result.value = toItem(version.value.record);
+    result.value = toItem(version.value.state, version.value.label);
     return result;
 }
 
@@ -166,8 +166,8 @@ KiottySpecTagResult KiottySpec_readItemTagAt(KiottySpecContext* context, KiottyS
     const auto version = differ.past().itemAt(parsed.value, point.value);
     result.code = version.code;
     if (!version) { return result; }
-    const entity::ItemKind kind = version.value.record.kind;
-    const size_t tag_count = context->context.readSide().catalog().model(kind).tags.length();
+    const entity::ItemKind kind = version.value.state.kind;
+    const size_t tag_count = context->context.readSide().catalog().model(kind).tags.length;
     if (tag >= tag_count) {
         result.code = context->context.failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
                                                        KIOTTY_SPEC_SUBJECT_TAG, parsed.value);

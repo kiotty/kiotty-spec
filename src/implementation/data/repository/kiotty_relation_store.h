@@ -15,6 +15,19 @@
 
 namespace kiotty::spec::implementation {
 
+enum class RelationSide : uint32_t {
+    FROM = 1,
+    TO
+};
+
+struct RelationEnd {
+    entity::ItemKind model {};
+    uint32_t relation {};
+    RelationSide side {RelationSide::FROM};
+};
+
+static_assert(sizeof(RelationEnd) == 12, "unexpected padding");
+
 struct RelationDependencies {
     entity::Failure& failure;
     ItemStore& items;
@@ -67,6 +80,7 @@ public:
     Span<const entity::RelationRecord> all() const
     { return viewVector(_records).subspan(0, _length).value; }
     bool contains(const entity::RelationRecord& relation) const;
+    void countEnds(RelationEnd end, Span<uint32_t> counts) const;
 
     RelationWriter writer()
     {

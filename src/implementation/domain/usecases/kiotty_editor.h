@@ -26,7 +26,8 @@ public:
     KiottySpecStatus removeItem(Span<const char> id);
 
 private:
-    Result<entity::IdText, KiottySpecStatus> insertItem(const entity::ItemRecord& draft,
+    Result<entity::IdText, KiottySpecStatus> insertItem(entity::ItemKind kind,
+                                                        const entity::ItemLabel& draft,
                                                         Span<const char> id, uint32_t sequence);
     Result<entity::ItemHandle, KiottySpecStatus> resolveParent(entity::ItemHandle item,
                                                                Span<const char> id,

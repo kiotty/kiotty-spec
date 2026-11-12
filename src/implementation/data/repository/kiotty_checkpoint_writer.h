@@ -12,12 +12,20 @@
 
 namespace kiotty::spec::implementation {
 
+struct CheckpointColumns {
+    std::vector<entity::DescriptionText>& descriptions;
+    std::vector<entity::CheckpointRecord>& records;
+    std::vector<uint8_t>& exists;
+};
+
+static_assert(sizeof(CheckpointColumns) == 24, "unexpected padding");
+
 class CheckpointWriter
 {
 public:
-    CheckpointWriter(entity::Failure& failure, std::vector<entity::CheckpointRecord>& records,
-                     std::vector<uint8_t>& exists, uint32_t& latest)
-        : _failure(failure), _records(records), _exists(exists), _latest(latest)
+    CheckpointWriter(entity::Failure& failure, const CheckpointColumns& columns, uint32_t& latest)
+        : _failure(failure), _descriptions(columns.descriptions), _records(columns.records),
+          _exists(columns.exists), _latest(latest)
     {
     }
 
@@ -32,6 +40,7 @@ private:
     Span<uint8_t> viewFlags() const { return viewVector(_exists); }
 
     entity::Failure& _failure;
+    std::vector<entity::DescriptionText>& _descriptions;
     std::vector<entity::CheckpointRecord>& _records;
     std::vector<uint8_t>& _exists;
     uint32_t& _latest;

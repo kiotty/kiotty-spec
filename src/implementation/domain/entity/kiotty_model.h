@@ -3,7 +3,7 @@
 #include "kiotty_item_records.h"
 #include "kiotty_kind.h"
 #include "implementation/core/kiotty_fixed_string.h"
-#include "implementation/core/kiotty_span.h"
+#include "implementation/core/kiotty_search.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -24,7 +24,6 @@ enum class Cardinality : uint32_t {
 
 struct TagDefinition
 {
-    TagName bit_names[TAG_BIT_COUNT] {};
     TagName name {};
     Cardinality cardinality {};
 };
@@ -36,15 +35,15 @@ struct RelationDefinition
     Cardinality cardinality {};
 };
 
-static_assert(sizeof(TagDefinition) == 3140, "unexpected padding");
+static_assert(sizeof(TagDefinition) == 68, "unexpected padding");
 static_assert(sizeof(RelationDefinition) == 72, "unexpected padding");
 
 struct Model
 {
     ModelName name {};
     IdText id_prefix {};
-    Span<const TagDefinition> tags {};
-    Span<const RelationDefinition> relations {};
+    IndexRange tags {};
+    IndexRange relations {};
     ItemKind kind {};
     Step created_in {};
 };

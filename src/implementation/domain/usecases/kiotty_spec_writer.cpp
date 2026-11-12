@@ -42,7 +42,7 @@ public:
     void addDecimal(uint64_t number);
     void addKey(uint32_t key);
     void addHash(uint64_t hash);
-    void addTagValue(const entity::TagDefinition& definition, uint64_t value);
+    void addTagValue(Span<const entity::TagName> bit_names, uint64_t value);
     Result<Span<const char>, KiottySpecStatus> finish() { return _line.finish(); }
 
 private:
@@ -100,7 +100,8 @@ KiottySpecStatus SpecWriter::writeCheckpoints()
         line.addDecimal(static_cast<uint64_t>(record.step));
         line.add(spanOf(entity::stateName(record.state)));
         line.addDecimal(record.created_at > 0 ? static_cast<uint64_t>(record.created_at) : 0);
-        line.add(record.description.view());
+        const entity::DescriptionText description = _tables.checkpoints.describe(sequence);
+        line.add(description.view());
         status = emit(line.finish());
     }
     return status;
@@ -129,9 +130,11 @@ KiottySpecStatus SpecWriter::writeItemVersions()
         line.addKey(version.key);
         line.addDecimal(version.checkpoint);
         line.add(spanOf(entity::kindName(version.kind)));
-        line.addKey(version.parent);
-        line.add(version.title.view());
-        line.add(version.summary.view());
+        line.addKey(version.parent.index);
+        const entity::ItemVersionLabel& label =
+            _tables.items.tables().version_labels.read(version.label);
+        line.add(label.title.view());
+        line.add(label.summary.view());
         line.addHash(version.body_hash);
         status = emit(line.finish());
     }
@@ -144,18 +147,19 @@ KiottySpecStatus SpecWriter::writeTags()
     const ItemTables& tables = _tables.items.tables();
     for (const TagVersion& version : tables.tag_versions.all()) {
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
-        const auto item = tables.versions.latest(version.key, UINT32_MAX);
+        const auto item = tables.versions.latest(version.item.index, UINT32_MAX);
         if (!item) { continue; }
         const ItemKind kind = (*item.value).kind;
-        const Span<const entity::TagDefinition> tags = _tables.catalog.model(kind).tags;
+        const Span<const entity::TagDefinition> tags = _tables.catalog.finder().tagsOf(kind);
         const auto found = tags.at(version.tag);
         if (!found) { return _tables.failure.raise(found.code, KIOTTY_SPEC_SUBJECT_TAG); }
         const entity::TagDefinition& definition = *found.value;
         SpecLine line(KispLineEncoder(_area), TAG_TABLE, version.removed);
-        line.addKey(version.key);
+        line.addKey(version.item.index);
         line.add(definition.name.view());
         line.addDecimal(version.checkpoint);
-        line.addTagValue(definition, version.removed != 0 ? 0 : version.value);
+        const uint64_t value = version.removed != 0 ? 0 : version.value;
+        line.addTagValue(_tables.catalog.finder().bitNamesOf(kind, version.tag), value);
         status = emit(line.finish());
     }
     return status;
@@ -167,15 +171,15 @@ KiottySpecStatus SpecWriter::writeRelations()
     for (const RelationVersion& version : _tables.relations.versions().all()) {
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { break; }
         const Span<const entity::RelationDefinition> relations =
-            _tables.catalog.model(version.model).relations;
+            _tables.catalog.finder().relationsOf(version.model);
         const auto found = relations.at(version.relation);
         if (!found) { return _tables.failure.raise(found.code, KIOTTY_SPEC_SUBJECT_RELATION); }
         const entity::RelationDefinition& definition = *found.value;
         SpecLine line(KispLineEncoder(_area), RELATION_TABLE, version.removed);
-        line.addKey(version.from);
+        line.addKey(version.from.index);
         line.add(spanOf(entity::kindName(version.model)));
         line.add(definition.name.view());
-        line.addKey(version.to);
+        line.addKey(version.to.index);
         line.addDecimal(version.checkpoint);
         status = emit(line.finish());
     }
@@ -190,7 +194,7 @@ KiottySpecStatus SpecWriter::writeDecisions()
         SpecLine line(KispLineEncoder(_area), DECISION_TABLE, 0);
         line.add(spanOf(entity::kindName(version.kind)));
         line.addDecimal(version.checkpoint);
-        line.add(version.text.view());
+        line.add(_tables.decisions.textOf(version).view());
         status = emit(line.finish());
     }
     return status;
@@ -256,7 +260,7 @@ void SpecLine::addHash(uint64_t hash)
     _line.add(text.view());
 }
 
-void SpecLine::addTagValue(const entity::TagDefinition& definition, uint64_t value)
+void SpecLine::addTagValue(Span<const entity::TagName> bit_names, uint64_t value)
 {
     if (value == 0) {
         _line.add(spanOf(NONE_MARKER));
@@ -267,7 +271,7 @@ void SpecLine::addTagValue(const entity::TagDefinition& definition, uint64_t val
     for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
         if ((value & (uint64_t{1} << bit)) == 0) { continue; }
         if (has_written_bit) { _line.extend(literalText(",")); }
-        _line.extend(definition.bit_names[bit].view());
+        _line.extend(bit_names[bit].view());
         has_written_bit = true;
     }
 }

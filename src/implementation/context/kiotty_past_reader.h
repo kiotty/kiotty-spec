@@ -13,7 +13,8 @@
 namespace kiotty::spec::implementation {
 
 struct ItemVersionView {
-    entity::ItemRecord record {};
+    entity::ItemLabel label {};
+    entity::ItemState state {};
     entity::IdText parent_id {};
 };
 

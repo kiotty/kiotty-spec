@@ -8,6 +8,7 @@ namespace {
 
 constexpr uint32_t GENERATION_SHIFT = 32;
 constexpr uint64_t INDEX_MASK = 0xFFFFFFFFu;
+constexpr uint64_t MAX_GENERATION = 0xFFFFu;
 
 CursorId encode(Handle handle);
 Span<CursorRow> selectRows(Span<CursorRow> rows, size_t index, size_t width);
@@ -20,7 +21,7 @@ CursorPool::CursorPool(size_t max_cursors, size_t max_rows, size_t total_rows)
 
 CursorIdResult CursorPool::open(CursorKind kind)
 {
-    const Handle handle = _slots.acquire();
+    const entity::CursorHandle handle = _slots.acquire();
     const bool is_valid = handle.isValid();
     if (!is_valid) { return CursorIdResult::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL); }
     const auto slot = _slots.get(handle);
@@ -30,7 +31,7 @@ CursorIdResult CursorPool::open(CursorKind kind)
 
 KiottySpecStatus CursorPool::push(CursorId cursor, const CursorRow &row)
 {
-    const Handle handle = decode(cursor);
+    const entity::CursorHandle handle = decode(cursor);
     const auto slot = _slots.get(handle);
     if (!slot) { return slot.code; }
     CursorSlot& state = *slot.value;
@@ -43,7 +44,7 @@ KiottySpecStatus CursorPool::push(CursorId cursor, const CursorRow &row)
 
 CursorRowsResult CursorPool::fetch(CursorId cursor, CursorKind kind, size_t max_count)
 {
-    const Handle handle = decode(cursor);
+    const entity::CursorHandle handle = decode(cursor);
     const auto slot = _slots.get(handle);
     if (!slot) { return CursorRowsResult::failure(slot.code); }
     CursorSlot& state = *slot.value;
@@ -68,25 +69,26 @@ Result<size_t, KiottySpecStatus> CursorPool::total(CursorId cursor)
 
 KiottySpecStatus CursorPool::close(CursorId cursor) { return _slots.release(decode(cursor)); }
 
-Result<CursorSpace, KiottySpecStatus> CursorPool::space(CursorId cursor, CursorKind kind)
+Result<entity::CursorHandle, KiottySpecStatus> CursorPool::locate(CursorId cursor,
+                                                                 CursorKind kind)
 {
-    const Handle handle = decode(cursor);
+    using HandleResult = Result<entity::CursorHandle, KiottySpecStatus>;
+    const entity::CursorHandle handle = decode(cursor);
     const auto slot = _slots.get(handle);
-    if (!slot) { return Result<CursorSpace, KiottySpecStatus>::failure(slot.code); }
+    if (!slot) { return HandleResult::failure(slot.code); }
     const bool is_other_kind = (*slot.value).kind != kind;
-    if (is_other_kind) {
-        return Result<CursorSpace, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE);
-    }
-    const CursorSpace cursor_space {rowsOf(handle), handle.index};
-    return Result<CursorSpace, KiottySpecStatus>::success(cursor_space);
+    if (is_other_kind) { return HandleResult::failure(KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE); }
+    return HandleResult::success(handle);
 }
 
-Handle CursorPool::decode(CursorId cursor)
+entity::CursorHandle CursorPool::decode(CursorId cursor)
 {
     const uint64_t index = cursor & INDEX_MASK;
-    if (index == 0) { return Handle{Handle::INVALID_INDEX, 0}; }
-    return Handle { static_cast<uint32_t>(index - 1),
-                    static_cast<uint32_t>(cursor >> GENERATION_SHIFT) };
+    const uint64_t generation = cursor >> GENERATION_SHIFT;
+    const bool is_out_of_range = index == 0 || generation > MAX_GENERATION;
+    if (is_out_of_range) { return entity::CursorHandle {}; }
+    return entity::CursorHandle {static_cast<uint32_t>(index - 1),
+                                 static_cast<uint16_t>(generation)};
 }
 
 Span<CursorRow> CursorPool::rowsOf(Handle handle)

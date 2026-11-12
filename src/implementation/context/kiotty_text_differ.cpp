@@ -41,14 +41,14 @@ CursorIdResult TextDiffer::open(entity::ItemHandle item, uint32_t field, DiffRan
 Result<TextPiece, KiottySpecStatus> TextDiffer::next(CursorId cursor)
 {
     using PieceResult = Result<TextPiece, KiottySpecStatus>;
-    const auto space = _cursors.space(cursor, CursorKind::TEXT_DIFF);
-    if (!space) { return PieceResult::failure(space.code); }
+    const auto located = _cursors.locate(cursor, CursorKind::TEXT_DIFF);
+    if (!located) { return PieceResult::failure(located.code); }
     const CursorRowsResult rows = _cursors.fetch(cursor, CursorKind::TEXT_DIFF, 1);
     if (!rows) { return PieceResult::failure(rows.code); }
     const Result<const CursorRow&, KiottySpecStatus> row = rows.value.at(0);
     if (!row) { return PieceResult::success(TextPiece{}); }
     const TextSegment segment = unpackSegment(*row.value);
-    const auto text = _store.textOf(space.value.index, segment.source);
+    const auto text = _store.textOf(located.value.index, segment.source);
     if (!text) { return PieceResult::failure(text.code); }
     const auto piece = text.value.subspan(segment.offset, segment.length);
     if (!piece) { return PieceResult::failure(piece.code); }
@@ -58,19 +58,19 @@ Result<TextPiece, KiottySpecStatus> TextDiffer::next(CursorId cursor)
 Result<entity::IdText, KiottySpecStatus> TextDiffer::readItemId(entity::ItemHandle item)
 {
     using IdResult = Result<IdText, KiottySpecStatus>;
-    const auto record = _workspace.items.reader().get(item);
-    if (!record) {
+    const auto label = _workspace.items.reader().label(item);
+    if (!label) {
         return IdResult::failure(
             _workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_HANDLE, KIOTTY_SPEC_SUBJECT_ITEM));
     }
-    return IdResult::success((*record.value).id);
+    return IdResult::success((*label.value).id);
 }
 
 KiottySpecStatus TextDiffer::fillSegments(CursorId cursor, const TextPair& texts)
 {
-    const auto space = _cursors.space(cursor, CursorKind::TEXT_DIFF);
-    if (!space) { return space.code; }
-    const KiottySpecStatus stored = storeTexts(space.value.index, texts);
+    const auto located = _cursors.locate(cursor, CursorKind::TEXT_DIFF);
+    if (!located) { return located.code; }
+    const KiottySpecStatus stored = storeTexts(located.value.index, texts);
     if (stored != KIOTTY_SPEC_STATUS_SUCCESS) { return stored; }
     const Span<TextSegment> segments = _store.segments();
     const Result<size_t, KiottySpecStatus> count =
@@ -107,8 +107,8 @@ Span<const char> selectText(const Result<ItemVersionView, KiottySpecStatus>& ver
                             uint32_t field)
 {
     if (!version) { return Span<const char>(); }
-    const entity::ItemRecord& record = version.value.record;
-    return field == KIOTTY_SPEC_TEXT_FIELD_TITLE ? record.title.view() : record.summary.view();
+    const entity::ItemLabel& label = version.value.label;
+    return field == KIOTTY_SPEC_TEXT_FIELD_TITLE ? label.title.view() : label.summary.view();
 }
 
 CursorRow packSegment(TextSegment segment)

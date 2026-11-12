@@ -72,9 +72,14 @@ uint32_t ItemDiffQuery::changedFields(uint32_t key, const ItemVersion& before,
                                       const ItemVersion& after) const
 {
     uint32_t fields = 0;
-    if (before.title != after.title) { fields |= KIOTTY_SPEC_CHANGED_FIELD_TITLE; }
-    if (before.summary != after.summary) { fields |= KIOTTY_SPEC_CHANGED_FIELD_SUMMARY; }
-    if (before.parent != after.parent) { fields |= KIOTTY_SPEC_CHANGED_FIELD_PARENT; }
+    const ItemLabelPool& labels = _items.tables().version_labels;
+    const entity::ItemVersionLabel& before_label = labels.read(before.label);
+    const entity::ItemVersionLabel& after_label = labels.read(after.label);
+    if (before_label.title != after_label.title) { fields |= KIOTTY_SPEC_CHANGED_FIELD_TITLE; }
+    if (before_label.summary != after_label.summary) {
+        fields |= KIOTTY_SPEC_CHANGED_FIELD_SUMMARY;
+    }
+    if (before.parent.index != after.parent.index) { fields |= KIOTTY_SPEC_CHANGED_FIELD_PARENT; }
     const bool has_tag_change = _items.history().tagsDiffer(key, _range.from, _range.to);
     if (has_tag_change) { fields |= KIOTTY_SPEC_CHANGED_FIELD_TAGS; }
     if (before.body_hash != after.body_hash) { fields |= KIOTTY_SPEC_CHANGED_FIELD_BODY; }

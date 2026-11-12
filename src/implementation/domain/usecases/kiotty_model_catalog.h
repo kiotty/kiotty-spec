@@ -37,6 +37,7 @@ class ModelCatalog
 public:
     static constexpr size_t TAG_COUNT = 13;
     static constexpr size_t RELATION_COUNT = 19;
+    static constexpr size_t BIT_NAME_COUNT = TAG_COUNT * entity::TAG_BIT_COUNT;
 
     ModelCatalog() = default;
     ModelCatalog(const ModelCatalog&) = delete;
@@ -48,7 +49,13 @@ public:
     { return pickModel(Span<const entity::Model>(_models, entity::ITEM_KIND_COUNT), kind); }
 
     ModelFinder finder() const
-    { return ModelFinder(Span<const entity::Model>(_models, entity::ITEM_KIND_COUNT)); }
+    {
+        return ModelFinder(ModelTables {
+            Span<const entity::Model>(_models, entity::ITEM_KIND_COUNT),
+            Span<const entity::TagDefinition>(_tags, TAG_COUNT),
+            Span<const entity::RelationDefinition>(_relations, RELATION_COUNT),
+            Span<const entity::TagName>(_bit_names, BIT_NAME_COUNT)});
+    }
 
     KiottySpecStatus checkTagValue(entity::ItemKind kind, uint32_t tag, uint64_t value) const;
 
@@ -60,6 +67,7 @@ private:
     KiottySpecStatus loadRelations();
     KiottySpecStatus loadModel(size_t index);
 
+    entity::TagName _bit_names[BIT_NAME_COUNT] {};
     entity::Model _models[entity::ITEM_KIND_COUNT] {};
     entity::TagDefinition _tags[TAG_COUNT] {};
     entity::RelationDefinition _relations[RELATION_COUNT] {};

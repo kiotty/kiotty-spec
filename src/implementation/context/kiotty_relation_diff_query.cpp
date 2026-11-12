@@ -56,8 +56,8 @@ Result<bool, KiottySpecStatus> RelationDiffQuery::decode(uint32_t first)
     if (is_live_before == is_live_after) { return DecodeResult::success(false); }
     const ItemTables& tables = _items.tables();
     _current = RelationDiffRow{};
-    _current.from_id = tables.names.find(any.from).value;
-    _current.to_id = tables.names.find(any.to).value;
+    _current.from_id = tables.names.find(any.from.index).value;
+    _current.to_id = tables.names.find(any.to.index).value;
     _current.relation = any.relation;
     _current.model = static_cast<uint32_t>(any.model);
     _current.checkpoint = after ? (*after.value).checkpoint : 0;

@@ -10,7 +10,7 @@
 
 namespace kiotty::spec::implementation {
 
-template <typename Element>
+template <typename Element, typename HandleValue = Handle>
 class LazyPool
 {
 public:
@@ -23,14 +23,14 @@ public:
         }
     }
 
-    Handle acquire()
+    HandleValue acquire()
     {
         const bool is_exhausted = isExhausted(_free_count);
-        if (is_exhausted) { return Handle{Handle::INVALID_INDEX, 0}; }
+        if (is_exhausted) { return HandleValue {}; }
         --_free_count;
         const uint32_t index = _free_indices[_free_count];
         _in_use[index] = 1;
-        return Handle{index, _generations[index]};
+        return HandleValue {index, _generations[index]};
     }
 
     Result<Element&, KiottySpecStatus> get(Handle handle)
@@ -42,12 +42,22 @@ public:
         return Result<Element&, KiottySpecStatus>::success(_values[handle.index]);
     }
 
+    Result<const Element&, KiottySpecStatus> find(Handle handle) const
+    {
+        const bool is_live = isLive(_in_use, _generations, _values.size(), handle);
+        if (!is_live) {
+            return Result<const Element&, KiottySpecStatus>::failure(
+                KIOTTY_SPEC_STATUS_INVALID_HANDLE);
+        }
+        return Result<const Element&, KiottySpecStatus>::success(_values[handle.index]);
+    }
+
     void releaseAll()
     {
         for (size_t index = _values.size(); index > 0; --index) {
             const bool is_in_use = isInUse(_in_use, index - 1);
             if (is_in_use) {
-                release(Handle { static_cast<uint32_t>(index - 1), _generations[index - 1] });
+                release(HandleValue {static_cast<uint32_t>(index - 1), _generations[index - 1]});
             }
         }
     }
@@ -65,11 +75,11 @@ public:
 
     size_t capacity() const { return _values.size(); }
 
-    Handle handleAt(size_t index) const
+    HandleValue handleAt(size_t index) const
     {
         const bool is_vacant = isVacant(_in_use, _values.size(), index);
-        if (is_vacant) { return Handle { Handle::INVALID_INDEX, 0 }; }
-        return Handle{static_cast<uint32_t>(index), _generations[index]};
+        if (is_vacant) { return HandleValue {}; }
+        return HandleValue {static_cast<uint32_t>(index), _generations[index]};
     }
 
 private:
@@ -81,15 +91,16 @@ private:
     static bool isVacant(const std::vector<uint8_t>& in_use, size_t value_count, size_t index)
     { return index >= value_count || in_use[index] == 0; }
 
-    static bool isLive(const std::vector<uint8_t>& in_use, const std::vector<uint32_t>& generations,
+    static bool isLive(const std::vector<uint8_t>& in_use, const std::vector<uint16_t>& generations,
                        size_t value_count, Handle handle)
     {
-        if (handle.index >= value_count) { return false; }
+        const bool is_other_type = handle.type != HandleValue {}.type;
+        if (is_other_type || handle.index >= value_count) { return false; }
         return in_use[handle.index] != 0 && generations[handle.index] == handle.generation;
     }
 
     std::vector<Element> _values;
-    std::vector<uint32_t> _generations;
+    std::vector<uint16_t> _generations;
     std::vector<uint8_t> _in_use;
     std::vector<uint32_t> _free_indices;
     size_t _free_count;

@@ -18,6 +18,7 @@ public:
     Span<const entity::TagRecord> of(entity::ItemHandle handle) const;
     uint64_t value(entity::ItemHandle handle, uint32_t tag) const;
     size_t position(uint32_t index, uint32_t tag) const;
+    void copyValues(entity::ItemKind model, uint32_t tag, Span<uint64_t> values) const;
 
 private:
     Span<const entity::TagRecord> _tags;

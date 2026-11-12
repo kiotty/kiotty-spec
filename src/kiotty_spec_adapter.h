@@ -28,7 +28,8 @@ using TextResult = impl::Result<impl::Span<const char>, KiottySpecStatus>;
 using ConfigurationResult = impl::Result<impl::Configuration, KiottySpecStatus>;
 
 using HandleResult = impl::Result<entity::ItemHandle, KiottySpecStatus>;
-using RecordResult = impl::Result<const entity::ItemRecord&, KiottySpecStatus>;
+using RecordResult = impl::Result<const entity::ItemState&, KiottySpecStatus>;
+using LabelResult = impl::Result<const entity::ItemLabel&, KiottySpecStatus>;
 
 enum class Field : uint8_t { ID, TITLE, SUMMARY, BODY, DECISION, DESCRIPTION, PATH, PROJECT_NAME };
 
@@ -52,8 +53,9 @@ ConfigurationResult parseConfiguration(const KiottySpecConfiguration& configurat
 KiottySpecItemHandle toHandle(entity::ItemHandle handle);
 entity::ItemHandle fromHandle(KiottySpecItemHandle handle);
 KiottySpecCheckpointHandle toCheckpoint(entity::CheckpointHandle handle);
-KiottySpecItem toItem(const entity::ItemRecord& record);
-KiottySpecCheckpoint toCheckpointRecord(const entity::CheckpointRecord& record);
+KiottySpecItem toItem(const entity::ItemState& state, const entity::ItemLabel& label);
+KiottySpecCheckpoint toCheckpointRecord(const entity::CheckpointRecord& record,
+                                        const entity::DescriptionText& description);
 KiottySpecTag toTag(KiottySpecItemHandle item, KiottySpecItemKind model, uint32_t tag,
                     uint64_t value);
 KiottySpecStatusResult status(KiottySpecStatus code);

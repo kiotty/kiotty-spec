@@ -9,23 +9,36 @@
 
 namespace kiotty::spec::implementation {
 
+struct ModelTables {
+    Span<const entity::Model> models {};
+    Span<const entity::TagDefinition> tags {};
+    Span<const entity::RelationDefinition> relations {};
+    Span<const entity::TagName> bit_names {};
+};
+
+static_assert(sizeof(ModelTables) == 64, "unexpected padding");
+
 const entity::Model& pickModel(Span<const entity::Model> models, entity::ItemKind kind);
 
 class ModelFinder
 {
 public:
-    explicit ModelFinder(Span<const entity::Model> models) : _models(models) {}
+    explicit ModelFinder(const ModelTables& tables) : _tables(tables) {}
 
     Result<uint32_t, KiottySpecStatus> findTag(entity::ItemKind kind, Span<const char> name) const;
     Result<uint32_t, KiottySpecStatus> findTagBit(entity::ItemKind kind, uint32_t tag,
                                                   Span<const char> name) const;
     Result<uint32_t, KiottySpecStatus> findRelation(entity::ItemKind kind,
                                                     Span<const char> name) const;
+    Span<const entity::TagDefinition> tagsOf(entity::ItemKind kind) const;
+    Span<const entity::RelationDefinition> relationsOf(entity::ItemKind kind) const;
+    Span<const entity::TagName> bitNamesOf(entity::ItemKind kind, uint32_t tag) const;
 
 private:
-    const entity::Model& model(entity::ItemKind kind) const { return pickModel(_models, kind); }
+    const entity::Model& model(entity::ItemKind kind) const
+    { return pickModel(_tables.models, kind); }
 
-    Span<const entity::Model> _models;
+    ModelTables _tables;
 };
 
 }

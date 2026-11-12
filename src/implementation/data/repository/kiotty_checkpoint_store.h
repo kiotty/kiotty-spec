@@ -17,19 +17,26 @@ class CheckpointStore
 {
 public:
     CheckpointStore(entity::Failure& failure, size_t capacity)
-        : _failure(failure), _records(capacity), _exists(capacity, 0)
+        : _failure(failure), _descriptions(capacity), _records(capacity), _exists(capacity, 0)
     {}
 
     void clear();
-    KiottySpecStatus put(uint32_t sequence, const entity::CheckpointRecord& record);
+    KiottySpecStatus put(uint32_t sequence, const entity::CheckpointRecord& record,
+                         const entity::DescriptionText& description);
 
     uint32_t latest() const { return _latest; }
     Result<const entity::CheckpointRecord&, KiottySpecStatus> get(uint32_t sequence) const;
+    entity::DescriptionText describe(uint32_t sequence) const;
 
-    CheckpointWriter writer() { return CheckpointWriter(_failure, _records, _exists, _latest); }
+    CheckpointWriter writer()
+    {
+        const CheckpointColumns columns {_descriptions, _records, _exists};
+        return CheckpointWriter(_failure, columns, _latest);
+    }
 
 private:
     entity::Failure& _failure;
+    std::vector<entity::DescriptionText> _descriptions;
     std::vector<entity::CheckpointRecord> _records;
     std::vector<uint8_t> _exists;
     uint32_t _latest {0};

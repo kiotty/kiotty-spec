@@ -19,10 +19,11 @@ class ItemWriter
 public:
     ItemWriter(ItemTables& tables, entity::Failure& failure) : _tables(tables), _failure(failure) {}
 
-    Result<entity::ItemHandle, KiottySpecStatus> create(const entity::ItemRecord& record,
+    Result<entity::ItemHandle, KiottySpecStatus> create(const entity::ItemLabel& label,
+                                                        const entity::ItemState& state,
                                                         uint32_t sequence);
-    KiottySpecStatus update(entity::ItemHandle handle, const entity::ItemRecord& record,
-                            uint32_t sequence);
+    KiottySpecStatus update(entity::ItemHandle handle, const entity::ItemLabel& label,
+                            entity::ItemHandle parent, uint32_t sequence);
     KiottySpecStatus setTag(entity::ItemHandle handle, uint32_t tag, uint64_t value,
                             uint32_t sequence);
     KiottySpecStatus writeBody(entity::ItemHandle handle, Span<const char> body, uint32_t sequence);
@@ -36,6 +37,15 @@ private:
     KiottySpecStatus checkUnused(entity::IdText id);
     Result<uint32_t, KiottySpecStatus> newKey(entity::IdText id) const;
     KiottySpecStatus writeVersion(entity::ItemHandle handle, const entity::ItemVersion& version);
+    Result<entity::ItemLabelHandle, KiottySpecStatus> storeLabel(const entity::ItemLabel& label);
+    Result<entity::ItemVersion, KiottySpecStatus> recordVersion(const entity::ItemLabel& label,
+                                                                const entity::ItemState& state,
+                                                                uint32_t sequence);
+    Result<entity::ItemHandle, KiottySpecStatus> storeItem(const entity::ItemLabel& label,
+                                                           const entity::ItemState& state,
+                                                           const entity::ItemVersion& version);
+    Result<entity::ItemLabel&, KiottySpecStatus> labelOf(entity::ItemHandle handle) const
+    { return viewVector(_tables.labels).at(handle.index); }
     Result<entity::ItemVersion, KiottySpecStatus> currentVersion(entity::ItemHandle handle) const;
     KiottySpecStatus applyTag(entity::ItemHandle handle, entity::ItemKind kind, uint32_t tag,
                               uint64_t value);

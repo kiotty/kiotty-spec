@@ -77,15 +77,15 @@ ConfigurationResult parseConfiguration(const KiottySpecConfiguration& input)
 
 entity::ItemHandle fromHandle(KiottySpecItemHandle handle) { return impl::unpackHandle(handle); }
 
-KiottySpecItem toItem(const entity::ItemRecord& record)
+KiottySpecItem toItem(const entity::ItemState& state, const entity::ItemLabel& label)
 {
     KiottySpecItem item {};
-    item.checkpoint = toCheckpoint(record.checkpoint);
-    item.parent = toHandle(record.parent);
-    item.kind = static_cast<KiottySpecItemKind>(record.kind);
-    copyText(item.id, record.id);
-    copyText(item.title, record.title);
-    copyText(item.summary, record.summary);
+    item.checkpoint = toCheckpoint(state.checkpoint);
+    item.parent = toHandle(state.parent);
+    item.kind = static_cast<KiottySpecItemKind>(state.kind);
+    copyText(item.id, label.id);
+    copyText(item.title, label.title);
+    copyText(item.summary, label.summary);
     return item;
 }
 
@@ -96,14 +96,15 @@ KiottySpecItemHandle toHandle(entity::ItemHandle handle)
     return impl::packHandle(handle);
 }
 
-KiottySpecCheckpoint toCheckpointRecord(const entity::CheckpointRecord& record)
+KiottySpecCheckpoint toCheckpointRecord(const entity::CheckpointRecord& record,
+                                        const entity::DescriptionText& description)
 {
     KiottySpecCheckpoint checkpoint {};
     checkpoint.created_at = record.created_at;
     checkpoint.previous = toCheckpoint(record.previous);
     checkpoint.step = static_cast<KiottySpecStep>(record.step);
     checkpoint.state = static_cast<KiottySpecCheckpointState>(record.state);
-    copyText(checkpoint.description, record.description);
+    copyText(checkpoint.description, description);
     return checkpoint;
 }
 
