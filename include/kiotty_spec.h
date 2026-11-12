@@ -131,12 +131,16 @@ KIOTTY_SPEC_API KiottySpecSizeResult KiottySpec_readDecision(KiottySpecContext *
 
 KIOTTY_SPEC_API KiottySpecModelResult KiottySpec_readModel(KiottySpecContext *context,
                                                            KiottySpecItemKind kind);
+KIOTTY_SPEC_API KiottySpecCursorResult
+KiottySpec_openTagDefinitionCursor(KiottySpecContext *context, KiottySpecItemKind kind);
 KIOTTY_SPEC_API KiottySpecStatusResult
-KiottySpec_readTagDefinition(KiottySpecContext *context, KiottySpecItemKind kind, uint32_t index,
-                             KiottySpecTagDefinition *definition);
-KIOTTY_SPEC_API KiottySpecRelationDefinitionResult
-KiottySpec_readRelationDefinition(KiottySpecContext *context, KiottySpecItemKind kind,
-                                  uint32_t index);
+KiottySpec_fetchTagDefinitionPage(KiottySpecContext *context, KiottySpecCursor cursor,
+                                  KiottySpecTagDefinitionPage *page);
+KIOTTY_SPEC_API KiottySpecCursorResult
+KiottySpec_openRelationDefinitionCursor(KiottySpecContext *context, KiottySpecItemKind kind);
+KIOTTY_SPEC_API KiottySpecStatusResult
+KiottySpec_fetchRelationDefinitionPage(KiottySpecContext *context, KiottySpecCursor cursor,
+                                       KiottySpecRelationDefinitionPage *page);
 
 KIOTTY_SPEC_API KiottySpecPositionResult KiottySpec_readPosition(KiottySpecContext *context);
 KIOTTY_SPEC_API KiottySpecCursorResult KiottySpec_openStepRunCursor(KiottySpecContext *context);

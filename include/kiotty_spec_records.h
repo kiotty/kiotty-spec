@@ -85,12 +85,14 @@ typedef struct KiottySpecTagDefinition {
     char                  bit_names[KIOTTY_SPEC_TAG_BIT_COUNT][KIOTTY_SPEC_MAX_TAG_NAME_LENGTH + 1];
     char                  name[KIOTTY_SPEC_MAX_TAG_NAME_LENGTH + 1];
     KiottySpecCardinality cardinality;
+    uint32_t              index;
 } KiottySpecTagDefinition;
 
 typedef struct KiottySpecRelationDefinition {
     char                  name[KIOTTY_SPEC_MAX_TAG_NAME_LENGTH + 1];
     KiottySpecItemKind    target_kind;
     KiottySpecCardinality cardinality;
+    uint32_t              index;
 } KiottySpecRelationDefinition;
 
 typedef struct KiottySpecTagQuery {
@@ -209,6 +211,16 @@ typedef struct KiottySpecTextDiffPage {
     size_t             length;
 } KiottySpecTextDiffPage;
 
+typedef struct KiottySpecTagDefinitionPage {
+    KiottySpecTagDefinition elements[KIOTTY_SPEC_PAGE_CAPACITY];
+    size_t                  length;
+} KiottySpecTagDefinitionPage;
+
+typedef struct KiottySpecRelationDefinitionPage {
+    KiottySpecRelationDefinition elements[KIOTTY_SPEC_PAGE_CAPACITY];
+    size_t                       length;
+} KiottySpecRelationDefinitionPage;
+
 typedef struct KiottySpecStatusResult {
     KiottySpecStatus code;
 } KiottySpecStatusResult;
@@ -288,12 +300,6 @@ typedef struct KiottySpecModelResult {
     uint32_t         reserved;
 } KiottySpecModelResult;
 
-typedef struct KiottySpecRelationDefinitionResult {
-    KiottySpecRelationDefinition value;
-    KiottySpecStatus             code;
-    uint32_t                     reserved;
-} KiottySpecRelationDefinitionResult;
-
 typedef struct KiottySpecContextResult {
     KiottySpecContext *value;
     KiottySpecStatus   code;
@@ -331,8 +337,8 @@ static_assert(sizeof(KiottySpecRelation) == 24, "unexpected padding");
 static_assert(sizeof(KiottySpecCheckpoint) == 88, "unexpected padding");
 static_assert(sizeof(KiottySpecStepRun) == 32, "unexpected padding");
 static_assert(sizeof(KiottySpecModel) == 64, "unexpected padding");
-static_assert(sizeof(KiottySpecTagDefinition) == 3140, "unexpected padding");
-static_assert(sizeof(KiottySpecRelationDefinition) == 72, "unexpected padding");
+static_assert(sizeof(KiottySpecTagDefinition) == 3144, "unexpected padding");
+static_assert(sizeof(KiottySpecRelationDefinition) == 76, "unexpected padding");
 static_assert(sizeof(KiottySpecTagQuery) == 16, "unexpected padding");
 static_assert(sizeof(KiottySpecPosition) == 40, "unexpected padding");
 static_assert(sizeof(KiottySpecUnmetCondition) == 24, "unexpected padding");
@@ -351,6 +357,8 @@ static_assert(sizeof(KiottySpecUnmetConditionPage) <= 1544, "unexpected padding"
 static_assert(sizeof(KiottySpecItemDiffPage) <= 3592, "unexpected padding");
 static_assert(sizeof(KiottySpecRelationDiffPage) <= 3592, "unexpected padding");
 static_assert(sizeof(KiottySpecTextDiffPage) <= 16904, "unexpected padding");
+static_assert(sizeof(KiottySpecTagDefinitionPage) <= 201224, "unexpected padding");
+static_assert(sizeof(KiottySpecRelationDefinitionPage) <= 4872, "unexpected padding");
 static_assert(sizeof(KiottySpecStatusResult) == 4, "unexpected padding");
 static_assert(sizeof(KiottySpecSizeResult) <= 16, "unexpected padding");
 static_assert(sizeof(KiottySpecIdResult) == 24, "unexpected padding");
@@ -364,7 +372,6 @@ static_assert(sizeof(KiottySpecCheckpointHandleResult) == 16, "unexpected paddin
 static_assert(sizeof(KiottySpecCursorResult) <= 24, "unexpected padding");
 static_assert(sizeof(KiottySpecPositionResult) == 48, "unexpected padding");
 static_assert(sizeof(KiottySpecModelResult) == 72, "unexpected padding");
-static_assert(sizeof(KiottySpecRelationDefinitionResult) == 80, "unexpected padding");
 static_assert(sizeof(KiottySpecContextResult) <= 16, "unexpected padding");
 static_assert(sizeof(KiottySpecDiffSummaryResult) == 336, "unexpected padding");
 static_assert(sizeof(KiottySpecConfiguration) <= 64, "unexpected padding");

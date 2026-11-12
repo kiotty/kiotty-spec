@@ -180,20 +180,13 @@ int showTags(const Session& session)
     if (!id) { return usage(findMessage(MessageKey::TAG_SHOW_USAGE)); }
     const KiottySpecItemResult item = KiottySpec_readItem(&session.context, textOf(*id));
     if (item.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, item.code); }
-    const KiottySpecModelResult model = KiottySpec_readModel(&session.context, item.value.kind);
     printRow({"tag", "value"});
-    for (uint32_t index = 0; index < model.value.tag_count; ++index) {
-        const std::unique_ptr<KiottySpecTagDefinition> definition_storage =
-            std::make_unique<KiottySpecTagDefinition>();
-        KiottySpecTagDefinition& definition = *definition_storage;
-        const KiottySpecStatusResult read =
-            KiottySpec_readTagDefinition(&session.context, item.value.kind, index, &definition);
-        if (read.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
+    const std::vector<TagColumn> tags = readTagDefinitions(session, item.value.kind);
+    for (const TagColumn& column : tags) {
         const KiottySpecTagResult tag =
-            KiottySpec_readItemTag(&session.context, item.handle, index);
-        printRow(
-            { definition.name,
-              bitNames(definition, tag.code == KIOTTY_SPEC_STATUS_SUCCESS ? tag.value.value : 0) });
+            KiottySpec_readItemTag(&session.context, item.handle, column.index);
+        const uint64_t value = tag.code == KIOTTY_SPEC_STATUS_SUCCESS ? tag.value.value : 0;
+        printRow({ column.definition.name, bitNames(column.definition, value) });
     }
     return 0;
 }
@@ -246,10 +239,9 @@ int listRelations(const Session& session)
         if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
         for (size_t index = 0; index < page.length; ++index) {
             const KiottySpecRelation& relation = page.elements[index];
-            const KiottySpecRelationDefinitionResult definition = KiottySpec_readRelationDefinition(
-                &session.context, relation.model, relation.relation);
-            printRow({ itemId(session, relation.from), definition.value.name,
-                       itemId(session, relation.to) });
+            const std::string name =
+                findRelationName(session, relation.model, relation.relation);
+            printRow({ itemId(session, relation.from), name, itemId(session, relation.to) });
         }
     }
     KiottySpec_closeCursor(&session.context, cursor.value);

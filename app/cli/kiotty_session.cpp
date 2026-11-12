@@ -115,14 +115,9 @@ std::optional<KiottySpecItemKind> kindArgument(const Session& session, std::stri
 std::optional<TagColumn> findTag(const Session& session, KiottySpecItemKind kind,
                                  std::string_view name)
 {
-    const KiottySpecModelResult model = KiottySpec_readModel(&session.context, kind);
+    const std::vector<TagColumn> tags = readTagDefinitions(session, kind);
     std::string names {};
-    for (uint32_t index = 0;
-         model.code == KIOTTY_SPEC_STATUS_SUCCESS && index < model.value.tag_count; ++index) {
-        TagColumn column {index, {}};
-        const KiottySpecStatusResult read =
-            KiottySpec_readTagDefinition(&session.context, kind, index, &column.definition);
-        if (read.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
+    for (const TagColumn& column : tags) {
         if (column.definition.name == name) { return column; }
         names += (names.empty() ? "" : ", ") + std::string(column.definition.name);
     }
@@ -135,15 +130,12 @@ std::optional<TagColumn> findTag(const Session& session, KiottySpecItemKind kind
 std::optional<uint32_t> findRelation(const Session& session, KiottySpecItemKind kind,
                                      std::string_view name)
 {
-    const KiottySpecModelResult model = KiottySpec_readModel(&session.context, kind);
+    const std::vector<KiottySpecRelationDefinition> relations =
+        readRelationDefinitions(session, kind);
     std::string names {};
-    for (uint32_t index = 0;
-         model.code == KIOTTY_SPEC_STATUS_SUCCESS && index < model.value.relation_count; ++index) {
-        const KiottySpecRelationDefinitionResult definition =
-            KiottySpec_readRelationDefinition(&session.context, kind, index);
-        if (definition.code != KIOTTY_SPEC_STATUS_SUCCESS) { continue; }
-        if (definition.value.name == name) { return index; }
-        names += (names.empty() ? "" : ", ") + std::string(definition.value.name);
+    for (const KiottySpecRelationDefinition& definition : relations) {
+        if (definition.name == name) { return definition.index; }
+        names += (names.empty() ? "" : ", ") + std::string(definition.name);
     }
     std::cerr << "error: "
               << formatMessage(MessageKey::UNKNOWN_RELATION,

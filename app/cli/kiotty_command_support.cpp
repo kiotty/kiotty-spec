@@ -283,4 +283,59 @@ std::string describeCondition(KiottySpecCondition condition)
 
 }
 
+std::vector<TagColumn> readTagDefinitions(const Session& session, KiottySpecItemKind kind)
+{
+    std::vector<TagColumn> tags {};
+    const KiottySpecCursorResult cursor =
+        KiottySpec_openTagDefinitionCursor(&session.context, kind);
+    if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return tags; }
+    const std::unique_ptr<KiottySpecTagDefinitionPage> page_storage =
+        std::make_unique<KiottySpecTagDefinitionPage>();
+    KiottySpecTagDefinitionPage& page = *page_storage;
+    while (true) {
+        const KiottySpecStatusResult fetched =
+            KiottySpec_fetchTagDefinitionPage(&session.context, cursor.value, &page);
+        if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
+        for (size_t index = 0; index < page.length; ++index) {
+            TagColumn& column = tags.emplace_back();
+            column.index = page.elements[index].index;
+            column.definition = page.elements[index];
+        }
+    }
+    KiottySpec_closeCursor(&session.context, cursor.value);
+    return tags;
+}
+
+std::string findRelationName(const Session& session, KiottySpecItemKind kind, uint32_t relation)
+{
+    const std::vector<KiottySpecRelationDefinition> relations =
+        readRelationDefinitions(session, kind);
+    for (const KiottySpecRelationDefinition& definition : relations) {
+        if (definition.index == relation) { return definition.name; }
+    }
+    return "";
+}
+
+std::vector<KiottySpecRelationDefinition> readRelationDefinitions(const Session& session,
+                                                                  KiottySpecItemKind kind)
+{
+    std::vector<KiottySpecRelationDefinition> relations {};
+    const KiottySpecCursorResult cursor =
+        KiottySpec_openRelationDefinitionCursor(&session.context, kind);
+    if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return relations; }
+    const std::unique_ptr<KiottySpecRelationDefinitionPage> page_storage =
+        std::make_unique<KiottySpecRelationDefinitionPage>();
+    KiottySpecRelationDefinitionPage& page = *page_storage;
+    while (true) {
+        const KiottySpecStatusResult fetched =
+            KiottySpec_fetchRelationDefinitionPage(&session.context, cursor.value, &page);
+        if (fetched.code != KIOTTY_SPEC_STATUS_SUCCESS || page.length == 0) { break; }
+        for (size_t index = 0; index < page.length; ++index) {
+            relations.push_back(page.elements[index]);
+        }
+    }
+    KiottySpec_closeCursor(&session.context, cursor.value);
+    return relations;
+}
+
 }

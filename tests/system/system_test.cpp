@@ -129,21 +129,48 @@ public:
         return buffer.data();
     }
 
-    uint32_t tag(KiottySpecItemKind kind, const std::string& name)
+    std::vector<KiottySpecTagDefinition> tagDefinitions(KiottySpecItemKind kind)
     {
-        const KiottySpecModel model = KiottySpec_readModel(context, kind).value;
-        for (uint32_t index = 0; index < model.tag_count; ++index) {
-            KiottySpecTagDefinition definition {};
-            KiottySpec_readTagDefinition(context, kind, index, &definition);
-            if (name == definition.name) { return index; }
+        std::vector<KiottySpecTagDefinition> definitions {};
+        const KiottySpecCursorResult cursor = KiottySpec_openTagDefinitionCursor(context, kind);
+        const std::unique_ptr<KiottySpecTagDefinitionPage> page = std::make_unique<KiottySpecTagDefinitionPage>();
+        const KiottySpecStatus fetched = KiottySpec_fetchTagDefinitionPage(context, cursor.value, page.get()).code;
+        for (size_t index = 0; fetched == KIOTTY_SPEC_STATUS_SUCCESS && index < page->length; ++index) {
+            definitions.push_back(page->elements[index]);
         }
-        return 0xFFFFFFFFu;
+        KiottySpec_closeCursor(context, cursor.value);
+        return definitions;
     }
+
+    std::vector<KiottySpecRelationDefinition> relationDefinitions(KiottySpecItemKind kind)
+    {
+        std::vector<KiottySpecRelationDefinition> definitions {};
+        const KiottySpecCursorResult cursor = KiottySpec_openRelationDefinitionCursor(context, kind);
+        const std::unique_ptr<KiottySpecRelationDefinitionPage> page = std::make_unique<KiottySpecRelationDefinitionPage>();
+        const KiottySpecStatus fetched = KiottySpec_fetchRelationDefinitionPage(context, cursor.value, page.get()).code;
+        for (size_t index = 0; fetched == KIOTTY_SPEC_STATUS_SUCCESS && index < page->length; ++index) {
+            definitions.push_back(page->elements[index]);
+        }
+        KiottySpec_closeCursor(context, cursor.value);
+        return definitions;
+    }
+
+    KiottySpecTagDefinition findTagDefinition(KiottySpecItemKind kind, const std::string& name)
+    {
+        const std::vector<KiottySpecTagDefinition> definitions = tagDefinitions(kind);
+        for (const KiottySpecTagDefinition& definition : definitions) {
+            if (name == definition.name) { return definition; }
+        }
+        KiottySpecTagDefinition missing {};
+        missing.index = 0xFFFFFFFFu;
+        return missing;
+    }
+
+    uint32_t tag(KiottySpecItemKind kind, const std::string& name) { return findTagDefinition(kind, name).index; }
 
     uint64_t bit(KiottySpecItemKind kind, const std::string& tag_name, const std::string& value)
     {
-        KiottySpecTagDefinition definition {};
-        KiottySpec_readTagDefinition(context, kind, tag(kind, tag_name), &definition);
+        const KiottySpecTagDefinition definition = findTagDefinition(kind, tag_name);
         for (uint32_t index = 0; index < KIOTTY_SPEC_TAG_BIT_COUNT; ++index) {
             if (value == definition.bit_names[index]) { return uint64_t{1} << index; }
         }
@@ -157,9 +184,9 @@ public:
 
     uint32_t relation(KiottySpecItemKind kind, const std::string& name)
     {
-        const KiottySpecModel model = KiottySpec_readModel(context, kind).value;
-        for (uint32_t index = 0; index < model.relation_count; ++index) {
-            if (name == KiottySpec_readRelationDefinition(context, kind, index).value.name) { return index; }
+        const std::vector<KiottySpecRelationDefinition> definitions = relationDefinitions(kind);
+        for (const KiottySpecRelationDefinition& definition : definitions) {
+            if (name == definition.name) { return definition.index; }
         }
         return 0xFFFFFFFFu;
     }

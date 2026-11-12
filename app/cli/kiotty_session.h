@@ -58,6 +58,10 @@ struct TagColumn {
     KiottySpecTagDefinition definition {};
 };
 
+std::vector<TagColumn> readTagDefinitions(const Session& session, KiottySpecItemKind kind);
+std::vector<KiottySpecRelationDefinition> readRelationDefinitions(const Session& session,
+                                                                  KiottySpecItemKind kind);
+std::string findRelationName(const Session& session, KiottySpecItemKind kind, uint32_t relation);
 std::optional<TagColumn> findTag(const Session& session, KiottySpecItemKind kind,
                                  std::string_view name);
 std::optional<uint32_t> findRelation(const Session& session, KiottySpecItemKind kind,

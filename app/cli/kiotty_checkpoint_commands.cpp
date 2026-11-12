@@ -15,8 +15,8 @@ const std::vector<std::string> CHECKPOINT_HEADER = { "checkpoint",  "step",     
 
 void printCheckpoint(KiottySpecCheckpointHandle handle, const KiottySpecCheckpoint& checkpoint);
 int showKindModel(const Session& session, const std::string& name);
-void printTagDefinition(const Session& session, KiottySpecItemKind kind, uint32_t index);
-void printRelationDefinition(const Session& session, KiottySpecItemKind kind, uint32_t index);
+void printTagDefinition(const KiottySpecTagDefinition& definition);
+void printRelationDefinition(const KiottySpecRelationDefinition& definition);
 std::string describeCardinality(KiottySpecCardinality cardinality);
 
 }
@@ -203,39 +203,32 @@ int showKindModel(const Session& session, const std::string& name)
 {
     const std::optional<KiottySpecItemKind> kind = kindArgument(session, name);
     if (!kind) { return USAGE_EXIT_CODE; }
-    const KiottySpecModelResult model = KiottySpec_readModel(&session.context, *kind);
     printRow({"type", "index", "name", "values", "cardinality"});
-    for (uint32_t index = 0; index < model.value.tag_count; ++index) {
-        printTagDefinition(session, *kind, index);
-    }
-    for (uint32_t index = 0; index < model.value.relation_count; ++index) {
-        printRelationDefinition(session, *kind, index);
+    const std::vector<TagColumn> tags = readTagDefinitions(session, *kind);
+    for (const TagColumn& tag : tags) { printTagDefinition(tag.definition); }
+    const std::vector<KiottySpecRelationDefinition> relations =
+        readRelationDefinitions(session, *kind);
+    for (const KiottySpecRelationDefinition& relation : relations) {
+        printRelationDefinition(relation);
     }
     return 0;
 }
 
-void printTagDefinition(const Session& session, KiottySpecItemKind kind, uint32_t index)
+void printTagDefinition(const KiottySpecTagDefinition& definition)
 {
-    const std::unique_ptr<KiottySpecTagDefinition> definition_storage =
-        std::make_unique<KiottySpecTagDefinition>();
-    KiottySpecTagDefinition& definition = *definition_storage;
-    KiottySpec_readTagDefinition(&session.context, kind, index, &definition);
     uint64_t named = 0;
     for (size_t bit = 0; bit < KIOTTY_SPEC_TAG_BIT_COUNT; ++bit) {
         const bool is_named = definition.bit_names[bit][0] != 0;
         if (is_named) { named |= uint64_t{1} << bit; }
     }
-    printRow({ "tag", std::to_string(index), definition.name, bitNames(definition, named),
-               describeCardinality(definition.cardinality) });
+    printRow({ "tag", std::to_string(definition.index), definition.name,
+               bitNames(definition, named), describeCardinality(definition.cardinality) });
 }
 
-void printRelationDefinition(const Session& session, KiottySpecItemKind kind, uint32_t index)
+void printRelationDefinition(const KiottySpecRelationDefinition& definition)
 {
-    const KiottySpecRelationDefinitionResult definition =
-        KiottySpec_readRelationDefinition(&session.context, kind, index);
-    printRow({ "relation", std::to_string(index), definition.value.name,
-               kindName(definition.value.target_kind),
-               describeCardinality(definition.value.cardinality) });
+    printRow({ "relation", std::to_string(definition.index), definition.name,
+               kindName(definition.target_kind), describeCardinality(definition.cardinality) });
 }
 
 std::string describeCardinality(KiottySpecCardinality cardinality)

@@ -18,14 +18,13 @@ using RelationTargets = std::map<std::string, std::string>;
 std::optional<ColumnPlan> planTagColumns(const Session& session, KiottySpecItemKind kind);
 std::optional<TagSpec> resolveTagSpec(const Session& session, KiottySpecItemKind kind,
                                       const std::string& spec);
-std::vector<TagColumn> readAllTags(const Session& session, KiottySpecItemKind kind);
 bool hasTagColumn(const std::vector<Column>& columns, uint32_t index);
 Column makeTagColumn(const TagColumn& tag);
 void printTagQueryLimit();
-std::optional<std::vector<uint32_t>> chooseRelations(const Session& session,
-                                                     KiottySpecItemKind kind);
+std::optional<std::vector<RelationColumn>> chooseRelations(const Session& session,
+                                                           KiottySpecItemKind kind);
 std::optional<Column> readRelationColumn(const Session& session, KiottySpecItemKind kind,
-                                         uint32_t relation);
+                                         const RelationColumn& relation);
 RelationTargets collectRelationTargets(const Session& session, KiottySpecCursor cursor);
 Column makeRelationColumn(const std::string& header, const RelationTargets& targets);
 std::string describeColumn(const Session& session, KiottySpecItemHandle handle,
@@ -42,9 +41,9 @@ std::optional<ColumnPlan> planColumns(const Session& session, KiottySpecItemKind
     const std::optional<ColumnPlan> tag_plan = planTagColumns(session, kind);
     if (!tag_plan) { return std::nullopt; }
     ColumnPlan plan = *tag_plan;
-    const std::optional<std::vector<uint32_t>> relations = chooseRelations(session, kind);
+    const std::optional<std::vector<RelationColumn>> relations = chooseRelations(session, kind);
     if (!relations) { return std::nullopt; }
-    for (const uint32_t relation : *relations) {
+    for (const RelationColumn& relation : *relations) {
         const std::optional<Column> column = readRelationColumn(session, kind, relation);
         if (!column) { return std::nullopt; }
         plan.columns.push_back(*column);
@@ -131,7 +130,7 @@ std::optional<ColumnPlan> planTagColumns(const Session& session, KiottySpecItemK
     }
     const bool has_tags_flag = session.arguments.flag("tags");
     const std::vector<TagColumn> all_tags =
-        has_tags_flag ? readAllTags(session, kind) : std::vector<TagColumn>();
+        has_tags_flag ? readTagDefinitions(session, kind) : std::vector<TagColumn>();
     for (const TagColumn& tag : all_tags) {
         const bool is_listed = hasTagColumn(plan.columns, tag.index);
         if (!is_listed) { plan.columns.push_back(makeTagColumn(tag)); }
@@ -154,19 +153,6 @@ std::optional<TagSpec> resolveTagSpec(const Session& session, KiottySpecItemKind
     const std::optional<uint64_t> mask = parseBits(tag.value().definition, *bits);
     if (!mask) { return std::nullopt; }
     return TagSpec{*tag, mask};
-}
-
-std::vector<TagColumn> readAllTags(const Session& session, KiottySpecItemKind kind)
-{
-    const KiottySpecModelResult model = KiottySpec_readModel(&session.context, kind);
-    std::vector<TagColumn> tags {};
-    for (uint32_t index = 0; index < model.value.tag_count; ++index) {
-        TagColumn tag {index, {}};
-        const KiottySpecStatusResult read =
-            KiottySpec_readTagDefinition(&session.context, kind, index, &tag.definition);
-        if (read.code == KIOTTY_SPEC_STATUS_SUCCESS) { tags.push_back(tag); }
-    }
-    return tags;
 }
 
 bool hasTagColumn(const std::vector<Column>& columns, uint32_t index)
@@ -192,39 +178,37 @@ void printTagQueryLimit()
     std::cerr << "error: " << formatMessage(MessageKey::TAG_QUERY_LIMIT, {limit}) << "\n";
 }
 
-std::optional<std::vector<uint32_t>> chooseRelations(const Session& session,
-                                                     KiottySpecItemKind kind)
+std::optional<std::vector<RelationColumn>> chooseRelations(const Session& session,
+                                                           KiottySpecItemKind kind)
 {
-    std::vector<uint32_t> relations {};
+    std::vector<RelationColumn> relations {};
     for (const std::string& name : session.arguments.all("relation")) {
         const std::optional<uint32_t> relation = findRelation(session, kind, name);
         if (!relation) { return std::nullopt; }
-        relations.push_back(*relation);
+        relations.push_back(RelationColumn{*relation, name});
     }
     const bool has_relations_flag = session.arguments.flag("relations");
-    if (has_relations_flag) {
-        const KiottySpecModelResult model = KiottySpec_readModel(&session.context, kind);
-        for (uint32_t index = 0; index < model.value.relation_count; ++index) {
-            relations.push_back(index);
-        }
+    const std::vector<KiottySpecRelationDefinition> definitions =
+        has_relations_flag ? readRelationDefinitions(session, kind)
+                           : std::vector<KiottySpecRelationDefinition>();
+    for (const KiottySpecRelationDefinition& definition : definitions) {
+        relations.push_back(RelationColumn{definition.index, definition.name});
     }
     return relations;
 }
 
 std::optional<Column> readRelationColumn(const Session& session, KiottySpecItemKind kind,
-                                         uint32_t relation)
+                                         const RelationColumn& relation)
 {
-    const KiottySpecRelationDefinitionResult definition =
-        KiottySpec_readRelationDefinition(&session.context, kind, relation);
     const KiottySpecCursorResult cursor =
-        KiottySpec_openRelationCursorByModel(&session.context, kind, relation);
+        KiottySpec_openRelationCursorByModel(&session.context, kind, relation.index);
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) {
         fail(session, cursor.code);
         return std::nullopt;
     }
     const RelationTargets targets = collectRelationTargets(session, cursor.value);
     KiottySpec_closeCursor(&session.context, cursor.value);
-    return makeRelationColumn(definition.value.name, targets);
+    return makeRelationColumn(relation.name, targets);
 }
 
 RelationTargets collectRelationTargets(const Session& session, KiottySpecCursor cursor)
@@ -280,14 +264,7 @@ std::optional<std::vector<TagColumn>> chooseDiffTags(const Session& session,
     }
     const bool has_tags_flag = session.arguments.flag("tags");
     if (!has_tags_flag) { return tags; }
-    const KiottySpecModelResult model = KiottySpec_readModel(&session.context, kind);
-    std::vector<TagColumn> all_tags {};
-    for (uint32_t index = 0; index < model.value.tag_count; ++index) {
-        TagColumn tag {index, {}};
-        KiottySpec_readTagDefinition(&session.context, kind, index, &tag.definition);
-        all_tags.push_back(tag);
-    }
-    return all_tags;
+    return readTagDefinitions(session, kind);
 }
 
 std::optional<std::vector<RelationColumn>> chooseDiffRelations(const Session& session,
@@ -301,12 +278,11 @@ std::optional<std::vector<RelationColumn>> chooseDiffRelations(const Session& se
     }
     const bool has_relations_flag = session.arguments.flag("relations");
     if (!has_relations_flag) { return relations; }
-    const KiottySpecModelResult model = KiottySpec_readModel(&session.context, kind);
+    const std::vector<KiottySpecRelationDefinition> definitions =
+        readRelationDefinitions(session, kind);
     std::vector<RelationColumn> all_relations {};
-    for (uint32_t index = 0; index < model.value.relation_count; ++index) {
-        const KiottySpecRelationDefinitionResult definition =
-            KiottySpec_readRelationDefinition(&session.context, kind, index);
-        all_relations.push_back(RelationColumn{index, definition.value.name});
+    for (const KiottySpecRelationDefinition& definition : definitions) {
+        all_relations.push_back(RelationColumn{definition.index, definition.name});
     }
     return all_relations;
 }

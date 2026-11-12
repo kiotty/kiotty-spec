@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <functional>
+#include <memory>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -168,6 +169,51 @@ bool testOutsideChange(KiottySpecContext* context)
     const KiottySpecItemResult item = KiottySpec_readItem(context, textOf("REQ-001"));
     passed = expectTrue(ok(item.code) && std::strcmp(item.value.title, "다른 곳에서") == 0, "reloaded after conflict") && passed;
     passed = expectTrue(ok(KiottySpec_updateItem(context, textOf("REQ-001"), textOf("저장"), KiottySpecText{nullptr, 0}).code), "write after reload") && passed;
+    return passed;
+}
+
+// 모델의 태그·관계 정의는 커서를 열고 고정 크기 페이지로 읽고 닫는다.
+bool testModelDefinitionCursors(KiottySpecContext* context)
+{
+    const KiottySpecModel design = KiottySpec_readModel(context, KIOTTY_SPEC_ITEM_KIND_DESIGN).value;
+    const KiottySpecCursorResult tags = KiottySpec_openTagDefinitionCursor(context, KIOTTY_SPEC_ITEM_KIND_DESIGN);
+    bool passed = expectTrue(ok(tags.code) && tags.total == design.tag_count && design.tag_count >= 2, "open tag definition cursor");
+    const std::unique_ptr<KiottySpecTagDefinitionPage> tag_page = std::make_unique<KiottySpecTagDefinitionPage>();
+    const KiottySpecStatus tag_fetched = KiottySpec_fetchTagDefinitionPage(context, tags.value, tag_page.get()).code;
+    passed = expectTrue(ok(tag_fetched) && tag_page->length == design.tag_count && tag_page->elements[0].index == 0 &&
+                            tag_page->elements[1].index == 1 && tag_page->elements[0].name[0] != 0 && tag_page->elements[0].bit_names[0][0] != 0,
+                        "tag definition page") && passed;
+    passed = expectTrue(ok(KiottySpec_fetchTagDefinitionPage(context, tags.value, tag_page.get()).code) && tag_page->length == 0, "end of tag definitions") &&
+             passed;
+    const std::unique_ptr<KiottySpecRelationDefinitionPage> relation_page = std::make_unique<KiottySpecRelationDefinitionPage>();
+    passed = expectTrue(KiottySpec_fetchRelationDefinitionPage(context, tags.value, relation_page.get()).code == KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE,
+                        "tag definition cursor type") && passed;
+    passed = expectTrue(KiottySpec_fetchTagDefinitionPage(context, tags.value, nullptr).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "null tag definition page") &&
+             passed;
+    passed = expectTrue(ok(KiottySpec_closeCursor(context, tags.value).code), "close tag definition cursor") && passed;
+    passed = expectTrue(KiottySpec_fetchTagDefinitionPage(context, tags.value, tag_page.get()).code == KIOTTY_SPEC_STATUS_INVALID_HANDLE, "closed tag definition cursor") &&
+             passed;
+    const KiottySpecCursorResult relations = KiottySpec_openRelationDefinitionCursor(context, KIOTTY_SPEC_ITEM_KIND_DESIGN);
+    passed = expectTrue(ok(relations.code) && relations.total == design.relation_count && design.relation_count >= 2, "open relation definition cursor") && passed;
+    const KiottySpecStatus relation_fetched = KiottySpec_fetchRelationDefinitionPage(context, relations.value, relation_page.get()).code;
+    passed = expectTrue(ok(relation_fetched) && relation_page->length == design.relation_count && relation_page->elements[1].index == 1 &&
+                            relation_page->elements[0].name[0] != 0 && ok(KiottySpec_formatKind(relation_page->elements[0].target_kind).code),
+                        "relation definition page") && passed;
+    passed = expectTrue(ok(KiottySpec_fetchRelationDefinitionPage(context, relations.value, relation_page.get()).code) && relation_page->length == 0,
+                        "end of relation definitions") && passed;
+    passed = expectTrue(KiottySpec_fetchTagDefinitionPage(context, relations.value, tag_page.get()).code == KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE,
+                        "relation definition cursor type") && passed;
+    passed = expectTrue(ok(KiottySpec_closeCursor(context, relations.value).code), "close relation definition cursor") && passed;
+    const KiottySpecModel milestone = KiottySpec_readModel(context, KIOTTY_SPEC_ITEM_KIND_MILESTONE).value;
+    const KiottySpecCursorResult empty = KiottySpec_openTagDefinitionCursor(context, KIOTTY_SPEC_ITEM_KIND_MILESTONE);
+    passed = expectTrue(milestone.tag_count == 0 && ok(empty.code) && empty.total == 0, "open empty tag definition cursor") && passed;
+    passed = expectTrue(ok(KiottySpec_fetchTagDefinitionPage(context, empty.value, tag_page.get()).code) && tag_page->length == 0, "empty tag definition page") &&
+             passed;
+    KiottySpec_closeCursor(context, empty.value);
+    const KiottySpecItemKind invalid = static_cast<KiottySpecItemKind>(KIOTTY_SPEC_ITEM_KIND_COUNT + 1);
+    passed = expectTrue(KiottySpec_openTagDefinitionCursor(context, invalid).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "invalid tag definition kind") && passed;
+    passed = expectTrue(KiottySpec_openRelationDefinitionCursor(context, static_cast<KiottySpecItemKind>(0)).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
+                        "invalid relation definition kind") && passed;
     return passed;
 }
 
@@ -687,6 +733,7 @@ int main()
         {"outside change", testOutsideChange},
         {"diff", testDiff},
         {"given id and rename", testGivenIdAndRename},
+        {"model definition cursors", testModelDefinitionCursors},
     };
     int failed = 0;
     for (const auto& test : tests) {
