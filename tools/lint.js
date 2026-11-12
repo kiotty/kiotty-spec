@@ -236,6 +236,7 @@ function parseFile(file) {
       else if (h === '') type = 'block';
       else type = 'init';
       const frame = { type, header: h, rawHeader: header, open: k, openLine: L(k), headerLine: L(headerStart + header.search(/\S|$/)), children: [], statements: [], parent };
+      if (type !== 'init' && parent.type === 'class') applyAccess(parent, header);
       if (type === 'class') {
         const m = /(class|struct|union)\s+(?:alignas\s*\([^)]*\)\s*)?(\w+)/.exec(h);
         frame.kind = m ? m[1] : 'struct';
@@ -276,10 +277,7 @@ function parseFile(file) {
         }
         file.blocks.push(frame);
       }
-      if (type !== 'init') {
-        if (parent.type === 'class') applyAccess(parent, header);
-        headerStart = k + 1;
-      }
+      if (type !== 'init') headerStart = k + 1;
       parent.children.push(frame);
       stack.push(frame);
       continue;
@@ -402,6 +400,9 @@ const VERBS = new Set(('acquire release open close fetch append parse read write
   'require ensure guard verify test probe sense detect reach return yield send receive transfer upload download issue assemble ' +
   'get pack unpack summarize erase retain reload widen narrow paint echo commit compact align fit fits start starts contain contains mix ' +
   'use make').split(/\s+/));
+// 4.17 exceptions (CR-007): property lookup (method without arguments), type conversion (to + Type), indexing (...Of), cursor next()
+const isNamingException = (name, isMethod, params) =>
+  name === 'next' || /^to[A-Z]/.test(name) || /[a-z]Of$/.test(name) || (isMethod && params.every((p) => p.trim() === ''));
 const CORE_ACCESSORS = new Set(['length', 'capacity', 'data', 'view', 'size', 'begin', 'end', 'empty', 'value', 'code', 'scratch', 'at', 'count']);
 
 function words(name) {
@@ -550,7 +551,7 @@ function checkFile(file) {
     if (fn.params.length > 4) report('4.1', rel, fn.headerLine, `function '${fn.name}' takes ${fn.params.length} arguments`);
     const isCtor = fn.cls ? fn.bare === fn.cls.name : fn.name.split('::').length > 1 && fn.name.split('::').slice(-2)[0] === fn.bare;
     const isDtor = fn.bare.startsWith('~');
-    const isOperator = fn.bare.startsWith('operator');
+    const isOperator = fn.bare.startsWith('operator') || /\boperator\s+[\w:\s]*$/.test(fn.prefix || '');
     const isCApi = /^KiottySpec_/.test(fn.bare) || fn.bare === 'main';
     // 1.8 recursion
     if (!isCtor && !isOperator && new RegExp(`(^|[^\\w.>:])${fn.bare}\\s*\\(`).test(bodyText)) report('1.8', rel, fn.headerLine, `function '${fn.name}' calls itself`);
@@ -559,7 +560,8 @@ function checkFile(file) {
       if (!/^[a-z][A-Za-z0-9]*$/.test(fn.bare)) report('4.4', rel, fn.headerLine, `function '${fn.bare}' is not camelCase`);
       checkName(file, fn.headerLine, fn.bare, 'function');
       const first = words(fn.bare)[0];
-      const accessor = isCore(rel) && CORE_ACCESSORS.has(fn.bare);
+      const isMethod = Boolean(fn.cls) || fn.name.includes('::');
+      const accessor = (isCore(rel) && CORE_ACCESSORS.has(fn.bare)) || isNamingException(fn.bare, isMethod, fn.params);
       if (!accessor && (!VERBS.has(first) || /^(get|do|handle)[A-Z]/.test(fn.bare))) report('4.17', rel, fn.headerLine, `function '${fn.bare}' does not start with a verb`);
     }
     // 4.6 bool and output arguments, 5.4 Span<char> outputs, 3.6 passing
@@ -577,7 +579,7 @@ function checkFile(file) {
         if (!/^[a-z][A-Za-z0-9]*$/.test(m.name)) report('4.4', rel, m.line, `method '${m.name}' is not camelCase`);
         checkName(file, m.line, m.name, 'method');
         const first = words(m.name)[0];
-        const accessor = isCore(rel) && CORE_ACCESSORS.has(m.name);
+        const accessor = (isCore(rel) && CORE_ACCESSORS.has(m.name)) || isNamingException(m.name, true, m.params);
         if (!accessor && (!VERBS.has(first) || /^(get|do|handle)[A-Z]/.test(m.name))) report('4.17', rel, m.line, `method '${m.name}' does not start with a verb`);
       }
       for (const p of m.params) checkParameter(file, { name: m.name, headerLine: m.line, params: m.params }, p, isCtor);
@@ -601,7 +603,7 @@ function checkFile(file) {
 
   // classes: 4.1 public methods, 4.5 member names, 1.9 member init, 3.4 static_assert, 1.4 entities
   for (const cls of file.classes) {
-    const publicMethods = new Set(cls.methods.filter((m) => m.access === 'public' && m.name !== cls.name && !m.name.startsWith('~') && !m.name.startsWith('operator') && !/=\s*(delete|default)/.test(m.rest || '')).map((m) => m.name));
+    const publicMethods = new Set(cls.methods.filter((m) => m.access === 'public' && m.name !== cls.name && !m.name.startsWith('~') && !m.name.startsWith('operator') && !/\boperator\s+[\w:\s]*$/.test(m.prefix || '') && !/=\s*(delete|default)/.test(m.rest || '')).map((m) => m.name));
     if (publicMethods.size > 7) report('4.1', rel, cls.openLine, `class '${cls.name}' has ${publicMethods.size} public methods`);
     if (publicMethods.size > 7) report('4.18', rel, cls.openLine, `class '${cls.name}' has ${publicMethods.size} public methods`);
     if (!/^[A-Z][A-Za-z0-9]*$/.test(cls.name) && !/^KiottySpec/.test(cls.name) && cls.name !== '(anonymous)') report('4.4', rel, cls.openLine, `type '${cls.name}' is not PascalCase`);
