@@ -297,14 +297,14 @@ bool testVersionTableLatest()
     table.append(Probe{1, 3, 0, 13});
     table.append(Probe{1, 1, 0, 11});
     table.append(Probe{2, 2, 0, 22});
-    table.sort();
+    table.batch().sort();
     bool ok = expectTrue(table.latest(1, 2).value->value == 11 && table.latest(1, 3).value->value == 13 && table.latest(1, 99).value->value == 13, "latest at checkpoint");
     ok = expectTrue(!table.latest(2, 1) && !table.latest(3, UINT32_MAX), "nothing before first version") && ok;
     ok = expectTrue(table.latest(2, UINT32_MAX).value->value == 25, "latest overall") && ok;
-    ok = expectTrue(!table.findDuplicate(), "no duplicate") && ok;
+    ok = expectTrue(!table.batch().findDuplicate(), "no duplicate") && ok;
     table.append(Probe{1, 3, 0, 99});
-    table.sort();
-    ok = expectTrue(static_cast<bool>(table.findDuplicate()), "same identity and checkpoint twice") && ok;
+    table.batch().sort();
+    ok = expectTrue(static_cast<bool>(table.batch().findDuplicate()), "same identity and checkpoint twice") && ok;
     return ok;
 }
 
@@ -331,13 +331,13 @@ bool testVersionTablePrune()
     table.write(Probe{2, 2, 0, 22});
     table.write(Probe{2, 3, 1, 0});
     table.write(Probe{3, 4, 0, 34});
-    table.prune(4);
+    table.batch().prune(4);
     const auto all = table.all();
     bool ok = expectTrue(all.length() == 3, "prune keeps one version per identity before base");
     ok = expectTrue(all[0].id == 1 && all[0].checkpoint == 4 && all[0].value == 13, "older version moves to base") && ok;
     ok = expectTrue(all[1].id == 1 && all[1].checkpoint == 5, "newer version stays") && ok;
     ok = expectTrue(all[2].id == 3 && all[2].checkpoint == 4, "removed identity is gone") && ok;
-    table.retain([](const Probe& probe) { return probe.id != 1; });
+    table.batch().retain([](const Probe& probe) { return probe.id != 1; });
     ok = expectTrue(table.all().length() == 1, "retain drops records") && ok;
     return ok;
 }

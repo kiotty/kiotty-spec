@@ -13,6 +13,124 @@
 namespace kiotty::spec::implementation {
 
 template <typename Record>
+class VersionBatch
+{
+public:
+    VersionBatch(std::vector<Record>& records, size_t& length)
+        : _records(records), _length(length)
+    {}
+
+    void clear() { _length = 0; }
+
+    void sort()
+    {
+        const Span<Record> records = viewRecords();
+        std::sort(records.begin(), records.end(), less);
+    }
+
+    Result<size_t, KiottySpecStatus> findDuplicate() const
+    { return findDuplicateIn(Span<const Record>(_records.data(), _length)); }
+
+    void prune(uint32_t base) { _length = pruneRecords(viewRecords(), base); }
+
+    template <typename Keep>
+    void retain(Keep keep)
+    {
+        _length = retainRecords(viewRecords(), keep);
+    }
+
+private:
+    using Identity = typename Record::Identity;
+
+    static bool less(const Record& left, const Record& right)
+    {
+        const Identity left_identity = left.identity();
+        const Identity right_identity = right.identity();
+        if (left_identity < right_identity) { return true; }
+        if (right_identity < left_identity) { return false; }
+        return left.checkpoint < right.checkpoint;
+    }
+
+    static Result<size_t, KiottySpecStatus> findDuplicateIn(Span<const Record> records)
+    {
+        const size_t length = records.length();
+        for (size_t index = 1; index < length; ++index) {
+            const bool is_same = records[index - 1].identity() == records[index].identity();
+            if (is_same && records[index - 1].checkpoint == records[index].checkpoint) {
+                return Result<size_t, KiottySpecStatus>::success(index);
+            }
+        }
+        return Result<size_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
+    }
+
+    static size_t pruneRecords(Span<Record> records, uint32_t base)
+    {
+        size_t kept = 0;
+        size_t first = 0;
+        const size_t length = records.length();
+        while (first < length) {
+            const size_t end = findGroupEnd(records, first);
+            kept = pruneGroup(records, IndexRange {first, end - first}, base, kept);
+            first = end;
+        }
+        return kept;
+    }
+
+    template <typename Keep>
+    static size_t retainRecords(Span<Record> records, Keep keep)
+    {
+        size_t kept = 0;
+        const size_t length = records.length();
+        for (size_t index = 0; index < length; ++index) {
+            const bool is_kept = keep(records[index]);
+            if (!is_kept) { continue; }
+            if (kept != index) { records[kept] = records[index]; }
+            ++kept;
+        }
+        return kept;
+    }
+
+    static size_t findGroupEnd(Span<const Record> records, size_t first)
+    {
+        const size_t length = records.length();
+        const Identity group_identity = records[first].identity();
+        for (size_t end = first + 1; end < length; ++end) {
+            const Identity end_identity = records[end].identity();
+            const bool is_same_group = end_identity == group_identity;
+            if (is_same_group) { continue; }
+            return end;
+        }
+        return length;
+    }
+
+    static size_t pruneGroup(Span<Record> records, IndexRange group, uint32_t base, size_t kept)
+    {
+        const size_t first = group.first;
+        const size_t end = group.first + group.length;
+        size_t last_old = end;
+        for (size_t index = first; index < end && records[index].checkpoint <= base; ++index) {
+            last_old = index;
+        }
+        size_t next_kept = kept;
+        for (size_t index = first; index < end; ++index) {
+            const bool is_older = records[index].checkpoint <= base;
+            const bool is_survivor = index == last_old && records[index].removed == 0;
+            const bool is_kept = is_survivor || records[index].checkpoint > base;
+            if (!is_kept) { continue; }
+            if (next_kept != index) { records[next_kept] = records[index]; }
+            if (is_older) { records[next_kept].checkpoint = base; }
+            ++next_kept;
+        }
+        return next_kept;
+    }
+
+    Span<Record> viewRecords() { return Span<Record>(_records.data(), _length); }
+
+    std::vector<Record>& _records;
+    size_t& _length;
+};
+
+template <typename Record>
 class VersionTable
 {
 public:
@@ -20,7 +138,7 @@ public:
 
     explicit VersionTable(size_t capacity) : _records(capacity), _length(0) {}
 
-    void clear() { _length = 0; }
+    VersionBatch<Record> batch() { return VersionBatch<Record>(_records, _length); }
 
     KiottySpecStatus append(const Record& record)
     {
@@ -30,14 +148,6 @@ public:
         ++_length;
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
-
-    void sort()
-    {
-        const Span<Record> records = viewRecords();
-        std::sort(records.begin(), records.end(), less);
-    }
-
-    Result<size_t, KiottySpecStatus> findDuplicate() const { return findDuplicateIn(all()); }
 
     KiottySpecStatus write(const Record& record)
     {
@@ -78,26 +188,9 @@ public:
 
     size_t countAt(uint32_t checkpoint) const { return countRecordsAt(all(), checkpoint); }
 
-    void prune(uint32_t base) { _length = pruneRecords(viewRecords(), base); }
-
-    template <typename Keep>
-    void retain(Keep keep)
-    {
-        _length = retainRecords(viewRecords(), keep);
-    }
-
     Span<const Record> all() const { return Span<const Record>(_records.data(), _length); }
 
 private:
-    static bool less(const Record& left, const Record& right)
-    {
-        const Identity left_identity = left.identity();
-        const Identity right_identity = right.identity();
-        if (left_identity < right_identity) { return true; }
-        if (right_identity < left_identity) { return false; }
-        return left.checkpoint < right.checkpoint;
-    }
-
     static const Record& emptyRecord()
     {
         static const Record empty_record {};
@@ -105,18 +198,6 @@ private:
     }
 
     static bool isFull(size_t length, size_t capacity) { return length == capacity; }
-
-    static Result<size_t, KiottySpecStatus> findDuplicateIn(Span<const Record> records)
-    {
-        const size_t length = records.length();
-        for (size_t index = 1; index < length; ++index) {
-            const bool is_same = records[index - 1].identity() == records[index].identity();
-            if (is_same && records[index - 1].checkpoint == records[index].checkpoint) {
-                return Result<size_t, KiottySpecStatus>::success(index);
-            }
-        }
-        return Result<size_t, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_NOT_FOUND);
-    }
 
     static bool isRecordAt(Span<const Record> records, size_t position, Identity identity,
                            uint32_t checkpoint)
@@ -137,33 +218,6 @@ private:
         return count;
     }
 
-    static size_t pruneRecords(Span<Record> records, uint32_t base)
-    {
-        size_t kept = 0;
-        size_t first = 0;
-        const size_t length = records.length();
-        while (first < length) {
-            const size_t end = findGroupEnd(records, first);
-            kept = pruneGroup(records, IndexRange {first, end - first}, base, kept);
-            first = end;
-        }
-        return kept;
-    }
-
-    template <typename Keep>
-    static size_t retainRecords(Span<Record> records, Keep keep)
-    {
-        size_t kept = 0;
-        const size_t length = records.length();
-        for (size_t index = 0; index < length; ++index) {
-            const bool is_kept = keep(records[index]);
-            if (!is_kept) { continue; }
-            if (kept != index) { records[kept] = records[index]; }
-            ++kept;
-        }
-        return kept;
-    }
-
     static size_t lowerBound(Span<const Record> records, Identity identity, uint64_t checkpoint)
     {
         constexpr size_t BISECT_DIVISOR = 2;
@@ -180,42 +234,6 @@ private:
         }
         return low;
     }
-
-    static size_t findGroupEnd(Span<const Record> records, size_t first)
-    {
-        const size_t length = records.length();
-        const Identity group_identity = records[first].identity();
-        for (size_t end = first + 1; end < length; ++end) {
-            const Identity end_identity = records[end].identity();
-            const bool is_same_group = end_identity == group_identity;
-            if (is_same_group) { continue; }
-            return end;
-        }
-        return length;
-    }
-
-    static size_t pruneGroup(Span<Record> records, IndexRange group, uint32_t base, size_t kept)
-    {
-        const size_t first = group.first;
-        const size_t end = group.first + group.length;
-        size_t last_old = end;
-        for (size_t index = first; index < end && records[index].checkpoint <= base; ++index) {
-            last_old = index;
-        }
-        size_t next_kept = kept;
-        for (size_t index = first; index < end; ++index) {
-            const bool is_older = records[index].checkpoint <= base;
-            const bool is_survivor = index == last_old && records[index].removed == 0;
-            const bool is_kept = is_survivor || records[index].checkpoint > base;
-            if (!is_kept) { continue; }
-            if (next_kept != index) { records[next_kept] = records[index]; }
-            if (is_older) { records[next_kept].checkpoint = base; }
-            ++next_kept;
-        }
-        return next_kept;
-    }
-
-    Span<Record> viewRecords() { return Span<Record>(_records.data(), _length); }
 
     std::vector<Record> _records;
     size_t _length;

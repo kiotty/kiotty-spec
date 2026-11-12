@@ -22,7 +22,6 @@ public:
     bool tagsDiffer(uint32_t key, uint32_t from, uint32_t to) const;
     Result<entity::IdText, KiottySpecStatus> nextId(Span<const char> prefix) const;
     Span<const uint32_t> keysByIdentity();
-    void prune(uint32_t base);
 
 private:
     Span<const entity::TagVersion> tagsOf(uint32_t key) const;

@@ -2,6 +2,7 @@
 
 #include "implementation/core/kiotty_text.h"
 #include "implementation/core/kiotty_text_view.h"
+#include "implementation/domain/usecases/kiotty_write_scope.h"
 
 namespace kiotty::spec::implementation {
 
@@ -31,31 +32,8 @@ SequenceResult Lifecycle::start(entity::Step step, Span<const char> description)
 
 KiottySpecStatus Lifecycle::resume()
 {
-    const auto sequence = beginWrite();
-    return _workspace.finish(sequence.code);
-}
-
-SequenceResult Lifecycle::beginWrite()
-{
-    const KiottySpecStatus fresh = _workspace.refresh();
-    if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(fresh); }
-    const uint32_t latest = _workspace.checkpoints.latest();
-    const auto found = _workspace.checkpoints.get(latest);
-    if (!found) {
-        return SequenceResult::failure(_workspace.failure.raise(
-            KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
-    }
-    const CheckpointRecord& record = *found.value;
-    if (record.state == CheckpointState::DONE) {
-        return SequenceResult::failure(
-            _workspace.failure.raise(KIOTTY_SPEC_STATUS_CONFIRMED, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
-    }
-    if (record.state == CheckpointState::STARTED) {
-        const KiottySpecStatus running =
-            _workspace.checkpoints.writer().setState(latest, CheckpointState::RUNNING);
-        if (running != KIOTTY_SPEC_STATUS_SUCCESS) { return SequenceResult::failure(running); }
-    }
-    return SequenceResult::success(latest);
+    WriteScope scope(_workspace);
+    return scope.finish(KIOTTY_SPEC_STATUS_SUCCESS);
 }
 
 KiottySpecStatus Lifecycle::complete(KiottySpecActor actor)
@@ -100,9 +78,9 @@ Result<size_t, KiottySpecStatus> Lifecycle::prune(KiottySpecActor actor, uint32_
             KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
     const auto dropped = _workspace.checkpoints.writer().dropBefore(base);
-    _workspace.items.history().prune(base);
-    _workspace.relations.versions().prune(base);
-    _workspace.decisions.versions().prune(base);
+    _workspace.items.maintenance().prune(base);
+    _workspace.relations.versions().batch().prune(base);
+    _workspace.decisions.versions().batch().prune(base);
     const KiottySpecStatus finished = _workspace.finish(dropped.code);
     if (finished != KIOTTY_SPEC_STATUS_SUCCESS) { return CountResult::failure(finished); }
     const KiottySpecStatus reloaded = _workspace.reload();

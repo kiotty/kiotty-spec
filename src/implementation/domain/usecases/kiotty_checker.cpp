@@ -66,9 +66,9 @@ Span<const UnmetCondition> Checker::collect(entity::Step step)
 size_t Checker::openChangeRequestCount()
 {
     size_t count = 0;
-    const size_t capacity = _workspace.items.reader().capacity();
+    const size_t capacity = _workspace.items.slots().capacity();
     for (size_t index = 0; index < capacity; ++index) {
-        const ItemHandle handle = _workspace.items.reader().handleAt(index);
+        const ItemHandle handle = _workspace.items.slots().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
         const bool is_change_request = item && (*item.value).kind == ItemKind::CHANGE_REQUEST;
         if (!is_change_request) { continue; }
@@ -84,9 +84,9 @@ uint32_t Checker::earliestEntryStep()
         ItemKind::CHANGE_REQUEST, spanOf(CHANGE_REQUEST_ENTRY_STEP_TAG));
     if (!entry) { return 0; }
     uint32_t earliest = 0;
-    const size_t capacity = _workspace.items.reader().capacity();
+    const size_t capacity = _workspace.items.slots().capacity();
     for (size_t index = 0; index < capacity; ++index) {
-        const ItemHandle handle = _workspace.items.reader().handleAt(index);
+        const ItemHandle handle = _workspace.items.slots().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
         const bool is_change_request = item && (*item.value).kind == ItemKind::CHANGE_REQUEST;
         if (!is_change_request) { continue; }
@@ -103,9 +103,9 @@ void Checker::checkEntrySteps()
 {
     const IndexResult entry = _workspace.catalog.finder().findTag(
         ItemKind::CHANGE_REQUEST, spanOf(CHANGE_REQUEST_ENTRY_STEP_TAG));
-    const size_t capacity = _workspace.items.reader().capacity();
+    const size_t capacity = _workspace.items.slots().capacity();
     for (size_t index = 0; index < capacity; ++index) {
-        const ItemHandle handle = _workspace.items.reader().handleAt(index);
+        const ItemHandle handle = _workspace.items.slots().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
         const bool is_change_request = item && (*item.value).kind == ItemKind::CHANGE_REQUEST;
         if (!is_change_request) { continue; }
@@ -123,9 +123,9 @@ void Checker::checkAcceptanceCriteria()
         tagBit(ItemKind::REQUIREMENT, REQUIREMENT_KIND_TAG, FUNCTIONAL_REQUIREMENT_BIT);
     if (functional.tag_index == MISSING) { return; }
     std::vector<char>& buffer = _body;
-    const size_t capacity = _workspace.items.reader().capacity();
+    const size_t capacity = _workspace.items.slots().capacity();
     for (size_t index = 0; index < capacity; ++index) {
-        const ItemHandle handle = _workspace.items.reader().handleAt(index);
+        const ItemHandle handle = _workspace.items.slots().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
         const bool is_requirement = item && (*item.value).kind == ItemKind::REQUIREMENT;
         if (!is_requirement) { continue; }
@@ -145,9 +145,9 @@ void Checker::checkMilestoneCoverage()
 {
     const uint32_t designs = relationIndex(ItemKind::MILESTONE, MILESTONE_DESIGN_RELATION);
     const uint32_t tests = relationIndex(ItemKind::MILESTONE, MILESTONE_UNIT_TEST_RELATION);
-    const size_t capacity = _workspace.items.reader().capacity();
+    const size_t capacity = _workspace.items.slots().capacity();
     for (size_t index = 0; index < capacity; ++index) {
-        const ItemHandle handle = _workspace.items.reader().handleAt(index);
+        const ItemHandle handle = _workspace.items.slots().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
         if (!item) { continue; }
         uint32_t relation = MISSING;
@@ -174,9 +174,9 @@ void Checker::checkTargetPairs(const PairRule& rule, uint32_t relation)
                                                           REQUIREMENT_KIND_TAG,
                                                           FUNCTIONAL_REQUIREMENT_BIT)
                                                  : TagBit {};
-    const size_t capacity = _workspace.items.reader().capacity();
+    const size_t capacity = _workspace.items.slots().capacity();
     for (size_t index = 0; index < capacity; ++index) {
-        const ItemHandle handle = _workspace.items.reader().handleAt(index);
+        const ItemHandle handle = _workspace.items.slots().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
         const bool is_target = item && (*item.value).kind == rule.target_kind;
         if (!is_target) { continue; }
@@ -192,9 +192,9 @@ void Checker::checkTargetPairs(const PairRule& rule, uint32_t relation)
 
 void Checker::checkSingleTargets(ItemKind test_kind, uint32_t relation)
 {
-    const size_t capacity = _workspace.items.reader().capacity();
+    const size_t capacity = _workspace.items.slots().capacity();
     for (size_t index = 0; index < capacity; ++index) {
-        const ItemHandle handle = _workspace.items.reader().handleAt(index);
+        const ItemHandle handle = _workspace.items.slots().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
         const bool is_test = item && (*item.value).kind == test_kind;
         if (!is_test) { continue; }
@@ -230,9 +230,9 @@ void Checker::checkResults()
 
 void Checker::checkPassingResults()
 {
-    const size_t capacity = _workspace.items.reader().capacity();
+    const size_t capacity = _workspace.items.slots().capacity();
     for (size_t index = 0; index < capacity; ++index) {
-        const ItemHandle handle = _workspace.items.reader().handleAt(index);
+        const ItemHandle handle = _workspace.items.slots().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
         const bool is_result = item && isResultKind((*item.value).kind);
         if (!is_result) { continue; }
@@ -248,9 +248,9 @@ void Checker::checkPassingResults()
 
 void Checker::checkClosedChangeRequests()
 {
-    const size_t capacity = _workspace.items.reader().capacity();
+    const size_t capacity = _workspace.items.slots().capacity();
     for (size_t index = 0; index < capacity; ++index) {
-        const ItemHandle handle = _workspace.items.reader().handleAt(index);
+        const ItemHandle handle = _workspace.items.slots().handleAt(index);
         const auto item = _workspace.items.reader().get(handle);
         const bool is_change_request = item && (*item.value).kind == ItemKind::CHANGE_REQUEST;
         if (!is_change_request) { continue; }

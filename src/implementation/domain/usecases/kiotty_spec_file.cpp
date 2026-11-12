@@ -82,9 +82,9 @@ void SpecFile::clear()
 {
     _tables.meta.clear();
     _tables.checkpoints.clear();
-    _tables.items.clear();
-    _tables.relations.versions().clear();
-    _tables.decisions.versions().clear();
+    _tables.items.maintenance().clear();
+    _tables.relations.versions().batch().clear();
+    _tables.decisions.versions().batch().clear();
 }
 
 Result<uint64_t, KiottySpecStatus> SpecFile::readLines()
@@ -141,17 +141,17 @@ KiottySpecStatus SpecFile::lineFailure(size_t line_number, KiottySpecStatus stat
 KiottySpecStatus SpecFile::finishLoad()
 {
     ItemTables& items = _tables.items.tables();
-    items.versions.sort();
-    items.tag_versions.sort();
-    _tables.relations.versions().sort();
-    const bool has_duplicate = items.versions.findDuplicate() ||
-                               items.tag_versions.findDuplicate() ||
-                               _tables.relations.versions().findDuplicate();
+    items.versions.batch().sort();
+    items.tag_versions.batch().sort();
+    _tables.relations.versions().batch().sort();
+    const bool has_duplicate = items.versions.batch().findDuplicate() ||
+                               items.tag_versions.batch().findDuplicate() ||
+                               _tables.relations.versions().batch().findDuplicate();
     if (has_duplicate) {
         return _tables.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT,
                                      KIOTTY_SPEC_SUBJECT_DUPLICATE_LINE);
     }
-    const KiottySpecStatus rebuilt = _tables.items.rebuild();
+    const KiottySpecStatus rebuilt = _tables.items.maintenance().rebuild();
     if (rebuilt != KIOTTY_SPEC_STATUS_SUCCESS) { return rebuilt; }
     return _tables.relations.rebuild();
 }

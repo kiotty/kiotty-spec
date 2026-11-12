@@ -26,10 +26,19 @@ KiottySpecStatus writeLinks(Span<uint32_t> keys, Span<uint32_t> parents, uint32_
                             const ItemVersion& version);
 KiottySpecStatus writeAt(Span<uint32_t> values, uint32_t index, uint32_t value);
 bool isTagBefore(const TagRecord& left, const TagRecord& right);
+bool hasVersion(const ItemTables& tables, uint32_t key);
 
 }
 
-KiottySpecStatus ItemStore::rebuild()
+void ItemMaintenance::clear()
+{
+    _tables.names.clear();
+    _tables.versions.batch().clear();
+    _tables.tag_versions.batch().clear();
+    _tables.bodies.clear();
+}
+
+KiottySpecStatus ItemMaintenance::rebuild()
 {
     _tables.items.releaseAll();
     _tables.id_index.clear();
@@ -47,7 +56,7 @@ KiottySpecStatus ItemStore::rebuild()
     return loadTags();
 }
 
-Span<const uint32_t> ItemStore::collectLatest()
+Span<const uint32_t> ItemMaintenance::collectLatest()
 {
     const Span<const ItemVersion> versions = _tables.versions.all();
     const Span<uint32_t> order = viewVector(_tables.order);
@@ -56,7 +65,7 @@ Span<const uint32_t> ItemStore::collectLatest()
     return latest;
 }
 
-KiottySpecStatus ItemStore::place(const ItemVersion& version)
+KiottySpecStatus ItemMaintenance::place(const ItemVersion& version)
 {
     const auto id = _tables.names.find(version.key);
     if (!id) {
@@ -84,7 +93,7 @@ KiottySpecStatus ItemStore::place(const ItemVersion& version)
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-void ItemStore::linkParents()
+void ItemMaintenance::linkParents()
 {
     const size_t capacity = _tables.items.capacity();
     for (size_t index = 0; index < capacity; ++index) {
@@ -100,7 +109,7 @@ void ItemStore::linkParents()
     }
 }
 
-KiottySpecStatus ItemStore::loadTags()
+KiottySpecStatus ItemMaintenance::loadTags()
 {
     const Span<const TagVersion> versions = _tables.tag_versions.all();
     const size_t length = versions.length();
@@ -131,12 +140,21 @@ KiottySpecStatus ItemStore::loadTags()
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-void ItemStore::clear()
+
+void ItemMaintenance::prune(uint32_t base)
 {
-    _tables.names.clear();
-    _tables.versions.clear();
-    _tables.tag_versions.clear();
-    _tables.bodies.clear();
+    _tables.versions.batch().prune(base);
+    const ItemTables& tables = _tables;
+    _tables.tag_versions.batch().retain(
+        [&tables](const TagVersion& tag) { return hasVersion(tables, tag.key); });
+    _tables.tag_versions.batch().prune(base);
+    for (size_t index = _tables.names.length(); index > 0; --index) {
+        const uint32_t key = _tables.names.keyAt(index - 1);
+        const bool has_version = hasVersion(_tables, key);
+        if (has_version) { continue; }
+        _tables.bodies.erase(key);
+        _tables.names.erase(key);
+    }
 }
 
 namespace {
@@ -220,6 +238,12 @@ bool isTagBefore(const TagRecord& left, const TagRecord& right)
 {
     if (left.item.index != right.item.index) { return left.item.index < right.item.index; }
     return left.tag < right.tag;
+}
+
+bool hasVersion(const ItemTables& tables, uint32_t key)
+{
+    const auto version = tables.versions.latest(key, UINT32_MAX);
+    return static_cast<bool>(version);
 }
 
 }

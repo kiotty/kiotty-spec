@@ -70,10 +70,13 @@ Span<const uint32_t> RelationStore::relationsInDiffOrder()
 bool RelationStore::contains(const RelationRecord& relation) const
 { return isStoredAt(all(), lowerBound(relation), relation); }
 
-KiottySpecStatus RelationStore::add(const RelationRecord& relation, uint32_t sequence)
+size_t RelationStore::lowerBound(const RelationRecord& relation) const
+{ return findLowerBound(all(), relation); }
+
+KiottySpecStatus RelationWriter::add(const RelationRecord& relation, uint32_t sequence)
 {
-    const size_t position = lowerBound(relation);
-    const bool is_duplicate = isStoredAt(all(), position, relation);
+    const size_t position = findLowerBound(viewUsed(), relation);
+    const bool is_duplicate = isStoredAt(viewUsed(), position, relation);
     if (is_duplicate) {
         return _failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_RELATION);
     }
@@ -89,10 +92,10 @@ KiottySpecStatus RelationStore::add(const RelationRecord& relation, uint32_t seq
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-KiottySpecStatus RelationStore::remove(const RelationRecord& relation, uint32_t sequence)
+KiottySpecStatus RelationWriter::remove(const RelationRecord& relation, uint32_t sequence)
 {
-    const size_t position = lowerBound(relation);
-    const Result<const RelationRecord&, KiottySpecStatus> found = all().at(position);
+    const size_t position = findLowerBound(viewUsed(), relation);
+    const Result<const RelationRecord&, KiottySpecStatus> found = viewUsed().at(position);
     const bool is_missing = !found || !isSameRelation(*found.value, relation);
     if (is_missing) {
         return _failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_RELATION);
@@ -104,7 +107,7 @@ KiottySpecStatus RelationStore::remove(const RelationRecord& relation, uint32_t 
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-KiottySpecStatus RelationStore::removeAllOf(ItemHandle item, uint32_t sequence)
+KiottySpecStatus RelationWriter::removeAllOf(ItemHandle item, uint32_t sequence)
 {
     const Span<RelationRecord> used(viewRecords().begin(), _length);
     const size_t length = used.length();
@@ -125,11 +128,8 @@ KiottySpecStatus RelationStore::removeAllOf(ItemHandle item, uint32_t sequence)
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-size_t RelationStore::lowerBound(const RelationRecord& relation) const
-{ return findLowerBound(all(), relation); }
-
-KiottySpecStatus RelationStore::writeVersion(const RelationRecord& relation, uint32_t removed,
-                                             uint32_t sequence)
+KiottySpecStatus RelationWriter::writeVersion(const RelationRecord& relation, uint32_t removed,
+                                              uint32_t sequence)
 {
     const uint32_t from = _items.reader().key(relation.from);
     const uint32_t to = _items.reader().key(relation.to);

@@ -58,7 +58,7 @@ RecordResult Boundary::read(KiottySpecItemHandle item) const
 KiottySpecCursorResult Boundary::wrap(const impl::CursorIdResult& opened) const
 {
     if (!opened) { return cursorFailure(opened.code); }
-    const auto total = _context.cursors().total(opened.value);
+    const auto total = _context.readSide().cursors().total(opened.value);
     KiottySpecCursorResult result {};
     result.value = opened.value;
     result.total = total ? total.value : 0;

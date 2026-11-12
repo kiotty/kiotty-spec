@@ -21,8 +21,6 @@ public:
     Result<const entity::ItemRecord&, KiottySpecStatus> get(entity::ItemHandle handle) const;
     entity::ItemHandle handleInIdOrder(size_t position) const
     { return _tables.items.handleAt(_tables.id_index.valueAt(position)); }
-    entity::ItemHandle handleAt(size_t index) const { return _tables.items.handleAt(index); }
-    size_t capacity() const { return _tables.items.capacity(); }
     uint32_t key(entity::ItemHandle handle) const;
     size_t count() const { return _tables.id_index.length(); }
 
@@ -30,6 +28,18 @@ public:
 
 private:
     ItemTables& _tables;
+};
+
+class ItemSlots
+{
+public:
+    explicit ItemSlots(const ItemTables& tables) : _tables(tables) {}
+
+    entity::ItemHandle handleAt(size_t index) const { return _tables.items.handleAt(index); }
+    size_t capacity() const { return _tables.items.capacity(); }
+
+private:
+    const ItemTables& _tables;
 };
 
 }

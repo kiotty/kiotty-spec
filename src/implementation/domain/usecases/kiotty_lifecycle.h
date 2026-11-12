@@ -17,8 +17,6 @@ class Lifecycle
 public:
     Lifecycle(Workspace& workspace, Checker& checker) : _workspace(workspace), _checker(checker) {}
 
-    Result<uint32_t, KiottySpecStatus> beginWrite();
-
     Result<uint32_t, KiottySpecStatus> start(entity::Step step, Span<const char> description);
     KiottySpecStatus resume();
     KiottySpecStatus complete(KiottySpecActor actor);

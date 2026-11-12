@@ -22,10 +22,10 @@ KiottySpecStatus RelationEditor::add(Span<const char> from_id, uint32_t relation
         return _workspace.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_RELATION,
                                         from_id);
     }
-    WriteScope scope(_workspace, _lifecycle);
+    WriteScope scope(_workspace);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }
-    return scope.finish(_workspace.relations.add(record.value, sequence.value));
+    return scope.finish(_workspace.relations.writer().add(record.value, sequence.value));
 }
 
 KiottySpecStatus RelationEditor::remove(Span<const char> from_id, uint32_t relation,
@@ -38,10 +38,10 @@ KiottySpecStatus RelationEditor::remove(Span<const char> from_id, uint32_t relat
         return _workspace.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_RELATION,
                                         from_id);
     }
-    WriteScope scope(_workspace, _lifecycle);
+    WriteScope scope(_workspace);
     const Result<uint32_t, KiottySpecStatus> sequence = scope.sequence();
     if (!sequence) { return scope.finish(sequence.code); }
-    return scope.finish(_workspace.relations.remove(record.value, sequence.value));
+    return scope.finish(_workspace.relations.writer().remove(record.value, sequence.value));
 }
 
 Result<RelationRecord, KiottySpecStatus>

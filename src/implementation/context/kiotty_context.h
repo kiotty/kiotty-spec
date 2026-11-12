@@ -52,6 +52,43 @@ struct Configuration {
 
 static_assert(sizeof(Configuration) == 104, "unexpected padding");
 
+class ContextWriteSide
+{
+public:
+    ContextWriteSide(Editor& editor, RelationEditor& relation_editor, Lifecycle& lifecycle)
+        : _editor(editor), _relation_editor(relation_editor), _lifecycle(lifecycle)
+    {}
+
+    Editor& editor() const { return _editor; }
+    RelationEditor& relationEditor() const { return _relation_editor; }
+    Lifecycle& lifecycle() const { return _lifecycle; }
+
+private:
+    Editor& _editor;
+    RelationEditor& _relation_editor;
+    Lifecycle& _lifecycle;
+};
+
+class ContextReadSide
+{
+public:
+    ContextReadSide(const ModelCatalog& catalog, Finder& finder, Differ& differ,
+                    CursorPool& cursors)
+        : _catalog(catalog), _finder(finder), _differ(differ), _cursors(cursors)
+    {}
+
+    const ModelCatalog& catalog() const { return _catalog; }
+    Finder& finder() const { return _finder; }
+    Differ& differ() const { return _differ; }
+    CursorPool& cursors() const { return _cursors; }
+
+private:
+    const ModelCatalog& _catalog;
+    Finder& _finder;
+    Differ& _differ;
+    CursorPool& _cursors;
+};
+
 class Context {
 public:
     explicit Context(const Configuration& configuration);
@@ -64,14 +101,9 @@ public:
 
     entity::Failure& failure() { return _failure; }
     Workspace& workspace() { return _workspace; }
-    const ModelCatalog& catalog() const { return _catalog; }
-    Editor& editor() { return _editor; }
-    RelationEditor& relationEditor() { return _relation_editor; }
-    Lifecycle& lifecycle() { return _lifecycle; }
-    Finder& finder() { return _finder; }
-    Differ& differ() { return _differ; }
-    CursorPool& cursors() { return _cursors; }
-    TextBuffer& work() { return _work; }
+    ContextWriteSide writeSide()
+    { return ContextWriteSide(_editor, _relation_editor, _lifecycle); }
+    ContextReadSide readSide() { return ContextReadSide(_catalog, _finder, _differ, _cursors); }
 
 private:
     KiottySpecStatus checkDatabase(Span<const char> database);

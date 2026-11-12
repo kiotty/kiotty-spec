@@ -217,7 +217,7 @@ Result<ItemKind, KiottySpecStatus> SpecParser::kindOfKey(uint32_t key)
 {
     VersionTable<ItemVersion>& versions = _tables.items.tables().versions;
     const bool is_sorted = _has_sorted_versions;
-    if (!is_sorted) { versions.sort(); }
+    if (!is_sorted) { versions.batch().sort(); }
     _has_sorted_versions = true;
     const auto version = versions.latest(key, UINT32_MAX);
     if (!version) { return Result<ItemKind, KiottySpecStatus>::failure(version.code); }

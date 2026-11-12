@@ -29,7 +29,6 @@ IdParts splitId(Span<const char> id);
 size_t collectKeys(Span<uint32_t> order, Span<const ItemVersion> versions);
 void sortByKindId(Span<uint32_t> keys, const ItemTables& tables);
 uint32_t kindOf(const ItemTables& tables, uint32_t key);
-bool hasVersion(const ItemTables& tables, uint32_t key);
 bool isTagBeforeKey(const TagVersion& tag, uint32_t key);
 bool isKeyBeforeTag(uint32_t key, const TagVersion& tag);
 
@@ -121,22 +120,6 @@ Span<const uint32_t> ItemHistory::keysByIdentity()
     return keys;
 }
 
-void ItemHistory::prune(uint32_t base)
-{
-    _tables.versions.prune(base);
-    const ItemTables& tables = _tables;
-    _tables.tag_versions.retain(
-        [&tables](const TagVersion& tag) { return hasVersion(tables, tag.key); });
-    _tables.tag_versions.prune(base);
-    for (size_t index = _tables.names.length(); index > 0; --index) {
-        const uint32_t key = _tables.names.keyAt(index - 1);
-        const bool has_version = hasVersion(_tables, key);
-        if (has_version) { continue; }
-        _tables.bodies.erase(key);
-        _tables.names.erase(key);
-    }
-}
-
 namespace {
 
 IdParts splitId(Span<const char> id)
@@ -188,12 +171,6 @@ uint32_t kindOf(const ItemTables& tables, uint32_t key)
 {
     const auto version = tables.versions.latest(key, UINT32_MAX);
     return version ? static_cast<uint32_t>((*version.value).kind) : 0;
-}
-
-bool hasVersion(const ItemTables& tables, uint32_t key)
-{
-    const auto version = tables.versions.latest(key, UINT32_MAX);
-    return static_cast<bool>(version);
 }
 
 bool isTagBeforeKey(const TagVersion& tag, uint32_t key) { return tag.key < key; }
