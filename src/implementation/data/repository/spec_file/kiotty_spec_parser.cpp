@@ -1,8 +1,8 @@
-#include "implementation/domain/usecases/spec_file/kiotty_spec_parser.h"
+#include "implementation/data/repository/spec_file/kiotty_spec_parser.h"
 
 #include "implementation/core/kiotty_text_view.h"
 #include "implementation/domain/entity/kiotty_item_id.h"
-#include "implementation/domain/usecases/spec_file/kiotty_spec_fields.h"
+#include "implementation/data/repository/spec_file/kiotty_spec_fields.h"
 
 namespace kiotty::spec::implementation {
 

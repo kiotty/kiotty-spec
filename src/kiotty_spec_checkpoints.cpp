@@ -54,7 +54,7 @@ KiottySpecStatusResult KiottySpec_completeCheckpoint(KiottySpecContext* context,
     if (!spec) { return status(spec.code); }
     const ActorResult parsed = ValueParser(*spec.value).parseActor(actor);
     if (!parsed) { return status(parsed.code); }
-    return status(spec.value->writeSide().lifecycle().complete(parsed.value));
+    return status(spec.value->writeSide().completeCheckpoint(parsed.value));
 }
 
 KiottySpecCursorResult KiottySpec_openUnmetConditionCursor(KiottySpecContext* context)

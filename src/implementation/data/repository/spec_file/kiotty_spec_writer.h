@@ -4,7 +4,7 @@
 #include "implementation/core/kiotty_span.h"
 #include "implementation/data/datasource/kiotty_kisp_file.h"
 #include "implementation/data/datasource/kiotty_kisp_line.h"
-#include "implementation/domain/usecases/spec_file/kiotty_spec_tables.h"
+#include "implementation/data/repository/spec_file/kiotty_spec_tables.h"
 
 namespace kiotty::spec::implementation {
 

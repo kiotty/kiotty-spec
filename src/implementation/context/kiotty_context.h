@@ -15,9 +15,9 @@
 #include "implementation/domain/usecases/checker/kiotty_checker.h"
 #include "implementation/domain/usecases/editor/kiotty_editor.h"
 #include "implementation/domain/usecases/lifecycle/kiotty_lifecycle.h"
-#include "implementation/domain/usecases/model/kiotty_model_catalog.h"
+#include "implementation/data/repository/model/kiotty_model_catalog.h"
 #include "implementation/domain/usecases/editor/kiotty_relation_editor.h"
-#include "implementation/domain/usecases/spec_file/kiotty_spec_file.h"
+#include "implementation/data/repository/spec_file/kiotty_spec_file.h"
 #include "implementation/domain/usecases/workspace/kiotty_workspace.h"
 
 #include <cstddef>

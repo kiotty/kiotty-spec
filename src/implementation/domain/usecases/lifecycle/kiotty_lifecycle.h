@@ -15,18 +15,18 @@ namespace kiotty::spec::implementation {
 class Lifecycle
 {
 public:
-    Lifecycle(Workspace& workspace, Checker& checker) : _workspace(workspace), _checker(checker) {}
+    explicit Lifecycle(Workspace& workspace) : _workspace(workspace) {}
 
     Result<uint32_t, KiottySpecStatus> start(entity::Step step, Span<const char> description);
     KiottySpecStatus resume();
-    KiottySpecStatus complete(entity::Actor actor);
+    Result<const entity::CheckpointRecord&, KiottySpecStatus> openCompletion(entity::Actor actor);
+    KiottySpecStatus complete(Span<const UnmetCondition> unmet);
     Result<size_t, KiottySpecStatus> prune(entity::Actor actor, uint32_t base);
 
 private:
     KiottySpecStatus requireUser(entity::Actor actor);
 
     Workspace& _workspace;
-    Checker& _checker;
 };
 
 }

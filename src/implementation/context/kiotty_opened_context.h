@@ -7,9 +7,10 @@
 #include "implementation/core/kiotty_span.h"
 #include "implementation/data/datasource/kiotty_file_system.h"
 #include "implementation/domain/entity/kiotty_failure.h"
+#include "implementation/domain/usecases/checker/kiotty_checker.h"
 #include "implementation/domain/usecases/editor/kiotty_editor.h"
 #include "implementation/domain/usecases/lifecycle/kiotty_lifecycle.h"
-#include "implementation/domain/usecases/model/kiotty_model_catalog.h"
+#include "implementation/data/repository/model/kiotty_model_catalog.h"
 #include "implementation/domain/usecases/editor/kiotty_relation_editor.h"
 #include "implementation/domain/usecases/workspace/kiotty_workspace.h"
 
@@ -18,18 +19,22 @@ namespace kiotty::spec::implementation {
 class ContextWriteSide
 {
 public:
-    ContextWriteSide(Editor& editor, RelationEditor& relation_editor, Lifecycle& lifecycle)
-        : _editor(editor), _relation_editor(relation_editor), _lifecycle(lifecycle)
+    ContextWriteSide(Editor& editor, RelationEditor& relation_editor, Lifecycle& lifecycle,
+                     Checker& checker)
+        : _editor(editor), _relation_editor(relation_editor), _lifecycle(lifecycle),
+          _checker(checker)
     {}
 
     Editor& editor() const { return _editor; }
     RelationEditor& relationEditor() const { return _relation_editor; }
     Lifecycle& lifecycle() const { return _lifecycle; }
+    KiottySpecStatus completeCheckpoint(entity::Actor actor) const;
 
 private:
     Editor& _editor;
     RelationEditor& _relation_editor;
     Lifecycle& _lifecycle;
+    Checker& _checker;
 };
 
 class ContextReadSide

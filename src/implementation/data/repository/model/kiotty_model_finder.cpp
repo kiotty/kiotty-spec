@@ -1,4 +1,4 @@
-#include "implementation/domain/usecases/model/kiotty_model_finder.h"
+#include "implementation/data/repository/model/kiotty_model_finder.h"
 
 #include "implementation/core/kiotty_checked.h"
 #include "implementation/core/kiotty_search.h"

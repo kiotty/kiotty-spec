@@ -5,7 +5,7 @@
 #include "implementation/core/kiotty_text_buffer.h"
 #include "implementation/data/datasource/kiotty_file_system.h"
 #include "implementation/data/datasource/kiotty_kisp_file.h"
-#include "implementation/domain/usecases/spec_file/kiotty_spec_tables.h"
+#include "implementation/data/repository/spec_file/kiotty_spec_tables.h"
 
 #include <cstddef>
 #include <cstdint>

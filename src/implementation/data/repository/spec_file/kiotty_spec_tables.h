@@ -6,7 +6,7 @@
 #include "implementation/data/repository/item/kiotty_item_store.h"
 #include "implementation/data/repository/meta/kiotty_meta_store.h"
 #include "implementation/data/repository/relation/kiotty_relation_store.h"
-#include "implementation/domain/usecases/model/kiotty_model_catalog.h"
+#include "implementation/data/repository/model/kiotty_model_catalog.h"
 
 #include <string_view>
 

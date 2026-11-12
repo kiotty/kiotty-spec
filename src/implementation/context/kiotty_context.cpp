@@ -27,7 +27,7 @@ Context::Context(const Configuration& configuration)
             _work, _file_system, _database),
       _workspace(Workspace { _file, _failure, _catalog, _meta, _checkpoints, _items, _relations,
                              _decisions }),
-      _checker(_workspace, configuration.max_items), _lifecycle(_workspace, _checker),
+      _checker(_workspace, configuration.max_items), _lifecycle(_workspace),
       _editor(_workspace), _relation_editor(_workspace),
       _cursors(configuration.max_cursors, configuration.max_cursor_rows,
                configuration.cursor_pool_rows),
@@ -51,7 +51,7 @@ KiottySpecStatus Context::open(Span<const char> database)
     }
     const KiottySpecStatus loaded = loadSpecFile(absolute_path.view());
     if (loaded != KIOTTY_SPEC_STATUS_SUCCESS) { return loaded; }
-    _opened.emplace(_workspace, ContextWriteSide(_editor, _relation_editor, _lifecycle),
+    _opened.emplace(_workspace, ContextWriteSide(_editor, _relation_editor, _lifecycle, _checker),
                     ContextReadSide(_catalog, _finder, _differ, _cursors), _root);
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }

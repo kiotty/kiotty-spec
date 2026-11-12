@@ -1,10 +1,10 @@
-#include "implementation/domain/usecases/spec_file/kiotty_spec_fields.h"
+#include "implementation/data/repository/spec_file/kiotty_spec_fields.h"
 
 #include "implementation/core/kiotty_number.h"
 #include "implementation/core/kiotty_text_view.h"
 #include "implementation/core/kiotty_utf8.h"
 #include "implementation/domain/entity/kiotty_version_records.h"
-#include "implementation/domain/usecases/spec_file/kiotty_spec_tables.h"
+#include "implementation/data/repository/spec_file/kiotty_spec_tables.h"
 
 namespace kiotty::spec::implementation {
 

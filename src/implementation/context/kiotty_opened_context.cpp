@@ -6,6 +6,15 @@
 
 namespace kiotty::spec::implementation {
 
+KiottySpecStatus ContextWriteSide::completeCheckpoint(entity::Actor actor) const
+{
+    const auto opened = _lifecycle.openCompletion(actor);
+    if (!opened) { return opened.code; }
+    const entity::CheckpointRecord& record = *opened.value;
+    if (record.state == entity::CheckpointState::DONE) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    return _lifecycle.complete(_checker.collect(record.step));
+}
+
 KiottySpecStatus OpenedContext::initialize(Span<const char> name)
 {
     const KiottySpecStatus fresh = _workspace.refresh();

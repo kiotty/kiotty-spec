@@ -1,8 +1,8 @@
-#include "implementation/domain/usecases/spec_file/kiotty_spec_file.h"
+#include "implementation/data/repository/spec_file/kiotty_spec_file.h"
 
 #include "implementation/core/kiotty_text_view.h"
-#include "implementation/domain/usecases/spec_file/kiotty_spec_parser.h"
-#include "implementation/domain/usecases/spec_file/kiotty_spec_writer.h"
+#include "implementation/data/repository/spec_file/kiotty_spec_parser.h"
+#include "implementation/data/repository/spec_file/kiotty_spec_writer.h"
 
 #include <string_view>
 #include <utility>

@@ -31,26 +31,29 @@ KiottySpecStatus Lifecycle::resume()
     return scope.finish(KIOTTY_SPEC_STATUS_SUCCESS);
 }
 
-KiottySpecStatus Lifecycle::complete(entity::Actor actor)
+Result<const CheckpointRecord&, KiottySpecStatus> Lifecycle::openCompletion(entity::Actor actor)
 {
+    using RecordResult = Result<const CheckpointRecord&, KiottySpecStatus>;
     const KiottySpecStatus allowed = requireUser(actor);
-    if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) { return allowed; }
+    if (allowed != KIOTTY_SPEC_STATUS_SUCCESS) { return RecordResult::failure(allowed); }
     const KiottySpecStatus fresh = _workspace.refresh();
-    if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return fresh; }
-    const uint32_t latest = _workspace.checkpoints.latest();
-    const auto found = _workspace.checkpoints.get(latest);
+    if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return RecordResult::failure(fresh); }
+    const auto found = _workspace.checkpoints.get(_workspace.checkpoints.latest());
     if (!found) {
-        return _workspace.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND,
-                                        KIOTTY_SPEC_SUBJECT_CHECKPOINT);
+        return RecordResult::failure(_workspace.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND,
+                                                              KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
-    const CheckpointRecord& record = *found.value;
-    if (record.state == CheckpointState::DONE) { return KIOTTY_SPEC_STATUS_SUCCESS; }
-    const Span<const UnmetCondition> unmet = _checker.collect(record.step);
+    return RecordResult::success(*found.value);
+}
+
+KiottySpecStatus Lifecycle::complete(Span<const UnmetCondition> unmet)
+{
     const size_t unmet_count = unmet.length();
     if (unmet_count > 0) {
         return _workspace.failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION,
                                         KIOTTY_SPEC_SUBJECT_COMPLETION);
     }
+    const uint32_t latest = _workspace.checkpoints.latest();
     return _workspace.finish(
         _workspace.checkpoints.writer().setState(latest, CheckpointState::DONE));
 }

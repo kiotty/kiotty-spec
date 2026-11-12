@@ -5,7 +5,7 @@
 #include "implementation/core/kiotty_span.h"
 #include "implementation/data/datasource/kiotty_kisp_line.h"
 #include "implementation/domain/entity/kiotty_kind.h"
-#include "implementation/domain/usecases/spec_file/kiotty_spec_tables.h"
+#include "implementation/data/repository/spec_file/kiotty_spec_tables.h"
 
 #include <cstdint>
 #include <string_view>

@@ -1,7 +1,7 @@
 #include "implementation/domain/entity/kiotty_item_id.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 #include "implementation/domain/entity/kiotty_kind.h"
-#include "implementation/domain/usecases/model/kiotty_model_catalog.h"
+#include "implementation/data/repository/model/kiotty_model_catalog.h"
 
 #include <cstdio>
 #include <cstring>

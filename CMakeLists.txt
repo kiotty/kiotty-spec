@@ -108,7 +108,7 @@ add_executable(kiotty_datasource_test
     src/implementation/data/datasource/kiotty_file_writer.cpp
     src/implementation/data/datasource/kiotty_opened_file.cpp
     src/implementation/domain/entity/kiotty_kind.cpp
-    src/implementation/domain/usecases/spec_file/kiotty_spec_fields.cpp)
+    src/implementation/data/repository/spec_file/kiotty_spec_fields.cpp)
 target_include_directories(kiotty_datasource_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 kiotty_warnings(kiotty_datasource_test)
 kiotty_no_exceptions(kiotty_datasource_test)
@@ -125,8 +125,8 @@ add_executable(kiotty_model_test
     tests/model/model_test.cpp
     src/implementation/domain/entity/kiotty_item_id.cpp
     src/implementation/domain/entity/kiotty_kind.cpp
-    src/implementation/domain/usecases/model/kiotty_model_catalog.cpp
-    src/implementation/domain/usecases/model/kiotty_model_finder.cpp)
+    src/implementation/data/repository/model/kiotty_model_catalog.cpp
+    src/implementation/data/repository/model/kiotty_model_finder.cpp)
 target_include_directories(kiotty_model_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 kiotty_warnings(kiotty_model_test)
 kiotty_no_exceptions(kiotty_model_test)

@@ -4,7 +4,7 @@
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
 #include "implementation/domain/entity/kiotty_model.h"
-#include "implementation/domain/usecases/model/kiotty_model_finder.h"
+#include "implementation/data/repository/model/kiotty_model_finder.h"
 
 #include <cstddef>
 #include <cstdint>

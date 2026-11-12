@@ -1,4 +1,4 @@
-#include "implementation/domain/usecases/spec_file/kiotty_spec_writer.h"
+#include "implementation/data/repository/spec_file/kiotty_spec_writer.h"
 
 #include "implementation/core/kiotty_decimal.h"
 #include "implementation/core/kiotty_fixed_string.h"

@@ -1589,6 +1589,7 @@ tag	O	562b0381	설계 종류	4	모듈
 tag	O	562b0381	구현 상태	4	구현 완료
 tag	O	565fdec2	출처	9	사용자 피드백
 tag	O	565fdec2	상태	9	열림
+tag	O	565fdec2	상태	18	완료
 tag	O	565fdec2	진입 단계	9	Step 4
 tag	O	56bc75b9	인터페이스 종류	3	C 함수
 tag	O	57b18e7f	설계 종류	4	모듈
