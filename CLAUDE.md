@@ -11,7 +11,7 @@
   3. 그다음 체크포인트에서 코드 검사를 다시 돌린다.
 - 완료: CR-001 ~ CR-011 모두 코드에 반영했다 (계획 1 끝). 남은 lint 위반은 4.17 이 대부분이다.
 - 계획 2 끝: CP-0019 (외부 인터페이스 UI-*), CP-0020 (설계 DSN-*), CP-0021 (유닛 테스트 계획 UT-*) 에서 항목을 코드에 맞췄다. 요구사항은 바뀌지 않았다 (CR 진입 단계가 3 · 4). 갱신 스크립트는 git 밖의 `temp/ui_*.js`, `temp/dsn_v3/`, `temp/ut_update.js`.
-- 다음: 계획 3. Step 10 체크포인트를 열고 코드 검사를 다시 돌린다. `build/record_inspection.py` 는 Python 이 필요한데 이 PC 에는 없다 (Store 바로가기만 있음).
+- 다음: 계획 3. Step 10 체크포인트를 열고 코드 검사를 다시 돌린다. `build/record_inspection.py` 는 git 밖(build/)에 있어 이 PC 에는 없고, Python 도 없다 (Store 바로가기만 있음). 스크립트를 가져오거나 node 로 다시 만들어야 한다.
 
 ## 확인할 ks 명령
 
