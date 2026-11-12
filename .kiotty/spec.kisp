@@ -28,6 +28,7 @@ checkpoint	O	22	21	10	done	1794488562	CR-001 ~ 006 반영 후 코드 검사
 checkpoint	O	23	22	1	done	1794491796	CR-012 개발 수칙 6.6 범위와 수칙 원본을 DB 로
 checkpoint	O	24	23	2	done	1794491823	CR-012 개발 수칙 6.6 범위와 수칙 원본을 DB 로
 checkpoint	O	25	24	10	done	1794491852	CR-012 반영 후 6.6 다시 판정
+checkpoint	O	26	25	9	done	1794492617	시스템 테스트 실행 (75f4b55 Debug)
 TABLE	item	O/X	key	id
 item	O	00593058	CIR-020
 item	O	00ab1435	DSN-078
@@ -630,6 +631,7 @@ item_version	O	0196d2e3	14	code_inspection_result	-	6.8 외부와 주고받는 �
 item_version	O	0196d2e3	18	code_inspection_result	-	6.8 외부와 주고받는 문자열은 UTF-8 이다.	PASS	c187b923aead887b
 item_version	O	0196d2e3	22	code_inspection_result	-	6.8 외부와 주고받는 문자열은 UTF-8 이다.	PASS	0201350b3dfbd23f
 item_version	O	021f95cd	7	system_test_result	-	항목을 종류별 모델대로 분류하고 연결한다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	021f95cd	26	system_test_result	-	항목을 종류별 모델대로 분류하고 연결한다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	02360e37	4	design	-	SpecFile (domain/usecases/kiotty_spec_file.h)	.kisp 파일과 store 를 오간다.	fc7c57fb7cb13715
 item_version	O	02360e37	20	design	-	SpecFile (data/repository/spec_file/kiotty_spec_file.h)	.kisp 사양 파일과 메모리의 store 를 맞춘다: 통째로 읽기(load), 다시 쓰기(save), 밖에서 바뀌었는지 보기(checkUnchanged).	d4f73fc4bdaa4032
 item_version	O	0291ef05	8	code_inspection_result	-	0. 원칙	PASS	f759ee54be260dcb
@@ -662,6 +664,7 @@ item_version	O	07728b44	20	design	-	kisp_file (data/datasource/kiotty_kisp_file.
 item_version	O	07e965d1	4	design	-	디렉토리 app/cli/		9eeb60b6ac0a4c18
 item_version	O	07e965d1	20	design	-	디렉토리 app/cli/		89a212e391e56262
 item_version	O	0831a2e4	7	system_test_result	-	지난 시점의 내용을 읽는다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	0831a2e4	26	system_test_result	-	지난 시점의 내용을 읽는다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	0857a7da	3	external_interface	b7bb9da8	KiottySpec_setItemParent	상위 항목을 정하거나 없앤다	ad56219ad5a6637c
 item_version	O	0857a7da	19	external_interface	b7bb9da8	KiottySpec_setItemParent	상위 항목을 정하거나 없앤다	7d9298c79d41c56a
 item_version	O	08fe2a2b	2	rule	-	9. 리뷰 체크리스트		a96a1a580d1af790
@@ -712,6 +715,7 @@ item_version	O	153538c5	3	external_interface	a5336127	KiottySpecCheckpointHandle
 item_version	O	153538c5	19	external_interface	a5336127	KiottySpecCheckpointHandleResult	상태와 체크포인트 핸들	9c96de96e11e06c6
 item_version	O	153ce43f	9	change_request	-	디렉토리 구조를 7.1 · 7.2 에 맞춤	backend·repository·usecase·CLI 파일을 수칙의 디렉토리로 옮긴다	444a2f2e870b9ced
 item_version	O	174932c2	7	system_test_result	-	항목을 만들고 ID 를 받는다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	174932c2	26	system_test_result	-	항목을 만들고 ID 를 받는다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	1753b045	2	rule	-	6. 설계		3b8cfe84c784e226
 item_version	O	17e806a6	2	rule	-	3. 지역성		4ad4fd2921baf5c0
 item_version	O	17ea5c8d	2	rule	cbb5a614	2.3 금지 함수와 대체		3982553aa87d418f
@@ -772,6 +776,7 @@ item_version	O	2412634d	22	code_inspection_result	-	6.3 한 흐름은 한 맥락
 item_version	O	2459b200	3	external_interface	21ded3ba	KiottySpec_fetchItemDiffPage	항목 변화 커서의 다음 페이지	fe2bc4cadf8801bd
 item_version	O	253605c0	2	rule	b19d9182	1.6 컨테이너는 core/ 의 고정 크기 컨테이너만 쓴다.		be57f300ef392b77
 item_version	O	25bc8395	7	system_test_result	-	밖에서 바뀐 파일을 덮어쓰지 않는다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	25bc8395	26	system_test_result	-	밖에서 바뀐 파일을 덮어쓰지 않는다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	25cb65d2	19	external_interface	a415fab7	KiottySpecBuffer	호출자 출력 버퍼	5087ee727ff8068f
 item_version	O	25d9bd80	21	unit_test_plan	def6c251	number inputs (testNumberInputs)		a030f3e64ca3b7ba
 item_version	O	261a847c	8	code_inspection_result	-	2.4 정수는 범위를 검사한 뒤에 쓴다.	FAIL 14건	5154e970f967791e
@@ -874,6 +879,7 @@ item_version	O	3dd02f08	3	external_interface	-	체크포인트	체크포인트�
 item_version	O	3dd02f08	19	external_interface	-	체크포인트	체크포인트를 시작 · 이어 하기 · 확정 · 정리하고 읽는다	32c949e250d68d1a
 item_version	O	3e12d3ef	1	requirement	29885efc	정해진 관계로만 연결한다		17dbfb6822e18bb4
 item_version	O	3e2b90a7	7	system_test_result	-	왜 그렇게 정했는지 남긴다 (결정 기록)	kiotty_system_test, f7650c6 Debug	-
+item_version	O	3e2b90a7	26	system_test_result	-	왜 그렇게 정했는지 남긴다 (결정 기록)	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	3eda8983	3	external_interface	-	모델	Kind 의 모델 · 태그 정의 · 관계 정의를 읽는다	e19be4e5fdb97469
 item_version	O	3eda8983	19	external_interface	-	모델	Kind 의 모델 · 태그 정의 · 관계 정의를 읽는다	d60716d18c560303
 item_version	O	3f02e2fb	3	external_interface	fcda3877	KiottySpecCardinality	태그 · 관계 값 개수 제한 MANY · SINGLE	cb4a6eeb108909dc
@@ -914,6 +920,7 @@ item_version	O	48a9ab3c	19	external_interface	-	레코드	포인터 없는 고�
 item_version	O	48f90d21	3	external_interface	a5336127	KiottySpecPositionResult	상태와 현재 위치	e73a9c1b730aa416
 item_version	O	48f90d21	19	external_interface	a5336127	KiottySpecPositionResult	상태와 현재 위치	5742416872561347
 item_version	O	493cacd6	7	system_test_result	-	항목 ID 를 바꾼다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	493cacd6	26	system_test_result	-	항목 ID 를 바꾼다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	4996c5f2	19	external_interface	48a9ab3c	KiottySpecName	이름 글	f3b49e805e09c22f
 item_version	O	4a0c9ac5	2	rule	17e806a6	3.2 포인터로 연결된 자료구조는 쓰지 않는다.	3.2 포인터로 연결된 자료구조는 쓰지 않는다. 배열 + index 로 만든다.	74393a711ace59f2
 item_version	O	4a212847	3	external_interface	2665e8cd	KiottySpec_openChildCursor	하위 항목 커서를 연다	e61963f05623b09c
@@ -950,6 +957,7 @@ item_version	O	504cb7db	3	external_interface	48a9ab3c	KiottySpecRelationDiff	관
 item_version	O	504cb7db	19	external_interface	48a9ab3c	KiottySpecRelationDiff	관계 변화 하나	31a994028ef2fd11
 item_version	O	505e24f9	19	external_interface	3dd02f08	KiottySpec_openUnmetConditionCursor	가장 최근 체크포인트의 어긋난 확정 조건 커서	ea52a9f4d4ba43f3
 item_version	O	508aa9ca	7	system_test_result	-	단계를 따라 체크포인트로 기록을 쌓고 확정한다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	508aa9ca	26	system_test_result	-	단계를 따라 체크포인트로 기록을 쌓고 확정한다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	512c710f	19	external_interface	48a9ab3c	KiottySpecUnmetCondition	어긋난 확정 조건 하나	61dfbb2876fc6c23
 item_version	O	51781a9e	3	external_interface	48a9ab3c	KiottySpecKindDiff	Kind 하나의 변화 수	8458db534330982a
 item_version	O	51781a9e	8	external_interface	48a9ab3c	KiottySpecKindDiff	Kind 하나의 변화 수	f5a1819d89c8c78c
@@ -1019,6 +1027,7 @@ item_version	O	5f8a7565	14	code_inspection_result	-	4.7 매직 넘버를 쓰지 
 item_version	O	5f8a7565	18	code_inspection_result	-	4.7 매직 넘버를 쓰지 않는다.	PASS	3ef614950304416c
 item_version	O	600c198b	2	rule	291c4670	5.5 에러 코드를 문장으로 바꾸는 일은 presentation 에서만 한다.		06d75ca86d228658
 item_version	O	6127c512	7	system_test_result	-	정해진 관계로만 연결한다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	6127c512	26	system_test_result	-	정해진 관계로만 연결한다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	6196c403	3	external_interface	a5336127	KiottySpecTextDiffResult	상태와 글자 조각	1d3debcb5e99298e
 item_version	X	6196c403	19	external_interface	a5336127	KiottySpecTextDiffResult	상태와 글자 조각	1d3debcb5e99298e
 item_version	O	61ea97d0	4	design	-	FileReader (data/datasource/kiotty_file_reader.h)	파일을 줄 단위로 읽는다.	18aae234e8280e80
@@ -1036,6 +1045,7 @@ item_version	O	63751f19	19	external_interface	fcda3877	KiottySpecSubject	실패�
 item_version	O	637973a2	8	rule	291c4670	5.7 C interface 의 출력 메모리는 union 없이 순차로 두고, bool 대신 <Organization><Project>Bool 을 쓴다.		20bab1e9d2090ff0
 item_version	O	63fa3db0	1	requirement	-	문자 인코딩과 줄 끝		f2368a21ae59659f
 item_version	O	64849230	7	system_test_result	-	지금 어디에 있고 다음 단계가 무엇인지 안다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	64849230	26	system_test_result	-	지금 어디에 있고 다음 단계가 무엇인지 안다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	64f97c96	3	external_interface	4d02ef15	KiottySpec_openRelationCursorByModel	관계 종류 하나의 모든 관계 커서를 연다	69d2d1be2786ffeb
 item_version	O	660f57f4	6	system_test_plan	39a38e52	프로젝트 이름과 만든 시각을 남긴다	REQ-003 의 인수 조건 2 개	d1c2a15dd4990d33
 item_version	O	667a0111	1	requirement	-	쓰기 한 번이 사람이 기다리지 않을 만큼 빠르다		fc4029302d4015d1
@@ -1062,6 +1072,7 @@ item_version	O	6b981e43	1	requirement	-	쓰기는 전부 되거나 하나도 안
 item_version	O	6cd627db	9	change_request	-	작업 순서를 타입으로 강제	open 전후를 런타임 플래그 대신 타입으로 나눈다	7b58f7f7d493b20a
 item_version	O	6cfa52ce	6	system_test_plan	c7511506	항목을 만들고 ID 를 받는다	REQ-008 의 인수 조건 4 개	b58e7d9f7ee12cbe
 item_version	O	6d2eb6d0	7	system_test_result	-	항목을 지운다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	6d2eb6d0	26	system_test_result	-	항목을 지운다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	6d95d4a9	3	external_interface	fcda3877	KiottySpecActor	호출한 쪽. 확정 · 정리는 USER 만	54c09ac4df4dacb0
 item_version	O	6dddb862	3	external_interface	f0dc6547	KiottySpecRelationPage	관계 페이지	a5a007e28da3de45
 item_version	O	6dddb862	19	external_interface	f0dc6547	KiottySpecRelationPage	관계 페이지	d0b94c875f95c4c3
@@ -1070,6 +1081,7 @@ item_version	O	70f78fd9	3	external_interface	-	이름 표	Kind 와 체크포인�
 item_version	O	70f78fd9	19	external_interface	-	이름 표	Kind 와 체크포인트 상태를 영문 이름과 바꾼다	cca91964e4cf4052
 item_version	O	7142def7	20	design	-	acceptance_criteria (domain/usecases/checker/kiotty_acceptance_criteria.h)	요구사항 본문의 "## 인수 조건" 절에서 인수 조건 줄 수를 센다.	14696577bbd2bcc8
 item_version	O	719e2ccd	7	system_test_result	-	바뀐 항목과 관계를 목록으로 본다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	719e2ccd	26	system_test_result	-	바뀐 항목과 관계를 목록으로 본다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	727957a0	19	external_interface	f0dc6547	KiottySpecUnmetConditionPage	어긋난 확정 조건 페이지	6a544e1202af03a8
 item_version	O	7305bd84	4	design	-	BodyStore (data/repository/kiotty_body_store.h)	항목 key 마다 현재 본문을 초기화 때 확보한 영역에 둔다.	ab334233b8922013
 item_version	O	7305bd84	20	design	-	BodyStore (data/repository/item/kiotty_body_store.h)	항목 key 마다 현재 본문을 초기화 때 확보한 영역에 둔다.	a065640af1e3e960
@@ -1146,6 +1158,7 @@ item_version	O	8553ef57	17	design	-	RelationStore (data/repository/kiotty_relati
 item_version	O	8553ef57	20	design	-	RelationStore (data/repository/relation/kiotty_relation_store.h)	관계 버전 표와 현재 관계 풀. 쓰기(add · remove · removeAllOf) 는 writer() 의 RelationWriter 로 나눴다 (CR-010).	8c7c266d87fea92c
 item_version	O	87374f9d	1	requirement	f40870e2	항목을 찾고 목록으로 본다		86f4a91142bad3d7
 item_version	O	87ad4047	7	system_test_result	-	모델을 읽는다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	87ad4047	26	system_test_result	-	모델을 읽는다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	87ddb0bb	4	design	-	Failure (core/kiotty_failure.h)	마지막 실패의 상태 코드와 이유 문장을 담는다.	658ff31823bf977c
 item_version	O	87ddb0bb	20	design	-	Failure (domain/entity/kiotty_failure.h)	마지막 실패의 상태 코드와 이유 문장을 담는다.	240bea915913202e
 item_version	O	8874ff63	4	design	-	cursor_rows (context/kiotty_cursor_rows.h)	목록 질의가 결과 행을 커서에 담을 때 쓰는 도우미.	919cd6ac88d904fd
@@ -1175,6 +1188,7 @@ item_version	O	8e60065e	10	code_inspection_result	-	4.10 멤버 변수를 쓰는
 item_version	O	8e60065e	14	code_inspection_result	-	4.10 멤버 변수를 쓰는 계산은 멤버를 인자로 받는 보조 함수로 뺀다.	PASS	06f4e02279d486b0
 item_version	O	8e60065e	18	code_inspection_result	-	4.10 멤버 변수를 쓰는 계산은 멤버를 인자로 받는 보조 함수로 뺀다.	PASS	06f4e02279d486b0
 item_version	O	8ed8a57c	7	system_test_result	-	단계 산출물을 항목으로 기록한다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	8ed8a57c	26	system_test_result	-	단계 산출물을 항목으로 기록한다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	8f1f3ac8	8	code_inspection_result	-	4.13 삼항 연산자는 값 선택 한 단만 쓴다.	FAIL 2건	c6d62a5af60b364a
 item_version	O	8f1f3ac8	10	code_inspection_result	-	4.12 삼항 연산자는 값 선택 한 단만 쓴다.	FAIL 2건	2bf22c54de09218b
 item_version	O	8f1f3ac8	14	code_inspection_result	-	4.12 삼항 연산자는 값 선택 한 단만 쓴다.	PASS	18117a2283765842
@@ -1216,6 +1230,7 @@ item_version	O	967fd67f	18	code_inspection_result	-	6.2 함수는 인자와 리�
 item_version	O	969657b8	2	rule	-	4. 가독성		4896d96fa72b1083
 item_version	O	96da97fd	8	external_interface	a415fab7	KiottySpecBool	참 · 거짓 (0 거짓, 1 참). bool 대신 int32_t	2e2849ac4de2fa29
 item_version	O	970bf723	7	system_test_result	-	프로젝트 이름과 만든 시각을 남긴다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	970bf723	26	system_test_result	-	프로젝트 이름과 만든 시각을 남긴다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	971031e4	6	system_test_plan	-	왜 그렇게 정했는지 남긴다 (결정 기록)	REQ-030 의 인수 조건 3 개	1f6164b30dc9f6fb
 item_version	O	9734b840	5	unit_test_plan	cd23d5c3	items tags relations (testItemsTagsRelations)		e9673676d4a52e67
 item_version	O	975029f0	2	rule	-	0. 원칙		3d0c62cb729030df
@@ -1251,7 +1266,9 @@ item_version	O	a083cc54	6	system_test_plan	ee4483d0	변경의 영향을 따라�
 item_version	O	a0e64b6b	3	external_interface	f0dc6547	KiottySpecTagPage	태그 페이지	2bd5abd0f426ac6d
 item_version	O	a0e64b6b	19	external_interface	f0dc6547	KiottySpecTagPage	태그 페이지	b94a96c228c0a9dd
 item_version	O	a11e1470	7	system_test_result	-	제목과 요약의 글자 차이를 본다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	a11e1470	26	system_test_result	-	제목과 요약의 글자 차이를 본다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	a18ba151	7	system_test_result	-	항목을 찾고 목록으로 본다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	a18ba151	26	system_test_result	-	항목을 찾고 목록으로 본다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	a192b2b1	4	design	-	디렉토리 src/implementation/context/		200c580a36eb2732
 item_version	O	a192b2b1	20	design	-	디렉토리 src/implementation/context/		67d076cd723f8c4d
 item_version	O	a2cf62bf	3	external_interface	21ded3ba	KiottySpec_openItemDiffCursor	바뀐 항목 커서를 연다	bc37ed2a2e1c8b1d
@@ -1263,11 +1280,13 @@ item_version	O	a421ec5c	5	unit_test_plan	a44597b9	tag lookup (testTagLookup)		c2
 item_version	O	a43711c5	5	unit_test_plan	def6c251	version table prune (testVersionTablePrune)		4a0f4633dfc6de00
 item_version	O	a44597b9	5	unit_test_plan	-	model 단위 테스트 (kiotty_model_test)		f119873c358681ef
 item_version	O	a51e1905	7	system_test_result	-	오래된 기록을 정리한다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	a51e1905	26	system_test_result	-	오래된 기록을 정리한다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	a5336127	3	external_interface	-	결과 구조체	상태 코드와 값을 함께 돌려주는 구조체	b9043c320c2148e9
 item_version	O	a5336127	19	external_interface	-	결과 구조체	상태 코드와 값을 함께 돌려주는 구조체	bf0ddb1a116614f1
 item_version	O	a56b99fa	6	system_test_plan	9641e961	지난 시점의 내용을 읽는다	REQ-028 의 인수 조건 4 개	1bdddd63b05b085d
 item_version	O	a5767c78	4	design	-	SpanText (core/kiotty_span_text.h)	남이 준 영역에 null 종료 글을 쌓는다.	e0a88a713317bf48
 item_version	O	a57995c2	7	system_test_result	-	사양 파일을 열고 처음이면 만든다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	a57995c2	26	system_test_result	-	사양 파일을 열고 처음이면 만든다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	a61edc40	20	design	-	spec_fields (data/repository/spec_file/kiotty_spec_fields.h)	.kisp 한 줄의 필드를 키 · 순번 · 숫자 · 해시 · Kind · 글로 읽는다.	c5cf7568c29e92eb
 item_version	O	a6563634	8	code_inspection_result	-	2.7 민감 데이터(키, 토큰, 환자 식별자)는 쓰고 나서 secureZero 로 지운다.	PASS	95410eacf9dbc6be
 item_version	O	a6563634	14	code_inspection_result	-	2.7 민감 데이터(키, 토큰, 환자 식별자)는 쓰고 나서 secureZero 로 지운다.	PASS	95410eacf9dbc6be
@@ -1299,6 +1318,7 @@ item_version	O	ab4f315c	14	code_inspection_result	-	1.9 모든 변수는 선언�
 item_version	O	ab4f315c	18	code_inspection_result	-	1.9 모든 변수는 선언과 동시에 {} 로 초기화한다.	PASS	216c0f801b284ab9
 item_version	O	ac9f5341	20	design	-	OpenedContext (context/kiotty_opened_context.h)	사양 파일을 연 뒤에만 얻는 맥락.	2306793a57f8326e
 item_version	O	acb68f0e	7	system_test_result	-	체크포인트를 시작하고 쓰기를 묶는다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	acb68f0e	26	system_test_result	-	체크포인트를 시작하고 쓰기를 묶는다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	ad336141	21	unit_test_plan	c6c00c78	field parser inputs (testFieldParserInputs)		52fa97cf2ca72b06
 item_version	O	ad6b635f	15	change_request	-	큰 클래스 나누기	public method 7 개를 넘는 6 개 클래스를 세부 클래스로 나눈다	2ae5ea580e2c8e5c
 item_version	O	ad7ef8fa	3	external_interface	fcda3877	KiottySpecTextField	글자 차이를 볼 필드	f81a30a7ec55dc9f
@@ -1318,6 +1338,7 @@ item_version	O	b0208faf	14	code_inspection_result	-	1.5 대용량 데이터와 �
 item_version	O	b0208faf	18	code_inspection_result	-	1.5 대용량 데이터와 다른 Entity 참조는 Handle 로 보관한다.	FAIL 7건	82fdee2321e254b7
 item_version	O	b0208faf	22	code_inspection_result	-	1.5 대용량 데이터와 다른 Entity 참조는 Handle 로 보관한다.	PASS	73cb3c962fd34d84
 item_version	O	b09e2f21	7	system_test_result	-	변경의 영향을 따라간다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	b09e2f21	26	system_test_result	-	변경의 영향을 따라간다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	b0d2a761	2	rule	cbb5a614	2.10 모든 parse* 함수는 다음 다섯 입력을 테스트한다.		a3a27d1206cc21a0
 item_version	O	b0edd068	3	external_interface	fcda3877	KiottySpecCheckpointState	STARTED · RUNNING · DONE	614ecbde7160346a
 item_version	O	b1581604	3	external_interface	fcda3877	KiottySpecStatus	모든 함수의 결과 상태. 0 이 SUCCESS	d34847667a65cf71
@@ -1343,6 +1364,7 @@ item_version	O	b77be631	3	external_interface	a415fab7	KiottySpecCheckpointHandle
 item_version	O	b798d6af	5	unit_test_plan	def6c251	fixed vector (testFixedVector)		a89edeeab4de9622
 item_version	O	b7bb9da8	3	external_interface	-	항목	항목을 만들고 읽고 고치고 지운다	abf06b763a793f5e
 item_version	O	b80b80cb	7	system_test_result	-	항목에 태그를 붙여 분류한다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	b80b80cb	26	system_test_result	-	항목에 태그를 붙여 분류한다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	b8f97e35	20	design	-	OpenedFile (data/datasource/kiotty_opened_file.h)	열린 파일 기술자를 값으로 감싼다.	97cde58769be7fbb
 item_version	O	b92730c1	3	external_interface	de592f6c	KiottySpec_readItemTag	태그 값을 읽는다	3b555b9cb00ebbbc
 item_version	O	b937cc81	8	code_inspection_result	-	1.2 전역 Context 가 모든 인스턴스를 소유하고, 소멸자가 전부 해제한다.	PASS	07f5062e742b7338
@@ -1357,15 +1379,19 @@ item_version	O	b9eee54e	4	design	-	ItemStore (data/repository/kiotty_item_store.
 item_version	O	b9eee54e	20	design	-	ItemStore (data/repository/item/kiotty_item_store.h)	항목 버전 표와 현재 뷰 (항목 풀 + 태그 풀 + ID 색인, 설계서 v1 10.1).	ca9bc7c768b33407
 item_version	O	b9f7ebe2	1	requirement	29885efc	항목에 태그를 붙여 분류한다		378dd52b23f3de2f
 item_version	O	ba0d2282	7	system_test_result	-	바뀐 것을 종류별로 요약한다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	ba0d2282	26	system_test_result	-	바뀐 것을 종류별로 요약한다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	ba195442	2	rule	b19d9182	1.7 스택 지역 버퍼는 1024 바이트 이하다.	1.7 스택 지역 버퍼는 1024 바이트 이하다. 더 크면 호출자가 넘긴 작업 Context 의 버퍼를 쓴다.	b76ec8ec1f82f5b6
 item_version	O	ba64f9e9	7	system_test_result	-	프로젝트의 사양 기록을 파일 하나로 열고 보관한다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	ba64f9e9	26	system_test_result	-	프로젝트의 사양 기록을 파일 하나로 열고 보관한다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	baa2b587	19	external_interface	f0dc6547	KiottySpecRelationDefinitionPage	관계 정의 페이지	272cb079d557ffd2
 item_version	O	bb72e5fc	21	unit_test_plan	a44597b9	parse state (testParseState)		4aaea9573b13d9eb
 item_version	O	bba2eb54	3	external_interface	83f7146f	KiottySpec_statusName	상태 코드의 이름	72095649d29d9f7a
 item_version	O	bba2eb54	19	external_interface	83f7146f	KiottySpec_formatStatus	상태 코드의 이름	7226b71de3d58633
 item_version	O	bcc9e8cb	7	system_test_result	-	변경 요청으로 흐름을 다시 시작한다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	bcc9e8cb	26	system_test_result	-	변경 요청으로 흐름을 다시 시작한다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	bccd6fab	6	system_test_plan	45a4ca49	체크포인트 목록과 이력을 본다	REQ-023 의 인수 조건 2 개	d213873281da0d67
 item_version	O	bcef6936	7	system_test_result	-	항목의 제목 · 요약 · 본문을 고친다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	bcef6936	26	system_test_result	-	항목의 제목 · 요약 · 본문을 고친다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	bd204eb1	2	rule	969657b8	4.13 삼항 연산자는 값 선택 한 단만 쓴다.	4.13 삼항 연산자는 값 선택 한 단만 쓴다. 중첩하지 않는다.	d763004bb31c3b7f
 item_version	O	bd204eb1	10	rule	969657b8	4.12 삼항 연산자는 값 선택 한 단만 쓴다.	4.12 삼항 연산자는 값 선택 한 단만 쓴다. 중첩하지 않는다.	f238febbad7c6dee
 item_version	O	bddc9f70	4	design	-	메모리 정책 · 본문 영역		c7bf802fe412ee81
@@ -1384,6 +1410,7 @@ item_version	O	c16dce92	5	design	-	utf8 (core/kiotty_utf8.h)	UTF-8 검사와 글
 item_version	O	c16dce92	20	design	-	utf8 (core/kiotty_utf8.h)	UTF-8 검사와 글자 경계에서 자르기.	85711c0ec1ff11f5
 item_version	O	c20f6110	6	system_test_plan	9641e961	바뀐 항목과 관계를 목록으로 본다	REQ-027 의 인수 조건 2 개	1baa8077b298af1c
 item_version	O	c245bcce	7	system_test_result	-	항목을 상위 · 하위로 묶는다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	c245bcce	26	system_test_result	-	항목을 상위 · 하위로 묶는다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	c27153d0	5	unit_test_plan	def6c251	fixed map (testFixedMap)		1aa9f120891ac0d2
 item_version	O	c289ed95	8	code_inspection_result	-	1.8 재귀는 쓰지 않는다.	PASS	2a605e80204fea1a
 item_version	O	c289ed95	14	code_inspection_result	-	1.8 재귀는 쓰지 않는다.	PASS	2a605e80204fea1a
@@ -1401,6 +1428,7 @@ item_version	O	c4d3ef5c	4	design	-	흐름 · 사양 파일 열기		9582def86526a
 item_version	O	c4d3ef5c	20	design	-	흐름 · 사양 파일 열기		6b0b937be333bf11
 item_version	O	c5ae4dcd	3	external_interface	fcda3877	KiottySpecStep	12 단계	813450077d6459d0
 item_version	O	c65b2d10	7	system_test_result	-	체크포인트 사이에 바뀐 것을 본다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	c65b2d10	26	system_test_result	-	체크포인트 사이에 바뀐 것을 본다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	c67367ba	3	external_interface	48a9ab3c	KiottySpecRelationDefinition	관계 정의	ab33c7a21a35d1c1
 item_version	O	c67367ba	19	external_interface	48a9ab3c	KiottySpecRelationDefinition	관계 정의	ac1f49dd31ad8046
 item_version	O	c6762108	19	external_interface	fcda3877	KiottySpecCondition	체크포인트 확정 조건	35ee07be056612eb
@@ -1434,6 +1462,7 @@ item_version	O	d1078d1b	18	code_inspection_result	-	4.6 auto 는 우변에 타�
 item_version	O	d1bd29bd	6	system_test_plan	9641e961	바뀐 것을 종류별로 요약한다	REQ-026 의 인수 조건 3 개	8dd07bb4a67477b0
 item_version	O	d1ce60cf	21	unit_test_plan	d988a84f	parse bits (testParseBits)		14003db6e1f6dd54
 item_version	O	d212c1a7	7	system_test_result	-	형식이 다른 파일은 열지 않는다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	d212c1a7	26	system_test_result	-	형식이 다른 파일은 열지 않는다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	d23885e6	8	code_inspection_result	-	4.19 한 클래스의 기능이 너무 많아지면, 그 클래스의 멤버 변수 reference 를 생성자로 받는 세부…	FAIL 2건	12c5d36a5cd938a8
 item_version	O	d23885e6	10	code_inspection_result	-	4.18 한 클래스의 기능이 너무 많아지면, 그 클래스의 멤버 변수 reference 를 생성자로 받는 세부…	FAIL 2건	f00933935137c469
 item_version	O	d23885e6	14	code_inspection_result	-	4.18 한 클래스의 기능이 너무 많아지면, 그 클래스의 멤버 변수 reference 를 생성자로 받는 세부…	FAIL 6건	2dabc8039ab36dd3
@@ -1442,6 +1471,7 @@ item_version	O	d261502d	21	unit_test_plan	d988a84f	parse arguments length (testP
 item_version	O	d3dea456	1	requirement	26e7649a	기록을 git 으로 보관하고 병합한다		751cd8f9d0285914
 item_version	O	d5121133	6	system_test_plan	c7511506	항목 ID 를 바꾼다	REQ-012 의 인수 조건 2 개	f0511f1f2b40b3f5
 item_version	O	d54f0477	7	system_test_result	-	체크포인트 목록과 이력을 본다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	d54f0477	26	system_test_result	-	체크포인트 목록과 이력을 본다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	d687f06a	3	external_interface	3eda8983	KiottySpec_readTagDefinition	태그 정의 하나를 읽는다	d345c23e1fc2491e
 item_version	O	d687f06a	19	external_interface	3eda8983	KiottySpec_openTagDefinitionCursor	Kind 의 태그 정의 커서를 연다	7f6c5477bff7fc31
 item_version	O	d711d580	8	code_inspection_result	-	1.3 반복 생성·소멸되는 인스턴스는 풀에서 꺼내고, Handle 로만 접근한다.	FAIL 8건	7b4f992ad978defa
@@ -1498,6 +1528,7 @@ item_version	O	e02a9a8e	18	code_inspection_result	-	4.2 한 함수는 한 추상
 item_version	O	e02a9a8e	22	code_inspection_result	-	4.2 한 함수는 한 추상 수준이다.	FAIL 11건	1525014eb8bd843c
 item_version	O	e0dcdcbc	21	unit_test_plan	cd23d5c3	unmet conditions (testUnmetConditions)		4c915507e0825c1d
 item_version	O	e21c507d	7	system_test_result	-	사용자만 체크포인트를 확정하고, 단계별 조건을 검사한다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	e21c507d	26	system_test_result	-	사용자만 체크포인트를 확정하고, 단계별 조건을 검사한다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	e22babae	4	design	-	ModelFinder (domain/usecases/kiotty_model_finder.h)	모델 표에서 이름으로 Kind · 태그 · 태그 비트 · 관계의 index 를 찾는다.	d63d62e637ad9c6d
 item_version	O	e22babae	20	design	-	ModelFinder (data/repository/model/kiotty_model_finder.h)	모델 표에서 이름으로 Kind · 태그 · 태그 비트 · 관계의 index 를 찾는다.	964ce7e77260bd04
 item_version	O	e236c7ef	8	code_inspection_result	-	4.6 bool 인자를 쓰지 않는다.	FAIL 96건	bfc909a9ca83264f
@@ -1528,6 +1559,7 @@ item_version	O	edf6ad05	20	design	-	디렉토리 src/implementation/data/infra/	
 item_version	O	ee39cd69	6	system_test_plan	39a38e52	형식이 다른 파일은 열지 않는다	REQ-006 의 인수 조건 3 개	0c25dccf6f617598
 item_version	O	ee4483d0	6	system_test_plan	-	항목을 종류별 모델대로 분류하고 연결한다	REQ-014 의 인수 조건 2 개	ae28e3ad4e36478a
 item_version	O	ef625fc7	7	system_test_result	-	기록을 git 으로 보관하고 병합한다	kiotty_system_test, f7650c6 Debug	-
+item_version	O	ef625fc7	26	system_test_result	-	기록을 git 으로 보관하고 병합한다	kiotty_system_test, 75f4b55 Debug	-
 item_version	O	efb50d45	3	external_interface	fcda3877	KiottySpecChangedField	수정된 필드 비트	1bb0a4e53715d943
 item_version	O	f06a551b	3	external_interface	b7bb9da8	KiottySpec_removeItem	항목을 지운다	c1df45326c77a8e5
 item_version	O	f06a551b	19	external_interface	b7bb9da8	KiottySpec_removeItem	항목을 지운다	65e2917975f8cf67
@@ -1628,6 +1660,7 @@ tag	O	0196d2e3	결과	14	PASS
 tag	O	0196d2e3	결과	18	PASS
 tag	O	0196d2e3	결과	22	PASS
 tag	O	021f95cd	결과	7	PASS
+tag	O	021f95cd	결과	26	PASS
 tag	O	02360e37	설계 종류	4	모듈
 tag	O	02360e37	구현 상태	4	구현 완료
 tag	O	02360e37	구현 상태	20	구현 완료
@@ -1659,6 +1692,7 @@ tag	O	07e965d1	설계 종류	4	디렉토리
 tag	O	07e965d1	구현 상태	4	구현 완료
 tag	O	07e965d1	구현 상태	20	구현 완료
 tag	O	0831a2e4	결과	7	PASS
+tag	O	0831a2e4	결과	26	PASS
 tag	O	0857a7da	인터페이스 종류	3	C 함수
 tag	O	08fe2a2b	수칙 종류	2	테스트
 tag	O	091e5168	결과	8	PASS
@@ -1711,6 +1745,7 @@ tag	O	153ce43f	상태	9	열림
 tag	O	153ce43f	상태	18	완료
 tag	O	153ce43f	진입 단계	9	Step 4
 tag	O	174932c2	결과	7	PASS
+tag	O	174932c2	결과	26	PASS
 tag	O	1753b045	수칙 종류	2	아키텍처
 tag	O	17e806a6	수칙 종류	2	코딩 제약
 tag	O	17ea5c8d	수칙 종류	2	코딩 제약
@@ -1770,6 +1805,7 @@ tag	O	2412634d	결과	22	FAIL
 tag	O	2459b200	인터페이스 종류	3	C 함수
 tag	O	253605c0	수칙 종류	2	코딩 제약
 tag	O	25bc8395	결과	7	PASS
+tag	O	25bc8395	결과	26	PASS
 tag	O	25cb65d2	인터페이스 종류	19	C 타입
 tag	O	25d9bd80	구현 상태	21	구현 완료
 tag	O	261a847c	결과	8	FAIL
@@ -1862,6 +1898,7 @@ tag	O	3d8786dd	결과	18	PASS
 tag	O	3dd02f08	인터페이스 종류	3	C 함수
 tag	O	3e12d3ef	요구사항 종류	1	기능 요구사항
 tag	O	3e2b90a7	결과	7	PASS
+tag	O	3e2b90a7	결과	26	PASS
 tag	O	3eda8983	인터페이스 종류	3	C 함수
 tag	O	3f02e2fb	인터페이스 종류	3	C 타입
 tag	O	3f1a7be0	구현 상태	5	구현 완료
@@ -1898,6 +1935,7 @@ tag	O	48975878	수칙 종류	2	코딩 제약
 tag	O	48a9ab3c	인터페이스 종류	3	C 타입
 tag	O	48f90d21	인터페이스 종류	3	C 타입
 tag	O	493cacd6	결과	7	PASS
+tag	O	493cacd6	결과	26	PASS
 tag	O	4996c5f2	인터페이스 종류	19	C 타입
 tag	O	4a0c9ac5	수칙 종류	2	코딩 제약
 tag	O	4a212847	인터페이스 종류	3	C 함수
@@ -1928,6 +1966,7 @@ tag	O	4f8ec1fa	결과	22	FAIL
 tag	O	504cb7db	인터페이스 종류	3	C 타입
 tag	O	505e24f9	인터페이스 종류	19	C 함수
 tag	O	508aa9ca	결과	7	PASS
+tag	O	508aa9ca	결과	26	PASS
 tag	O	512c710f	인터페이스 종류	19	C 타입
 tag	O	51781a9e	인터페이스 종류	3	C 타입
 tag	O	52022365	구현 상태	5	구현 완료
@@ -1990,6 +2029,7 @@ tag	O	5f8a7565	결과	14	PASS
 tag	O	5f8a7565	결과	18	PASS
 tag	O	600c198b	수칙 종류	2	아키텍처
 tag	O	6127c512	결과	7	PASS
+tag	O	6127c512	결과	26	PASS
 tag	O	6196c403	인터페이스 종류	3	C 타입
 tag	O	61ea97d0	설계 종류	4	모듈
 tag	O	61ea97d0	구현 상태	4	구현 완료
@@ -2009,6 +2049,7 @@ tag	O	63751f19	인터페이스 종류	19	C 타입
 tag	O	637973a2	수칙 종류	8	코딩 제약
 tag	O	63fa3db0	요구사항 종류	1	환경 요구사항
 tag	O	64849230	결과	7	PASS
+tag	O	64849230	결과	26	PASS
 tag	O	64f97c96	인터페이스 종류	3	C 함수
 tag	O	667a0111	요구사항 종류	1	품질 요구사항
 tag	O	667c7c87	결과	8	FAIL
@@ -2034,6 +2075,7 @@ tag	O	6cd627db	상태	9	열림
 tag	O	6cd627db	상태	18	완료
 tag	O	6cd627db	진입 단계	9	Step 4
 tag	O	6d2eb6d0	결과	7	PASS
+tag	O	6d2eb6d0	결과	26	PASS
 tag	O	6d95d4a9	인터페이스 종류	3	C 타입
 tag	O	6dddb862	인터페이스 종류	3	C 타입
 tag	O	6ed41634	구현 상태	5	구현 완료
@@ -2041,6 +2083,7 @@ tag	O	70f78fd9	인터페이스 종류	3	C 함수
 tag	O	7142def7	설계 종류	20	모듈
 tag	O	7142def7	구현 상태	20	구현 완료
 tag	O	719e2ccd	결과	7	PASS
+tag	O	719e2ccd	결과	26	PASS
 tag	O	727957a0	인터페이스 종류	19	C 타입
 tag	O	7305bd84	설계 종류	4	모듈
 tag	O	7305bd84	구현 상태	4	구현 완료
@@ -2132,6 +2175,7 @@ tag	O	8553ef57	구현 상태	17	변경 필요
 tag	O	8553ef57	구현 상태	20	구현 완료
 tag	O	87374f9d	요구사항 종류	1	기능 요구사항
 tag	O	87ad4047	결과	7	PASS
+tag	O	87ad4047	결과	26	PASS
 tag	O	87ddb0bb	설계 종류	4	모듈
 tag	O	87ddb0bb	구현 상태	4	구현 완료
 tag	O	87ddb0bb	구현 상태	20	구현 완료
@@ -2161,6 +2205,7 @@ tag	O	8e60065e	결과	8	FAIL
 tag	O	8e60065e	결과	14	PASS
 tag	O	8e60065e	결과	18	PASS
 tag	O	8ed8a57c	결과	7	PASS
+tag	O	8ed8a57c	결과	26	PASS
 tag	O	8f1f3ac8	결과	8	FAIL
 tag	O	8f1f3ac8	결과	14	PASS
 tag	O	8f1f3ac8	결과	18	PASS
@@ -2200,6 +2245,7 @@ tag	O	967fd67f	결과	18	PASS
 tag	O	969657b8	수칙 종류	2	컨벤션
 tag	O	96da97fd	인터페이스 종류	8	C 타입
 tag	O	970bf723	결과	7	PASS
+tag	O	970bf723	결과	26	PASS
 tag	O	9734b840	구현 상태	5	구현 완료
 tag	O	975029f0	수칙 종류	2	코딩 제약
 tag	O	98765333	구현 상태	5	구현 완료
@@ -2233,7 +2279,9 @@ tag	O	9ea5c49d	구현 상태	20	구현 완료
 tag	O	a05b6682	구현 상태	21	구현 완료
 tag	O	a0e64b6b	인터페이스 종류	3	C 타입
 tag	O	a11e1470	결과	7	PASS
+tag	O	a11e1470	결과	26	PASS
 tag	O	a18ba151	결과	7	PASS
+tag	O	a18ba151	결과	26	PASS
 tag	O	a192b2b1	설계 종류	4	디렉토리
 tag	O	a192b2b1	구현 상태	4	구현 완료
 tag	O	a192b2b1	구현 상태	20	구현 완료
@@ -2244,10 +2292,12 @@ tag	O	a421ec5c	구현 상태	5	구현 완료
 tag	O	a43711c5	구현 상태	5	구현 완료
 tag	O	a44597b9	구현 상태	5	구현 완료
 tag	O	a51e1905	결과	7	PASS
+tag	O	a51e1905	결과	26	PASS
 tag	O	a5336127	인터페이스 종류	3	C 타입
 tag	O	a5767c78	설계 종류	4	모듈
 tag	O	a5767c78	구현 상태	4	구현 완료
 tag	O	a57995c2	결과	7	PASS
+tag	O	a57995c2	결과	26	PASS
 tag	O	a61edc40	설계 종류	20	모듈
 tag	O	a61edc40	구현 상태	20	구현 완료
 tag	O	a6563634	결과	8	PASS
@@ -2280,6 +2330,7 @@ tag	O	ab4f315c	결과	18	PASS
 tag	O	ac9f5341	설계 종류	20	모듈
 tag	O	ac9f5341	구현 상태	20	구현 완료
 tag	O	acb68f0e	결과	7	PASS
+tag	O	acb68f0e	결과	26	PASS
 tag	O	ad336141	구현 상태	21	구현 완료
 tag	O	ad6b635f	출처	15	사용자 피드백
 tag	O	ad6b635f	상태	15	열림
@@ -2297,6 +2348,7 @@ tag	O	b0208faf	결과	14	FAIL
 tag	O	b0208faf	결과	18	FAIL
 tag	O	b0208faf	결과	22	PASS
 tag	O	b09e2f21	결과	7	PASS
+tag	O	b09e2f21	결과	26	PASS
 tag	O	b0d2a761	수칙 종류	2	테스트
 tag	O	b0edd068	인터페이스 종류	3	C 타입
 tag	O	b1581604	인터페이스 종류	3	C 타입
@@ -2323,6 +2375,7 @@ tag	O	b77be631	인터페이스 종류	3	C 타입
 tag	O	b798d6af	구현 상태	5	구현 완료
 tag	O	b7bb9da8	인터페이스 종류	3	C 함수
 tag	O	b80b80cb	결과	7	PASS
+tag	O	b80b80cb	결과	26	PASS
 tag	O	b8f97e35	설계 종류	20	모듈
 tag	O	b8f97e35	구현 상태	20	구현 완료
 tag	O	b92730c1	인터페이스 종류	3	C 함수
@@ -2338,13 +2391,17 @@ tag	O	b9eee54e	구현 상태	4	구현 완료
 tag	O	b9eee54e	구현 상태	20	구현 완료
 tag	O	b9f7ebe2	요구사항 종류	1	기능 요구사항
 tag	O	ba0d2282	결과	7	PASS
+tag	O	ba0d2282	결과	26	PASS
 tag	O	ba195442	수칙 종류	2	코딩 제약
 tag	O	ba64f9e9	결과	7	PASS
+tag	O	ba64f9e9	결과	26	PASS
 tag	O	baa2b587	인터페이스 종류	19	C 타입
 tag	O	bb72e5fc	구현 상태	21	구현 완료
 tag	O	bba2eb54	인터페이스 종류	3	C 함수
 tag	O	bcc9e8cb	결과	7	PASS
+tag	O	bcc9e8cb	결과	26	PASS
 tag	O	bcef6936	결과	7	PASS
+tag	O	bcef6936	결과	26	PASS
 tag	O	bd204eb1	수칙 종류	2	컨벤션
 tag	O	bddc9f70	설계 종류	4	메모리 정책
 tag	O	bddc9f70	구현 상태	4	구현 완료
@@ -2361,6 +2418,7 @@ tag	O	c16dce92	구현 상태	4	구현 완료
 tag	O	c16dce92	구현 상태	5	구현 완료
 tag	O	c16dce92	구현 상태	20	구현 완료
 tag	O	c245bcce	결과	7	PASS
+tag	O	c245bcce	결과	26	PASS
 tag	O	c27153d0	구현 상태	5	구현 완료
 tag	O	c289ed95	결과	8	PASS
 tag	O	c289ed95	결과	14	PASS
@@ -2381,6 +2439,7 @@ tag	O	c4d3ef5c	구현 상태	4	구현 완료
 tag	O	c4d3ef5c	구현 상태	20	구현 완료
 tag	O	c5ae4dcd	인터페이스 종류	3	C 타입
 tag	O	c65b2d10	결과	7	PASS
+tag	O	c65b2d10	결과	26	PASS
 tag	O	c67367ba	인터페이스 종류	3	C 타입
 tag	O	c6762108	인터페이스 종류	19	C 타입
 tag	O	c6c00c78	구현 상태	5	구현 완료
@@ -2410,12 +2469,14 @@ tag	O	d1078d1b	결과	14	PASS
 tag	O	d1078d1b	결과	18	PASS
 tag	O	d1ce60cf	구현 상태	21	구현 완료
 tag	O	d212c1a7	결과	7	PASS
+tag	O	d212c1a7	결과	26	PASS
 tag	O	d23885e6	결과	8	FAIL
 tag	O	d23885e6	결과	14	FAIL
 tag	O	d23885e6	결과	18	PASS
 tag	O	d261502d	구현 상태	21	구현 완료
 tag	O	d3dea456	요구사항 종류	1	기능 요구사항
 tag	O	d54f0477	결과	7	PASS
+tag	O	d54f0477	결과	26	PASS
 tag	O	d687f06a	인터페이스 종류	3	C 함수
 tag	O	d711d580	결과	8	FAIL
 tag	O	d711d580	결과	14	FAIL
@@ -2473,6 +2534,7 @@ tag	O	e02a9a8e	결과	18	PASS
 tag	O	e02a9a8e	결과	22	FAIL
 tag	O	e0dcdcbc	구현 상태	21	구현 완료
 tag	O	e21c507d	결과	7	PASS
+tag	O	e21c507d	결과	26	PASS
 tag	O	e22babae	설계 종류	4	모듈
 tag	O	e22babae	구현 상태	4	구현 완료
 tag	O	e22babae	구현 상태	20	구현 완료
@@ -2502,6 +2564,7 @@ tag	O	edcaf421	구현 상태	20	구현 완료
 tag	O	edf6ad05	설계 종류	20	디렉토리
 tag	O	edf6ad05	구현 상태	20	구현 완료
 tag	O	ef625fc7	결과	7	PASS
+tag	O	ef625fc7	결과	26	PASS
 tag	O	efb50d45	인터페이스 종류	3	C 타입
 tag	O	f06a551b	인터페이스 종류	3	C 함수
 tag	O	f07f6055	인터페이스 종류	3	C 함수
