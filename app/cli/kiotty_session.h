@@ -28,7 +28,7 @@ Arguments parseArguments(const std::vector<std::string>& tokens, size_t first,
 struct Session {
     KiottySpecContext* context {nullptr};
     KiottySpecActor actor {KIOTTY_SPEC_ACTOR_AI};
-    Arguments args {};
+    Arguments arguments {};
 };
 
 constexpr int USAGE_EXIT_CODE = 2;
@@ -47,6 +47,7 @@ void printRow(const std::vector<std::string>& cells);
 
 std::string checkpointName(KiottySpecCheckpointHandle handle);
 std::optional<KiottySpecCheckpointHandle> parseCheckpoint(std::string_view text);
+std::optional<uint32_t> parseNumber(std::string_view text);
 std::optional<std::string> readFileText(const std::string& path);
 std::optional<KiottySpecItemKind> kindArgument(const Session& session, std::string_view text);
 std::string itemId(const Session& session, KiottySpecItemHandle handle);

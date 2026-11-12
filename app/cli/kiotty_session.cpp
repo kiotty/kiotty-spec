@@ -2,6 +2,7 @@
 
 #include "kiotty_path_utf8.h"
 
+#include <charconv>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -20,7 +21,7 @@ namespace {
 
 constexpr std::string_view FLAG_NAMES[] = {"tags", "relations", "up", "down", "help"};
 constexpr size_t OPTION_PREFIX_LENGTH = 2;
-constexpr size_t CHECKPOINT_NAME_CAPACITY = 32;
+constexpr size_t CHECKPOINT_DIGIT_WIDTH = 4;
 constexpr uint32_t CHECKPOINT_NUMBER_MASK = 0xFFFFFFFFu;
 constexpr size_t CHECKPOINT_PREFIX_LENGTH = 3;
 constexpr size_t MAX_CHECKPOINT_DIGITS = 9;
@@ -202,10 +203,10 @@ void printRow(const std::vector<std::string>& cells)
 std::string checkpointName(KiottySpecCheckpointHandle handle)
 {
     if (handle == 0) { return "-"; }
-    char text[CHECKPOINT_NAME_CAPACITY] {};
-    std::snprintf(text, sizeof(text), "CP-%04llu",
-                  static_cast<unsigned long long>(handle & CHECKPOINT_NUMBER_MASK));
-    return text;
+    const std::string digits = std::to_string(handle & CHECKPOINT_NUMBER_MASK);
+    const bool is_short = digits.size() < CHECKPOINT_DIGIT_WIDTH;
+    const size_t padding = is_short ? CHECKPOINT_DIGIT_WIDTH - digits.size() : 0;
+    return "CP-" + std::string(padding, '0') + digits;
 }
 
 std::optional<KiottySpecCheckpointHandle> parseCheckpoint(std::string_view text)
@@ -216,12 +217,20 @@ std::optional<KiottySpecCheckpointHandle> parseCheckpoint(std::string_view text)
     if (has_prefix) { text.remove_prefix(CHECKPOINT_PREFIX_LENGTH); }
     const bool is_wrong_length = text.empty() || text.size() > MAX_CHECKPOINT_DIGITS;
     if (is_wrong_length) { return std::nullopt; }
-    uint64_t value = 0;
-    for (const char letter : text) {
-        if (letter < '0' || letter > '9') { return std::nullopt; }
-        value = value * DECIMAL_BASE + static_cast<uint64_t>(letter - '0');
-    }
-    if (value == 0) { return std::nullopt; }
+    const std::optional<uint32_t> number = parseNumber(text);
+    const bool is_valid = number.has_value() && *number != 0;
+    if (!is_valid) { return std::nullopt; }
+    return KiottySpecCheckpointHandle {*number};
+}
+
+std::optional<uint32_t> parseNumber(std::string_view text)
+{
+    const char* const first = text.data();
+    const char* const last = first + text.size();
+    uint32_t value = 0;
+    const std::from_chars_result parsed = std::from_chars(first, last, value, DECIMAL_BASE);
+    const bool is_complete = parsed.ec == std::errc {} && parsed.ptr == last;
+    if (!is_complete) { return std::nullopt; }
     return value;
 }
 

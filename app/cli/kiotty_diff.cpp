@@ -133,7 +133,7 @@ int runDiff(const Session& session)
     const bool has_range = from.has_value() && to.has_value();
     if (!has_range) { return usage(findMessage(MessageKey::DIFF_USAGE)); }
     const KiottySpecDiffQuery query {*from, *to, 0, 0};
-    const std::optional<std::string> kind_name = session.args.option("kind");
+    const std::optional<std::string> kind_name = session.arguments.option("kind");
     if (!kind_name) { return printDiffSummary(session, query); }
     return printKindDiff(session, query, *kind_name);
 }
@@ -152,13 +152,13 @@ int printKindDiff(const Session& session, const KiottySpecDiffQuery& range_query
 {
     const std::optional<KiottySpecItemKind> kind = kindArgument(session, kind_name);
     if (!kind) { return USAGE_EXIT_CODE; }
-    const std::vector<DiffGroup> groups = chooseDiffGroups(session.args);
+    const std::vector<DiffGroup> groups = chooseDiffGroups(session.arguments);
     const bool is_group_missing = groups.empty();
     if (is_group_missing) { return usage(findMessage(MessageKey::DIFF_GROUP_USAGE)); }
     const KiottySpecDiffQuery query {range_query.from, range_query.to, 1u << (*kind - 1), 0};
     const KiottySpecDiffSummaryResult range = KiottySpec_summarizeDiff(session.context, &query);
     if (range.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, range.code); }
-    const bool is_colored = !session.args.flag("no-color") && detectColorTerminal();
+    const bool is_colored = !session.arguments.flag("no-color") && detectColorTerminal();
     const std::optional<DiffColumns> columns = planDiffColumns(session, *kind);
     if (!columns) { return USAGE_EXIT_CODE; }
     const DiffColumns& planned = *columns;
@@ -169,7 +169,7 @@ int printKindDiff(const Session& session, const KiottySpecDiffQuery& range_query
         return fail(session, item_diffs.status);
     }
     const DiffView view { range, Painter{is_colored}, planned, changes.changes,
-                          session.args.flag("title"), session.args.flag("summary") };
+                          session.arguments.flag("title"), session.arguments.flag("summary") };
     printDiffGroups(session, view, groups, item_diffs.diffs);
     return 0;
 }

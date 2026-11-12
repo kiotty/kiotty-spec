@@ -109,6 +109,7 @@ constexpr Message MESSAGES[] = {
     { MessageKey::RELATION_LIST_USAGE, "ks relation list ID [--up|--down]" },
     { MessageKey::IMPACT_USAGE, "ks impact ID [--depth N]" },
     { MessageKey::CHECKPOINT_START_USAGE, "ks checkpoint start STEP(1~12) [--description D]" },
+    { MessageKey::CHECKPOINT_LIST_USAGE, "ks checkpoint list [--step N]" },
     { MessageKey::CHECKPOINT_NAME_USAGE, "체크포인트는 CP-0003 또는 3" },
     { MessageKey::CHECKPOINT_PRUNE_USAGE, "ks checkpoint prune CP --actor user" },
     { MessageKey::HISTORY_DEPTH_USAGE, "--depth 는 1 이상의 수나 all" },

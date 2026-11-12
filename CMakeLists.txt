@@ -75,6 +75,9 @@ add_executable(ks ${KIOTTY_CLI_SOURCES})
 target_link_libraries(ks PRIVATE kiotty_spec)
 kiotty_warnings(ks)
 kiotty_no_exceptions(ks)
+if(WIN32)
+    target_compile_definitions(ks PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+endif()
 
 # ---------------------------------------------------------------------------
 # core 단위 테스트: 개발수칙 0.1 에 따라 C++17 로 빌드한다.

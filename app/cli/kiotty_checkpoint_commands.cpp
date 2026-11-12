@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
 #include <iostream>
 #include <memory>
 
@@ -26,10 +25,11 @@ int startCheckpoint(const Session& session)
 {
     const std::string* step = positional(session, 0);
     if (step == nullptr) { return usage(findMessage(MessageKey::CHECKPOINT_START_USAGE)); }
-    const unsigned long value = std::strtoul(step->c_str(), nullptr, DECIMAL_BASE);
-    const std::string description = session.args.option("description").value_or("");
+    const std::optional<uint32_t> value = parseNumber(*step);
+    if (!value) { return usage(findMessage(MessageKey::CHECKPOINT_START_USAGE)); }
+    const std::string description = session.arguments.option("description").value_or("");
     const KiottySpecCheckpointHandleResult started = KiottySpec_startCheckpoint(
-        session.context, static_cast<KiottySpecStep>(value), textOf(description));
+        session.context, static_cast<KiottySpecStep>(*value), textOf(description));
     if (started.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, started.code); }
     std::printf("%s\n", checkpointName(started.value).c_str());
     return 0;
@@ -60,13 +60,10 @@ int showCheckpoint(const Session& session)
 
 int listCheckpoints(const Session& session)
 {
-    uint32_t step = 0;
-    const std::optional<std::string> text = session.args.option("step");
-    if (text) {
-        step = static_cast<uint32_t>(std::strtoul(text->c_str(), nullptr, DECIMAL_BASE));
-    }
+    const std::optional<uint32_t> step = readNumberOption(session, "step", 0);
+    if (!step) { return usage(findMessage(MessageKey::CHECKPOINT_LIST_USAGE)); }
     const KiottySpecCursorResult cursor =
-        KiottySpec_openCheckpointCursor(session.context, static_cast<KiottySpecStep>(step));
+        KiottySpec_openCheckpointCursor(session.context, static_cast<KiottySpecStep>(*step));
     if (cursor.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, cursor.code); }
     printRow(CHECKPOINT_HEADER);
     const std::unique_ptr<KiottySpecCheckpointPage> page_storage =
@@ -109,17 +106,12 @@ int showPosition(const Session& session)
 
 int showHistory(const Session& session)
 {
-    uint32_t depth = DEFAULT_HISTORY_DEPTH;
-    const std::optional<std::string> text = session.args.option("depth");
-    if (text) {
-        char* end = nullptr;
-        const unsigned long value =
-            *text == "all" ? 0 : std::strtoul(text->c_str(), &end, DECIMAL_BASE);
-        if (*text != "all" && (value == 0 || end == nullptr || *end != '\0')) {
-            return usage(findMessage(MessageKey::HISTORY_DEPTH_USAGE));
-        }
-        depth = *text == "all" ? UINT32_MAX : static_cast<uint32_t>(value);
-    }
+    const bool is_all = session.arguments.option("depth") == "all";
+    const std::optional<uint32_t> requested =
+        readNumberOption(session, "depth", DEFAULT_HISTORY_DEPTH);
+    const bool is_valid = is_all || (requested.has_value() && *requested != 0);
+    if (!is_valid) { return usage(findMessage(MessageKey::HISTORY_DEPTH_USAGE)); }
+    const uint32_t depth = is_all ? UINT32_MAX : *requested;
     printRow(CHECKPOINT_HEADER);
     KiottySpecCheckpointHandle handle = KIOTTY_SPEC_CHECKPOINT_CURRENT;
     for (uint32_t count = 0; count < depth; ++count) {

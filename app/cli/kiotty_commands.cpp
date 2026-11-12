@@ -7,7 +7,7 @@ namespace {
 using Key = MessageKey;
 
 const std::vector<CommandEntry> COMMAND_TABLE = {
-    { "init", "", Key::INIT_SYNOPSIS, Key::INIT_SUMMARY, initProject },
+    { "init", "", Key::INIT_SYNOPSIS, Key::INIT_SUMMARY, initializeProject },
     { "item", "add", Key::ITEM_ADD_SYNOPSIS, Key::ITEM_ADD_SUMMARY, addItem },
     { "item", "rename", Key::ITEM_RENAME_SYNOPSIS, Key::ITEM_RENAME_SUMMARY, renameItem },
     { "item", "set", Key::ITEM_SET_SYNOPSIS, Key::ITEM_SET_SUMMARY, setItem },

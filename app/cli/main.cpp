@@ -89,7 +89,7 @@ int runTokens(const std::vector<std::string>& tokens)
 int runCommand(const CommandEntry& command, const Arguments& arguments)
 {
     Session session {};
-    session.args = arguments;
+    session.arguments = arguments;
     session.actor = findActor(arguments);
     const std::string database = makeDatabasePath(findRoot(arguments));
     KiottySpecConfiguration configuration {};
@@ -175,13 +175,14 @@ std::string readEnvironment(const char* name)
 {
 #ifdef _WIN32
     const std::wstring wide_name = pathFromUtf8(name).wstring();
-    wchar_t* value = nullptr;
-    size_t size = 0;
-    const errno_t duplicated = _wdupenv_s(&value, &size, wide_name.c_str());
-    if (duplicated != 0 || value == nullptr) { return ""; }
-    const std::string result = utf8FromWide(std::wstring_view(value));
-    std::free(value);
-    return result;
+    const DWORD capacity = GetEnvironmentVariableW(wide_name.c_str(), nullptr, 0);
+    if (capacity == 0) { return ""; }
+    std::wstring value(capacity, L'\0');
+    const DWORD length = GetEnvironmentVariableW(wide_name.c_str(), value.data(), capacity);
+    const bool is_complete = length > 0 && length < capacity;
+    if (!is_complete) { return ""; }
+    value.resize(length);
+    return utf8FromWide(value);
 #else
     const char* value = std::getenv(name);
     return value != nullptr ? value : "";

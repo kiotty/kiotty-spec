@@ -13,6 +13,8 @@ namespace kiotty::cli {
 
 int check(const Session& session, KiottySpecStatus status);
 const std::string* positional(const Session& session, size_t index);
+std::optional<uint32_t> readNumberOption(const Session& session, std::string_view name,
+                                         uint32_t fallback);
 std::string stepName(uint32_t step);
 struct BodyOption {
     std::optional<std::string> text {};
@@ -49,7 +51,7 @@ void printItem(const Session& session, const KiottySpecItem& item, const ColumnP
 int printItemCursor(const Session& session, const KiottySpecCursorResult& cursor,
                     const ColumnPlan* plan);
 
-int initProject(const Session& session);
+int initializeProject(const Session& session);
 int addItem(const Session& session);
 int renameItem(const Session& session);
 int setItem(const Session& session);

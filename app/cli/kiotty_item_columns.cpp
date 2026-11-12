@@ -110,7 +110,7 @@ namespace {
 std::optional<ColumnPlan> planTagColumns(const Session& session, KiottySpecItemKind kind)
 {
     ColumnPlan plan {};
-    for (const std::string& spec : session.args.all("tag")) {
+    for (const std::string& spec : session.arguments.all("tag")) {
         const std::optional<TagSpec> parsed = parseTagSpec(session, kind, spec);
         if (!parsed) { return std::nullopt; }
         const TagSpec tag_spec = *parsed;
@@ -126,7 +126,7 @@ std::optional<ColumnPlan> planTagColumns(const Session& session, KiottySpecItemK
         const bool is_listed = hasTagColumn(plan.columns, tag_spec.tag.index);
         if (!is_listed) { plan.columns.push_back(makeTagColumn(tag_spec.tag)); }
     }
-    const bool has_tags_flag = session.args.flag("tags");
+    const bool has_tags_flag = session.arguments.flag("tags");
     const std::vector<TagColumn> all_tags =
         has_tags_flag ? readAllTags(session, kind) : std::vector<TagColumn>();
     for (const TagColumn& tag : all_tags) {
@@ -189,12 +189,12 @@ std::optional<std::vector<uint32_t>> chooseRelations(const Session& session,
                                                      KiottySpecItemKind kind)
 {
     std::vector<uint32_t> relations {};
-    for (const std::string& name : session.args.all("relation")) {
+    for (const std::string& name : session.arguments.all("relation")) {
         const std::optional<uint32_t> relation = findRelation(session, kind, name);
         if (!relation) { return std::nullopt; }
         relations.push_back(*relation);
     }
-    const bool has_relations_flag = session.args.flag("relations");
+    const bool has_relations_flag = session.arguments.flag("relations");
     if (has_relations_flag) {
         const KiottySpecModelResult model = KiottySpec_readModel(session.context, kind);
         for (uint32_t index = 0; index < model.value.relation_count; ++index) {
@@ -251,12 +251,12 @@ std::optional<std::vector<TagColumn>> chooseDiffTags(const Session& session,
                                                      KiottySpecItemKind kind)
 {
     std::vector<TagColumn> tags {};
-    for (const std::string& name : session.args.all("tag")) {
+    for (const std::string& name : session.arguments.all("tag")) {
         const std::optional<TagColumn> tag = findTag(session, kind, name);
         if (!tag) { return std::nullopt; }
         tags.push_back(*tag);
     }
-    const bool has_tags_flag = session.args.flag("tags");
+    const bool has_tags_flag = session.arguments.flag("tags");
     if (!has_tags_flag) { return tags; }
     const KiottySpecModelResult model = KiottySpec_readModel(session.context, kind);
     std::vector<TagColumn> all_tags {};
@@ -272,12 +272,12 @@ std::optional<std::vector<RelationColumn>> chooseDiffRelations(const Session& se
                                                                KiottySpecItemKind kind)
 {
     std::vector<RelationColumn> relations {};
-    for (const std::string& name : session.args.all("relation")) {
+    for (const std::string& name : session.arguments.all("relation")) {
         const std::optional<uint32_t> relation = findRelation(session, kind, name);
         if (!relation) { return std::nullopt; }
         relations.push_back(RelationColumn{*relation, name});
     }
-    const bool has_relations_flag = session.args.flag("relations");
+    const bool has_relations_flag = session.arguments.flag("relations");
     if (!has_relations_flag) { return relations; }
     const KiottySpecModelResult model = KiottySpec_readModel(session.context, kind);
     std::vector<RelationColumn> all_relations {};

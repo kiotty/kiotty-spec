@@ -108,9 +108,17 @@ int fail(const Session& session, KiottySpecStatus status)
 
 const std::string* positional(const Session& session, size_t index)
 {
-    const std::vector<std::string>& values = session.args.positional;
+    const std::vector<std::string>& values = session.arguments.positional;
     const bool is_present = index < values.size();
     return is_present ? &values.at(index) : nullptr;
+}
+
+std::optional<uint32_t> readNumberOption(const Session& session, std::string_view name,
+                                         uint32_t fallback)
+{
+    const std::optional<std::string> text = session.arguments.option(name);
+    if (!text) { return fallback; }
+    return parseNumber(*text);
 }
 
 std::string stepName(uint32_t step)
@@ -127,9 +135,9 @@ std::string stepName(uint32_t step)
 
 BodyOption bodyOption(const Session& session, const char* text_name, const char* file_name)
 {
-    const std::optional<std::string> text = session.args.option(text_name);
+    const std::optional<std::string> text = session.arguments.option(text_name);
     if (text) { return BodyOption{text, false}; }
-    const std::optional<std::string> file = session.args.option(file_name);
+    const std::optional<std::string> file = session.arguments.option(file_name);
     if (file) {
         const std::optional<std::string> content = readFileText(*file);
         const bool is_unreadable = !content.has_value();
