@@ -19,7 +19,9 @@ KiottySpecStatus FileSystem::createDirectories(Span<const char> path) const
     const size_t length = path.length();
     for (size_t index = root; index < length; ++index) {
         const bool is_separator = platform::isSeparator(path[index]);
-        if (is_separator) { makeDirectory(Span<const char>(path.data(), index)); }
+        if (!is_separator) { continue; }
+        const Result<Span<const char>, KiottySpecStatus> parent = path.subspan(0, index);
+        if (parent) { makeDirectory(parent.value); }
     }
     makeDirectory(path);
     const bool is_directory = isDirectory(path);
@@ -78,7 +80,10 @@ KiottySpecStatus FileSystem::convertSource(Span<const char> path) const
 { return platform::convertPath(path, _area.source.letters()); }
 
 int readDescriptor(int descriptor, Span<char> buffer)
-{ return platform::readSome(descriptor, buffer.data(), fitChunk(buffer.length())); }
+{
+    const Result<Span<char>, KiottySpecStatus> chunk = buffer.subspan(0, fitChunk(buffer.length()));
+    return platform::readSome(descriptor, chunk.value);
+}
 
 KiottySpecStatus writeDescriptor(int descriptor, Span<const char> content)
 { return writeAll(descriptor, content); }
@@ -94,8 +99,10 @@ KiottySpecStatus writeAll(int descriptor, Span<const char> content)
     size_t written = 0;
     const size_t length = content.length();
     while (written < length) {
-        const int count =
-            platform::writeSome(descriptor, content.data() + written, content.length() - written);
+        const Result<Span<const char>, KiottySpecStatus> rest =
+            content.subspan(written, length - written);
+        if (!rest) { return rest.code; }
+        const int count = platform::writeSome(descriptor, rest.value);
         if (count <= 0) { return KIOTTY_SPEC_STATUS_INPUT_OUTPUT; }
         written += static_cast<size_t>(count);
     }

@@ -56,7 +56,8 @@ Span<const char> fileNameOf(Span<const char> path)
         if (is_separator) { break; }
         --begin;
     }
-    return Span<const char>(path.data() + begin, end - begin);
+    const Result<Span<const char>, KiottySpecStatus> name = path.subspan(begin, end - begin);
+    return name ? name.value : Span<const char>();
 }
 
 Span<const char> parentOf(Span<const char> path)
@@ -72,7 +73,8 @@ Span<const char> parentOf(Span<const char> path)
         if (!is_separator) { break; }
         --index;
     }
-    return Span<const char>(path.data(), index);
+    const Result<Span<const char>, KiottySpecStatus> parent = path.subspan(0, index);
+    return parent ? parent.value : Span<const char>();
 }
 
 namespace {

@@ -86,11 +86,11 @@ DescriptorResult openFile(const NativePath& path, OpenMode mode)
     return DescriptorResult::success(descriptor);
 }
 
-int readSome(int descriptor, char* buffer, size_t length)
-{ return static_cast<int>(::read(descriptor, buffer, length)); }
+int readSome(int descriptor, Span<char> buffer)
+{ return static_cast<int>(::read(descriptor, buffer.data(), buffer.length())); }
 
-int writeSome(int descriptor, const char* buffer, size_t length)
-{ return static_cast<int>(::write(descriptor, buffer, length)); }
+int writeSome(int descriptor, Span<const char> content)
+{ return static_cast<int>(::write(descriptor, content.data(), content.length())); }
 
 void closeFile(int descriptor) { ::close(descriptor); }
 

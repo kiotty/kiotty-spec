@@ -159,11 +159,13 @@ DescriptorResult openFile(const NativePath& path, OpenMode mode)
     return DescriptorResult::success(descriptor);
 }
 
-int readSome(int descriptor, char* buffer, size_t length)
-{ return _read(descriptor, buffer, static_cast<unsigned int>(length)); }
+int readSome(int descriptor, Span<char> buffer)
+{ return _read(descriptor, buffer.data(), static_cast<unsigned int>(buffer.length())); }
 
-int writeSome(int descriptor, const char* buffer, size_t length)
-{ return _write(descriptor, buffer, static_cast<unsigned int>(length)); }
+int writeSome(int descriptor, Span<const char> content)
+{
+    return _write(descriptor, content.data(), static_cast<unsigned int>(content.length()));
+}
 
 void closeFile(int descriptor) { _close(descriptor); }
 

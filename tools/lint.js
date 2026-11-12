@@ -511,7 +511,7 @@ function checkFile(file) {
       if (cAbiBoundary(rel, t)) return;
       if (/\bnullptr\b/.test(t)) report('1.10', rel, i + 1, 'nullptr');
       if (/->/.test(t.replace(/\)\s*->\s*[\w:<>]+\s*$/, '').replace(/\]\s*(\([^)]*\))?\s*->/, ''))) report('1.10', rel, i + 1, 'pointer dereference ->');
-      if (/\b[A-Za-z_][\w:]*(?:<[^<>]*>)?\s*\*\s*(const\s+)?[A-Za-z_]\w*\s*[,)=;{\[]/.test(t) && !/\w\s+\*\s+\w/.test(t.replace(/\b(const\s+)?[A-Z]\w*\s*\*\s*\w+\s*[,)=;]/, ''))) report('1.10', rel, i + 1, 'pointer type');
+      if (/\b[A-Za-z_][\w:]*(?:<[^<>]*>)?\s*\*\s*(const\s+)?[A-Za-z_]\w*\s*[,)=;{\[]/.test(t) && !/\b[A-Z][A-Z0-9_]+\s*\*\s*[A-Z][A-Z0-9_]+\s*[,);]/.test(t) &&!/\w\s+\*\s+\w/.test(t.replace(/\b(const\s+)?[A-Z]\w*\s*\*\s*\w+\s*[,)=;]/, ''))) report('1.10', rel, i + 1, 'pointer type');
       else if (/\bconst\s+char\s*\*|\bchar\s*\*\s*\w/.test(t)) report('1.10', rel, i + 1, 'char pointer');
       if (/\.data\(\)/.test(t)) report('1.10', rel, i + 1, 'raw data() pointer');
     });

@@ -19,8 +19,8 @@ size_t rootLength(Span<const char> path);
 KiottySpecStatus convertPath(Span<const char> path, Span<NativeLetter> native);
 
 DescriptorResult openFile(const NativePath& path, OpenMode mode);
-int readSome(int descriptor, char* buffer, size_t length);
-int writeSome(int descriptor, const char* buffer, size_t length);
+int readSome(int descriptor, Span<char> buffer);
+int writeSome(int descriptor, Span<const char> content);
 void closeFile(int descriptor);
 
 bool makeDirectory(const NativePath& path);
