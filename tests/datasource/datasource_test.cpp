@@ -4,8 +4,11 @@
 #include "implementation/data/datasource/kiotty_file_writer.h"
 #include "implementation/data/datasource/kiotty_kisp_file.h"
 #include "implementation/data/datasource/kiotty_kisp_line.h"
+#include "implementation/domain/usecases/spec_parser/kiotty_spec_fields.h"
 
 #include <cstdio>
+#include <filesystem>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -105,13 +108,94 @@ bool testLineDecoderInputs()
     const char with_null[] = {'a', '\0', 'b'};
     const auto nulled = decoder.decode(core::Span<const char>(with_null, sizeof(with_null)));
     ok = expectTrue(nulled && nulled.value.values[0].length() == 3, "null byte passes to the parser") && ok;
+    ok = expectTrue(core::readText(nulled.value, 0, 8).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "parser rejects null byte") && ok;
     const auto broken = decoder.decode(core::literalText("\xff\xfe"));
     ok = expectTrue(broken && broken.value.values[0].length() == 2, "utf-8 is checked by the parser") && ok;
+    ok = expectTrue(core::readText(broken.value, 0, 8).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "parser rejects invalid utf-8") && ok;
     ok = expectTrue(decoder.decode(core::literalText("a\\q")).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "unknown escape") && ok;
     ok = expectTrue(decoder.decode(core::literalText("a\\")).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "dangling escape") && ok;
     char wide[64] {};
     const core::KispLineDecoder roomy(core::Span<char>(wide, sizeof(wide)));
     ok = expectTrue(roomy.decode(core::literalText("1\t2\t3\t4\t5\t6\t7\t8\t9\t10\t11")).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "too many fields") && ok;
+    return ok;
+}
+
+core::KispFields fieldsOf(core::Span<const char> value)
+{
+    core::KispFields fields {};
+    fields.values[0] = value;
+    fields.count = 1;
+    return fields;
+}
+
+// 개발수칙 2.10: 빈 입력, 최대 길이, 최대 길이 + 1, 중간 null 바이트, 잘못된 UTF-8
+struct FieldInputs {
+    core::Span<const char> longest;
+    core::Span<const char> too_long;
+    core::Span<const char> with_null;
+    core::Span<const char> broken;
+};
+
+template <typename Parse>
+bool checkFieldInputs(const char* name, const FieldInputs& inputs, Parse parse)
+{
+    const std::string prefix(name);
+    bool ok = expectTrue(!parse(fieldsOf(core::Span<const char>())), (prefix + " empty").c_str());
+    ok = expectTrue(static_cast<bool>(parse(fieldsOf(inputs.longest))), (prefix + " max length").c_str()) && ok;
+    ok = expectTrue(!parse(fieldsOf(inputs.too_long)), (prefix + " max length + 1").c_str()) && ok;
+    ok = expectTrue(!parse(fieldsOf(inputs.with_null)), (prefix + " null byte").c_str()) && ok;
+    ok = expectTrue(!parse(fieldsOf(inputs.broken)), (prefix + " invalid utf-8").c_str()) && ok;
+    return ok;
+}
+
+bool testFieldParserInputs()
+{
+    const FieldInputs key {core::literalText("0000000a"), core::literalText("00000000a"), core::literalText("0000000\0"),
+                           core::literalText("0000000\xff")};
+    bool ok = checkFieldInputs("key", key, [](const core::KispFields& fields) { return core::parseKey(fields, 0); });
+    ok = expectTrue(core::parseKey(fieldsOf(key.longest), 0).value == 10, "key value") && ok;
+    ok = expectTrue(!core::parseKey(fieldsOf(core::literalText("00000000")), 0), "no key is rejected") && ok;
+    ok = checkFieldInputs("optional key", key, [](const core::KispFields& fields) { return core::parseOptionalKey(fields, 0); }) && ok;
+    ok = expectTrue(core::parseOptionalKey(fieldsOf(core::literalText("-")), 0).value == 0, "optional key none") && ok;
+    const FieldInputs sequence {core::literalText("4294967295"), core::literalText("4294967296"), core::literalText("1\0"),
+                                core::literalText("1\xff")};
+    ok = checkFieldInputs("sequence", sequence, [](const core::KispFields& fields) { return core::parseSequence(fields, 0); }) && ok;
+    ok = expectTrue(!core::parseSequence(fieldsOf(core::literalText("0")), 0), "sequence zero") && ok;
+    const FieldInputs number {core::literalText("99"), core::literalText("100"), core::literalText("9\0"), core::literalText("9\xff")};
+    ok = checkFieldInputs("number", number, [](const core::KispFields& fields) { return core::parseNumber(fields, 0, 99); }) && ok;
+    const FieldInputs hash {core::literalText("0123456789abcdef"), core::literalText("0123456789abcdef0"),
+                            core::literalText("0123456789abcde\0"), core::literalText("0123456789abcde\xff")};
+    ok = checkFieldInputs("hash", hash, [](const core::KispFields& fields) { return core::parseHash(fields, 0); }) && ok;
+    ok = expectTrue(core::parseHash(fieldsOf(core::literalText("-")), 0).value == 0, "hash none") && ok;
+    const FieldInputs kind {core::literalText("code_inspection_result"), core::literalText("code_inspection_resultx"),
+                            core::literalText("design\0"), core::literalText("design\xff")};
+    ok = checkFieldInputs("kind name", kind, [](const core::KispFields& fields) { return core::parseKindName(fields, 0); }) && ok;
+    ok = expectTrue(static_cast<bool>(core::readText(fieldsOf(core::Span<const char>()), 0, 4)), "text empty") && ok;
+    ok = expectTrue(static_cast<bool>(core::readText(fieldsOf(core::literalText("abcd")), 0, 4)), "text max length") && ok;
+    ok = expectTrue(!core::readText(fieldsOf(core::literalText("abcde")), 0, 4), "text max length + 1") && ok;
+    ok = expectTrue(!core::readText(fieldsOf(core::literalText("ab\0d")), 0, 4), "text null byte") && ok;
+    ok = expectTrue(!core::readText(fieldsOf(core::literalText("ab\xff")), 0, 4), "text invalid utf-8") && ok;
+    ok = expectTrue(!core::parseKey(core::KispFields {}, 0), "missing field") && ok;
+    return ok;
+}
+
+// 개발수칙 6.4: 빈 경로와 4 바이트 UTF-8 경로가 같은 변환 루프를 지난다.
+bool testUnicodePath()
+{
+    const core::Span<const char> path = core::literalText("kiotty_경로_\xF0\x9F\x98\x80.txt");
+    bool ok = true;
+    {
+        core::FileWriter writer(file_system);
+        ok = expectTrue(writer.open(path) == KIOTTY_SPEC_STATUS_SUCCESS, "open unicode writer") && ok;
+        writer.write(core::literalText("x"));
+    }
+    ok = expectTrue(file_system.isFile(path), "unicode file exists") && ok;
+    std::error_code error;
+    const bool is_native = std::filesystem::exists(std::filesystem::u8path(core::viewOf(path)), error);
+    ok = expectTrue(is_native, "unicode file has the native name") && ok;
+    ok = expectTrue(file_system.removeFile(path) == KIOTTY_SPEC_STATUS_SUCCESS && !file_system.isFile(path), "unicode file removed") && ok;
+    ok = expectTrue(!file_system.isFile(core::Span<const char>()), "empty path is no file") && ok;
+    ok = expectTrue(file_system.openForReading(core::literalText("bad\xff")).code == KIOTTY_SPEC_STATUS_INVALID_UTF8, "invalid utf-8 path") && ok;
     return ok;
 }
 
@@ -161,6 +245,8 @@ int main()
         {"file reader lines", testFileReaderLines},
         {"line round trip", testLineRoundTrip},
         {"line decoder inputs", testLineDecoderInputs},
+        {"field parser inputs", testFieldParserInputs},
+        {"unicode path", testUnicodePath},
         {"kisp file write and hash", testKispFileWriteAndHash},
     };
 

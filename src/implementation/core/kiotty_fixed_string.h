@@ -4,7 +4,6 @@
 #include "kiotty_span.h"
 
 #include <cstddef>
-#include <string>
 #include <string_view>
 
 namespace kiotty::spec::implementation {
@@ -79,34 +78,6 @@ bool operator==(std::string_view left, const FixedString<Capacity>& right)
 template <size_t Capacity>
 bool operator!=(const FixedString<Capacity>& left, std::string_view right)
 { return std::string_view(left) != right; }
-
-template <size_t Capacity>
-std::string operator+(std::string left, const FixedString<Capacity>& right)
-{
-    left.append(right.terminated(), right.length());
-    return left;
-}
-
-template <size_t Capacity>
-std::string operator+(const char* left, const FixedString<Capacity>& right)
-{
-    return std::string(left) + right;
-}
-
-template <size_t Capacity>
-std::string operator+(const FixedString<Capacity>& left, std::string_view right)
-{
-    std::string text(left.terminated(), left.length());
-    text.append(right.data(), right.size());
-    return text;
-}
-
-template <size_t Capacity>
-std::string operator+(const FixedString<Capacity>& left, const char* right)
-{
-    return left + std::string_view(right);
-}
-
 
 template <size_t Capacity, size_t Size>
 void copyText(char (&target)[Size], const FixedString<Capacity>& source)

@@ -100,7 +100,9 @@ add_executable(kiotty_datasource_test
     src/implementation/data/datasource/backend/kiotty_platform_windows.cpp
     src/implementation/data/datasource/backend/kiotty_platform_posix.cpp
     src/implementation/data/datasource/kiotty_file_reader.cpp
-    src/implementation/data/datasource/kiotty_file_writer.cpp)
+    src/implementation/data/datasource/kiotty_file_writer.cpp
+    src/implementation/domain/entity/kiotty_kind.cpp
+    src/implementation/domain/usecases/spec_parser/kiotty_spec_fields.cpp)
 target_include_directories(kiotty_datasource_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 kiotty_warnings(kiotty_datasource_test)
 kiotty_no_exceptions(kiotty_datasource_test)

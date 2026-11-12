@@ -3,6 +3,7 @@
 #include "implementation/data/datasource/backend/kiotty_platform.h"
 
 #include "implementation/core/kiotty_text_view.h"
+#include "implementation/core/kiotty_utf8.h"
 
 #include <windows.h>
 #include <direct.h>
@@ -24,12 +25,19 @@ namespace {
 
 using FileStatus = struct _stat64;
 using ModeResult = Result<uint32_t, KiottySpecStatus>;
+using WrittenResult = Result<size_t, KiottySpecStatus>;
 
 constexpr size_t DOUBLE_SEPARATOR_ROOT_LENGTH = 2;
 constexpr size_t DRIVE_LENGTH = 2;
 constexpr size_t DRIVE_ROOT_LENGTH = 3;
+constexpr size_t SURROGATE_UNITS = 2;
+constexpr uint32_t HIGH_SURROGATE_BASE = 0xD800;
+constexpr uint32_t LOW_SURROGATE_BASE = 0xDC00;
+constexpr uint32_t SURROGATE_PAYLOAD_BITS = 10;
+constexpr uint32_t SURROGATE_PAYLOAD_MASK = 0x3FFu;
 
 ModeResult readMode(const NativePath& path);
+WrittenResult writeCodePoint(Span<wchar_t> native, size_t offset, uint32_t point);
 KiottySpecStatus writeTerminator(Span<wchar_t> native, size_t length);
 bool isLetter(char letter);
 char readLetter(Span<const char> path, size_t index);
@@ -138,15 +146,21 @@ size_t rootLength(Span<const char> path)
 
 KiottySpecStatus convertPath(Span<const char> path, Span<NativeLetter> native)
 {
+    const bool is_valid = isValidUtf8(path);
+    if (!is_valid) { return KIOTTY_SPEC_STATUS_INVALID_UTF8; }
+    size_t index = 0;
+    size_t written = 0;
     const size_t path_length = path.length();
-    if (path_length == 0) { return writeTerminator(native, 0); }
-    const int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path.data(),
-                                           static_cast<int>(path_length), native.data(),
-                                           static_cast<int>(MAX_SYSTEM_PATH_LENGTH));
-    const bool is_invalid_utf8 = length <= 0 && GetLastError() == ERROR_NO_UNICODE_TRANSLATION;
-    if (is_invalid_utf8) { return KIOTTY_SPEC_STATUS_INVALID_UTF8; }
-    if (length <= 0) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-    return writeTerminator(native, static_cast<size_t>(length));
+    while (index < path_length) {
+        const char lead = readLetter(path, index);
+        const size_t length = utf8SequenceLength(static_cast<unsigned char>(lead));
+        const uint32_t point = utf8CodePointAt(path, index, length);
+        const WrittenResult wrote = writeCodePoint(native, written, point);
+        if (!wrote) { return wrote.code; }
+        written = wrote.value;
+        index += length;
+    }
+    return writeTerminator(native, written);
 }
 
 DescriptorResult openFile(const NativePath& path, OpenMode mode)
@@ -206,6 +220,24 @@ ModeResult readMode(const NativePath& path)
     const int status_code = _wstat64(path.text, &status);
     if (status_code != 0) { return ModeResult::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
     return ModeResult::success(static_cast<uint32_t>(status.st_mode));
+}
+
+WrittenResult writeCodePoint(Span<wchar_t> native, size_t offset, uint32_t point)
+{
+    const uint32_t payload = point - UTF8_FOUR_BYTE_MIN_POINT;
+    const wchar_t pair[SURROGATE_UNITS] = {
+        static_cast<wchar_t>(HIGH_SURROGATE_BASE + (payload >> SURROGATE_PAYLOAD_BITS)),
+        static_cast<wchar_t>(LOW_SURROGATE_BASE + (payload & SURROGATE_PAYLOAD_MASK))};
+    const wchar_t single[1] = {static_cast<wchar_t>(point)};
+    const bool is_pair = point >= UTF8_FOUR_BYTE_MIN_POINT;
+    const Span<const wchar_t> encoded =
+        is_pair ? Span<const wchar_t>(pair, SURROGATE_UNITS) : Span<const wchar_t>(single, 1);
+    const size_t units = encoded.length();
+    const Result<Span<wchar_t>, KiottySpecStatus> target = native.subspan(offset, units);
+    if (!target) { return WrittenResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
+    const KiottySpecStatus copied = target.value.copyFrom(encoded);
+    if (copied != KIOTTY_SPEC_STATUS_SUCCESS) { return WrittenResult::failure(copied); }
+    return WrittenResult::success(offset + units);
 }
 
 KiottySpecStatus writeTerminator(Span<wchar_t> native, size_t length)

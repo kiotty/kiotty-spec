@@ -91,8 +91,8 @@ KiottySpecStatus SpecParser::parse(const KispFields& fields)
 KiottySpecStatus SpecParser::parseMeta(const KispFields& fields)
 {
     if (fields.count != META_FIELDS) { return reject(META_TABLE); }
-    const auto key = readField(fields, META_KEY_FIELD);
-    const auto value = readField(fields, META_VALUE_FIELD);
+    const auto key = readText(fields, META_KEY_FIELD, MAX_META_KEY_LENGTH);
+    const auto value = readText(fields, META_VALUE_FIELD, MAX_META_VALUE_LENGTH);
     const bool has_fields = key && value;
     if (!has_fields) { return reject(META_TABLE); }
     const KiottySpecStatus set = _tables.meta.set(key.value, value.value);

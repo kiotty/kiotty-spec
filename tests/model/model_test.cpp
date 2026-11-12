@@ -1,10 +1,12 @@
 #include "implementation/domain/entity/kiotty_item_id.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
+#include "implementation/domain/entity/kiotty_kind.h"
 #include "implementation/domain/usecases/kiotty_model_catalog.h"
 
 #include <cstdio>
 #include <cstring>
 #include <functional>
+#include <string_view>
 #include <utility>
 
 namespace impl = kiotty::spec::implementation;
@@ -127,6 +129,28 @@ bool testRelations()
     return ok;
 }
 
+// 개발수칙 2.10: 빈 입력, 최대 길이, 최대 길이 + 1, 중간 null 바이트, 잘못된 UTF-8
+bool testParseKind()
+{
+    bool ok = expectTrue(entity::parseKind(std::string_view()) == 0, "kind empty");
+    ok = expectTrue(entity::parseKind("code_inspection_result") == static_cast<uint32_t>(ItemKind::CODE_INSPECTION_RESULT), "kind max length") && ok;
+    ok = expectTrue(entity::parseKind("code_inspection_results") == 0, "kind max length + 1") && ok;
+    ok = expectTrue(entity::parseKind(std::string_view("design\0", 7)) == 0, "kind null byte") && ok;
+    ok = expectTrue(entity::parseKind("design\xff") == 0, "kind invalid utf-8") && ok;
+    ok = expectTrue(entity::parseKind("design") == static_cast<uint32_t>(ItemKind::DESIGN), "kind design") && ok;
+    return ok;
+}
+
+bool testParseState()
+{
+    bool ok = expectTrue(entity::parseState(std::string_view()) == 0, "state empty");
+    ok = expectTrue(entity::parseState("running") == static_cast<uint32_t>(entity::CheckpointState::RUNNING), "state max length") && ok;
+    ok = expectTrue(entity::parseState("runningx") == 0, "state max length + 1") && ok;
+    ok = expectTrue(entity::parseState(std::string_view("done\0", 5)) == 0, "state null byte") && ok;
+    ok = expectTrue(entity::parseState("done\xff") == 0, "state invalid utf-8") && ok;
+    ok = expectTrue(entity::parseState("started") == static_cast<uint32_t>(entity::CheckpointState::STARTED), "state started") && ok;
+    return ok;
+}
 
 }
 
@@ -144,6 +168,8 @@ int main()
         {"tag lookup", testTagLookup},
         {"tag value", testTagValue},
         {"relations", testRelations},
+        {"parse kind", testParseKind},
+        {"parse state", testParseState},
     };
 
     int failed = 0;

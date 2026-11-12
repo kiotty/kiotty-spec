@@ -22,6 +22,8 @@ struct Position {
 
 static_assert(sizeof(Position) == 32, "unexpected padding");
 
+using StepRunResult = Result<CursorRow, KiottySpecStatus>;
+
 class HistoryFinder
 {
 public:
@@ -36,7 +38,8 @@ public:
 
 private:
     CursorWriter makeCursorWriter() { return CursorWriter(_cursors, _workspace.failure); }
-    KiottySpecStatus pushStepRun(CursorId cursor, uint32_t step, const CursorRow& run);
+    StepRunResult addToStepRun(CursorId cursor, uint32_t sequence, const CursorRow& run);
+    KiottySpecStatus pushStepRun(CursorId cursor, const CursorRow& run);
     uint64_t countWrites(uint32_t sequence);
 
     Workspace& _workspace;

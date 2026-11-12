@@ -17,6 +17,7 @@ constexpr size_t HASH_DIGITS = 16;
 constexpr uint64_t MAX_SEQUENCE = UINT32_MAX;
 
 bool fits(Span<const char> text, size_t limit);
+bool hasNullByte(Span<const char> text);
 
 }
 
@@ -97,7 +98,18 @@ FieldResult readField(const KispFields& fields, size_t index)
 namespace {
 
 bool fits(Span<const char> text, size_t limit)
-{ return text.length() <= limit && isValidUtf8(text); }
+{
+    const bool has_null_byte = hasNullByte(text);
+    return text.length() <= limit && !has_null_byte && isValidUtf8(text);
+}
+
+bool hasNullByte(Span<const char> text)
+{
+    for (const char letter : text) {
+        if (letter == '\0') { return true; }
+    }
+    return false;
+}
 
 }
 

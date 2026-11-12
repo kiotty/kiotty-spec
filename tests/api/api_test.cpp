@@ -510,6 +510,57 @@ bool testParseBoundaries()
     return passed;
 }
 
+// header 뒤에 lines 를 붙인 .kisp 를 연다. 실패 이유는 g_last_error 에 남긴다.
+KiottySpecStatus openKispLines(const std::string& root, const std::string& lines)
+{
+    std::error_code error;
+    std::filesystem::remove_all(root, error);
+    std::filesystem::create_directories(root + "/.kiotty", error);
+    {
+        std::ofstream file(root + "/.kiotty/spec.kisp", std::ios::binary);
+        file << "#kisp 2 model 1\n" << lines;
+    }
+    KiottySpecConfiguration configuration {};
+    const KiottySpecContextResult opened = openContext(configuration, root);
+    g_last_error = KiottySpec_readLastError(opened.value).value;
+    KiottySpec_releaseContext(opened.value);
+    return opened.code;
+}
+
+bool expectLineRejected(KiottySpecStatus code, const char* label)
+{
+    const bool rejected = code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT && g_last_error.status == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT &&
+                          g_last_error.subject == KIOTTY_SPEC_SUBJECT_FILE_LINE;
+    return expectTrue(rejected, label);
+}
+
+// 개발수칙 2.10: SpecParser::parse 는 .kisp 파일의 각 줄을 받는 경계다.
+bool testSpecLineBoundaries()
+{
+    std::error_code error;
+    const std::string root = (std::filesystem::temp_directory_path(error) / "kiotty_api_lines").generic_string();
+    const BoundaryInputs description = boundaryInputs(KIOTTY_SPEC_MAX_DESCRIPTION_LENGTH, 'a');
+    const auto checkpointLine = [](const std::string& text) { return "checkpoint\tO\t1\t-\t2\tstarted\t0\t" + text + "\n"; };
+    bool passed = expectTrue(ok(openKispLines(root, "")), "header only");
+    passed = expectTrue(ok(openKispLines(root, "\n")), "empty line is skipped") && passed;
+    passed = expectLineRejected(openKispLines(root, "\t\n"), "empty fields") && passed;
+    passed = expectTrue(ok(openKispLines(root, checkpointLine(description.empty))), "description empty") && passed;
+    passed = expectTrue(ok(openKispLines(root, checkpointLine(description.longest))), "description max length") && passed;
+    passed = expectLineRejected(openKispLines(root, checkpointLine(description.too_long)), "description max length + 1") && passed;
+    passed = expectLineRejected(openKispLines(root, checkpointLine(description.with_nul)), "description nul byte") && passed;
+    passed = expectLineRejected(openKispLines(root, checkpointLine(description.broken)), "description invalid utf-8") && passed;
+    const BoundaryInputs value = boundaryInputs(255, 'a');
+    const auto metaLine = [](const std::string& text) { return "meta\tO\tproject.name\t" + text + "\n"; };
+    passed = expectTrue(ok(openKispLines(root, metaLine(value.empty))), "meta value empty") && passed;
+    passed = expectTrue(ok(openKispLines(root, metaLine(value.longest))), "meta value max length") && passed;
+    passed = expectLineRejected(openKispLines(root, metaLine(value.too_long)), "meta value max length + 1") && passed;
+    passed = expectLineRejected(openKispLines(root, metaLine(value.with_nul)), "meta value nul byte") && passed;
+    passed = expectLineRejected(openKispLines(root, metaLine(value.broken)), "meta value invalid utf-8") && passed;
+    passed = expectLineRejected(openKispLines(root, "meta\tO\t" + value.broken + "\tx\n"), "meta key invalid utf-8") && passed;
+    std::filesystem::remove_all(root, error);
+    return passed;
+}
+
 bool testConfiguration()
 {
     KiottySpecConfiguration configuration {};
@@ -560,6 +611,13 @@ bool testNames()
     passed = expectTrue(unknown_state.code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT && unknown_state.value.value[0] == '\0', "unknown state") && passed;
     passed = expectTrue(KiottySpec_parseKind(textOf("design")) == KIOTTY_SPEC_ITEM_KIND_DESIGN, "parse kind") && passed;
     passed = expectTrue(KiottySpec_parseKind(KiottySpecText{nullptr, 4}) == 0, "parse kind rejects null data") && passed;
+    const BoundaryInputs inputs = boundaryInputs(KIOTTY_SPEC_MAX_NAME_LENGTH, 'a');
+    passed = expectTrue(KiottySpec_parseKind(textOf(inputs.empty)) == 0, "parse kind empty") && passed;
+    passed = expectTrue(KiottySpec_parseKind(textOf(inputs.longest)) == 0, "parse kind max length is unknown") && passed;
+    passed = expectTrue(KiottySpec_parseKind(textOf("code_inspection_result")) == KIOTTY_SPEC_ITEM_KIND_CODE_INSPECTION_RESULT, "parse longest kind") && passed;
+    passed = expectTrue(KiottySpec_parseKind(textOf(inputs.too_long)) == 0, "parse kind max length + 1") && passed;
+    passed = expectTrue(KiottySpec_parseKind(textOf(std::string("design") + std::string(1, '\0'))) == 0, "parse kind nul byte") && passed;
+    passed = expectTrue(KiottySpec_parseKind(textOf(std::string("design") + inputs.broken)) == 0, "parse kind invalid utf-8") && passed;
     return passed;
 }
 
@@ -646,6 +704,7 @@ int main()
     if (!small_bodies) { ++failed; }
     const std::pair<const char*, bool (*)()> standalone[] = {
         {"parse boundaries", testParseBoundaries},
+        {"spec line boundaries", testSpecLineBoundaries},
         {"configuration", testConfiguration},
         {"names", testNames},
         {"unmet conditions", testUnmetConditions},

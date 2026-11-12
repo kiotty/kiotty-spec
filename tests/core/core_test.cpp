@@ -11,6 +11,7 @@
 #include "kiotty_span_text.h"
 #include "kiotty_text_buffer.h"
 #include "kiotty_text_diff.h"
+#include "kiotty_text_view.h"
 #include "kiotty_utf8.h"
 #include "kiotty_version_table.h"
 
@@ -366,6 +367,31 @@ bool testSpanText()
     bool ok = expectTrue(text.append(textOf("abc")) == KIOTTY_SPEC_STATUS_SUCCESS && text.capacity() == 7, "span text append");
     ok = expectTrue(text.append(textOf("12345")) == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED && sameText(text.view(), "abc"), "span text keeps on overflow") && ok;
     ok = expectTrue(area[3] == '\0', "span text is terminated") && ok;
+    ok = expectTrue(text.append(core::Span<const char>()) == KIOTTY_SPEC_STATUS_SUCCESS && sameText(text.view(), "abc"), "span text appends empty") && ok;
+    core::SpanText none{core::Span<char>()};
+    ok = expectTrue(none.capacity() == 0 && none.view().length() == 0, "span text without area") && ok;
+    ok = expectTrue(none.append(core::Span<const char>()) == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "span text without area has no terminator room") && ok;
+    char single[1] {'x'};
+    core::SpanText terminator_only(core::Span<char>(single, sizeof(single)));
+    ok = expectTrue(single[0] == '\0' && terminator_only.capacity() == 0, "span text terminates one byte area") && ok;
+    ok = expectTrue(terminator_only.append(textOf("a")) == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "one byte area holds no text") && ok;
+    return ok;
+}
+
+// 개발수칙 2.10: 빈 입력, 최대 길이, 최대 길이 + 1, 중간 null 바이트, 잘못된 UTF-8
+bool testNumberInputs()
+{
+    bool ok = expectTrue(!core::parseDecimal(core::Span<const char>(), UINT64_MAX), "decimal empty");
+    ok = expectTrue(core::parseDecimal(textOf("18446744073709551615"), UINT64_MAX).value == UINT64_MAX, "decimal max length") && ok;
+    ok = expectTrue(!core::parseDecimal(textOf("184467440737095516150"), UINT64_MAX), "decimal max length + 1") && ok;
+    ok = expectTrue(!core::parseDecimal(core::literalText("12\0" "3"), UINT64_MAX), "decimal null byte") && ok;
+    ok = expectTrue(!core::parseDecimal(textOf("12\xff"), UINT64_MAX), "decimal invalid utf-8") && ok;
+    ok = expectTrue(!core::parseHex(core::Span<const char>(), 16), "hex empty") && ok;
+    ok = expectTrue(core::parseHex(textOf("ffffffffffffffff"), 16).value == UINT64_MAX, "hex max length") && ok;
+    ok = expectTrue(!core::parseHex(textOf("ffffffffffffffff0"), 16), "hex max length + 1") && ok;
+    ok = expectTrue(!core::parseHex(textOf("ffffffffffffffff0"), 17), "hex more digits than fit") && ok;
+    ok = expectTrue(!core::parseHex(core::literalText("0a1b\0" "2c3"), 8), "hex null byte") && ok;
+    ok = expectTrue(!core::parseHex(textOf("0a1b2c3\xff"), 8), "hex invalid utf-8") && ok;
     return ok;
 }
 
@@ -412,6 +438,7 @@ int main()
         {"version table prune", testVersionTablePrune},
         {"numbers", testNumbers},
         {"span text", testSpanText},
+        {"number inputs", testNumberInputs},
         {"search", testSearch},
     };
 

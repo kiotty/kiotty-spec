@@ -26,6 +26,7 @@ static_assert(sizeof(ImpactSearch) == 48, "unexpected padding");
 using ReachResult = Result<size_t, KiottySpecStatus>;
 
 CursorRow makeRelationRow(const RelationRecord& relation);
+CursorRow makeTagRow(const TagRecord& tag);
 KiottySpecStatus markImpact(const ImpactSearch& search, uint32_t start, uint32_t depth);
 ReachResult visitLevel(const ImpactSearch& search, size_t head, size_t level_end);
 ReachResult visitSources(const ImpactSearch& search, uint32_t target, size_t tail);
@@ -170,12 +171,7 @@ CursorIdResult Finder::tags(ItemHandle item)
     CursorWriter writer = makeCursorWriter();
     if (!cursor) { return CursorIdResult::failure(writer.raiseCursorFull(cursor.code)); }
     for (const TagRecord& tag : _workspace.items.tags().of(item)) {
-        CursorRow row {};
-        row.first = packHandle(tag.item);
-        row.second = static_cast<uint64_t>(tag.model) |
-                     (static_cast<uint64_t>(tag.tag) << ORDINAL_SHIFT);
-        row.third = tag.value;
-        const KiottySpecStatus pushed = writer.pushRow(cursor.value, row);
+        const KiottySpecStatus pushed = writer.pushRow(cursor.value, makeTagRow(tag));
         if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return writer.closeWith(cursor.value, pushed); }
     }
     return cursor;
@@ -190,6 +186,16 @@ CursorRow makeRelationRow(const RelationRecord& relation)
     row.second = packHandle(relation.to);
     row.third = static_cast<uint64_t>(relation.model) |
                 (static_cast<uint64_t>(relation.relation) << ORDINAL_SHIFT);
+    return row;
+}
+
+CursorRow makeTagRow(const TagRecord& tag)
+{
+    CursorRow row {};
+    row.first = packHandle(tag.item);
+    row.second =
+        static_cast<uint64_t>(tag.model) | (static_cast<uint64_t>(tag.tag) << ORDINAL_SHIFT);
+    row.third = tag.value;
     return row;
 }
 

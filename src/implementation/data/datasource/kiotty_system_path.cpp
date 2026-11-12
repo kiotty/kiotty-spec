@@ -32,10 +32,9 @@ SystemPathResult PathResolver::joinPath(Span<const char> base, Span<const char> 
     SlashedPathWriter writer(joined);
     const KiottySpecStatus copied = writer.appendSlashed(base);
     if (copied != KIOTTY_SPEC_STATUS_SUCCESS) { return SystemPathResult::failure(copied); }
-    const size_t part_length = part.length();
-    if (part_length == 0) { return SystemPathResult::success(joined); }
+    const bool has_part = part.length() > 0;
     const bool has_trailing_separator = isSeparatorAt(base, base.length() - 1);
-    const bool is_separator_needed = joined.length() > 0 && !has_trailing_separator;
+    const bool is_separator_needed = has_part && joined.length() > 0 && !has_trailing_separator;
     if (is_separator_needed) { joined.append(literalText(SEPARATOR)); }
     const KiottySpecStatus appended = writer.appendSlashed(part);
     if (appended != KIOTTY_SPEC_STATUS_SUCCESS) { return SystemPathResult::failure(appended); }

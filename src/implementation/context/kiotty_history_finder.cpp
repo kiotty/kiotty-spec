@@ -9,7 +9,12 @@ namespace {
 using entity::CheckpointRecord;
 using entity::CheckpointState;
 
-constexpr uint32_t SHIFT = 32;
+constexpr uint32_t STATE_SHIFT = 32;
+constexpr uint64_t STEP_MASK = 0xFFFFFFFFu;
+
+uint32_t readRunStep(const CursorRow& run);
+CursorRow startStepRun(uint32_t sequence);
+CursorRow extendStepRun(const CursorRow& run, uint32_t sequence, const CheckpointRecord& record);
 
 }
 
@@ -39,27 +44,13 @@ CursorIdResult HistoryFinder::stepRuns()
     CursorWriter writer = makeCursorWriter();
     if (!cursor) { return CursorIdResult::failure(writer.raiseCursorFull(cursor.code)); }
     CursorRow run {};
-    uint32_t step = 0;
     const uint32_t latest = _workspace.checkpoints.latest();
     for (uint32_t sequence = 1; sequence <= latest; ++sequence) {
-        const auto found = _workspace.checkpoints.get(sequence);
-        if (!found) { continue; }
-        const CheckpointRecord& record = *found.value;
-        const uint32_t next = static_cast<uint32_t>(record.step);
-        const bool is_new_run = next != step;
-        const KiottySpecStatus pushed =
-            is_new_run ? pushStepRun(cursor.value, step, run) : KIOTTY_SPEC_STATUS_SUCCESS;
-        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return writer.closeWith(cursor.value, pushed); }
-        if (is_new_run) {
-            run = CursorRow {};
-            run.first = sequence;
-            step = next;
-        }
-        run.second = sequence;
-        run.third = step | (static_cast<uint64_t>(record.state) << SHIFT);
-        ++run.number;
+        const StepRunResult added = addToStepRun(cursor.value, sequence, run);
+        if (!added) { return writer.closeWith(cursor.value, added.code); }
+        run = added.value;
     }
-    const KiottySpecStatus pushed = pushStepRun(cursor.value, step, run);
+    const KiottySpecStatus pushed = pushStepRun(cursor.value, run);
     if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return writer.closeWith(cursor.value, pushed); }
     return cursor;
 }
@@ -118,9 +109,25 @@ Result<Position, KiottySpecStatus> HistoryFinder::position()
     return Result<Position, KiottySpecStatus>::success(position);
 }
 
-KiottySpecStatus HistoryFinder::pushStepRun(CursorId cursor, uint32_t step, const CursorRow& run)
+StepRunResult HistoryFinder::addToStepRun(CursorId cursor, uint32_t sequence,
+                                          const CursorRow& run)
 {
-    if (step == 0) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    const auto found = _workspace.checkpoints.get(sequence);
+    if (!found) { return StepRunResult::success(run); }
+    const CheckpointRecord& record = *found.value;
+    const uint32_t run_step = readRunStep(run);
+    const bool is_new_run = static_cast<uint32_t>(record.step) != run_step;
+    const KiottySpecStatus pushed =
+        is_new_run ? pushStepRun(cursor, run) : KIOTTY_SPEC_STATUS_SUCCESS;
+    if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return StepRunResult::failure(pushed); }
+    const CursorRow current = is_new_run ? startStepRun(sequence) : run;
+    return StepRunResult::success(extendStepRun(current, sequence, record));
+}
+
+KiottySpecStatus HistoryFinder::pushStepRun(CursorId cursor, const CursorRow& run)
+{
+    const uint32_t run_step = readRunStep(run);
+    if (run_step == 0) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     return makeCursorWriter().pushRow(cursor, run);
 }
 
@@ -130,6 +137,29 @@ uint64_t HistoryFinder::countWrites(uint32_t sequence)
     return items.versions.countAt(sequence) + items.tag_versions.countAt(sequence) +
            _workspace.relations.versions().countAt(sequence) +
            _workspace.decisions.versions().countAt(sequence);
+}
+
+namespace {
+
+uint32_t readRunStep(const CursorRow& run) { return static_cast<uint32_t>(run.third & STEP_MASK); }
+
+CursorRow startStepRun(uint32_t sequence)
+{
+    CursorRow run {};
+    run.first = sequence;
+    return run;
+}
+
+CursorRow extendStepRun(const CursorRow& run, uint32_t sequence, const CheckpointRecord& record)
+{
+    CursorRow extended = run;
+    extended.second = sequence;
+    extended.third = static_cast<uint64_t>(record.step) |
+                     (static_cast<uint64_t>(record.state) << STATE_SHIFT);
+    ++extended.number;
+    return extended;
+}
+
 }
 
 }
