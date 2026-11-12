@@ -100,7 +100,8 @@ Result<IdText, KiottySpecStatus> ItemHistory::nextId(Span<const char> prefix) co
     KiottySpecStatus status = id.assign(prefix);
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = id.append(literalText("-")); }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
-        status = appendDecimal(id, largest + 1, MIN_ID_DIGITS);
+        const DecimalText number = formatDecimal(largest + 1, MIN_ID_DIGITS);
+        status = id.append(number.view());
     }
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
         return Result<IdText, KiottySpecStatus>::failure(status);
@@ -108,7 +109,7 @@ Result<IdText, KiottySpecStatus> ItemHistory::nextId(Span<const char> prefix) co
     return Result<IdText, KiottySpecStatus>::success(id);
 }
 
-Span<const uint32_t> ItemHistory::keysByKindAndId()
+Span<const uint32_t> ItemHistory::keysByIdentity()
 {
     const Span<uint32_t> order = viewVector(_tables.order);
     const size_t count = collectKeys(order, _tables.versions.all());

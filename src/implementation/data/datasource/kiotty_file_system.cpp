@@ -31,10 +31,10 @@ KiottySpecStatus createDirectories(Span<const char> path)
 
 bool isDirectory(Span<const char> path) { return platform::isDirectory(path); }
 
-int openForReading(Span<const char> path)
+DescriptorResult openForReading(Span<const char> path)
 { return platform::openFile(path, platform::OpenMode::READ); }
 
-int openForWriting(Span<const char> path)
+DescriptorResult openForWriting(Span<const char> path)
 { return platform::openFile(path, platform::OpenMode::WRITE); }
 
 int readDescriptor(int descriptor, Span<char> buffer)

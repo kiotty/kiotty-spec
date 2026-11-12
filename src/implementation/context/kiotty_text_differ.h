@@ -4,8 +4,8 @@
 #include "implementation/context/kiotty_cursor_pool.h"
 #include "implementation/context/kiotty_cursor_rows.h"
 #include "implementation/context/kiotty_diff_range.h"
+#include "implementation/context/kiotty_text_diff_store.h"
 #include "implementation/core/kiotty_result.h"
-#include "implementation/core/kiotty_text_buffer.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 #include "implementation/domain/usecases/kiotty_workspace.h"
 
@@ -30,8 +30,8 @@ static_assert(sizeof(TextPair) == 32, "unexpected padding");
 class TextDiffer
 {
 public:
-    TextDiffer(Workspace& workspace, CursorPool& cursors, TextBuffer& work)
-        : _workspace(workspace), _cursors(cursors), _work(work)
+    TextDiffer(Workspace& workspace, CursorPool& cursors, TextDiffStore& store)
+        : _workspace(workspace), _cursors(cursors), _store(store)
     {}
 
     CursorIdResult open(entity::ItemHandle item, uint32_t field, DiffRange range);
@@ -41,10 +41,12 @@ private:
     CursorWriter makeCursorWriter() { return CursorWriter(_cursors, _workspace.failure); }
     Result<entity::IdText, KiottySpecStatus> readItemId(entity::ItemHandle item);
     KiottySpecStatus fillSegments(CursorId cursor, const TextPair& texts);
+    KiottySpecStatus storeTexts(size_t cursor_index, const TextPair& texts);
+    KiottySpecStatus pushSegments(CursorId cursor, Span<const TextSegment> segments);
 
     Workspace& _workspace;
     CursorPool& _cursors;
-    TextBuffer& _work;
+    TextDiffStore& _store;
 };
 
 }

@@ -2,6 +2,7 @@
 
 #include "kiotty_spec.h"
 #include "implementation/core/kiotty_span.h"
+#include "implementation/data/datasource/kiotty_file_system.h"
 
 namespace kiotty::spec::implementation {
 
@@ -19,7 +20,7 @@ public:
     void close();
 
 private:
-    int _descriptor {-1};
+    int _descriptor {CLOSED_DESCRIPTOR};
 };
 
 }

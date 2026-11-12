@@ -10,8 +10,6 @@ namespace kiotty::spec::implementation {
 
 namespace {
 
-constexpr size_t MAX_EPOCH_DIGITS = 20;
-
 ItemCapacity buildItemCapacity(const Configuration& configuration);
 KiottySpecStatus writeMergeAttributes(Span<const char> directory);
 
@@ -32,7 +30,7 @@ Context::Context(const Configuration& configuration)
       _cursors(configuration.max_cursors, configuration.max_cursor_rows,
                configuration.cursor_pool_rows),
       _finder(_workspace, _cursors, _checker, configuration.max_items),
-      _differ(_workspace, _cursors, _work)
+      _text_diffs(configuration.max_cursors), _differ(_workspace, _cursors, _text_diffs)
 {
 }
 
@@ -91,7 +89,7 @@ KiottySpecStatus Context::createSpecFile(Span<const char> directory)
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
-KiottySpecStatus Context::init(Span<const char> name)
+KiottySpecStatus Context::initialize(Span<const char> name)
 {
     const KiottySpecStatus fresh = _workspace.refresh();
     if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return fresh; }
@@ -101,8 +99,7 @@ KiottySpecStatus Context::init(Span<const char> name)
         status = _failure.raise(status, KIOTTY_SPEC_SUBJECT_PROJECT_NAME, project);
     }
     const int64_t seconds = nowEpochSeconds();
-    FixedString<MAX_EPOCH_DIGITS> now {};
-    appendDecimal(now, seconds > 0 ? static_cast<uint64_t>(seconds) : 0);
+    const DecimalText now = formatDecimal(seconds > 0 ? static_cast<uint64_t>(seconds) : 0);
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
         status = _meta.set(literalText("project.created_at"), now.view());
     }

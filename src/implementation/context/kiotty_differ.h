@@ -7,10 +7,10 @@
 #include "implementation/context/kiotty_item_diff_query.h"
 #include "implementation/context/kiotty_past_reader.h"
 #include "implementation/context/kiotty_relation_diff_query.h"
+#include "implementation/context/kiotty_text_diff_store.h"
 #include "implementation/context/kiotty_text_differ.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
-#include "implementation/core/kiotty_text_buffer.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 #include "implementation/domain/usecases/kiotty_workspace.h"
 
@@ -33,8 +33,8 @@ static_assert(sizeof(KindCounts) == 24, "unexpected padding");
 class Differ
 {
 public:
-    Differ(Workspace& workspace, CursorPool& cursors, TextBuffer& work)
-        : _workspace(workspace), _cursors(cursors), _work(work)
+    Differ(Workspace& workspace, CursorPool& cursors, TextDiffStore& store)
+        : _workspace(workspace), _cursors(cursors), _store(store)
     {}
 
     Result<DiffRange, KiottySpecStatus> range(uint64_t from, uint64_t to);
@@ -46,7 +46,7 @@ public:
     CursorIdResult relations(DiffRange range, uint32_t kind_mask);
 
     PastReader past() { return PastReader(_workspace); }
-    TextDiffer text() { return TextDiffer(_workspace, _cursors, _work); }
+    TextDiffer text() { return TextDiffer(_workspace, _cursors, _store); }
 
 private:
     CursorWriter makeCursorWriter() { return CursorWriter(_cursors, _workspace.failure); }
@@ -59,7 +59,7 @@ private:
 
     Workspace& _workspace;
     CursorPool& _cursors;
-    TextBuffer& _work;
+    TextDiffStore& _store;
 };
 
 ItemDiffRow unpackItemDiff(const CursorRow& row);

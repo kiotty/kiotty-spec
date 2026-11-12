@@ -3,6 +3,7 @@
 #include "kiotty_spec.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
+#include "implementation/data/datasource/kiotty_file_system.h"
 
 #include <cstddef>
 
@@ -24,7 +25,7 @@ public:
 private:
     Span<char> _buffer;
     Span<const char> _line {};
-    int _descriptor {-1};
+    int _descriptor {CLOSED_DESCRIPTOR};
     size_t _start {0};
     size_t _end {0};
     bool _is_finished {false};

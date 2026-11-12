@@ -1,6 +1,7 @@
 #pragma once
 
 #include "kiotty_spec.h"
+#include "kiotty_fixed_string.h"
 #include "kiotty_result.h"
 #include "kiotty_span.h"
 
@@ -11,6 +12,9 @@ namespace kiotty::spec::implementation {
 
 constexpr uint64_t FNV_OFFSET_BASIS = 0xcbf29ce484222325ull;
 constexpr uint64_t FNV_PRIME = 0x100000001b3ull;
+constexpr size_t MAX_HEX_DIGITS = 16;
+
+using HexText = FixedString<MAX_HEX_DIGITS>;
 
 inline Result<uint64_t, KiottySpecStatus> parseDecimal(Span<const char> text, uint64_t maximum)
 {
@@ -57,20 +61,21 @@ inline Result<uint64_t, KiottySpecStatus> parseHex(Span<const char> text, size_t
     return Result<uint64_t, KiottySpecStatus>::success(number);
 }
 
-template <typename Text>
-KiottySpecStatus appendHex(Text& text, uint64_t number, size_t digits)
+inline HexText formatHex(uint64_t number, size_t digits)
 {
     constexpr char LETTERS[] = "0123456789abcdef";
-    constexpr size_t MAX_DIGITS = 16;
-    constexpr size_t DIGIT_BITS = 4;
+    constexpr uint32_t DIGIT_BITS = 4;
     constexpr uint64_t DIGIT_MASK = 0xFu;
-    char letters[MAX_DIGITS] {};
-    const size_t count = digits < MAX_DIGITS ? digits : MAX_DIGITS;
-    for (size_t index = 0; index < count; ++index) {
-        const size_t shift = (count - 1 - index) * DIGIT_BITS;
-        letters[index] = LETTERS[(number >> shift) & DIGIT_MASK];
+    char letters[MAX_HEX_DIGITS] {};
+    const size_t count = digits < MAX_HEX_DIGITS ? digits : MAX_HEX_DIGITS;
+    uint64_t rest = number;
+    for (size_t index = count; index > 0; --index) {
+        letters[index - 1] = LETTERS[rest & DIGIT_MASK];
+        rest >>= DIGIT_BITS;
     }
-    return text.append(Span<const char>(letters, count));
+    HexText text {};
+    text.assign(Span<const char>(letters, count));
+    return text;
 }
 
 inline uint64_t mix64(uint64_t value)

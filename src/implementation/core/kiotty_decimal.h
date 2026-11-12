@@ -1,6 +1,7 @@
 #pragma once
 
 #include "kiotty_spec.h"
+#include "kiotty_fixed_string.h"
 #include "kiotty_span.h"
 
 #include <cstddef>
@@ -8,24 +9,29 @@
 
 namespace kiotty::spec::implementation {
 
-template <typename Text>
-KiottySpecStatus appendDecimal(Text& text, uint64_t number, size_t min_digits = 1)
+constexpr size_t MAX_DECIMAL_DIGITS = 20;
+
+using DecimalText = FixedString<MAX_DECIMAL_DIGITS>;
+
+inline DecimalText formatDecimal(uint64_t number, size_t min_digits = 1)
 {
-    constexpr size_t MAX_DIGITS = 20;
     constexpr uint64_t DECIMAL_BASE = 10;
-    char digits[MAX_DIGITS] {};
-    size_t count = 0;
+    char digits[MAX_DECIMAL_DIGITS] {};
+    size_t start = MAX_DECIMAL_DIGITS;
+    uint64_t rest = number;
     do {
-        digits[count] = static_cast<char>('0' + number % DECIMAL_BASE);
-        number /= DECIMAL_BASE;
-        ++count;
-    } while (number > 0);
-    while (count < min_digits && count < MAX_DIGITS) { digits[count++] = '0'; }
-    for (size_t index = count; index > 0; --index) {
-        const KiottySpecStatus status = text.append(Span<const char>(&digits[index - 1], 1));
-        if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+        --start;
+        digits[start] = static_cast<char>('0' + rest % DECIMAL_BASE);
+        rest /= DECIMAL_BASE;
+    } while (rest > 0);
+    const size_t width = min_digits < MAX_DECIMAL_DIGITS ? min_digits : MAX_DECIMAL_DIGITS;
+    while (MAX_DECIMAL_DIGITS - start < width) {
+        --start;
+        digits[start] = '0';
     }
-    return KIOTTY_SPEC_STATUS_SUCCESS;
+    DecimalText text {};
+    text.assign(Span<const char>(&digits[start], MAX_DECIMAL_DIGITS - start));
+    return text;
 }
 
 }

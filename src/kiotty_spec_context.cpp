@@ -66,7 +66,7 @@ KiottySpecStatusResult KiottySpec_initializeProject(KiottySpecContext* context,
     if (context == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     const TextResult parsed = Boundary(context->context).parse(project_name, Field::PROJECT_NAME);
     if (!parsed) { return status(parsed.code); }
-    return status(context->context.init(parsed.value));
+    return status(context->context.initialize(parsed.value));
 }
 
 KiottySpecNameResult KiottySpec_formatStatus(KiottySpecStatus status_code)

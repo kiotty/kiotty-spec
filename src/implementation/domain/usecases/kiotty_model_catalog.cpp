@@ -34,6 +34,10 @@ using entity::Cardinality;
 using entity::ItemKind;
 using entity::Step;
 
+constexpr size_t TAG_NAME_LIMIT = entity::MAX_TAG_NAME_LENGTH + 1;
+constexpr size_t MODEL_NAME_LIMIT = entity::MAX_MODEL_NAME_LENGTH + 1;
+constexpr size_t ID_PREFIX_LIMIT = entity::MAX_ID_LENGTH + 1;
+
 struct ModelSource
 {
     const char* name {};
@@ -187,10 +191,12 @@ KiottySpecStatus ModelCatalog::loadTags()
     for (size_t index = 0; index < TAG_COUNT; ++index) {
         const TagSource& source = TAG_SOURCES[index];
         entity::TagDefinition& definition = _tags[index];
-        KiottySpecStatus status = assignText(definition.name, source.name);
+        KiottySpecStatus status =
+            definition.name.assign(viewTerminated(source.name, TAG_NAME_LIMIT));
         for (size_t bit = 0; bit < entity::TAG_BIT_COUNT && status == KIOTTY_SPEC_STATUS_SUCCESS;
              ++bit) {
-            status = assignText(definition.bit_names[bit], source.bits[bit]);
+            const Span<const char> bit_name = viewTerminated(source.bits[bit], TAG_NAME_LIMIT);
+            status = definition.bit_names[bit].assign(bit_name);
         }
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
         definition.cardinality = source.cardinality;
@@ -203,7 +209,8 @@ KiottySpecStatus ModelCatalog::loadRelations()
     for (size_t index = 0; index < RELATION_COUNT; ++index) {
         const RelationSource& source = RELATION_SOURCES[index];
         entity::RelationDefinition& definition = _relations[index];
-        const KiottySpecStatus status = assignText(definition.name, source.name);
+        const KiottySpecStatus status =
+            definition.name.assign(viewTerminated(source.name, TAG_NAME_LIMIT));
         if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
         definition.target_kind = source.target_kind;
         definition.cardinality = source.cardinality;
@@ -287,9 +294,9 @@ buildModel(const ModelSource& source, size_t index, Span<const entity::TagDefini
     model.tags = Span<const entity::TagDefinition>(first_tag.value, tag_range.value.length);
     model.relations =
         Span<const entity::RelationDefinition>(first_relation.value, relation_range.value.length);
-    KiottySpecStatus status = assignText(model.name, source.name);
+    KiottySpecStatus status = model.name.assign(viewTerminated(source.name, MODEL_NAME_LIMIT));
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
-        status = assignText(model.id_prefix, source.id_prefix);
+        status = model.id_prefix.assign(viewTerminated(source.id_prefix, ID_PREFIX_LIMIT));
     }
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return ModelResult::failure(status); }
     return ModelResult::success(model);

@@ -1,5 +1,7 @@
 #include "implementation/context/kiotty_cursor_pool.h"
 
+#include "implementation/core/kiotty_checked.h"
+
 namespace kiotty::spec::implementation {
 
 namespace {
@@ -70,7 +72,8 @@ Result<CursorSpace, KiottySpecStatus> CursorPool::space(CursorId cursor, CursorK
     if (slot.value->kind != kind) {
         return Result<CursorSpace, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE);
     }
-    return Result<CursorSpace, KiottySpecStatus>::success(CursorSpace{rowsOf(handle), slot.value});
+    const CursorSpace cursor_space {rowsOf(handle), slot.value, handle.index};
+    return Result<CursorSpace, KiottySpecStatus>::success(cursor_space);
 }
 
 Handle CursorPool::decode(CursorId cursor)
@@ -95,7 +98,12 @@ CursorId encode(Handle handle)
 }
 
 Span<CursorRow> selectRows(Span<CursorRow> rows, size_t index, size_t width)
-{ return Span<CursorRow>(rows.data() + index * width, width); }
+{
+    const Result<size_t, KiottySpecStatus> offset = checkedMultiply(index, width);
+    if (!offset) { return Span<CursorRow>(); }
+    const Result<Span<CursorRow>, KiottySpecStatus> window = rows.subspan(offset.value, width);
+    return window.value;
+}
 
 }
 

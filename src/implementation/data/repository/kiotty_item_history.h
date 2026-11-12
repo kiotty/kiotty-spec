@@ -21,7 +21,7 @@ public:
     uint64_t tagAt(uint32_t key, uint32_t tag, uint32_t checkpoint) const;
     bool tagsDiffer(uint32_t key, uint32_t from, uint32_t to) const;
     Result<entity::IdText, KiottySpecStatus> nextId(Span<const char> prefix) const;
-    Span<const uint32_t> keysByKindAndId();
+    Span<const uint32_t> keysByIdentity();
     void prune(uint32_t base);
 
 private:

@@ -2,12 +2,6 @@
 
 #include "implementation/data/datasource/backend/kiotty_platform.h"
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
 #include <windows.h>
 #include <direct.h>
 #include <fcntl.h>
@@ -70,14 +64,16 @@ size_t rootLength(Span<const char> path)
     return isSeparator(first) ? 1 : 0;
 }
 
-int openFile(Span<const char> path, OpenMode mode)
+DescriptorResult openFile(Span<const char> path, OpenMode mode)
 {
     const WidePathResult wide = widen(path);
-    if (!wide) { return -1; }
+    if (!wide) { return DescriptorResult::failure(wide.code); }
     const int flags = mode == OpenMode::READ ? _O_RDONLY : (_O_WRONLY | _O_CREAT | _O_TRUNC);
-    int descriptor = -1;
-    _wsopen_s(&descriptor, wide.value.text, flags | _O_BINARY, _SH_DENYNO, _S_IREAD | _S_IWRITE);
-    return descriptor;
+    int descriptor = 0;
+    const errno_t opened = _wsopen_s(&descriptor, wide.value.text, flags | _O_BINARY, _SH_DENYNO,
+                                     _S_IREAD | _S_IWRITE);
+    if (opened != 0) { return DescriptorResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT); }
+    return DescriptorResult::success(descriptor);
 }
 
 int readSome(int descriptor, char* buffer, size_t length)

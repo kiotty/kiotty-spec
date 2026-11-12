@@ -47,14 +47,18 @@ public:
     }
 
     KiottySpecStatus copyFrom(Span<const Element> source) const
+    { return copyElements(_data, _length, source); }
+
+private:
+    static KiottySpecStatus copyElements(Element* data, size_t capacity,
+                                         Span<const Element> source)
     {
         const size_t source_length = source.length();
-        if (source_length > _length) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-        for (size_t index = 0; index < source_length; ++index) { _data[index] = source[index]; }
+        if (source_length > capacity) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+        for (size_t index = 0; index < source_length; ++index) { data[index] = source[index]; }
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
 
-private:
     static Element* advance(Element* data, size_t length) { return data + length; }
     static bool isOutside(size_t index, size_t length) { return index >= length; }
     static bool isOutsideRange(size_t offset, size_t length, size_t total)

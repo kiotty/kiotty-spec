@@ -47,9 +47,10 @@ using CursorId = uint64_t;
 struct CursorSpace {
     Span<CursorRow> rows {};
     CursorSlot* slot {nullptr};
+    size_t index {0};
 };
 
-static_assert(sizeof(CursorSpace) == 24, "unexpected padding");
+static_assert(sizeof(CursorSpace) == 32, "unexpected padding");
 
 using CursorIdResult = Result<CursorId, KiottySpecStatus>;
 using CursorRowsResult = Result<Span<const CursorRow>, KiottySpecStatus>;

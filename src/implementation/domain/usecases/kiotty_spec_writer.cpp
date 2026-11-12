@@ -32,8 +32,6 @@ constexpr std::string_view BODY_HEADER = "TABLE\tbody\tO/X\tkey\ttext\n";
 
 constexpr size_t KEY_DIGITS = 8;
 constexpr size_t HASH_DIGITS = 16;
-constexpr size_t MAX_NUMBER_DIGITS = 20;
-using NumberText = FixedString<MAX_NUMBER_DIGITS>;
 
 class SpecLine
 {
@@ -232,8 +230,7 @@ SpecLine::SpecLine(KispLineEncoder line, std::string_view table, uint32_t remove
 
 void SpecLine::addDecimal(uint64_t number)
 {
-    NumberText text {};
-    appendDecimal(text, number);
+    const DecimalText text = formatDecimal(number);
     _line.add(text.view());
 }
 
@@ -243,8 +240,7 @@ void SpecLine::addKey(uint32_t key)
         _line.add(spanOf(NONE_MARKER));
         return;
     }
-    NumberText text {};
-    appendHex(text, key, KEY_DIGITS);
+    const HexText text = formatHex(key, KEY_DIGITS);
     _line.add(text.view());
 }
 
@@ -254,8 +250,7 @@ void SpecLine::addHash(uint64_t hash)
         _line.add(spanOf(NONE_MARKER));
         return;
     }
-    NumberText text {};
-    appendHex(text, hash, HASH_DIGITS);
+    const HexText text = formatHex(hash, HASH_DIGITS);
     _line.add(text.view());
 }
 

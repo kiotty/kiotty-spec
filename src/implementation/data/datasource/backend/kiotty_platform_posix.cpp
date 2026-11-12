@@ -51,13 +51,15 @@ size_t rootLength(Span<const char> path)
 
 bool isSeparator(char letter) { return letter == '/'; }
 
-int openFile(Span<const char> path, OpenMode mode)
+DescriptorResult openFile(Span<const char> path, OpenMode mode)
 {
     SystemPath terminated {};
     const KiottySpecStatus assigned = terminated.assign(path);
-    if (assigned != KIOTTY_SPEC_STATUS_SUCCESS) { return -1; }
+    if (assigned != KIOTTY_SPEC_STATUS_SUCCESS) { return DescriptorResult::failure(assigned); }
     const int flags = mode == OpenMode::READ ? O_RDONLY : (O_WRONLY | O_CREAT | O_TRUNC);
-    return ::open(terminated.c_str(), flags, FILE_MODE);
+    const int descriptor = ::open(terminated.terminated(), flags, FILE_MODE);
+    if (descriptor < 0) { return DescriptorResult::failure(KIOTTY_SPEC_STATUS_INPUT_OUTPUT); }
+    return DescriptorResult::success(descriptor);
 }
 
 int readSome(int descriptor, char* buffer, size_t length)
@@ -73,7 +75,7 @@ bool makeDirectory(Span<const char> path)
     SystemPath terminated {};
     const KiottySpecStatus assigned = terminated.assign(path);
     if (assigned != KIOTTY_SPEC_STATUS_SUCCESS) { return false; }
-    return ::mkdir(terminated.c_str(), DIRECTORY_MODE) == 0 || errno == EEXIST;
+    return ::mkdir(terminated.terminated(), DIRECTORY_MODE) == 0 || errno == EEXIST;
 }
 
 bool isDirectory(Span<const char> path)
@@ -95,7 +97,7 @@ KiottySpecStatus removeFile(Span<const char> path)
     if (assigned != KIOTTY_SPEC_STATUS_SUCCESS) {
         return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED;
     }
-    return ::remove(terminated.c_str()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS
+    return ::remove(terminated.terminated()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS
                                              : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 }
 
@@ -111,7 +113,7 @@ KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
     if (target_assigned != KIOTTY_SPEC_STATUS_SUCCESS) {
         return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED;
     }
-    return ::rename(source.c_str(), target.c_str()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS
+    return ::rename(source.terminated(), target.terminated()) == 0 ? KIOTTY_SPEC_STATUS_SUCCESS
                                                          : KIOTTY_SPEC_STATUS_INPUT_OUTPUT;
 }
 
@@ -123,7 +125,7 @@ ModeResult readMode(Span<const char> path)
     const KiottySpecStatus assigned = terminated.assign(path);
     if (assigned != KIOTTY_SPEC_STATUS_SUCCESS) { return ModeResult::failure(assigned); }
     FileStatus status {};
-    const int status_code = ::stat(terminated.c_str(), &status);
+    const int status_code = ::stat(terminated.terminated(), &status);
     if (status_code != 0) { return ModeResult::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
     return ModeResult::success(status.st_mode);
 }

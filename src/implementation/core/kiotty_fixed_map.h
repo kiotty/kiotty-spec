@@ -5,6 +5,7 @@
 #include "kiotty_span.h"
 
 #include <cstddef>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -16,7 +17,12 @@ class FixedMap
 public:
     explicit FixedMap(size_t capacity) : _keys(capacity), _values(capacity), _length(0) {}
 
-    KiottySpecStatus insert(const Key& key, Value value)
+    static constexpr size_t MAX_VALUE_KEY_BYTES = 16;
+    static constexpr bool IS_SMALL_KEY =
+        sizeof(Key) <= MAX_VALUE_KEY_BYTES && std::is_trivially_copyable<Key>::value;
+    using KeyArgument = std::conditional_t<IS_SMALL_KEY, Key, const Key&>;
+
+    KiottySpecStatus insert(KeyArgument key, Value value)
     {
         const size_t position = lowerBound(_keys, _length, key);
         const bool has_key = hasKeyAt(_keys, _length, position, key);
@@ -33,7 +39,7 @@ public:
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
 
-    Result<Value, KiottySpecStatus> find(const Key& key) const
+    Result<Value, KiottySpecStatus> find(KeyArgument key) const
     {
         const size_t position = lowerBound(_keys, _length, key);
         const bool is_missing = isMissingAt(_keys, _length, position, key);
@@ -43,7 +49,7 @@ public:
         return Result<Value, KiottySpecStatus>::success(_values[position]);
     }
 
-    KiottySpecStatus erase(const Key& key)
+    KiottySpecStatus erase(KeyArgument key)
     {
         const size_t position = lowerBound(_keys, _length, key);
         const bool is_missing = isMissingAt(_keys, _length, position, key);
@@ -61,7 +67,7 @@ public:
     Value& valueAt(size_t index) { return _values[index]; }
 
 private:
-    static size_t lowerBound(const std::vector<Key>& keys, size_t length, const Key& key)
+    static size_t lowerBound(const std::vector<Key>& keys, size_t length, KeyArgument key)
     {
         constexpr size_t BISECT_DIVISOR = 2;
         size_t low = 0;
@@ -74,11 +80,11 @@ private:
     }
 
     static bool hasKeyAt(const std::vector<Key>& keys, size_t length, size_t position,
-                         const Key& key)
+                         KeyArgument key)
     { return position < length && !(key < keys[position]); }
 
     static bool isMissingAt(const std::vector<Key>& keys, size_t length, size_t position,
-                            const Key& key)
+                            KeyArgument key)
     { return position == length || key < keys[position]; }
 
     static bool isFull(size_t length, size_t capacity) { return length == capacity; }

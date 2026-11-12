@@ -57,10 +57,10 @@ inline uint64_t packIdWord(entity::IdText id, size_t offset)
 {
     const Span<const char> text = id.view();
     uint64_t word {0};
-    for (size_t index = 0; index < PACKED_ID_WORD_BYTES; ++index) {
-        const Result<const char&, KiottySpecStatus> letter = text.at(offset + index);
+    for (size_t index = PACKED_ID_WORD_BYTES; index > 0; --index) {
+        const Result<const char&, KiottySpecStatus> letter = text.at(offset + index - 1);
         const uint64_t byte = letter ? static_cast<unsigned char>(*letter.value) : 0u;
-        word |= byte << (BITS_PER_BYTE * index);
+        word = (word << BITS_PER_BYTE) | byte;
     }
     return word;
 }
@@ -70,10 +70,11 @@ inline entity::IdText unpackId(uint64_t first, uint64_t second)
     char bytes[PACKED_ID_BYTES] {};
     const Span<char> letters(bytes, PACKED_ID_BYTES);
     const size_t letter_count = letters.length();
+    uint64_t word = first;
     for (size_t index = 0; index < letter_count; ++index) {
-        const uint64_t word = index < PACKED_ID_WORD_BYTES ? first : second;
-        const size_t shift = BITS_PER_BYTE * (index % PACKED_ID_WORD_BYTES);
-        letters[index] = static_cast<char>((word >> shift) & BYTE_MASK);
+        word = index == PACKED_ID_WORD_BYTES ? second : word;
+        letters[index] = static_cast<char>(word & BYTE_MASK);
+        word >>= BITS_PER_BYTE;
     }
     entity::IdText id {};
     id.assign(boundedText(bytes, entity::MAX_ID_LENGTH));

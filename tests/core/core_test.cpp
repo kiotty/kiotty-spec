@@ -1,4 +1,5 @@
 #include "kiotty_checked.h"
+#include "kiotty_decimal.h"
 #include "kiotty_fixed_map.h"
 #include "kiotty_fixed_string.h"
 #include "kiotty_fixed_vector.h"
@@ -97,9 +98,9 @@ bool testFixedStringAssign()
     core::FixedString<5> text;
     bool ok = true;
     ok = expectTrue(text.assign(textOf("abc")) == KIOTTY_SPEC_STATUS_SUCCESS, "assign fits") && ok;
-    ok = expectTrue(text.length() == 3 && std::strcmp(text.c_str(), "abc") == 0, "assign stores text") && ok;
+    ok = expectTrue(text.length() == 3 && std::strcmp(text.terminated(), "abc") == 0, "assign stores text") && ok;
     ok = expectTrue(text.append(textOf("de")) == KIOTTY_SPEC_STATUS_SUCCESS, "append up to capacity") && ok;
-    ok = expectTrue(std::strcmp(text.c_str(), "abcde") == 0, "append keeps terminator") && ok;
+    ok = expectTrue(std::strcmp(text.terminated(), "abcde") == 0, "append keeps terminator") && ok;
     ok = expectTrue(text.append(textOf("f")) == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "append beyond capacity fails") && ok;
     ok = expectTrue(text.length() == 5, "failed append keeps length") && ok;
     return ok;
@@ -112,7 +113,7 @@ bool testFixedStringOverflowClears()
     const bool failed = text.assign(textOf("too long")) == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED;
     bool ok = true;
     ok = expectTrue(failed, "assign too long fails") && ok;
-    ok = expectTrue(text.length() == 0 && text.c_str()[0] == '\0', "failed assign clears") && ok;
+    ok = expectTrue(text.length() == 0 && text.terminated()[0] == '\0', "failed assign clears") && ok;
     return ok;
 }
 
@@ -350,9 +351,10 @@ bool testNumbers()
     ok = expectTrue(core::parseHex(textOf("0a1b2c3d"), 8).value == 0x0a1b2c3du, "hex") && ok;
     const char* const bad_hexes[] = {"", "0A1B2C3D", "0a1b2c3", "0a1b2c3d4", "0a1b2c3g"};
     for (const char* text : bad_hexes) { ok = expectTrue(!core::parseHex(textOf(text), 8), text) && ok; }
-    core::FixedString<16> hex;
-    core::appendHex(hex, 0x0a1b2c3du, 8);
-    ok = expectTrue(sameText(hex.view(), "0a1b2c3d"), "append hex") && ok;
+    const core::HexText hex = core::formatHex(0x0a1b2c3du, 8);
+    ok = expectTrue(sameText(hex.view(), "0a1b2c3d"), "format hex") && ok;
+    ok = expectTrue(sameText(core::formatDecimal(7, 3).view(), "007"), "format padded decimal") && ok;
+    ok = expectTrue(sameText(core::formatDecimal(UINT64_MAX).view(), "18446744073709551615"), "format max decimal") && ok;
     ok = expectTrue(core::hash64(textOf("a")) != core::hash64(textOf("b")), "hash differs") && ok;
     return ok;
 }

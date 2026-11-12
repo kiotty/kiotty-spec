@@ -69,8 +69,8 @@ bool testModels()
 {
     const impl::ModelCatalog& models = catalog();
     bool ok = true;
-    ok = expectTrue(std::strcmp(models.model(ItemKind::DESIGN).name.c_str(), "설계 사항") == 0, "design name") && ok;
-    ok = expectTrue(std::strcmp(models.model(ItemKind::END_TO_END_TEST_RESULT).id_prefix.c_str(), "E2ER") == 0, "e2e result prefix") && ok;
+    ok = expectTrue(std::strcmp(models.model(ItemKind::DESIGN).name.terminated(), "설계 사항") == 0, "design name") && ok;
+    ok = expectTrue(std::strcmp(models.model(ItemKind::END_TO_END_TEST_RESULT).id_prefix.terminated(), "E2ER") == 0, "e2e result prefix") && ok;
     ok = expectTrue(models.model(ItemKind::CODE_INSPECTION_RESULT).created_in == entity::Step::CODE_INSPECTING, "inspection step") && ok;
     ok = expectTrue(models.model(ItemKind::CHANGE_REQUEST).tags.length() == 3, "change request tags") && ok;
     ok = expectTrue(models.model(ItemKind::MILESTONE).tags.length() == 0, "milestone has no tags") && ok;

@@ -18,7 +18,7 @@ bool isSeparator(char letter);
 size_t rootLength(Span<const char> path);
 SystemPathResult absolutePath(Span<const char> path);
 
-int openFile(Span<const char> path, OpenMode mode);
+DescriptorResult openFile(Span<const char> path, OpenMode mode);
 int readSome(int descriptor, char* buffer, size_t length);
 int writeSome(int descriptor, const char* buffer, size_t length);
 void closeFile(int descriptor);

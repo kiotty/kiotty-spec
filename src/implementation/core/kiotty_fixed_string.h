@@ -34,7 +34,7 @@ public:
     void clear() { _data[0] = '\0'; }
 
     bool empty() const { return _data[0] == '\0'; }
-    const char* c_str() const { return _data; }
+    const char* terminated() const { return _data; }
     Span<const char> view() const { return Span<const char>(_data, length()); }
     operator std::string_view() const { return std::string_view(_data, length()); }
     size_t length() const { return measureLength(_data); }
@@ -83,7 +83,7 @@ bool operator!=(const FixedString<Capacity>& left, std::string_view right)
 template <size_t Capacity>
 std::string operator+(std::string left, const FixedString<Capacity>& right)
 {
-    left.append(right.c_str(), right.length());
+    left.append(right.terminated(), right.length());
     return left;
 }
 
@@ -96,7 +96,7 @@ std::string operator+(const char* left, const FixedString<Capacity>& right)
 template <size_t Capacity>
 std::string operator+(const FixedString<Capacity>& left, std::string_view right)
 {
-    std::string text(left.c_str(), left.length());
+    std::string text(left.terminated(), left.length());
     text.append(right.data(), right.size());
     return text;
 }
@@ -113,17 +113,16 @@ void copyText(char (&target)[Size], const FixedString<Capacity>& source)
 {
     static_assert(Size == Capacity + 1, "buffer must match FixedString capacity");
     const size_t length = source.length();
-    for (size_t index = 0; index < length; ++index) { target[index] = source.c_str()[index]; }
+    for (size_t index = 0; index < length; ++index) { target[index] = source.terminated()[index]; }
     target[length] = '\0';
 }
 
 
-template <size_t Capacity>
-KiottySpecStatus assignText(FixedString<Capacity>& target, const char* text)
+inline Span<const char> viewTerminated(const char* text, size_t limit)
 {
     size_t length = 0;
-    while (text != nullptr && length <= Capacity && text[length] != '\0') { ++length; }
-    return target.assign(Span<const char>(text, length));
+    while (text != nullptr && length < limit && text[length] != '\0') { ++length; }
+    return Span<const char>(text, length);
 }
 
 }

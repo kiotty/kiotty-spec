@@ -16,7 +16,7 @@ bool isFieldWanted(uint32_t fields, uint32_t field_mask);
 
 KiottySpecStatus ItemDiffQuery::open()
 {
-    _keys = _items.history().keysByKindAndId();
+    _keys = _items.history().keysByIdentity();
     _position = 0;
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }

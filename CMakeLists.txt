@@ -42,6 +42,12 @@ function(kiotty_no_exceptions target)
     endif()
 endfunction()
 
+function(kiotty_windows_definitions target)
+    if(WIN32)
+        target_compile_definitions(${target} PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+    endif()
+endfunction()
+
 # ---------------------------------------------------------------------------
 # 라이브러리: include/kiotty_spec.h 의 C 인터페이스 구현
 # ---------------------------------------------------------------------------
@@ -58,6 +64,7 @@ target_include_directories(kiotty_spec
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 kiotty_warnings(kiotty_spec)
 kiotty_no_exceptions(kiotty_spec)
+kiotty_windows_definitions(kiotty_spec)
 
 # ---------------------------------------------------------------------------
 # CLI: AI 가 질의하는 실행 파일 (이름: ks)
@@ -94,6 +101,7 @@ add_executable(kiotty_datasource_test
 target_include_directories(kiotty_datasource_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 kiotty_warnings(kiotty_datasource_test)
 kiotty_no_exceptions(kiotty_datasource_test)
+kiotty_windows_definitions(kiotty_datasource_test)
 
 add_executable(kiotty_context_test
     tests/context/context_test.cpp

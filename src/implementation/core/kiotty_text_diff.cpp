@@ -26,6 +26,7 @@ enum class TraceStep : uint8_t { BOTH, BEFORE, AFTER };
 
 using CountResult = Result<size_t, KiottySpecStatus>;
 using TableResult = Result<CommonTable, KiottySpecStatus>;
+using CellResult = Result<uint8_t&, KiottySpecStatus>;
 
 bool isTooLong(Span<const char> text);
 Points splitPoints(Span<const char> text);
@@ -37,7 +38,8 @@ TraceStep chooseTraceStep(DiffTexts texts, const CommonTable& table, size_t row,
 Hunk makeHunk(DiffTexts texts, TraceStep step, size_t row, size_t column);
 bool isSamePoint(DiffTexts texts, size_t before_index, size_t after_index);
 uint8_t readCell(const CommonTable& table, size_t row, size_t column);
-size_t locateCell(const CommonTable& table, size_t row, size_t column);
+void writeCell(const CommonTable& table, size_t row, size_t column, uint8_t length);
+CellResult locateCell(const CommonTable& table, size_t row, size_t column);
 CountResult writeSegments(Span<const Hunk> hunks, Span<TextSegment> out);
 CountResult writeHunk(Hunk hunk, Span<TextSegment> out, size_t count);
 TextSegment makeSegment(TextChange change, TextSource source, uint16_t start, uint16_t end);
@@ -104,7 +106,7 @@ void fillCommonLengths(DiffTexts texts, const CommonTable& table)
             const size_t row = row_end - 1;
             const size_t column = column_end - 1;
             const uint8_t length = measureCommonLength(texts, table, row, column);
-            table.cells[locateCell(table, row, column)] = length;
+            writeCell(table, row, column, length);
         }
     }
 }
@@ -179,10 +181,27 @@ bool isSamePoint(DiffTexts texts, size_t before_index, size_t after_index)
 }
 
 uint8_t readCell(const CommonTable& table, size_t row, size_t column)
-{ return table.cells[locateCell(table, row, column)]; }
+{
+    const CellResult cell = locateCell(table, row, column);
+    if (!cell) { return 0; }
+    return *cell.value;
+}
 
-size_t locateCell(const CommonTable& table, size_t row, size_t column)
-{ return row * table.width + column; }
+void writeCell(const CommonTable& table, size_t row, size_t column, uint8_t length)
+{
+    const CellResult cell = locateCell(table, row, column);
+    if (cell) { *cell.value = length; }
+}
+
+CellResult locateCell(const CommonTable& table, size_t row, size_t column)
+{
+    const Result<size_t, KiottySpecStatus> row_start = checkedMultiply(row, table.width);
+    if (!row_start) { return CellResult::failure(row_start.code); }
+    const Result<Span<uint8_t>, KiottySpecStatus> cells =
+        table.cells.subspan(row_start.value, table.width);
+    if (!cells) { return CellResult::failure(cells.code); }
+    return cells.value.at(column);
+}
 
 CountResult writeSegments(Span<const Hunk> hunks, Span<TextSegment> out)
 {

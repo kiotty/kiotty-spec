@@ -10,9 +10,11 @@
 namespace kiotty::spec::implementation {
 
 constexpr size_t MAX_SYSTEM_PATH_LENGTH = 1024;
+constexpr int CLOSED_DESCRIPTOR = -1;
 
 using SystemPath = FixedString<MAX_SYSTEM_PATH_LENGTH>;
 using SystemPathResult = Result<SystemPath, KiottySpecStatus>;
+using DescriptorResult = Result<int, KiottySpecStatus>;
 
 bool isDirectory(Span<const char> path);
 SystemPathResult absolutePath(Span<const char> path);
@@ -22,8 +24,8 @@ Span<const char> parentOf(Span<const char> path);
 
 KiottySpecStatus createDirectories(Span<const char> path);
 
-int openForReading(Span<const char> path);
-int openForWriting(Span<const char> path);
+DescriptorResult openForReading(Span<const char> path);
+DescriptorResult openForWriting(Span<const char> path);
 int readDescriptor(int descriptor, Span<char> buffer);
 KiottySpecStatus writeDescriptor(int descriptor, Span<const char> content);
 void closeDescriptor(int descriptor);

@@ -4,21 +4,16 @@
 #include "implementation/core/kiotty_text_diff.h"
 #include "implementation/core/kiotty_text_view.h"
 
-#include <cstring>
-
 namespace kiotty::spec::implementation {
 
 namespace {
 
 using entity::IdText;
 
-constexpr size_t TEXT_SLOT_BYTES = 256;
-constexpr size_t SEGMENT_OFFSET = TEXT_SLOT_BYTES * 2;
-constexpr size_t MAX_SEGMENTS = MAX_DIFF_TEXT_BYTES * 2 + 1;
-
 Span<const char> selectText(const Result<ItemVersionView, KiottySpecStatus>& version,
                             uint32_t field);
-KiottySpecStatus storeTexts(Span<char> area, Span<const char> before, Span<const char> after);
+CursorRow packSegment(TextSegment segment);
+TextSegment unpackSegment(const CursorRow& row);
 }
 
 CursorIdResult TextDiffer::open(entity::ItemHandle item, uint32_t field, DiffRange range)
@@ -50,14 +45,15 @@ Result<TextPiece, KiottySpecStatus> TextDiffer::next(CursorId cursor)
     if (!space) { return PieceResult::failure(space.code); }
     CursorSlot& slot = *space.value.slot;
     if (slot.position >= slot.length) { return PieceResult::success(TextPiece{}); }
-    const char* bytes = reinterpret_cast<const char*>(space.value.rows.data());
-    TextSegment segment {};
-    std::memcpy(&segment, bytes + SEGMENT_OFFSET + slot.position * sizeof(TextSegment),
-                sizeof(TextSegment));
+    const Result<CursorRow&, KiottySpecStatus> row = space.value.rows.at(slot.position);
+    if (!row) { return PieceResult::failure(row.code); }
     ++slot.position;
-    const char* base = bytes + (segment.source == TextSource::AFTER ? TEXT_SLOT_BYTES : 0);
-    return PieceResult::success(TextPiece { Span<const char>(base + segment.offset, segment.length),
-                                            static_cast<uint32_t>(segment.change) });
+    const TextSegment segment = unpackSegment(*row.value);
+    const auto text = _store.textOf(space.value.index, segment.source);
+    if (!text) { return PieceResult::failure(text.code); }
+    const auto piece = text.value.subspan(segment.offset, segment.length);
+    if (!piece) { return PieceResult::failure(piece.code); }
+    return PieceResult::success(TextPiece {piece.value, static_cast<uint32_t>(segment.change)});
 }
 
 Result<entity::IdText, KiottySpecStatus> TextDiffer::readItemId(entity::ItemHandle item)
@@ -75,24 +71,34 @@ KiottySpecStatus TextDiffer::fillSegments(CursorId cursor, const TextPair& texts
 {
     const auto space = _cursors.space(cursor, CursorKind::TEXT_DIFF);
     if (!space) { return space.code; }
-    char* const bytes = reinterpret_cast<char*>(space.value.rows.data());
-    const size_t room = space.value.rows.length() * sizeof(CursorRow);
-    const size_t segment_room =
-        room > SEGMENT_OFFSET ? (room - SEGMENT_OFFSET) / sizeof(TextSegment) : 0;
-    if (segment_room == 0) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
-    const KiottySpecStatus stored = storeTexts(Span<char>(bytes, room), texts.before, texts.after);
+    const KiottySpecStatus stored = storeTexts(space.value.index, texts);
     if (stored != KIOTTY_SPEC_STATUS_SUCCESS) { return stored; }
-    Span<char> scratch = _work.scratch();
-    const Span<TextSegment> segments(reinterpret_cast<TextSegment*>(bytes + SEGMENT_OFFSET),
-                                     segment_room < MAX_SEGMENTS ? segment_room : MAX_SEGMENTS);
+    const Span<TextSegment> segments = _store.segments();
     const Result<size_t, KiottySpecStatus> count =
-        diffText(Span<const char>(bytes, texts.before.length()),
-                 Span<const char>(bytes + TEXT_SLOT_BYTES, texts.after.length()),
-                 Span<uint8_t>(reinterpret_cast<uint8_t*>(scratch.data()), scratch.length()),
-                 segments);
+        diffText(texts.before, texts.after, _store.table(), segments);
     if (!count) { return count.code; }
-    space.value.slot->length = count.value;
-    space.value.slot->position = 0;
+    const auto written = segments.subspan(0, count.value);
+    if (!written) { return written.code; }
+    return pushSegments(cursor, written.value);
+}
+
+KiottySpecStatus TextDiffer::storeTexts(size_t cursor_index, const TextPair& texts)
+{
+    const auto before_slot = _store.textOf(cursor_index, TextSource::BEFORE);
+    if (!before_slot) { return before_slot.code; }
+    const auto after_slot = _store.textOf(cursor_index, TextSource::AFTER);
+    if (!after_slot) { return after_slot.code; }
+    const KiottySpecStatus before_copied = before_slot.value.copyFrom(texts.before);
+    if (before_copied != KIOTTY_SPEC_STATUS_SUCCESS) { return before_copied; }
+    return after_slot.value.copyFrom(texts.after);
+}
+
+KiottySpecStatus TextDiffer::pushSegments(CursorId cursor, Span<const TextSegment> segments)
+{
+    for (const TextSegment segment : segments) {
+        const KiottySpecStatus pushed = _cursors.push(cursor, packSegment(segment));
+        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return pushed; }
+    }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
@@ -106,16 +112,24 @@ Span<const char> selectText(const Result<ItemVersionView, KiottySpecStatus>& ver
     return field == KIOTTY_SPEC_TEXT_FIELD_TITLE ? record.title.view() : record.summary.view();
 }
 
-KiottySpecStatus storeTexts(Span<char> area, Span<const char> before, Span<const char> after)
+CursorRow packSegment(TextSegment segment)
 {
-    const Result<Span<char>, KiottySpecStatus> before_slot = area.subspan(0, TEXT_SLOT_BYTES);
-    if (!before_slot) { return before_slot.code; }
-    const Result<Span<char>, KiottySpecStatus> after_slot =
-        area.subspan(TEXT_SLOT_BYTES, TEXT_SLOT_BYTES);
-    if (!after_slot) { return after_slot.code; }
-    const KiottySpecStatus before_copied = before_slot.value.copyFrom(before);
-    if (before_copied != KIOTTY_SPEC_STATUS_SUCCESS) { return before_copied; }
-    return after_slot.value.copyFrom(after);
+    CursorRow row {};
+    row.first = segment.offset;
+    row.second = segment.length;
+    row.third = static_cast<uint64_t>(segment.change);
+    row.fourth = static_cast<uint64_t>(segment.source);
+    return row;
+}
+
+TextSegment unpackSegment(const CursorRow& row)
+{
+    TextSegment segment {};
+    segment.offset = static_cast<uint16_t>(row.first);
+    segment.length = static_cast<uint16_t>(row.second);
+    segment.change = static_cast<TextChange>(row.third);
+    segment.source = static_cast<TextSource>(row.fourth);
+    return segment;
 }
 
 }

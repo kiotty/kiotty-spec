@@ -60,7 +60,7 @@ public:
     Context& operator=(const Context&) = delete;
 
     KiottySpecStatus open(Span<const char> database);
-    KiottySpecStatus init(Span<const char> name);
+    KiottySpecStatus initialize(Span<const char> name);
 
     entity::Failure& failure() { return _failure; }
     Workspace& workspace() { return _workspace; }
@@ -94,6 +94,7 @@ private:
     Editor _editor;
     RelationEditor _relation_editor;
     CursorPool _cursors;
+    TextDiffStore _text_diffs;
     Finder _finder;
     Differ _differ;
 };
