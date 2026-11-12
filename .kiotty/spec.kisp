@@ -25,6 +25,9 @@ checkpoint	O	19	18	3	done	1794485929	CR-001 ~ 006 반영: C 인터페이스 항�
 checkpoint	O	20	19	4	done	1794486383	CR-001 ~ 006 반영: 설계 항목 갱신
 checkpoint	O	21	20	5	done	1794486679	CR-001 ~ 006 반영: 유닛 테스트 계획 갱신
 checkpoint	O	22	21	10	done	1794488562	CR-001 ~ 006 반영 후 코드 검사
+checkpoint	O	23	22	1	done	1794491796	CR-012 개발 수칙 6.6 범위와 수칙 원본을 DB 로
+checkpoint	O	24	23	2	done	1794491823	CR-012 개발 수칙 6.6 범위와 수칙 원본을 DB 로
+checkpoint	O	25	24	10	done	1794491852	CR-012 반영 후 6.6 다시 판정
 TABLE	item	O/X	key	id
 item	O	00593058	CIR-020
 item	O	00ab1435	DSN-078
@@ -89,6 +92,7 @@ item	O	1aa30774	UI-123
 item	O	1b0ef8b3	CIR-058
 item	O	1b3c36a9	UI-153
 item	O	1bc5cbaf	UI-033
+item	O	1cbb1f84	CR-012
 item	O	1ce50985	UT-038
 item	O	1d097706	CIR-059
 item	O	1dd0de2b	CIR-016
@@ -732,11 +736,13 @@ item_version	O	1b0ef8b3	18	code_inspection_result	-	5.5 에러 코드를 문장�
 item_version	O	1b3c36a9	19	external_interface	a5336127	KiottySpecErrorResult	상태와 마지막 실패 이유	d0b444b788a1317d
 item_version	O	1bc5cbaf	3	external_interface	b7bb9da8	KiottySpec_findItem	ID 의 항목 핸들	dc593782a8621b82
 item_version	O	1bc5cbaf	19	external_interface	b7bb9da8	KiottySpec_findItem	ID 의 항목 핸들	c37d351b2deeef90
+item_version	O	1cbb1f84	23	change_request	-	6.6 커서 수칙은 C interface 에만, 수칙 원본은 DB 로	implementation 안은 index 임의 접근, 개발수칙.md 를 지우고 RULE-* 만 쓴다	9230eaa04b4c87e1
 item_version	O	1ce50985	5	unit_test_plan	a39102db	cursor pages (testCursorPages)		b991d7fbcf5aa21c
 item_version	O	1d097706	8	code_inspection_result	-	6. 설계	FAIL	dd9e606f02882243
 item_version	O	1d097706	14	code_inspection_result	-	6. 설계	FAIL	2506b111a90184c4
 item_version	O	1d097706	18	code_inspection_result	-	6. 설계	FAIL	2506b111a90184c4
 item_version	O	1d097706	22	code_inspection_result	-	6. 설계	FAIL	b89a309ed0a57d17
+item_version	O	1d097706	25	code_inspection_result	-	6. 설계	FAIL	126d6932811be54f
 item_version	O	1dd0de2b	8	code_inspection_result	-	2.2 포인터는 항상 길이와 함께 다닌다.	FAIL 164건	a62b9d74f28d0913
 item_version	O	1dd0de2b	14	code_inspection_result	-	2.2 포인터는 항상 길이와 함께 다닌다.	PASS	17cc9c73323e8a95
 item_version	O	1dd0de2b	18	code_inspection_result	-	2.2 포인터는 항상 길이와 함께 다닌다.	PASS	17cc9c73323e8a95
@@ -1213,6 +1219,7 @@ item_version	O	970bf723	7	system_test_result	-	프로젝트 이름과 만든 시
 item_version	O	971031e4	6	system_test_plan	-	왜 그렇게 정했는지 남긴다 (결정 기록)	REQ-030 의 인수 조건 3 개	1f6164b30dc9f6fb
 item_version	O	9734b840	5	unit_test_plan	cd23d5c3	items tags relations (testItemsTagsRelations)		e9673676d4a52e67
 item_version	O	975029f0	2	rule	-	0. 원칙		3d0c62cb729030df
+item_version	O	975029f0	24	rule	-	0. 원칙		9897c2205b69fae1
 item_version	O	98765333	5	unit_test_plan	def6c251	checked arithmetic (testChecked)		4783ecbc50477561
 item_version	O	98765333	9	unit_test_plan	def6c251	checked arithmetic (testChecked)		1148c0e3db87e1f1
 item_version	O	993abcd2	5	unit_test_plan	a44597b9	relations (testRelations)		2c31b68f48776dc1
@@ -1234,6 +1241,7 @@ item_version	O	9d0cea7a	8	code_inspection_result	-	6.6 여러 인스턴스 조�
 item_version	O	9d0cea7a	14	code_inspection_result	-	6.6 여러 인스턴스 조회는 커서를 열고, 고정 크기 페이지를 가져오고, 닫는다.	FAIL 10건	8d594d08615b94e0
 item_version	O	9d0cea7a	18	code_inspection_result	-	6.6 여러 인스턴스 조회는 커서를 열고, 고정 크기 페이지를 가져오고, 닫는다.	FAIL 10건	8d594d08615b94e0
 item_version	O	9d0cea7a	22	code_inspection_result	-	6.6 여러 인스턴스 조회는 커서를 열고, 고정 크기 페이지를 가져오고, 닫는다.	FAIL 2건	198790c4f8430352
+item_version	O	9d0cea7a	25	code_inspection_result	-	6.6 C interface 로 여러 인스턴스를 내보내는 조회는 커서로 한다.	PASS	9e3a1b33dce30f5b
 item_version	O	9db86b2a	4	design	-	DiffRange (context/kiotty_diff_range.h)	비교할 두 체크포인트 sequence	960daed7f3f0587e
 item_version	O	9db86b2a	20	design	-	DiffRange (context/kiotty_diff_range.h)	비교할 두 체크포인트 sequence	30ee0f8367d9ae1b
 item_version	O	9ea5c49d	4	design	-	Span (core/kiotty_span.h)	포인터와 길이를 함께 다니게 하는 Span<T> (개발수칙 2.2).	9d0d73c1ed2c047a
@@ -1503,6 +1511,7 @@ item_version	O	e422d78b	19	external_interface	a415fab7	KiottySpecItemDraft	새 �
 item_version	O	e5387789	5	unit_test_plan	def6c251	search (testSearch)		8f837a2a5f8f16f1
 item_version	O	e56897c3	19	external_interface	48a9ab3c	KiottySpecError	마지막 실패의 이유	3e0232b8faca1414
 item_version	O	e667522e	2	rule	1753b045	6.6 여러 인스턴스 조회는 커서를 열고, 고정 크기 페이지를 가져오고, 닫는다.		a91217c6dc57e7a2
+item_version	O	e667522e	24	rule	1753b045	6.6 C interface 로 여러 인스턴스를 내보내는 조회는 커서로 한다.	6.6 C interface 로 여러 인스턴스를 내보내는 조회는 커서를 열고, 고정 크기 페이지를 가져오고, 닫는다. implementation 안은 index 로 바로 읽는다.	f490169455f803da
 item_version	O	e66ba83f	5	unit_test_plan	cd23d5c3	체크포인트 정리	확정 체크포인트를 기준으로 이전 기록을 지운다	b63e30884af8f22b
 item_version	O	e82ab3d4	3	external_interface	b7bb9da8	KiottySpec_createItem	항목을 만들고 ID 를 돌려준다	e63c42b6bf466348
 item_version	O	e82ab3d4	19	external_interface	b7bb9da8	KiottySpec_createItem	항목을 만들고 ID 를 돌려준다	9d501e0c2c12be82
@@ -1722,11 +1731,16 @@ tag	O	1b0ef8b3	결과	14	PASS
 tag	O	1b0ef8b3	결과	18	PASS
 tag	O	1b3c36a9	인터페이스 종류	19	C 타입
 tag	O	1bc5cbaf	인터페이스 종류	3	C 함수
+tag	O	1cbb1f84	출처	23	사용자 피드백
+tag	O	1cbb1f84	상태	23	열림
+tag	O	1cbb1f84	상태	25	완료
+tag	O	1cbb1f84	진입 단계	23	Step 2
 tag	O	1ce50985	구현 상태	5	구현 완료
 tag	O	1d097706	결과	8	FAIL
 tag	O	1d097706	결과	14	FAIL
 tag	O	1d097706	결과	18	FAIL
 tag	O	1d097706	결과	22	FAIL
+tag	O	1d097706	결과	25	FAIL
 tag	O	1dd0de2b	결과	8	FAIL
 tag	O	1dd0de2b	결과	14	PASS
 tag	O	1dd0de2b	결과	18	PASS
@@ -2209,6 +2223,7 @@ tag	O	9d0cea7a	결과	8	FAIL
 tag	O	9d0cea7a	결과	14	FAIL
 tag	O	9d0cea7a	결과	18	FAIL
 tag	O	9d0cea7a	결과	22	FAIL
+tag	O	9d0cea7a	결과	25	PASS
 tag	O	9db86b2a	설계 종류	4	모듈
 tag	O	9db86b2a	구현 상태	4	구현 완료
 tag	O	9db86b2a	구현 상태	20	구현 완료
@@ -2700,6 +2715,8 @@ relation	O	19ad759d	unit_test_plan	검증 설계 사항	74a4990f	5
 relation	O	1a3637b0	code_inspection_result	검사 개발 수칙	4c5e5e82	8
 relation	O	1a781f4c	unit_test_plan	검증 설계 사항	f6b74667	5
 relation	O	1b0ef8b3	code_inspection_result	검사 개발 수칙	600c198b	8
+relation	O	1cbb1f84	change_request	영향 개발 수칙	975029f0	23
+relation	O	1cbb1f84	change_request	영향 개발 수칙	e667522e	23
 relation	O	1ce50985	unit_test_plan	검증 설계 사항	f7fffbc9	5
 relation	O	1d097706	code_inspection_result	검사 개발 수칙	1753b045	8
 relation	O	1dd0de2b	code_inspection_result	검사 개발 수칙	5d9c30a3	8
@@ -3574,6 +3591,7 @@ decision	O	rule	2	- RULE-001 · 출처 : docs/requirements/개발수칙.md (v2 �
 decision	O	rule	10	- RULE-001 · 출처 : docs/requirements/개발수칙.md (v2 권장안) 를 그대로 옮김. 절(##) 은 상위 항목, 수칙(###) 은 하위 항목, 본문은 문서의 그 부분 (2026-11-10)\n- RULE-001 · ID : 문서 순서대로 발급하고 지운 ID 는 다시 쓰지 않음. 문서 번호(1.1, 4.18 …) 는 제목 앞에 둠 [기각: ID 에 문서 번호 — ID 에 '.' 을 쓸 수 없음]\n- RULE-001 · 제목 : 수칙 문장이 길면 첫 문장만 제목, 전체 문장은 요약\n- RULE-001 · 수칙 종류 : 0 ~ 3 절 코딩 제약, 4 · 8 절 컨벤션, 5 ~ 7 절 아키텍처, 9 절 테스트. 2.9 · 7.3 은 의존성, 2.10 은 테스트, 5.2 · 5.6 은 컨벤션\n- RULE-001 · 기록 시점 : 요구사항(CP-0001) 다음, 외부 인터페이스 전에 Step 2 체크포인트 CP-0002 로 따로 둠 (사용자 결정 2026-11-10)\n- RULE-032 · 4.3 삭제 : 옛 4.3 (early return, 에러 검사는 한 줄 블록) 을 지우고 4.4 ~ 4.19 를 4.3 ~ 4.18 로 당김. 사용자가 넣은 수칙이 아니고 한 줄 블록은 사용자 의도와 반대 (사용자 결정 2026-11-11) [기각: 4.1 의 100 자 한계에 예외를 둠 — 수칙 자체가 잘못 들어옴]\n- RULE-075 · 5.7 추가 : C interface 출력 메모리는 union 없이 순차, bool 대신 KiottySpecBool (사용자 추가 2026-11-11)\n
 decision	O	rule	12	- RULE-001 · 출처 : docs/requirements/개발수칙.md (v2 권장안) 를 그대로 옮김. 절(##) 은 상위 항목, 수칙(###) 은 하위 항목, 본문은 문서의 그 부분 (2026-11-10)\r\n- RULE-001 · ID : 문서 순서대로 발급하고 지운 ID 는 다시 쓰지 않음. 문서 번호(1.1, 4.18 …) 는 제목 앞에 둠 [기각: ID 에 문서 번호 — ID 에 '.' 을 쓸 수 없음]\r\n- RULE-001 · 제목 : 수칙 문장이 길면 첫 문장만 제목, 전체 문장은 요약\r\n- RULE-001 · 수칙 종류 : 0 ~ 3 절 코딩 제약, 4 · 8 절 컨벤션, 5 ~ 7 절 아키텍처, 9 절 테스트. 2.9 · 7.3 은 의존성, 2.10 은 테스트, 5.2 · 5.6 은 컨벤션\r\n- RULE-001 · 기록 시점 : 요구사항(CP-0001) 다음, 외부 인터페이스 전에 Step 2 체크포인트 CP-0002 로 따로 둠 (사용자 결정 2026-11-10)\r\n- RULE-032 · 4.3 삭제 : 옛 4.3 (early return, 에러 검사는 한 줄 블록) 을 지우고 4.4 ~ 4.19 를 4.3 ~ 4.18 로 당김. 사용자가 넣은 수칙이 아니고 한 줄 블록은 사용자 의도와 반대 (사용자 결정 2026-11-11) [기각: 4.1 의 100 자 한계에 예외를 둠 — 수칙 자체가 잘못 들어옴]\r\n- RULE-075 · 5.7 추가 : C interface 출력 메모리는 union 없이 순차, bool 대신 KiottySpecBool (사용자 추가 2026-11-11)\r\n- RULE-050 · 4.17 예외 : 속성 조회 · 타입 변환(to+타입) · 색인(...Of) · 커서 next() 는 동사가 아니어도 됨. core/ 자료구조만 접근 method 를 쓰던 예외를 넓힘 (CR-007, 사용자 결정 2026-11-12)\n
 decision	O	rule	16	- RULE-001 · 출처 : docs/requirements/개발수칙.md (v2 권장안) 를 그대로 옮김. 절(##) 은 상위 항목, 수칙(###) 은 하위 항목, 본문은 문서의 그 부분 (2026-11-10)\r\r\n- RULE-001 · ID : 문서 순서대로 발급하고 지운 ID 는 다시 쓰지 않음. 문서 번호(1.1, 4.18 …) 는 제목 앞에 둠 [기각: ID 에 문서 번호 — ID 에 '.' 을 쓸 수 없음]\r\r\n- RULE-001 · 제목 : 수칙 문장이 길면 첫 문장만 제목, 전체 문장은 요약\r\r\n- RULE-001 · 수칙 종류 : 0 ~ 3 절 코딩 제약, 4 · 8 절 컨벤션, 5 ~ 7 절 아키텍처, 9 절 테스트. 2.9 · 7.3 은 의존성, 2.10 은 테스트, 5.2 · 5.6 은 컨벤션\r\r\n- RULE-001 · 기록 시점 : 요구사항(CP-0001) 다음, 외부 인터페이스 전에 Step 2 체크포인트 CP-0002 로 따로 둠 (사용자 결정 2026-11-10)\r\r\n- RULE-032 · 4.3 삭제 : 옛 4.3 (early return, 에러 검사는 한 줄 블록) 을 지우고 4.4 ~ 4.19 를 4.3 ~ 4.18 로 당김. 사용자가 넣은 수칙이 아니고 한 줄 블록은 사용자 의도와 반대 (사용자 결정 2026-11-11) [기각: 4.1 의 100 자 한계에 예외를 둠 — 수칙 자체가 잘못 들어옴]\r\r\n- RULE-075 · 5.7 추가 : C interface 출력 메모리는 union 없이 순차, bool 대신 KiottySpecBool (사용자 추가 2026-11-11)\r\r\n- RULE-050 · 4.17 예외 : 속성 조회 · 타입 변환(to+타입) · 색인(...Of) · 커서 next() 는 동사가 아니어도 됨. core/ 자료구조만 접근 method 를 쓰던 예외를 넓힘 (CR-007, 사용자 결정 2026-11-12)\r\n- RULE-029 · RULE-027 편차 : 3.4 는 Result · ItemTables · KiottySpecContext 의 크기 고정을, 3.2 는 CLI 의 std::map 을 편차로 둠. 크기가 템플릿 인자 · 표준 라이브러리 · 빌드에 따라 달라 고정할 수 없고, CLI 는 1.1 · 1.6 예외와 같은 이유 (CR-011, 사용자 결정 2026-11-12)\n
+decision	O	rule	24	- RULE-001 · 출처 : 개발 수칙 v2 권장안 문서를 옮김 (2026-11-10). 지금은 이 DB 의 RULE-* 만 원본이고 문서는 지움 (CR-012, 2026-11-12)\n- RULE-001 · ID : 문서 순서대로 발급하고 지운 ID 는 다시 쓰지 않음. 문서 번호(1.1, 4.18 …) 는 제목 앞에 둠 [기각: ID 에 문서 번호 — ID 에 '.' 을 쓸 수 없음]\n- RULE-001 · 제목 : 수칙 문장이 길면 첫 문장만 제목, 전체 문장은 요약\n- RULE-001 · 수칙 종류 : 0 ~ 3 절 코딩 제약, 4 · 8 절 컨벤션, 5 ~ 7 절 아키텍처, 9 절 테스트. 2.9 · 7.3 은 의존성, 2.10 은 테스트, 5.2 · 5.6 은 컨벤션\n- RULE-001 · 기록 시점 : 요구사항(CP-0001) 다음, 외부 인터페이스 전에 Step 2 체크포인트 CP-0002 로 따로 둠 (사용자 결정 2026-11-10)\n- RULE-032 · 4.3 삭제 : 옛 4.3 (early return, 에러 검사는 한 줄 블록) 을 지우고 4.4 ~ 4.19 를 4.3 ~ 4.18 로 당김. 사용자가 넣은 수칙이 아니고 한 줄 블록은 사용자 의도와 반대 (사용자 결정 2026-11-11) [기각: 4.1 의 100 자 한계에 예외를 둠 — 수칙 자체가 잘못 들어옴]\n- RULE-075 · 5.7 추가 : C interface 출력 메모리는 union 없이 순차, bool 대신 KiottySpecBool (사용자 추가 2026-11-11)\n- RULE-050 · 4.17 예외 : 속성 조회 · 타입 변환(to+타입) · 색인(...Of) · 커서 next() 는 동사가 아니어도 됨. core/ 자료구조만 접근 method 를 쓰던 예외를 넓힘 (CR-007, 사용자 결정 2026-11-12)\n- RULE-029 · RULE-027 편차 : 3.4 는 Result · ItemTables · KiottySpecContext 의 크기 고정을, 3.2 는 CLI 의 std::map 을 편차로 둠. 크기가 템플릿 인자 · 표준 라이브러리 · 빌드에 따라 달라 고정할 수 없고, CLI 는 1.1 · 1.6 예외와 같은 이유 (CR-011, 사용자 결정 2026-11-12)\n- RULE-065 · 6.6 범위 : 커서는 C interface 로 내보내는 조회만. 안은 index 임의 접근 (CR-012, 사용자 결정 2026-11-12)\n
 decision	O	external_interface	3	- UI-001 · 출처 : 공개 헤더 include/kiotty_spec.h 의 함수 61 개와 타입 55 개를 그대로 옮김. 시그니처 · 타입 정의는 헤더에서 뽑아 본문에 둠 (2026-11-10)\n- UI-001 · 구조 : 헤더 절을 따라 함수 그룹 13 개(UI-001 ~ 013), 타입 그룹 5 개(UI-014 ~ 018), 용량 상수 하나(UI-019). 함수 · 타입은 그 아래 하위 항목 (UI-020 ~ 135) [기각: 함수마다 최상위 — 목록이 길어 묶음이 안 보임]\n- UI-001 · 관계 : 관련 요구사항은 그룹에만 건다. 하위 함수는 상위 그룹으로 따라감 [기각: 함수마다 관계 — 같은 관계가 수십 번 반복]\n- UI-001 · 에러 코드 : 쓰기 공통 실패(체크포인트 없음 · DONE · 밖에서 바뀜 · 파일 교체 실패 · 용량)는 쓰기 함수마다 같은 문구로 적음\n- UI-020 · ks 명령줄 : 이번 단계에 넣지 않음. 인터페이스 종류에 명령줄이 없어 모델을 정할 때 함께 다룸\n- REQ-035 · 연결 없음 : 쓰기 시간(REQ-035) 과 빌드 환경(REQ-037) 은 인터페이스가 아니라서 연결하지 않음\n
 decision	O	design	4	- DSN-020 · 출처 : 지금 구현(src/) 에서 거꾸로 뽑음. 구현 상태는 모두 구현 완료 (2026-11-10)\n- DSN-020 · 모듈 단위 : 헤더 하나 = 모듈 하나 (66 개). 이름은 헤더 이름과 같은 클래스, 없으면 헤더 이름 [기각: 클래스 하나 = 모듈 하나 — 레코드 struct 까지 수백 개]\n- DSN-020 · 본문 : 책임은 헤더 주석, 인터페이스는 public 선언, 멤버는 멤버 변수를 헤더에서 그대로 뽑음\n- DSN-020 · 의존 : #include 를 의존 설계 사항 관계로 (모듈 사이만)\n- DSN-001 · 디렉토리 : include, C 어댑터, implementation 6 개, app/cli 로 9 개. ks 명령줄은 디렉토리만 두고 모듈은 넣지 않음\n- DSN-010 · 메모리 정책 : 초기화 때 확보, 버전 표 4 배, 본문 영역, 작업 버퍼와 커서\n- DSN-014 · 동작 흐름 : 열기, 쓰기 한 번, 확정, 목록 질의, 비교, 정리 6 개. 참여 모듈은 본문에만 적고 관계로 걸지 않음\n
 decision	O	design	5	- DSN-020 · 출처 : 지금 구현(src/) 에서 거꾸로 뽑음. 구현 상태는 모두 구현 완료 (2026-11-10)\n- DSN-020 · 모듈 단위 : 헤더 하나 = 모듈 하나 (66 개). 이름은 헤더 이름과 같은 클래스, 없으면 헤더 이름 [기각: 클래스 하나 = 모듈 하나 — 레코드 struct 까지 수백 개]\n- DSN-020 · 본문 : 책임은 헤더 주석, 인터페이스는 public 선언, 멤버는 멤버 변수를 헤더에서 그대로 뽑음\n- DSN-020 · 의존 : #include 를 의존 설계 사항 관계로 (모듈 사이만)\n- DSN-001 · 디렉토리 : include, C 어댑터, implementation 6 개, app/cli 로 9 개. ks 명령줄은 디렉토리만 두고 모듈은 넣지 않음\n- DSN-010 · 메모리 정책 : 초기화 때 확보, 버전 표 4 배, 본문 영역, 작업 버퍼와 커서\n- DSN-014 · 동작 흐름 : 열기, 쓰기 한 번, 확정, 목록 질의, 비교, 정리 6 개. 참여 모듈은 본문에만 적고 관계로 걸지 않음\n- DSN-036 · 쓰지 않는 코드 : 지움 (2026-11-10, 사용자 결정). text 8 개, utf8 cutUtf8, file_system 7 개(경로 정규화 · relativeInside · 파일 통째 읽기 · 쓰기 · 길이 · 실행 비트), platform sameChar · isAbsolute · makeExecutable. checked* 는 테스트만 쓰지만 개발수칙 2.4 · 9 의 도구라 남김\n
@@ -3639,8 +3657,9 @@ body	O	1aa30774	## 정의\n```c\ntypedef struct KiottySpecIdResult {\n    char  
 body	O	1b0ef8b3	결과: PASS\r\n근거: node tools/lint.js --rule 5.5\r\n
 body	O	1b3c36a9	## 정의\n```c\ntypedef struct KiottySpecErrorResult {\n    KiottySpecError  value;\n    KiottySpecStatus code;\n    uint32_t         reserved;\n} KiottySpecErrorResult;\n```\n\n## 의미\n상태와 마지막 실패 이유\n
 body	O	1bc5cbaf	## 시그니처\n```c\nKiottySpecItemHandleResult KiottySpec_findItem(KiottySpecContext *context, KiottySpecText id);\n```\n\n## 사전조건\ncontext 는 KiottySpec_createContext 로 만들고 KiottySpec_open 으로 사양 파일을 연 것\n\n## 사후조건\n항목 핸들. 다시 열거나 항목을 지우면 무효가 된다\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- NOT_FOUND: 그 ID 의 항목이 없음\n- INVALID_ARGUMENT: ID 형식이 잘못됨 (영문자 · 숫자로 시작, 영문자 · 숫자 · - · _ 만, 15 바이트 이하)\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\n입력 KiottySpecText 는 호출 동안만 읽고 복사한다. null 종료를 가정하지 않으며 data 가 NULL 이면 빈 글이다.\n
+body	O	1cbb1f84	## 요구\n1. 개발 수칙 6.6 (여러 인스턴스 조회는 커서) 은 C interface 로 여러 인스턴스를 내보내는 조회에만 적용한다. implementation 안에서는 커서를 쓰지 않고 풀 · 표를 index 로 바로 읽는다 (임의 접근이 가장 효율적이다). C interface 를 쓰는 쪽(CLI)이 단건 조회를 반복하는 것은 6.6 위반이 아니다.\n2. 개발 수칙은 ks 사양 DB 의 수칙 항목(RULE-*) 으로만 다룬다. docs/requirements/개발수칙.md 를 지운다. 문서에만 있던 첫머리(수칙의 목적과 쓰는 방식)는 RULE-001 로 옮긴다.\n\n## 근거\n- CP-0022 코드 검사에서 6.6 위반 2건(CIR-065) 은 CLI 의 ks history · ks tag show 가 C 함수를 하나씩 반복해 읽는 곳이었다. C interface 는 이미 커서를 내준다.\n- implementation 안에서 커서를 여는 곳은 모두 C interface 의 open*Cursor 를 위한 것이고, 내부 흐름은 이미 index 로 읽는다. 바꿀 코드는 없다.\n- 수칙의 원본이 문서와 DB 두 곳에 있어 어긋날 수 있다 (9 리뷰 체크리스트는 DB 쪽만 최신이었다).\n- 사용자 결정 (2026-11-12).\n\n## 반영\n- RULE-065 제목 · 요약 · 본문, RULE-001 본문, 수칙 결정 기록을 고친다.\n- docs/requirements/개발수칙.md 를 지우고 CLAUDE.md 의 안내를 바꾼다.\n- 바뀐 6.6 으로 코드 검사 결과 CIR-065 를 다시 판정한다.\n
 body	O	1ce50985	## 대상\ntests/context/context_test.cpp 의 testCursorPages\n\n## 전제 조건\n커서 풀 소스만 링크한 실행 파일\n\n## 행동\ntestCursorPages 를 실행한다\n\n## 기대 결과\n- open gives non-zero id\n- push over row capacity fails\n- total counts rows\n- first page\n- second page is the rest\n- empty page at end\n
-body	O	1d097706	결과: FAIL\n근거: 하위 수칙 결과의 합\n판단: 하위 수칙 8개 중 FAIL: 6.1, 6.3, 6.4, 6.6\n
+body	O	1d097706	결과: FAIL\n근거: 하위 수칙 결과의 합\n판단: 하위 수칙 8개 중 FAIL: 6.1, 6.3, 6.4\n
 body	O	1dd0de2b	결과: PASS\r\n근거: node tools/lint.js --rule 2.2\r\n
 body	O	1e275797	## 시그니처\n```c\nKiottySpecContextResult KiottySpec_createContext(const KiottySpecConfiguration *configuration);\n```\n\n## 사전조건\nconfiguration 이 NULL 이 아님. 0 인 용량은 기본값\n\n## 사후조건\n풀 · 커서 · 버퍼를 모두 확보한 컨텍스트. 이후 힙 할당은 없다\n\n## 에러 코드\n- INVALID_ARGUMENT: configuration 이 NULL\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\n컨텍스트는 호출자가 KiottySpec_releaseContext 로 한 번 해제한다. 할당 실패는 프로세스 종료다.\n
 body	O	1f9bd33c	## 지표\n공개 C 함수 호출에서 예외가 호출자에게 전파되거나 상태 없이 실패하는 경우의 수\n\n## 목표값\n0. 모든 함수는 상태 코드가 든 결과를 돌려주고, 실패 이유는 문장으로 따로 읽을 수 있으며, 상태 코드는 이름으로 바꿀 수 있다. 라이브러리는 예외 없이 빌드된다.\n\n## 측정 방법\nNULL 컨텍스트 · 잘못된 핸들 · 없는 ID · 범위 밖 열거값을 공개 함수에 넣는 테스트에서 상태 코드가 성공이 아니고 실패 이유가 비어 있지 않은지 확인\n
@@ -3909,7 +3928,7 @@ body	O	969657b8	## 수칙\n4. 가독성\n
 body	O	96da97fd	## 정의\n```c\ntypedef int32_t  KiottySpecBool;\n\n#define KIOTTY_SPEC_FALSE ((KiottySpecBool)0)\n#define KIOTTY_SPEC_TRUE  ((KiottySpecBool)1)\n```\n\n## 의미\nC interface 의 참 · 거짓. C 의 1 바이트 bool 대신 4 바이트 정수로 두어 C# 등 다른 언어가 그대로 마샬링할 수 있게 한다 (개발 수칙 5.7). 값은 KIOTTY_SPEC_FALSE(0) 또는 KIOTTY_SPEC_TRUE(1) 뿐이다.\n
 body	O	971031e4	## 대상\nREQ-030 왜 그렇게 정했는지 남긴다 (결정 기록)\n\n## 전제 조건\n빌드한 라이브러리를 C 인터페이스로만 쓴다. 시험마다 새 임시 폴더에 사양 파일을 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | 요구사항 결정 기록 | 다시 쓰고 읽는다 | 새 내용 |\n| 2 | 없음 | 2048 바이트를 넘는 결정 기록을 쓴다 | 상한을 넘었다는 이유로 거부 |\n| 3 | 없음 | 변경 요청 종류의 결정 기록을 쓴다 | 결정 기록이 없는 종류라는 이유로 거부 |\n
 body	O	9734b840	## 대상\ntests/api/api_test.cpp 의 testItemsTagsRelations\n\n## 전제 조건\n라이브러리 전체를 링크하고 임시 폴더의 .kiotty/spec.kisp 를 C 함수로만 연다. 앞 테스트의 기록 위에 다음 테스트가 이어진다\n\n## 행동\ntestItemsTagsRelations 를 실행한다\n\n## 기대 결과\n- requirement id\n- first write runs checkpoint\n- set functional tag\n- unnamed bit\n- read tag\n- write body\n- read body\n- small buffer\n- add relation\n- duplicate relation\n- relation target kind\n- tag query\n- item page\n- impact ids\n
-body	O	975029f0	모든 규칙은 아래 네 가치 중 하나에 속한다. 규칙끼리 충돌하면 순위가 높은 가치가 이긴다.\n\n| 순위 | 가치 | 한 줄 요약 |\n| --- | --- | --- |\n| 1 | 메모리 예측 가능성 | 할당은 초기화 때 한 번. 런타임 힙 0. 총량은 설정값으로 계산된다. |\n| 2 | 보안 | 외부에서 온 바이트는 검증 함수 하나를 통과해야 내부 타입이 된다. 길이 없는 포인터는 없다. |\n| 3 | 지역성 | 함께 읽는 데이터는 붙여 두고, 인덱스 순서로 순회한다. |\n| 4 | 가독성 | 함수 30줄, 중첩 2단, 인자 4개. 한 줄에 한 동작. |\n\n참조 표준: MISRA C++:2023, CERT C++, IEC 62304. 편차는 `docs/deviations.md` 에 규칙 번호·이유·완화책으로 기록한다.\n
+body	O	975029f0	의료기기 소프트웨어 등급의 C++ 라이브러리를 만들기 위한 규칙이다.\n규칙은 "~한다 / ~하지 않는다" 한 문장으로 쓴다. 코드는 형태를 보여줄 때만 붙인다. 예외는 `예외:` 로만 적는다.\n수칙의 원본은 이 사양 DB 의 수칙 항목(RULE-*) 이다. 절은 상위 항목, 수칙은 하위 항목이다.\n\n모든 규칙은 아래 네 가치 중 하나에 속한다. 규칙끼리 충돌하면 순위가 높은 가치가 이긴다.\n\n| 순위 | 가치 | 한 줄 요약 |\n| --- | --- | --- |\n| 1 | 메모리 예측 가능성 | 할당은 초기화 때 한 번. 런타임 힙 0. 총량은 설정값으로 계산된다. |\n| 2 | 보안 | 외부에서 온 바이트는 검증 함수 하나를 통과해야 내부 타입이 된다. 길이 없는 포인터는 없다. |\n| 3 | 지역성 | 함께 읽는 데이터는 붙여 두고, 인덱스 순서로 순회한다. |\n| 4 | 가독성 | 함수 30줄, 중첩 2단, 인자 4개. 한 줄에 한 동작. |\n\n참조 표준: MISRA C++:2023, CERT C++, IEC 62304. 편차는 `docs/deviations.md` 에 규칙 번호·이유·완화책으로 기록한다.\n
 body	O	98765333	## 대상\ntests/core/core_test.cpp 의 testChecked\n\n## 전제 조건\ncore/ 헤더와 kiotty_text_diff.cpp 만 링크한 실행 파일. 파일 · 사양 파일을 쓰지 않는다\n\n## 행동\ntestChecked 를 실행한다\n\n## 기대 결과\n- checked multiply product\n- checked multiply detects overflow\n- multiply by zero never overflows\n
 body	O	993abcd2	## 대상\ntests/model/model_test.cpp 의 testRelations\n\n## 전제 조건\nentity 와 모델 표 소스만 링크한 실행 파일\n\n## 행동\ntestRelations 를 실행한다\n\n## 기대 결과\n- requirement self relation\n- requirement to requirement\n- design dependency index\n- design to interface\n- wrong target kind\n- relation index out of model\n- change request milestone\n- change request does not touch outputs\n- inspection is one to one\n
 body	O	99b832b4	## 정의\n```c\ntypedef struct KiottySpecTextDiff {\n    char                 text[KIOTTY_SPEC_MAX_SUMMARY_LENGTH + 1];\n    uint32_t             length;\n    KiottySpecTextChange change;\n} KiottySpecTextDiff;\n```\n\n## 의미\n글자 조각 하나\n
@@ -3920,7 +3939,7 @@ body	O	9ac20d4f	## 책임\nCheckpointStore 의 쓰는 쪽 (개발수칙 4.19). �
 body	O	9ae6446d	## 수칙\r\r\n4.13 매크로를 쓰지 않는다. 예외: 플랫폼 선택 `#ifdef`, `#pragma once`.\r\r\n
 body	O	9bcc3b7d	## 참여 모듈\n- DSN-064 Lifecycle\n- DSN-051 ItemStore\n- DSN-049 ItemHistory\n- DSN-056 RelationStore\n- DSN-048 DecisionStore\n- DSN-047 CheckpointWriter\n- DSN-072 Workspace\n\n## 순서\n1. Lifecycle::prune 이 actor 가 USER 이고 기준 체크포인트가 DONE 인지 본다\n2. 기준 이전 체크포인트를 지우고, ItemStore · RelationStore · DecisionStore 의 버전 표가 기준 이하 버전을 정체성마다 하나로 접고 툼스톤을 지운다\n3. Workspace::finish 로 파일에 쓰고 Workspace::reload 로 현재 뷰를 다시 만든다\n4. 지운 체크포인트 수를 돌려준다\n\n## 데이터 흐름\n버전 표 → 접힌 버전 표 → 사양 파일 → 다시 만든 현재 뷰\n
 body	O	9c969009	## 대상\ntests/cli/cli_test.cpp 의 testParseActor\n\n## 전제 조건\nkiotty_cli 라이브러리를 링크하고 사양 파일 없이 CLI 의 parse 함수를 직접 부른다\n\n## 행동\ntestParseActor 를 실행한다\n\n## 기대 결과\n- empty actor is ai\n- user actor is accepted\n- longer actor is rejected\n- actor with null byte is rejected\n- actor with bad UTF-8 is rejected\n- ai actor is accepted\n
-body	O	9d0cea7a	결과: FAIL (2건)\n근거: 수동 검토 (include/ src/ app/ tests/)\n판단: CIR-065 의 10건은 모두 고쳐졌다 (태그 · 관계 정의는 커서 열기 · 페이지 가져오기 · 닫기로만 읽는다). 하지만 커서가 이미 있는데도 CLI 두 곳이 여러 인스턴스를 하나씩 반복해서 읽는다.\n위반 위치:\napp/cli/src/presentation/handler/kiotty_checkpoint_handler.cpp:117 showHistory 가 KiottySpec_openCheckpointCursor 를 쓰지 않고 previous 를 따라 KiottySpec_readCheckpoint 를 하나씩 반복함\napp/cli/src/presentation/handler/kiotty_item_handler.cpp:185 showTags 가 KiottySpec_openTagCursor 를 쓰지 않고 태그 정의마다 KiottySpec_readItemTag 를 반복함\n
+body	O	9d0cea7a	결과: PASS\n근거: 수동 검토 (include/ src/ app/ tests/)\n판단: 여러 인스턴스를 내보내는 C 함수는 모두 커서(open*Cursor · fetch*Page · closeCursor)로 내보내고, 태그 · 관계 정의도 CR-003 뒤 커서로만 읽는다. implementation 안에서 커서를 여는 곳은 모두 C 함수의 open*Cursor 를 위한 것이고 내부 흐름은 index 로 바로 읽는다. CLI 의 ks history · ks tag show 가 단건 조회를 반복하는 것은 CR-012 로 바뀐 6.6 에서 위반이 아니다.\n
 body	O	9db86b2a	## 책임\n비교할 두 체크포인트 sequence\n\n## 모듈 인터페이스\n```cpp\n// 함수\nstatic_assert(sizeof(DiffRange) == 8, "unexpected padding");\n```\n\n## 멤버 변수\n```cpp\n// DiffRange\nuint32_t from {0};\nuint32_t to {0};\n```\n\n## 의존 모듈\n없음\n
 body	O	9ea5c49d	## 책임\n포인터와 길이를 함께 다니게 하는 Span<T> (개발수칙 2.2).\n\n## 모듈 인터페이스\n```cpp\n// class Span\nSpan();\nSpan(Element* data, size_t length);\ntemplate <typename Other, typename = std::enable_if_t<std::is_same<const Other, Element>::value>> Span(Span<Other> other);\nElement* data() const;\nsize_t length() const;\nElement* begin() const;\nElement* end() const;\nElement& operator[](size_t index) const;\nResult<Element&, KiottySpecStatus> at(size_t index) const;\nResult<Span<Element>, KiottySpecStatus> subspan(size_t offset, size_t length) const;\nKiottySpecStatus copyFrom(Span<const Element> source) const;\n// 함수\nSpan<Element> viewVector(std::vector<Element>& values);\nSpan<const Element> viewVector(const std::vector<Element>& values);\n```\n\n## 멤버 변수\n```cpp\n// Span\nElement* _data;\nsize_t _length;\n```\n\n## 의존 모듈\n- DSN-029 Result\n
 body	O	a05b6682	## 대상\ntests/cli/cli_test.cpp 의 testParseTagSpec\n\n## 전제 조건\nkiotty_cli 라이브러리를 링크하고 사양 파일 없이 CLI 의 parse 함수를 직접 부른다\n\n## 행동\ntestParseTagSpec 를 실행한다\n\n## 기대 결과\n- empty tag spec is rejected\n- tag spec without a name is rejected\n- longest tag name is accepted\n- tag name past the longest is rejected\n- tag name without bits is accepted\n- tag name with null byte is rejected\n- bad UTF-8 name is left to the model lookup\n
@@ -4075,7 +4094,7 @@ body	O	e2e4b606	## 대상\ntests/core/core_test.cpp 의 testSpanAccess\n\n## 전
 body	O	e422d78b	## 정의\n```c\ntypedef struct KiottySpecItemDraft {\n    KiottySpecText     id;\n    KiottySpecText     title;\n    KiottySpecText     summary;\n    KiottySpecItemKind kind;\n    uint32_t           reserved;\n} KiottySpecItemDraft;\n```\n\n## 의미\nKiottySpec_createItem 의 입력. id 길이가 0 이면 ID 를 발급한다\n
 body	O	e5387789	## 대상\ntests/core/core_test.cpp 의 testSearch\n\n## 전제 조건\ncore/ 헤더와 kiotty_text_diff.cpp 만 링크한 실행 파일. 파일 · 사양 파일을 쓰지 않는다\n\n## 행동\ntestSearch 를 실행한다\n\n## 기대 결과\n- contiguous range\n- empty range\n- split range is rejected\n- find index\n- missing index\n
 body	O	e56897c3	## 정의\n```c\ntypedef struct KiottySpecError {\n    char              text[KIOTTY_SPEC_MAX_ERROR_TEXT_LENGTH + 1];\n    uint64_t          line;\n    KiottySpecStatus  status;\n    KiottySpecSubject subject;\n} KiottySpecError;\n```\n\n## 의미\n실패한 상태, 대상, 문장(null 종료), 사양 파일 줄 번호(없으면 0)\n
-body	O	e667522e	```cpp\nstruct RecordPage\n{\n    size_t length;\n    Record elements[MAX_PAGE_ELEMENTS];\n};\n\nResult<CursorHandle, ErrorCode> openCursor(Context& context, const Query& query);\nResult<RecordPage&, ErrorCode>  fetchPage(Context& context, CursorHandle cursor, size_t page_index);\nvoid                            closeCursor(Context& context, CursorHandle cursor);\n```\n
+body	O	e667522e	- 커서는 C interface 의 `open*Cursor` · `fetch*Page` · `closeCursor` 에만 쓴다. 호출자가 결과 개수를 몰라도 고정 크기 버퍼로 받게 하려는 것이다.\n- implementation 안에서는 커서를 쓰지 않는다. 풀 · 표를 index 로 바로 읽는다 (임의 접근). 여러 개를 훑을 때는 3.3 대로 index 순서로 훑는다.\n- 이 수칙은 C interface 가 내주는 방식을 정한다. C interface 를 쓰는 쪽(CLI 등)이 단건 조회를 반복하는 것은 위반이 아니다.\n\n```cpp\nstruct RecordPage\n{\n    size_t length;\n    Record elements[MAX_PAGE_ELEMENTS];\n};\n\nResult<CursorHandle, ErrorCode> openCursor(Context& context, const Query& query);\nResult<RecordPage&, ErrorCode>  fetchPage(Context& context, CursorHandle cursor, size_t page_index);\nvoid                            closeCursor(Context& context, CursorHandle cursor);\n```\n
 body	O	e66ba83f	## 대상\ntests/api/api_test.cpp 에 더할 테스트 (아직 없음)\n\n## 전제 조건\n라이브러리 전체를 링크하고 임시 폴더의 .kiotty/spec.kisp 를 C 함수로만 연다. 앞 테스트의 기록 위에 다음 테스트가 이어진다. 확정 체크포인트 CP-A, CP-B 가 있고 CP-A 에서 만든 항목을 CP-B 에서 지웠다\n\n## 행동\n확정 체크포인트를 기준으로 이전 기록을 지운다\n\n## 기대 결과\n- AI 로 정리하면 PERMISSION\n- 진행 중인 체크포인트를 기준으로 하면 PRECONDITION\n- 사용자가 CP-B 를 기준으로 정리하면 지운 수 1\n- CP-B 시점 내용은 그대로\n- 지운 항목의 ID 가 사라져 같은 ID 로 다시 만들 수 있음\n- CP-A 와 비교하면 NOT_FOUND\n
 body	O	e82ab3d4	## 시그니처\n```c\nKiottySpecIdResult KiottySpec_createItem(KiottySpecContext *context, const KiottySpecItemDraft *draft);\n```\n\n## 사전조건\ncontext 는 KiottySpec_createContext 로 만들고 KiottySpec_open 으로 사양 파일을 연 것. draft 가 NULL 이 아님. 가장 최근 체크포인트가 DONE 이 아님\n\n## 사후조건\nid 길이가 0 이면 Kind 접두어와 다음 번호(지운 항목 포함, 세 자리 이상)의 ID 가 발급된다. 항목은 가장 최근 체크포인트에 묶인다\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- INVALID_ARGUMENT: draft 가 NULL\n- INVALID_ARGUMENT: 알 수 없는 Kind · 빈 제목\n- INVALID_ARGUMENT: ID 형식이 잘못됨 (영문자 · 숫자로 시작, 영문자 · 숫자 · - · _ 만, 15 바이트 이하)\n- CONFLICT: 이미 쓰인 ID (지운 항목 포함)\n- INVALID_UTF8 · CAPACITY_EXCEEDED: 제목 · 요약이 UTF-8 이 아니거나 상한을 넘음\n- PRECONDITION: 체크포인트가 없음\n- CONFIRMED: 가장 최근 체크포인트가 DONE\n- CONFLICT: 연 뒤에 사양 파일이 밖에서 바뀜 (다시 읽은 뒤 거부)\n- INPUT_OUTPUT: 사양 파일을 바꿀 수 없음 (다른 프로그램이 열고 있음 등)\n- POOL_IS_FULL · CAPACITY_EXCEEDED: 풀이나 버전 표의 용량을 넘음\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\n입력 KiottySpecText 는 호출 동안만 읽고 복사한다. null 종료를 가정하지 않으며 data 가 NULL 이면 빈 글이다.\n
 body	O	e8ed8c98	## 시그니처\n```c\nKiottySpecStatusResult KiottySpec_fetchUnmetConditionPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecUnmetConditionPage *page);\n```\n\n## 사전조건\n열린 어긋난 조건 커서\n\n## 사후조건\npage 에 항목 ID 와 어긋난 조건\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- INVALID_ARGUMENT: page 가 NULL\n- INVALID_HANDLE: 닫혔거나 잘못된 커서\n- WRONG_CURSOR_TYPE: 다른 종류의 커서\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\npage 는 호출자 메모리다. 한 번에 최대 KIOTTY_SPEC_PAGE_CAPACITY 개를 채우고 length 에 개수를 둔다. length 가 0 이면 끝이다.\n
