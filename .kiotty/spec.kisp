@@ -1448,6 +1448,7 @@ tag	O	2a2f30e3	구현 상태	5	구현 완료
 tag	O	2a9a75b9	구현 상태	5	구현 완료
 tag	O	2b048f3d	출처	9	사용자 피드백
 tag	O	2b048f3d	상태	9	열림
+tag	O	2b048f3d	상태	18	완료
 tag	O	2b048f3d	진입 단계	9	Step 3
 tag	O	2ca2fff6	수칙 종류	2	코딩 제약
 tag	O	2cba896b	결과	8	FAIL
@@ -1648,6 +1649,7 @@ tag	O	6aa51734	구현 상태	4	구현 완료
 tag	O	6b981e43	요구사항 종류	1	품질 요구사항
 tag	O	6cd627db	출처	9	사용자 피드백
 tag	O	6cd627db	상태	9	열림
+tag	O	6cd627db	상태	18	완료
 tag	O	6cd627db	진입 단계	9	Step 4
 tag	O	6d2eb6d0	결과	7	PASS
 tag	O	6d95d4a9	인터페이스 종류	3	C 타입
@@ -1985,6 +1987,7 @@ tag	O	dadc437c	인터페이스 종류	3	C 함수
 tag	O	dae00dde	수칙 종류	2	아키텍처
 tag	O	dbb7832d	출처	9	사용자 피드백
 tag	O	dbb7832d	상태	9	열림
+tag	O	dbb7832d	상태	18	완료
 tag	O	dbb7832d	진입 단계	9	Step 4
 tag	O	dc2a5ab3	수칙 종류	2	아키텍처
 tag	O	dc2bf314	결과	8	FAIL
