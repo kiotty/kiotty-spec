@@ -203,7 +203,9 @@ function parseFile(file) {
   function statement(endOffset) {
     const header = text.slice(headerStart, endOffset);
     const frame = top();
-    if (header.trim() !== '') frame.statements.push({ text: header, start: headerStart, end: endOffset, line: L(headerStart + header.search(/\S|$/)) });
+    if (header.trim() === '') return;
+    if (frame.type === 'class') applyAccess(frame, header);
+    frame.statements.push({ text: header, start: headerStart, end: endOffset, line: L(headerStart + header.search(/\S|$/)), access: frame.access });
   }
 
   for (let k = 0; k < text.length; ++k) {
@@ -313,9 +315,10 @@ function applyAccess(cls, header) {
 function classMembers(file, cls) {
   cls.access = cls.kind === 'class' ? 'private' : 'public';
   for (const st of cls.statements) {
-    applyAccess(cls, st.text);
+    cls.access = st.access;
     const s = st.text.replace(/\b(public|private|protected)\s*:/g, ' ').trim();
     if (s === '' || /^(using|friend|typedef|static_assert|template\s*<[^>]*>\s*friend)\b/.test(s)) continue;
+    if (/\boperator\b/.test(s)) continue;
     const head = functionHead(s);
     const beforeParen = s.split('(')[0];
     if (head && !/[={]/.test(beforeParen)) {
@@ -591,7 +594,7 @@ function checkFile(file) {
     const body = file.text.slice(fn.open + 1, fn.close);
     for (const [name, defs] of definedNames) {
       if (name === fn.bare || name.startsWith('operator') || name.startsWith('~')) continue;
-      if (!new RegExp(`(^|[^\\w])${name}\\s*\\(`).test(body)) continue;
+      if (!new RegExp(`(?<![\\w.]|->)${name}\\s*\\(`).test(body)) continue;
       for (const d of defs) if (d.headerLine < fn.headerLine && d.cls === fn.cls) { report('4.9', rel, d.headerLine, `'${name}' is defined above its caller '${fn.bare}'`); break; }
     }
   }
@@ -613,7 +616,7 @@ function checkFile(file) {
       checkName(file, mem.line, mem.name, 'member');
       const isPrivate = mem.access !== 'public';
       if (isPrivate && !/^_[a-z][a-z0-9_]*$/.test(mem.name)) report('4.4', rel, mem.line, `private member '${mem.name}' is not _snake_case`);
-      if (!isPrivate && !/^[a-z][a-z0-9_]*$/.test(mem.name) && !isPublicHeader(rel)) report('4.4', rel, mem.line, `public field '${mem.name}' is not snake_case`);
+      if (!isPrivate && !/^[a-z][a-z0-9_]*$/.test(mem.name) && !/^_padding\w*$/.test(mem.name) && !isPublicHeader(rel)) report('4.4', rel, mem.line, `public field '${mem.name}' is not snake_case`);
       if (/^bool$/.test(mem.type.replace(/\b(const|mutable)\b/g, '').trim()) && !/^_?(is|has|can)_/.test(mem.name)) report('4.4', rel, mem.line, `bool '${mem.name}' lacks is_/has_/can_`);
       if (mem.init === '' && !/&\s*$/.test(mem.type) && !isPublicHeader(rel) && !mem.isStatic && !initializedInConstructor(cls, mem.name)) report('1.9', rel, mem.line, `member '${mem.name}' has no initializer`);
       if (!pointerExempt(rel) && /\*\s*$/.test(mem.type)) report('1.10', rel, mem.line, `pointer member '${mem.name}'`);
