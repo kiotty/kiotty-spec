@@ -4,6 +4,7 @@
 // usage: node tools/lint.js [--rule 4.1] [--list] [--json]
 // With no option it prints one line per rule: "<rule> <count>".
 // --list prints every violation as "<rule> <file>:<line> <message>".
+// Findings listed in tools/lint_accepted.txt (accepted deviations, docs/deviations.md) are not counted.
 
 const fs = require('fs');
 const path = require('path');
@@ -16,7 +17,20 @@ const listing = args.includes('--list') || onlyRule !== null;
 const asJson = args.includes('--json');
 
 const violations = [];
+// Accepted deviations: one "<rule> <file> <name>" per line. A finding whose message quotes that
+// name in that file is kept apart and not counted.
+const ACCEPTED_FILE = path.join(ROOT, 'tools', 'lint_accepted.txt');
+const ACCEPTED = new Set(fs.existsSync(ACCEPTED_FILE)
+  ? fs.readFileSync(ACCEPTED_FILE, 'utf8').split(/\r?\n/).map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.startsWith('#'))
+  : []);
+const accepted = [];
 function report(rule, file, line, message) {
+  const quoted = /'([^']+)'/.exec(message);
+  if (quoted && ACCEPTED.has(`${rule} ${file} ${quoted[1]}`)) {
+    accepted.push({ rule, file, line, message });
+    return;
+  }
   violations.push({ rule, file, line, message });
 }
 
@@ -986,5 +1000,6 @@ if (asJson) {
 } else {
   for (const r of RULES) console.log(`${r} ${(byRule.get(r) || 0)}`);
   console.log(`total ${violations.length}`);
+  if (accepted.length > 0) console.log(`accepted ${accepted.length}`);
 }
 process.exitCode = violations.length > 0 ? 1 : 0;
