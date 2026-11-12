@@ -3,7 +3,7 @@
 #include "kiotty_spec.h"
 #include "implementation/context/kiotty_cursor_pool.h"
 #include "implementation/context/kiotty_cursor_rows.h"
-#include "implementation/domain/usecases/kiotty_workspace.h"
+#include "implementation/domain/usecases/workspace/kiotty_workspace.h"
 
 #include <cstddef>
 

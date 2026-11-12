@@ -4,8 +4,8 @@
 #include "implementation/context/kiotty_cursor_pool.h"
 #include "implementation/context/kiotty_cursor_rows.h"
 #include "implementation/core/kiotty_result.h"
-#include "implementation/domain/usecases/kiotty_checker.h"
-#include "implementation/domain/usecases/kiotty_workspace.h"
+#include "implementation/domain/usecases/checker/kiotty_checker.h"
+#include "implementation/domain/usecases/workspace/kiotty_workspace.h"
 
 #include <cstdint>
 

@@ -69,17 +69,16 @@ kiotty_windows_definitions(kiotty_spec)
 # ---------------------------------------------------------------------------
 # CLI: AI 가 질의하는 실행 파일 (이름: ks)
 # ---------------------------------------------------------------------------
-file(GLOB KIOTTY_CLI_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/app/cli/*.cpp
-     ${CMAKE_CURRENT_SOURCE_DIR}/app/cli/src/i18n/*.cpp)
-list(REMOVE_ITEM KIOTTY_CLI_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/app/cli/main.cpp)
+file(GLOB_RECURSE KIOTTY_CLI_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/app/cli/src/*.cpp)
+list(REMOVE_ITEM KIOTTY_CLI_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/app/cli/src/main.cpp)
 add_library(kiotty_cli STATIC ${KIOTTY_CLI_SOURCES})
-target_include_directories(kiotty_cli PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/app/cli)
+target_include_directories(kiotty_cli PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/app/cli/src)
 target_link_libraries(kiotty_cli PUBLIC kiotty_spec)
 kiotty_warnings(kiotty_cli)
 kiotty_no_exceptions(kiotty_cli)
 kiotty_windows_definitions(kiotty_cli)
 
-add_executable(ks app/cli/main.cpp)
+add_executable(ks app/cli/src/main.cpp)
 target_link_libraries(ks PRIVATE kiotty_cli)
 kiotty_warnings(ks)
 kiotty_no_exceptions(ks)
@@ -102,14 +101,14 @@ add_executable(kiotty_datasource_test
     src/implementation/data/datasource/kiotty_kisp_file.cpp
     src/implementation/data/datasource/kiotty_kisp_line.cpp
     src/implementation/data/datasource/kiotty_file_system.cpp
-    src/implementation/data/datasource/kiotty_system_path.cpp
-    src/implementation/data/datasource/backend/kiotty_platform_windows.cpp
-    src/implementation/data/datasource/backend/kiotty_platform_posix.cpp
+    src/implementation/data/infra/platform/kiotty_system_path.cpp
+    src/implementation/data/infra/platform/backend/kiotty_platform_windows.cpp
+    src/implementation/data/infra/platform/backend/kiotty_platform_posix.cpp
     src/implementation/data/datasource/kiotty_file_reader.cpp
     src/implementation/data/datasource/kiotty_file_writer.cpp
     src/implementation/data/datasource/kiotty_opened_file.cpp
     src/implementation/domain/entity/kiotty_kind.cpp
-    src/implementation/domain/usecases/spec_parser/kiotty_spec_fields.cpp)
+    src/implementation/domain/usecases/spec_file/kiotty_spec_fields.cpp)
 target_include_directories(kiotty_datasource_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 kiotty_warnings(kiotty_datasource_test)
 kiotty_no_exceptions(kiotty_datasource_test)
@@ -126,8 +125,8 @@ add_executable(kiotty_model_test
     tests/model/model_test.cpp
     src/implementation/domain/entity/kiotty_item_id.cpp
     src/implementation/domain/entity/kiotty_kind.cpp
-    src/implementation/domain/usecases/kiotty_model_catalog.cpp
-    src/implementation/domain/usecases/kiotty_model_finder.cpp)
+    src/implementation/domain/usecases/model/kiotty_model_catalog.cpp
+    src/implementation/domain/usecases/model/kiotty_model_finder.cpp)
 target_include_directories(kiotty_model_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 kiotty_warnings(kiotty_model_test)
 kiotty_no_exceptions(kiotty_model_test)

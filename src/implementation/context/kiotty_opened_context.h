@@ -7,11 +7,11 @@
 #include "implementation/core/kiotty_span.h"
 #include "implementation/data/datasource/kiotty_file_system.h"
 #include "implementation/domain/entity/kiotty_failure.h"
-#include "implementation/domain/usecases/kiotty_editor.h"
-#include "implementation/domain/usecases/kiotty_lifecycle.h"
-#include "implementation/domain/usecases/kiotty_model_catalog.h"
-#include "implementation/domain/usecases/kiotty_relation_editor.h"
-#include "implementation/domain/usecases/kiotty_workspace.h"
+#include "implementation/domain/usecases/editor/kiotty_editor.h"
+#include "implementation/domain/usecases/lifecycle/kiotty_lifecycle.h"
+#include "implementation/domain/usecases/model/kiotty_model_catalog.h"
+#include "implementation/domain/usecases/editor/kiotty_relation_editor.h"
+#include "implementation/domain/usecases/workspace/kiotty_workspace.h"
 
 namespace kiotty::spec::implementation {
 

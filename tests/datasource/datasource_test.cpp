@@ -4,7 +4,7 @@
 #include "implementation/data/datasource/kiotty_file_writer.h"
 #include "implementation/data/datasource/kiotty_kisp_file.h"
 #include "implementation/data/datasource/kiotty_kisp_line.h"
-#include "implementation/domain/usecases/spec_parser/kiotty_spec_fields.h"
+#include "implementation/domain/usecases/spec_file/kiotty_spec_fields.h"
 
 #include <cstdio>
 #include <filesystem>

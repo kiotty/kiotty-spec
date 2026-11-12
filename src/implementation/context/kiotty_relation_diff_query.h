@@ -4,8 +4,8 @@
 #include "implementation/context/kiotty_diff_range.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
-#include "implementation/data/repository/kiotty_item_store.h"
-#include "implementation/data/repository/kiotty_relation_store.h"
+#include "implementation/data/repository/item/kiotty_item_store.h"
+#include "implementation/data/repository/relation/kiotty_relation_store.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 
 #include <cstddef>

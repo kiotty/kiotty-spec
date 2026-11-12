@@ -7,8 +7,8 @@
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
-#include "implementation/domain/usecases/kiotty_checker.h"
-#include "implementation/domain/usecases/kiotty_workspace.h"
+#include "implementation/domain/usecases/checker/kiotty_checker.h"
+#include "implementation/domain/usecases/workspace/kiotty_workspace.h"
 
 #include <cstddef>
 #include <cstdint>

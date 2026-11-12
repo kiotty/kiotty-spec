@@ -1,6 +1,6 @@
 #include "implementation/data/datasource/kiotty_file_system.h"
 
-#include "implementation/data/datasource/backend/kiotty_platform.h"
+#include "implementation/data/infra/platform/kiotty_platform.h"
 
 namespace kiotty::spec::implementation {
 

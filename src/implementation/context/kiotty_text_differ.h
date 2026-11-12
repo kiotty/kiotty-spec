@@ -7,7 +7,7 @@
 #include "implementation/context/kiotty_text_diff_store.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
-#include "implementation/domain/usecases/kiotty_workspace.h"
+#include "implementation/domain/usecases/workspace/kiotty_workspace.h"
 
 #include <cstddef>
 #include <cstdint>

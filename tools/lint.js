@@ -873,7 +873,8 @@ const ALLOWED = {
   'cli/infra': ['cli/core', 'cli/infra', 'interface'],
   'cli/domain': ['cli/core', 'cli/domain'],
   'cli/datalayer': ['cli/core', 'cli/domain', 'cli/datalayer', 'cli/infra', 'interface'],
-  'cli/presentation': ['cli/core', 'cli/domain', 'cli/i18n', 'cli/infra', 'cli/presentation'],
+  // The library C interface is the CLI domain (docs/deviations.md, CR-005).
+  'cli/presentation': ['cli/core', 'cli/domain', 'cli/i18n', 'cli/infra', 'cli/presentation', 'interface'],
   'cli/di': ['cli/core', 'cli/di', 'cli/domain', 'cli/datalayer', 'cli/i18n', 'cli/infra', 'cli/presentation', 'interface'],
   'cli/main': ['cli/core', 'cli/di', 'cli/domain', 'cli/datalayer', 'cli/i18n', 'cli/infra', 'cli/presentation', 'interface'],
 };

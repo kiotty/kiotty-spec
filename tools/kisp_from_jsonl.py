@@ -4,7 +4,7 @@
 
 항목의 현재 본문은 파일 끝의 body 표에 쓴다.
 더 옛 형식 (스키마 1 · 2 jsonl, SQLite spec.db) 은 커밋 4205e5d 의 ks 로 먼저 `ks import jsonl` · `ks export jsonl` 한다.
-모델 1 의 태그 · 관계 이름은 src/implementation/domain/usecases/kiotty_model_catalog.cpp 를 옮긴 것이다.
+모델 1 의 태그 · 관계 이름은 src/implementation/domain/usecases/model/kiotty_model_catalog.cpp 를 옮긴 것이다.
 """
 
 import json

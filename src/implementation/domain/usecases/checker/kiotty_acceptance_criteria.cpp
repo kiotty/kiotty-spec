@@ -1,7 +1,7 @@
 #include "implementation/domain/usecases/checker/kiotty_acceptance_criteria.h"
 
 #include "implementation/core/kiotty_text_view.h"
-#include "implementation/domain/usecases/kiotty_model_catalog.h"
+#include "implementation/domain/usecases/model/kiotty_model_catalog.h"
 
 #include <string_view>
 
