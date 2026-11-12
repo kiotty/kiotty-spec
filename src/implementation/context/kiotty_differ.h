@@ -2,6 +2,7 @@
 
 #include "kiotty_spec.h"
 #include "implementation/context/kiotty_cursor_pool.h"
+#include "implementation/context/kiotty_cursor_rows.h"
 #include "implementation/context/kiotty_diff_range.h"
 #include "implementation/context/kiotty_item_diff_query.h"
 #include "implementation/context/kiotty_past_reader.h"
@@ -27,6 +28,8 @@ struct KindCounts {
     bool has_decision_change {false};
 };
 
+static_assert(sizeof(KindCounts) == 24, "unexpected padding");
+
 class Differ
 {
 public:
@@ -46,6 +49,7 @@ public:
     TextDiffer text() { return TextDiffer(_workspace, _cursors, _work); }
 
 private:
+    CursorWriter makeCursorWriter() { return CursorWriter(_cursors, _workspace.failure); }
     KiottySpecStatus countItems(DiffRange range, uint32_t kind_mask, uint32_t field_mask,
                                 KindCounts (&counts)[entity::ITEM_KIND_COUNT]);
     KiottySpecStatus countRelations(DiffRange range, uint32_t kind_mask,

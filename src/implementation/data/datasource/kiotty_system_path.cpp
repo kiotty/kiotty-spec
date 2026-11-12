@@ -10,7 +10,17 @@ namespace {
 
 constexpr char SEPARATOR[] = "/";
 
-KiottySpecStatus appendSlashed(SystemPath& out, Span<const char> text);
+class SlashedPathWriter
+{
+public:
+    explicit SlashedPathWriter(SystemPath& path) : _path(path) {}
+
+    KiottySpecStatus appendSlashed(Span<const char> text);
+
+private:
+    SystemPath& _path;
+};
+
 bool isSeparatorAt(Span<const char> path, size_t index);
 
 }
@@ -20,14 +30,15 @@ SystemPathResult absolutePath(Span<const char> path) { return platform::absolute
 SystemPathResult joinPath(Span<const char> base, Span<const char> part)
 {
     SystemPath joined {};
-    const KiottySpecStatus copied = appendSlashed(joined, base);
+    SlashedPathWriter writer(joined);
+    const KiottySpecStatus copied = writer.appendSlashed(base);
     if (copied != KIOTTY_SPEC_STATUS_SUCCESS) { return SystemPathResult::failure(copied); }
     const size_t part_length = part.length();
     if (part_length == 0) { return SystemPathResult::success(joined); }
     const bool has_trailing_separator = isSeparatorAt(base, base.length() - 1);
     const bool is_separator_needed = joined.length() > 0 && !has_trailing_separator;
     if (is_separator_needed) { joined.append(literalText(SEPARATOR)); }
-    const KiottySpecStatus appended = appendSlashed(joined, part);
+    const KiottySpecStatus appended = writer.appendSlashed(part);
     if (appended != KIOTTY_SPEC_STATUS_SUCCESS) { return SystemPathResult::failure(appended); }
     return SystemPathResult::success(joined);
 }
@@ -67,12 +78,12 @@ Span<const char> parentOf(Span<const char> path)
 
 namespace {
 
-KiottySpecStatus appendSlashed(SystemPath& out, Span<const char> text)
+KiottySpecStatus SlashedPathWriter::appendSlashed(Span<const char> text)
 {
     const size_t length = text.length();
     for (size_t index = 0; index < length; ++index) {
         const char letter = platform::isSeparator(text[index]) ? '/' : text[index];
-        const KiottySpecStatus appended = out.append(Span<const char>(&letter, 1));
+        const KiottySpecStatus appended = _path.append(Span<const char>(&letter, 1));
         if (appended != KIOTTY_SPEC_STATUS_SUCCESS) { return appended; }
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;

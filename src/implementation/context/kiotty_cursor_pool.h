@@ -35,17 +35,22 @@ struct CursorRow {
 static_assert(sizeof(CursorRow) == 40, "unexpected padding");
 
 struct CursorSlot {
-    CursorKind kind {CursorKind::NONE};
     size_t length {0};
     size_t position {0};
+    CursorKind kind {CursorKind::NONE};
 };
+
+static_assert(sizeof(CursorSlot) == 24, "unexpected padding");
 
 using CursorId = uint64_t;
 
 struct CursorSpace {
-    CursorSlot* slot {nullptr};
     Span<CursorRow> rows {};
+    CursorSlot* slot {nullptr};
 };
+
+static_assert(sizeof(CursorSpace) == 24, "unexpected padding");
+
 using CursorIdResult = Result<CursorId, KiottySpecStatus>;
 using CursorRowsResult = Result<Span<const CursorRow>, KiottySpecStatus>;
 

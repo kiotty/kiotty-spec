@@ -22,7 +22,7 @@ CursorIdResult CursorPool::open(CursorKind kind)
     const bool is_valid = handle.isValid();
     if (!is_valid) { return CursorIdResult::failure(KIOTTY_SPEC_STATUS_POOL_IS_FULL); }
     const auto slot = _slots.get(handle);
-    *slot.value = CursorSlot{kind, 0, 0};
+    *slot.value = CursorSlot{0, 0, kind};
     return CursorIdResult::success(encode(handle));
 }
 
@@ -70,7 +70,7 @@ Result<CursorSpace, KiottySpecStatus> CursorPool::space(CursorId cursor, CursorK
     if (slot.value->kind != kind) {
         return Result<CursorSpace, KiottySpecStatus>::failure(KIOTTY_SPEC_STATUS_WRONG_CURSOR_TYPE);
     }
-    return Result<CursorSpace, KiottySpecStatus>::success(CursorSpace{slot.value, rowsOf(handle)});
+    return Result<CursorSpace, KiottySpecStatus>::success(CursorSpace{rowsOf(handle), slot.value});
 }
 
 Handle CursorPool::decode(CursorId cursor)

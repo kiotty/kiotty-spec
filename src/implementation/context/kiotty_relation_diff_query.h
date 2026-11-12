@@ -22,6 +22,8 @@ struct RelationDiffRow {
     uint32_t change {};
 };
 
+static_assert(sizeof(RelationDiffRow) == 48, "unexpected padding");
+
 class RelationDiffQuery
 {
 public:

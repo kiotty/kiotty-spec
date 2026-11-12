@@ -17,27 +17,41 @@ constexpr size_t PACKED_ID_BYTES = PACKED_ID_WORD_BYTES * PACKED_ID_WORDS;
 constexpr uint32_t BITS_PER_BYTE = 8;
 constexpr uint64_t BYTE_MASK = 0xFFu;
 
-inline KiottySpecStatus raiseCursorFull(entity::Failure& failure, KiottySpecStatus status)
+class CursorWriter
 {
-    return failure.raise(status, KIOTTY_SPEC_SUBJECT_CURSOR, literalText("max_cursors"));
-}
+public:
+    CursorWriter(CursorPool& cursors, entity::Failure& failure)
+        : _cursors(cursors), _failure(failure)
+    {}
 
-inline KiottySpecStatus pushRow(CursorPool& cursors, entity::Failure& failure, CursorId cursor,
-                                const CursorRow& row)
-{
-    const KiottySpecStatus pushed = cursors.push(cursor, row);
-    if (pushed == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED) {
-        return failure.raise(pushed, KIOTTY_SPEC_SUBJECT_CURSOR_ROWS,
-                             literalText("max_cursor_rows"));
+    KiottySpecStatus raiseCursorFull(KiottySpecStatus status)
+    {
+        return _failure.raise(status, KIOTTY_SPEC_SUBJECT_CURSOR, literalText("max_cursors"));
     }
-    return pushed;
-}
 
-inline CursorIdResult closeWith(CursorPool& cursors, CursorId cursor, KiottySpecStatus status)
-{
-    cursors.close(cursor);
-    return CursorIdResult::failure(status);
-}
+    KiottySpecStatus pushRow(CursorId cursor, const CursorRow& row)
+    {
+        const KiottySpecStatus pushed = _cursors.push(cursor, row);
+        if (pushed == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED) { return raiseRowsFull(pushed); }
+        return pushed;
+    }
+
+    KiottySpecStatus raiseRowsFull(KiottySpecStatus status)
+    {
+        return _failure.raise(status, KIOTTY_SPEC_SUBJECT_CURSOR_ROWS,
+                              literalText("max_cursor_rows"));
+    }
+
+    CursorIdResult closeWith(CursorId cursor, KiottySpecStatus status)
+    {
+        _cursors.close(cursor);
+        return CursorIdResult::failure(status);
+    }
+
+private:
+    CursorPool& _cursors;
+    entity::Failure& _failure;
+};
 
 inline uint64_t packIdWord(entity::IdText id, size_t offset)
 {

@@ -38,6 +38,28 @@ Context::Context(const Configuration& configuration)
 
 KiottySpecStatus Context::open(Span<const char> database)
 {
+    const KiottySpecStatus checked = checkDatabase(database);
+    if (checked != KIOTTY_SPEC_STATUS_SUCCESS) { return checked; }
+    const auto absolute = absolutePath(database);
+    if (!absolute) { return _failure.raise(absolute.code, KIOTTY_SPEC_SUBJECT_FILE, database); }
+    const Span<const char> directory = parentOf(absolute.value.view());
+    _root.assign(parentOf(directory));
+    const KiottySpecStatus catalog = _catalog.load();
+    if (catalog != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return _failure.raise(catalog, KIOTTY_SPEC_SUBJECT_MODEL);
+    }
+    const bool is_existing = isFile(absolute.value.view());
+    const KiottySpecStatus loaded = _file.open(absolute.value.view());
+    if (loaded != KIOTTY_SPEC_STATUS_SUCCESS) { return loaded; }
+    const KiottySpecStatus created =
+        is_existing ? KIOTTY_SPEC_STATUS_SUCCESS : createSpecFile(directory);
+    if (created != KIOTTY_SPEC_STATUS_SUCCESS) { return created; }
+    _is_opened = true;
+    return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+KiottySpecStatus Context::checkDatabase(Span<const char> database)
+{
     const bool is_opened = _is_opened;
     if (is_opened) {
         return _failure.raise(KIOTTY_SPEC_STATUS_PRECONDITION, KIOTTY_SPEC_SUBJECT_FILE, database);
@@ -51,30 +73,21 @@ KiottySpecStatus Context::open(Span<const char> database)
         return _failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, KIOTTY_SPEC_SUBJECT_FILE,
                               database);
     }
-    const auto absolute = absolutePath(database);
-    if (!absolute) { return _failure.raise(absolute.code, KIOTTY_SPEC_SUBJECT_FILE, database); }
-    const Span<const char> directory = parentOf(absolute.value.view());
-    _root.assign(parentOf(directory));
-    const KiottySpecStatus catalog = _catalog.load();
-    if (catalog != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return _failure.raise(catalog, KIOTTY_SPEC_SUBJECT_MODEL);
-    }
-    const bool is_existing = isFile(absolute.value.view());
-    const KiottySpecStatus loaded = _file.open(absolute.value.view());
-    if (loaded != KIOTTY_SPEC_STATUS_SUCCESS) { return loaded; }
-    const KiottySpecStatus prepared =
-        is_existing ? KIOTTY_SPEC_STATUS_SUCCESS : createDirectories(directory);
+    return KIOTTY_SPEC_STATUS_SUCCESS;
+}
+
+KiottySpecStatus Context::createSpecFile(Span<const char> directory)
+{
+    const KiottySpecStatus prepared = createDirectories(directory);
     if (prepared != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE, directory);
     }
-    const KiottySpecStatus created = is_existing ? KIOTTY_SPEC_STATUS_SUCCESS : _file.save();
-    if (created != KIOTTY_SPEC_STATUS_SUCCESS) { return created; }
-    const KiottySpecStatus attributed =
-        is_existing ? KIOTTY_SPEC_STATUS_SUCCESS : writeMergeAttributes(directory);
+    const KiottySpecStatus saved = _file.save();
+    if (saved != KIOTTY_SPEC_STATUS_SUCCESS) { return saved; }
+    const KiottySpecStatus attributed = writeMergeAttributes(directory);
     if (attributed != KIOTTY_SPEC_STATUS_SUCCESS) {
         return _failure.raise(attributed, KIOTTY_SPEC_SUBJECT_FILE, directory);
     }
-    _is_opened = true;
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 

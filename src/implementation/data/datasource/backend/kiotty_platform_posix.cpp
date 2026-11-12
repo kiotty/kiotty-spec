@@ -20,7 +20,10 @@ constexpr mode_t DIRECTORY_MODE = 0777;
 
 constexpr size_t DOUBLE_SEPARATOR_ROOT_LENGTH = 2;
 
-bool readStatus(Span<const char> path, struct stat& status);
+using FileStatus = struct stat;
+using ModeResult = Result<mode_t, KiottySpecStatus>;
+
+ModeResult readMode(Span<const char> path);
 char readLetter(Span<const char> path, size_t index);
 
 }
@@ -75,14 +78,14 @@ bool makeDirectory(Span<const char> path)
 
 bool isDirectory(Span<const char> path)
 {
-    struct stat status {};
-    return readStatus(path, status) && S_ISDIR(status.st_mode);
+    const ModeResult mode = readMode(path);
+    return mode && S_ISDIR(mode.value);
 }
 
 bool isFile(Span<const char> path)
 {
-    struct stat status {};
-    return readStatus(path, status) && S_ISREG(status.st_mode);
+    const ModeResult mode = readMode(path);
+    return mode && S_ISREG(mode.value);
 }
 
 KiottySpecStatus removeFile(Span<const char> path)
@@ -114,11 +117,15 @@ KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
 
 namespace {
 
-bool readStatus(Span<const char> path, struct stat& status)
+ModeResult readMode(Span<const char> path)
 {
     SystemPath terminated {};
-    return terminated.assign(path) == KIOTTY_SPEC_STATUS_SUCCESS &&
-           ::stat(terminated.c_str(), &status) == 0;
+    const KiottySpecStatus assigned = terminated.assign(path);
+    if (assigned != KIOTTY_SPEC_STATUS_SUCCESS) { return ModeResult::failure(assigned); }
+    FileStatus status {};
+    const int status_code = ::stat(terminated.c_str(), &status);
+    if (status_code != 0) { return ModeResult::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
+    return ModeResult::success(status.st_mode);
 }
 
 char readLetter(Span<const char> path, size_t index)

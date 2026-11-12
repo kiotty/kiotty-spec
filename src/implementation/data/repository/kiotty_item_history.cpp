@@ -23,6 +23,8 @@ struct IdParts {
     uint32_t number {0};
 };
 
+static_assert(sizeof(IdParts) == 24, "unexpected padding");
+
 IdParts splitId(Span<const char> id);
 size_t collectKeys(Span<uint32_t> order, Span<const ItemVersion> versions);
 void sortByKindId(Span<uint32_t> keys, const ItemTables& tables);
@@ -146,7 +148,7 @@ IdParts splitId(Span<const char> id)
     IdParts parts {};
     parts.prefix = Span<const char>(id.data(), dash);
     if (dash == length) { return parts; }
-    const auto number =
+    const Result<uint64_t, KiottySpecStatus> number =
         parseDecimal(Span<const char>(id.data() + dash + 1, length - dash - 1), MAX_ID_NUMBER);
     parts.number = number ? static_cast<uint32_t>(number.value) : 0;
     return parts;

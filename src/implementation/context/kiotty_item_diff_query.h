@@ -21,6 +21,8 @@ struct ItemDiffRow {
     uint32_t fields {};
 };
 
+static_assert(sizeof(ItemDiffRow) == 36, "unexpected padding");
+
 class ItemDiffQuery
 {
 public:

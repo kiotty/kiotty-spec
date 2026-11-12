@@ -50,6 +50,8 @@ struct Configuration {
     size_t cursor_pool_rows {DEFAULT_MAX_CURSORS * DEFAULT_MAX_CURSOR_ROWS};
 };
 
+static_assert(sizeof(Configuration) == 104, "unexpected padding");
+
 class Context {
 public:
     explicit Context(const Configuration& configuration);
@@ -72,6 +74,9 @@ public:
     TextBuffer& work() { return _work; }
 
 private:
+    KiottySpecStatus checkDatabase(Span<const char> database);
+    KiottySpecStatus createSpecFile(Span<const char> directory);
+
     bool _is_opened {false};
     SystemPath _root {};
     entity::Failure _failure {};

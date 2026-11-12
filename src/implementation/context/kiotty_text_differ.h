@@ -2,6 +2,7 @@
 
 #include "kiotty_spec.h"
 #include "implementation/context/kiotty_cursor_pool.h"
+#include "implementation/context/kiotty_cursor_rows.h"
 #include "implementation/context/kiotty_diff_range.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_text_buffer.h"
@@ -18,6 +19,14 @@ struct TextPiece {
     uint32_t change {0};
 };
 
+struct TextPair {
+    Span<const char> before {};
+    Span<const char> after {};
+};
+
+static_assert(sizeof(TextPiece) == 24, "unexpected padding");
+static_assert(sizeof(TextPair) == 32, "unexpected padding");
+
 class TextDiffer
 {
 public:
@@ -29,6 +38,10 @@ public:
     Result<TextPiece, KiottySpecStatus> next(CursorId cursor);
 
 private:
+    CursorWriter makeCursorWriter() { return CursorWriter(_cursors, _workspace.failure); }
+    Result<entity::IdText, KiottySpecStatus> readItemId(entity::ItemHandle item);
+    KiottySpecStatus fillSegments(CursorId cursor, const TextPair& texts);
+
     Workspace& _workspace;
     CursorPool& _cursors;
     TextBuffer& _work;

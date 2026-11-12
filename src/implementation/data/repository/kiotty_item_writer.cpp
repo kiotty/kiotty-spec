@@ -47,7 +47,7 @@ Result<ItemHandle, KiottySpecStatus> ItemWriter::create(const ItemRecord& record
     using HandleResult = Result<ItemHandle, KiottySpecStatus>;
     const KiottySpecStatus unused = checkUnused(record.id);
     if (unused != KIOTTY_SPEC_STATUS_SUCCESS) { return HandleResult::failure(unused); }
-    const bool is_full = isAtCapacity(_tables.id_index.length(), _tables.id_index.capacity());
+    const bool is_full = isAtCapacity(_tables.id_index.length(), _tables.items.capacity());
     if (is_full) {
         return HandleResult::failure(_failure.raise(KIOTTY_SPEC_STATUS_POOL_IS_FULL,
                                                     KIOTTY_SPEC_SUBJECT_CONFIGURATION,

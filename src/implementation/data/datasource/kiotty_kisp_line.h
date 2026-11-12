@@ -17,6 +17,8 @@ struct KispFields
     size_t count {0};
 };
 
+static_assert(sizeof(KispFields) == 168, "unexpected padding");
+
 class KispLineDecoder
 {
 public:

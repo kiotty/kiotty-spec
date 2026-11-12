@@ -29,12 +29,14 @@ struct WidePath {
 };
 
 using WidePathResult = Result<WidePath, KiottySpecStatus>;
+using FileStatus = struct _stat64;
+using ModeResult = Result<uint32_t, KiottySpecStatus>;
 
 constexpr size_t DOUBLE_SEPARATOR_ROOT_LENGTH = 2;
 constexpr size_t DRIVE_LENGTH = 2;
 constexpr size_t DRIVE_ROOT_LENGTH = 3;
 
-bool readStatus(Span<const char> path, struct _stat64& status);
+ModeResult readMode(Span<const char> path);
 WidePathResult widen(Span<const char> path);
 SystemPathResult narrow(const wchar_t* wide);
 bool isLetter(char letter);
@@ -95,14 +97,14 @@ bool makeDirectory(Span<const char> path)
 
 bool isDirectory(Span<const char> path)
 {
-    struct _stat64 status {};
-    return readStatus(path, status) && (status.st_mode & _S_IFDIR) != 0;
+    const ModeResult mode = readMode(path);
+    return mode && (mode.value & _S_IFDIR) != 0;
 }
 
 bool isFile(Span<const char> path)
 {
-    struct _stat64 status {};
-    return readStatus(path, status) && (status.st_mode & _S_IFREG) != 0;
+    const ModeResult mode = readMode(path);
+    return mode && (mode.value & _S_IFREG) != 0;
 }
 
 KiottySpecStatus removeFile(Span<const char> path)
@@ -126,10 +128,14 @@ KiottySpecStatus renameFile(Span<const char> from, Span<const char> to)
 
 namespace {
 
-bool readStatus(Span<const char> path, struct _stat64& status)
+ModeResult readMode(Span<const char> path)
 {
     const WidePathResult wide = widen(path);
-    return wide && _wstat64(wide.value.text, &status) == 0;
+    if (!wide) { return ModeResult::failure(wide.code); }
+    FileStatus status {};
+    const int status_code = _wstat64(wide.value.text, &status);
+    if (status_code != 0) { return ModeResult::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
+    return ModeResult::success(static_cast<uint32_t>(status.st_mode));
 }
 
 WidePathResult widen(Span<const char> path)

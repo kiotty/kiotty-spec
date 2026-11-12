@@ -1,6 +1,5 @@
 #include "implementation/context/kiotty_history_finder.h"
 
-#include "implementation/context/kiotty_cursor_rows.h"
 #include "implementation/core/kiotty_text_view.h"
 
 namespace kiotty::spec::implementation {
@@ -12,16 +11,13 @@ using entity::CheckpointState;
 
 constexpr uint32_t SHIFT = 32;
 
-uint64_t countWrites(Workspace& workspace, uint32_t sequence);
-
 }
 
 CursorIdResult HistoryFinder::checkpoints(uint32_t step)
 {
     const auto cursor = _cursors.open(CursorKind::CHECKPOINT);
-    if (!cursor) {
-        return CursorIdResult::failure(raiseCursorFull(_workspace.failure, cursor.code));
-    }
+    CursorWriter writer = makeCursorWriter();
+    if (!cursor) { return CursorIdResult::failure(writer.raiseCursorFull(cursor.code)); }
     const uint32_t latest = _workspace.checkpoints.latest();
     for (uint32_t sequence = 1; sequence <= latest; ++sequence) {
         const CheckpointRecord* record = _workspace.checkpoints.at(sequence);
@@ -30,10 +26,8 @@ CursorIdResult HistoryFinder::checkpoints(uint32_t step)
         }
         CursorRow row {};
         row.number = sequence;
-        const KiottySpecStatus pushed = pushRow(_cursors, _workspace.failure, cursor.value, row);
-        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) {
-            return closeWith(_cursors, cursor.value, pushed);
-        }
+        const KiottySpecStatus pushed = writer.pushRow(cursor.value, row);
+        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return writer.closeWith(cursor.value, pushed); }
     }
     return cursor;
 }
@@ -41,27 +35,21 @@ CursorIdResult HistoryFinder::checkpoints(uint32_t step)
 CursorIdResult HistoryFinder::stepRuns()
 {
     const auto cursor = _cursors.open(CursorKind::STEP_RUN);
-    if (!cursor) {
-        return CursorIdResult::failure(raiseCursorFull(_workspace.failure, cursor.code));
-    }
+    CursorWriter writer = makeCursorWriter();
+    if (!cursor) { return CursorIdResult::failure(writer.raiseCursorFull(cursor.code)); }
     CursorRow run {};
     uint32_t step = 0;
     const uint32_t latest = _workspace.checkpoints.latest();
-    for (uint32_t sequence = 1; sequence <= latest + 1; ++sequence) {
-        const CheckpointRecord* record =
-            sequence <= latest ? _workspace.checkpoints.at(sequence) : nullptr;
-        if (sequence <= latest && record == nullptr) { continue; }
-        const uint32_t next = record == nullptr ? 0 : static_cast<uint32_t>(record->step);
-        if (step != 0 && next != step) {
-            const KiottySpecStatus pushed =
-                pushRow(_cursors, _workspace.failure, cursor.value, run);
-            if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) {
-                return closeWith(_cursors, cursor.value, pushed);
-            }
-        }
-        if (record == nullptr) { break; }
-        if (next != step) {
-            run = CursorRow{};
+    for (uint32_t sequence = 1; sequence <= latest; ++sequence) {
+        const CheckpointRecord* record = _workspace.checkpoints.at(sequence);
+        if (record == nullptr) { continue; }
+        const uint32_t next = static_cast<uint32_t>(record->step);
+        const bool is_new_run = next != step;
+        const KiottySpecStatus pushed =
+            is_new_run ? pushStepRun(cursor.value, step, run) : KIOTTY_SPEC_STATUS_SUCCESS;
+        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return writer.closeWith(cursor.value, pushed); }
+        if (is_new_run) {
+            run = CursorRow {};
             run.first = sequence;
             step = next;
         }
@@ -69,6 +57,8 @@ CursorIdResult HistoryFinder::stepRuns()
         run.third = step | (static_cast<uint64_t>(record->state) << SHIFT);
         ++run.number;
     }
+    const KiottySpecStatus pushed = pushStepRun(cursor.value, step, run);
+    if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return writer.closeWith(cursor.value, pushed); }
     return cursor;
 }
 
@@ -80,18 +70,15 @@ CursorIdResult HistoryFinder::unmetConditions()
             _workspace.failure.raise(KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_CHECKPOINT));
     }
     const auto cursor = _cursors.open(CursorKind::UNMET_CONDITION);
-    if (!cursor) {
-        return CursorIdResult::failure(raiseCursorFull(_workspace.failure, cursor.code));
-    }
+    CursorWriter writer = makeCursorWriter();
+    if (!cursor) { return CursorIdResult::failure(writer.raiseCursorFull(cursor.code)); }
     for (const UnmetCondition& unmet : _checker.collect(record->step)) {
         CursorRow row {};
         row.first = packIdWord(unmet.id, 0);
         row.second = packIdWord(unmet.id, PACKED_ID_WORD_BYTES);
         row.third = static_cast<uint64_t>(unmet.condition);
-        const KiottySpecStatus pushed = pushRow(_cursors, _workspace.failure, cursor.value, row);
-        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) {
-            return closeWith(_cursors, cursor.value, pushed);
-        }
+        const KiottySpecStatus pushed = writer.pushRow(cursor.value, row);
+        if (pushed != KIOTTY_SPEC_STATUS_SUCCESS) { return writer.closeWith(cursor.value, pushed); }
     }
     return cursor;
 }
@@ -110,7 +97,7 @@ Result<Position, KiottySpecStatus> HistoryFinder::position()
     position.step = static_cast<uint32_t>(record->step);
     position.state = static_cast<uint32_t>(record->state);
     if (record->state == CheckpointState::RUNNING) {
-        position.pending_writes = countWrites(_workspace, latest);
+        position.pending_writes = countWrites(latest);
     }
     if (record->state != CheckpointState::DONE) {
         position.next_step = position.step;
@@ -128,16 +115,18 @@ Result<Position, KiottySpecStatus> HistoryFinder::position()
     return Result<Position, KiottySpecStatus>::success(position);
 }
 
-namespace {
-
-uint64_t countWrites(Workspace& workspace, uint32_t sequence)
+KiottySpecStatus HistoryFinder::pushStepRun(CursorId cursor, uint32_t step, const CursorRow& run)
 {
-    const ItemTables& items = workspace.items.tables();
-    return items.versions.countAt(sequence) + items.tag_versions.countAt(sequence) +
-           workspace.relations.versions().countAt(sequence) +
-           workspace.decisions.versions().countAt(sequence);
+    if (step == 0) { return KIOTTY_SPEC_STATUS_SUCCESS; }
+    return makeCursorWriter().pushRow(cursor, run);
 }
 
+uint64_t HistoryFinder::countWrites(uint32_t sequence)
+{
+    const ItemTables& items = _workspace.items.tables();
+    return items.versions.countAt(sequence) + items.tag_versions.countAt(sequence) +
+           _workspace.relations.versions().countAt(sequence) +
+           _workspace.decisions.versions().countAt(sequence);
 }
 
 }

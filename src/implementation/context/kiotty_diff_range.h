@@ -9,4 +9,6 @@ struct DiffRange {
     uint32_t to {0};
 };
 
+static_assert(sizeof(DiffRange) == 8, "unexpected padding");
+
 }

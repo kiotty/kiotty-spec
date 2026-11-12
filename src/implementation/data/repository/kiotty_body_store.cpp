@@ -23,7 +23,7 @@ KiottySpecStatus BodyStore::put(uint32_t key, Span<const char> body)
     const size_t length = body.length();
     if (length == 0) { return KIOTTY_SPEC_STATUS_SUCCESS; }
     const size_t slice_count = _slices.length();
-    const size_t slice_capacity = _slices.capacity();
+    const size_t slice_capacity = _order.size();
     if (slice_count == slice_capacity) { return KIOTTY_SPEC_STATUS_POOL_IS_FULL; }
     const size_t byte_capacity = _bytes.size();
     const bool is_short = isShortOfSpace(byte_capacity, _used, length);

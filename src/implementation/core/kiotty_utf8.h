@@ -87,7 +87,7 @@ inline bool isUtf8Continuation(char byte)
 
 inline uint32_t utf8CodePointAt(Span<const char> text, size_t index, size_t length)
 {
-    const auto lead = static_cast<unsigned char>(text[index]);
+    const unsigned char lead = static_cast<unsigned char>(text[index]);
     if (length == 1) { return lead; }
     uint32_t point = static_cast<uint32_t>(lead) & (UTF8_LEAD_PAYLOAD_MASK >> (length + 1));
     for (size_t offset = 1; offset < length; ++offset) {

@@ -17,6 +17,8 @@ struct ItemVersionView {
     entity::IdText parent_id {};
 };
 
+static_assert(sizeof(ItemVersionView) == 440, "unexpected padding");
+
 class PastReader
 {
 public:

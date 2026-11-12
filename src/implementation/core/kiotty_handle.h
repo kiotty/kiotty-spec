@@ -14,4 +14,6 @@ struct Handle
     bool isValid() const { return index != INVALID_INDEX; }
 };
 
+static_assert(sizeof(Handle) == 8, "unexpected padding");
+
 }

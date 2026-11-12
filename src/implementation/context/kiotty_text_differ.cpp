@@ -1,6 +1,5 @@
 #include "implementation/context/kiotty_text_differ.h"
 
-#include "implementation/context/kiotty_cursor_rows.h"
 #include "implementation/context/kiotty_past_reader.h"
 #include "implementation/core/kiotty_text_diff.h"
 #include "implementation/core/kiotty_text_view.h"
@@ -24,58 +23,23 @@ KiottySpecStatus storeTexts(Span<char> area, Span<const char> before, Span<const
 
 CursorIdResult TextDiffer::open(entity::ItemHandle item, uint32_t field, DiffRange range)
 {
-    const auto record = _workspace.items.reader().get(item);
-    if (!record) {
-        return CursorIdResult::failure(
-            _workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_HANDLE, KIOTTY_SPEC_SUBJECT_ITEM));
-    }
-    const IdText id = record.value->id;
-    const auto before = PastReader(_workspace).itemAt(id.view(), range.from);
-    const auto after = PastReader(_workspace).itemAt(id.view(), range.to);
+    const Result<IdText, KiottySpecStatus> id = readItemId(item);
+    if (!id) { return CursorIdResult::failure(id.code); }
+    const auto before = PastReader(_workspace).itemAt(id.value.view(), range.from);
+    const auto after = PastReader(_workspace).itemAt(id.value.view(), range.to);
     const bool has_any_version = before || after;
     if (!has_any_version) {
         return CursorIdResult::failure(_workspace.failure.raise(
-            KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_ITEM, id.view()));
+            KIOTTY_SPEC_STATUS_NOT_FOUND, KIOTTY_SPEC_SUBJECT_ITEM, id.value.view()));
     }
-    const Span<const char> before_text = selectText(before, field);
-    const Span<const char> after_text = selectText(after, field);
-
+    const TextPair texts {selectText(before, field), selectText(after, field)};
     const auto cursor = _cursors.open(CursorKind::TEXT_DIFF);
-    if (!cursor) {
-        return CursorIdResult::failure(raiseCursorFull(_workspace.failure, cursor.code));
+    CursorWriter writer = makeCursorWriter();
+    if (!cursor) { return CursorIdResult::failure(writer.raiseCursorFull(cursor.code)); }
+    const KiottySpecStatus filled = fillSegments(cursor.value, texts);
+    if (filled != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return writer.closeWith(cursor.value, writer.raiseRowsFull(filled));
     }
-    const auto space = _cursors.space(cursor.value, CursorKind::TEXT_DIFF);
-    char* const bytes = reinterpret_cast<char*>(space.value.rows.data());
-    const size_t room = space.value.rows.length() * sizeof(CursorRow);
-    const size_t segment_room =
-        room > SEGMENT_OFFSET ? (room - SEGMENT_OFFSET) / sizeof(TextSegment) : 0;
-    if (segment_room == 0) {
-        _cursors.close(cursor.value);
-        return CursorIdResult::failure(_workspace.failure.raise(
-            KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, KIOTTY_SPEC_SUBJECT_CURSOR_ROWS,
-            literalText("max_cursor_rows")));
-    }
-    const Span<char> text_area(bytes, room);
-    const KiottySpecStatus stored = storeTexts(text_area, before_text, after_text);
-    if (stored != KIOTTY_SPEC_STATUS_SUCCESS) {
-        _cursors.close(cursor.value);
-        return CursorIdResult::failure(_workspace.failure.raise(
-            stored, KIOTTY_SPEC_SUBJECT_CURSOR_ROWS, literalText("max_cursor_rows")));
-    }
-    Span<char> scratch = _work.scratch();
-    const auto count =
-        diffText(Span<const char>(bytes, before_text.length()),
-                 Span<const char>(bytes + TEXT_SLOT_BYTES, after_text.length()),
-                 Span<uint8_t>(reinterpret_cast<uint8_t*>(scratch.data()), scratch.length()),
-                 Span<TextSegment>(reinterpret_cast<TextSegment*>(bytes + SEGMENT_OFFSET),
-                                   segment_room < MAX_SEGMENTS ? segment_room : MAX_SEGMENTS));
-    if (!count) {
-        _cursors.close(cursor.value);
-        return CursorIdResult::failure(_workspace.failure.raise(
-            count.code, KIOTTY_SPEC_SUBJECT_CURSOR_ROWS, literalText("max_cursor_rows")));
-    }
-    space.value.slot->length = count.value;
-    space.value.slot->position = 0;
     return cursor;
 }
 
@@ -94,6 +58,42 @@ Result<TextPiece, KiottySpecStatus> TextDiffer::next(CursorId cursor)
     const char* base = bytes + (segment.source == TextSource::AFTER ? TEXT_SLOT_BYTES : 0);
     return PieceResult::success(TextPiece { Span<const char>(base + segment.offset, segment.length),
                                             static_cast<uint32_t>(segment.change) });
+}
+
+Result<entity::IdText, KiottySpecStatus> TextDiffer::readItemId(entity::ItemHandle item)
+{
+    using IdResult = Result<IdText, KiottySpecStatus>;
+    const auto record = _workspace.items.reader().get(item);
+    if (!record) {
+        return IdResult::failure(
+            _workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_HANDLE, KIOTTY_SPEC_SUBJECT_ITEM));
+    }
+    return IdResult::success(record.value->id);
+}
+
+KiottySpecStatus TextDiffer::fillSegments(CursorId cursor, const TextPair& texts)
+{
+    const auto space = _cursors.space(cursor, CursorKind::TEXT_DIFF);
+    if (!space) { return space.code; }
+    char* const bytes = reinterpret_cast<char*>(space.value.rows.data());
+    const size_t room = space.value.rows.length() * sizeof(CursorRow);
+    const size_t segment_room =
+        room > SEGMENT_OFFSET ? (room - SEGMENT_OFFSET) / sizeof(TextSegment) : 0;
+    if (segment_room == 0) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
+    const KiottySpecStatus stored = storeTexts(Span<char>(bytes, room), texts.before, texts.after);
+    if (stored != KIOTTY_SPEC_STATUS_SUCCESS) { return stored; }
+    Span<char> scratch = _work.scratch();
+    const Span<TextSegment> segments(reinterpret_cast<TextSegment*>(bytes + SEGMENT_OFFSET),
+                                     segment_room < MAX_SEGMENTS ? segment_room : MAX_SEGMENTS);
+    const Result<size_t, KiottySpecStatus> count =
+        diffText(Span<const char>(bytes, texts.before.length()),
+                 Span<const char>(bytes + TEXT_SLOT_BYTES, texts.after.length()),
+                 Span<uint8_t>(reinterpret_cast<uint8_t*>(scratch.data()), scratch.length()),
+                 segments);
+    if (!count) { return count.code; }
+    space.value.slot->length = count.value;
+    space.value.slot->position = 0;
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 namespace {

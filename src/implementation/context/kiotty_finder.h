@@ -2,6 +2,7 @@
 
 #include "kiotty_spec.h"
 #include "implementation/context/kiotty_cursor_pool.h"
+#include "implementation/context/kiotty_cursor_rows.h"
 #include "implementation/context/kiotty_history_finder.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
@@ -40,6 +41,11 @@ public:
     HistoryFinder history() { return HistoryFinder(_workspace, _cursors, _checker); }
 
 private:
+    CursorWriter makeCursorWriter() { return CursorWriter(_cursors, _workspace.failure); }
+    bool isSelected(entity::ItemHandle handle, uint32_t kind, Span<const TagQuery> queries);
+    KiottySpecStatus pushRelationsFrom(CursorId cursor, entity::ItemHandle from,
+                                       entity::ItemKind kind, uint32_t relation_index);
+
     Workspace& _workspace;
     CursorPool& _cursors;
     Checker& _checker;

@@ -21,6 +21,8 @@ struct ItemCapacity {
     size_t body_bytes {};
 };
 
+static_assert(sizeof(ItemCapacity) == 40, "unexpected padding");
+
 struct ItemTables {
     explicit ItemTables(const ItemCapacity& capacity)
         : names(capacity.versions),

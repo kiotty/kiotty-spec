@@ -163,7 +163,7 @@ CursorIdResult Differ::items(DiffRange range, uint32_t kind_mask, uint32_t field
 {
     const auto cursor = _cursors.open(CursorKind::ITEM_DIFF);
     if (!cursor) {
-        return CursorIdResult::failure(raiseCursorFull(_workspace.failure, cursor.code));
+        return CursorIdResult::failure(makeCursorWriter().raiseCursorFull(cursor.code));
     }
     ItemDiffQuery query(_workspace.items, range, kind_mask, field_mask);
     KiottySpecStatus status = query.open();
@@ -178,7 +178,7 @@ CursorIdResult Differ::items(DiffRange range, uint32_t kind_mask, uint32_t field
         row.third = diff.before | (static_cast<uint64_t>(diff.after) << ITEM_AFTER_SHIFT);
         row.fourth = diff.kind | (static_cast<uint64_t>(diff.change) << ITEM_CHANGE_SHIFT) |
                      (static_cast<uint64_t>(diff.fields) << ITEM_FIELDS_SHIFT);
-        status = pushRow(_cursors, _workspace.failure, cursor.value, row);
+        status = makeCursorWriter().pushRow(cursor.value, row);
     }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = next.code; }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { return cursor; }
@@ -190,7 +190,7 @@ CursorIdResult Differ::relations(DiffRange range, uint32_t kind_mask)
 {
     const auto cursor = _cursors.open(CursorKind::RELATION_DIFF);
     if (!cursor) {
-        return CursorIdResult::failure(raiseCursorFull(_workspace.failure, cursor.code));
+        return CursorIdResult::failure(makeCursorWriter().raiseCursorFull(cursor.code));
     }
     RelationDiffQuery query(_workspace.items, _workspace.relations, range, kind_mask);
     KiottySpecStatus status = query.open();
@@ -209,7 +209,7 @@ CursorIdResult Differ::relations(DiffRange range, uint32_t kind_mask)
             (static_cast<uint64_t>(diff.relation & RELATION_ID_MASK) << RELATION_ID_SHIFT) |
             (static_cast<uint64_t>(diff.model) << RELATION_MODEL_SHIFT) |
             (static_cast<uint64_t>(diff.change) << RELATION_CHANGE_SHIFT));
-        status = pushRow(_cursors, _workspace.failure, cursor.value, row);
+        status = makeCursorWriter().pushRow(cursor.value, row);
     }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { status = next.code; }
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) { return cursor; }

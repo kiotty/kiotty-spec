@@ -2,6 +2,7 @@
 
 #include "kiotty_spec.h"
 #include "kiotty_result.h"
+#include "kiotty_search.h"
 #include "kiotty_span.h"
 
 #include <algorithm>
@@ -40,7 +41,7 @@ public:
 
     KiottySpecStatus write(const Record& record)
     {
-        const auto target = slot(record.identity(), record.checkpoint);
+        const Result<Record&, KiottySpecStatus> target = slot(record.identity(), record.checkpoint);
         if (!target) { return target.code; }
         *target.value = record;
         return KIOTTY_SPEC_STATUS_SUCCESS;
@@ -142,7 +143,7 @@ private:
         const size_t length = records.length();
         while (first < length) {
             const size_t end = findGroupEnd(records, first);
-            kept = pruneGroup(records, first, end, base, kept);
+            kept = pruneGroup(records, IndexRange {first, end - first}, base, kept);
             first = end;
         }
         return kept;
@@ -192,9 +193,10 @@ private:
         return length;
     }
 
-    static size_t pruneGroup(Span<Record> records, size_t first, size_t end, uint32_t base,
-                             size_t kept)
+    static size_t pruneGroup(Span<Record> records, IndexRange group, uint32_t base, size_t kept)
     {
+        const size_t first = group.first;
+        const size_t end = group.first + group.length;
         size_t last_old = end;
         for (size_t index = first; index < end && records[index].checkpoint <= base; ++index) {
             last_old = index;

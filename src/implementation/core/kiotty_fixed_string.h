@@ -34,7 +34,6 @@ public:
     void clear() { _data[0] = '\0'; }
 
     bool empty() const { return _data[0] == '\0'; }
-    static constexpr size_t capacity() { return Capacity; }
     const char* c_str() const { return _data; }
     Span<const char> view() const { return Span<const char>(_data, length()); }
     operator std::string_view() const { return std::string_view(_data, length()); }
