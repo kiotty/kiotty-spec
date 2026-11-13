@@ -7,7 +7,7 @@
 | 번호 | 결정 | 권장안 | 다른 안 |
 | --- | --- | --- | --- |
 | D1 | 원격 | GitHub 공개 저장소, HTTPS URL, `git` 명령을 실행해서 다룬다 (2 장) | 클라우드 동기화 폴더 경로 (OneDrive 등) |
-| D2 | 공유 범위 | `rule` Kind 전체. 프로젝트별 예외는 `docs/deviations.md` | 공통 태그가 달린 수칙만 |
+| D2 | 공유 범위 | **확정 (사용자 2026-11-13)**: `rule` Kind 전체. 이 프로젝트에만 유효한 수칙은 새 Kind `private_rule` (개별 개발 수칙, `PRULE`) 로 두고 공유하지 않는다. `docs/deviations.md` 의 편차는 PRULE 로 옮긴다 (5.2) | — |
 | D3 | accept 가 만드는 체크포인트 | 1 단계 (변경 요청 접수) 와 변경 요청 항목 하나. 원격 commit 과 바뀐 수칙을 "영향 개발 수칙" 관계로 남긴다 | 2 단계 (요구사항), 변경 요청 없이 |
 | D4 | push 조건 | **확정 (사용자 2026-11-11)**: 가장 최근 체크포인트가 완료(DONE)일 때만. 진행 중인 수칙 수정은 올리지 않는다 | — |
 | D5 | push 충돌 | 마지막 accept · push 뒤에 원격이 바뀌었으면 거부. 먼저 pull · accept | 덮어쓴다 |
@@ -41,6 +41,7 @@
 - `change` 는 `added` (원격에만) · `removed` (로컬에만) · `modified`, `fields` 는 `title` `summary` `parent` `tag` `body` 중 다른 것.
 - `diff` 에 ID 를 주면 그 수칙만 본다.
 - `.kiotty/remote/` 는 커밋하지 않는다. `pull` 이 `.kiotty/.gitignore` 에 `remote/` 를 넣는다.
+- `remote` 의 Kind 는 `rule` 만 받는다. `ks remote push private_rule` 등은 거부한다.
 
 ### 1.3 accept
 
@@ -54,26 +55,54 @@
 
 1. 새 체크포인트를 만든다 (D3: 1 단계, 설명 `공통 개발 수칙 <commit 앞 7자리>`).
 2. 변경 요청 항목을 만든다.
-   - 본문: 원격 URL · commit 과 diff.
+   - 본문: 원격 URL · commit, 수칙 diff, 그리고 **개별 개발 수칙 처리 표** (아래).
    - 태그: 상태 `열림`, 출처 `공통 수칙` (5 장에서 더하는 값), 진입 단계는 아래 규칙.
-   - 관계: 추가 · 변경된 수칙에 "영향 개발 수칙".
+   - 관계: 추가 · 변경된 수칙에 "영향 개발 수칙", 영향받은 PRULE 에 "영향 개별 개발 수칙".
    - 진입 단계 = min(10, accept 직전의 다음 단계). 코드 검사까지 간 프로젝트는 10 단계로 돌아가 다시 검사하고, 아직 그 전인 프로젝트는 하던 단계를 이어 하다가 10 단계에서 새 수칙으로 검사한다.
 3. `added` 는 원격 ID 그대로 만든다 (부모가 먼저). `modified` 는 필드를 원격 값으로. `removed` 는 지운다.
-4. 변경 · 삭제된 수칙의 코드 검사 결과를 지운다. 옛 수칙으로 한 검사라서 남겨 두면 10 단계의 짝 조건(수칙마다 검사 결과 1 개)을 그냥 통과한다. 지우면 그 조건이 다시 검사할 수칙을 정확히 가리킨다. 지운 결과는 과거 체크포인트에 남는다. 지운 ID 를 찍는다.
-5. `remote.rule.base` 를 받아 둔 commit 으로 하고 받아 둔 파일을 지운다.
+4. 개별 개발 수칙(PRULE)은 내용을 건드리지 않는다.
+   - 대체하던 수칙이 `removed`: "대체 개발 수칙" 관계만 끊는다. PRULE 은 연결 해제된 채 남는다.
+   - 대체하던 수칙이 `modified`: 관계도 그대로 둔다. PRULE 은 연결된 채 남는다.
+   - 둘 다 2 의 "영향 개별 개발 수칙" 관계와 처리 표에 들어간다.
+5. 변경 · 삭제된 수칙의 코드 검사 결과를 지운다. 옛 수칙으로 한 검사라서 남겨 두면 10 단계의 짝 조건(수칙마다 검사 결과 1 개)을 그냥 통과한다. 지우면 그 조건이 다시 검사할 수칙을 정확히 가리킨다. 지운 결과는 과거 체크포인트에 남는다. 지운 ID 를 찍는다.
+6. `remote.rule.base` 를 받아 둔 commit 으로 하고 받아 둔 파일을 지운다.
 
-체크포인트는 진행 중(RUNNING)으로 남는다. 사용자가 `ks diff` 로 확인하고 `ks checkpoint complete --actor user` 로 닫는다. 1 단계의 확정 조건(열린 변경 요청마다 진입 단계가 있다)은 accept 가 이미 채웠다.
+출력 (TSV, 영향받은 PRULE 만):
+
+```
+private_rule	rule	change	fields
+PRULE-002	RULE-029	removed	-
+PRULE-005	RULE-031	modified	body
+```
+
+#### 개별 개발 수칙 처리 표 (변경 요청 본문)
+
+accept 가 영향받은 PRULE 마다 한 행을 `처리 = 미정` 으로 쓴다. 이 변경 요청이 "PRULE 을 어떻게 바꿀 것인가" 의 기록이다. AI 는 행마다 아래만 읽고 `처리` · `근거` 를 채운 뒤 그대로 반영한다.
+
+| PRULE | 대체하던 수칙 | 변경 | 필드 | 처리 | 근거 |
+| --- | --- | --- | --- | --- | --- |
+| PRULE-002 | RULE-029 | removed | - | 미정 | |
+| PRULE-005 | RULE-031 | modified | body | 미정 | |
+
+- `처리` 값: `유지` · `고침` · `삭제` · `대체 대상 변경 (RULE-xxx)` · `더하기 수칙으로 둠` (removed 일 때).
+- 읽는 것: `ks item show PRULE-005`, 필요하면 `ks item body PRULE-005`, 그리고 `ks diff CP-이전 CP-accept --kind rule --modified --title --summary --body` 에서 그 수칙 행만.
+- 추가된 RULE 이 기존 PRULE 과 충돌하는지는 관계가 없어 자동으로 못 잡는다. 추가된 RULE 과 `ks item list --kind private_rule` 의 제목만 비교하고, 충돌하면 표에 행을 더한다 (`처리 = 새 PRULE` 또는 기존 PRULE 에 대체 추가).
+
+체크포인트는 진행 중(RUNNING)으로 남는다. AI 가 처리 표를 채우고 PRULE 을 같은 체크포인트에서 고친다 (수칙을 바꾸는 체크포인트가 이미 이것이라서 진입 단계를 2 로 두지 않는다). 사용자가 `ks diff` 로 확인하고 `ks checkpoint complete --actor user` 로 닫는다. 1 단계의 확정 조건(열린 변경 요청마다 진입 단계가 있다)은 accept 가 이미 채웠다.
 
 #### 받은 뒤의 흐름 (코드 검사까지 마친 프로젝트)
 
 | 순서 | 체크포인트 | 하는 일 | 확정 조건 |
 | --- | --- | --- | --- |
-| 1 | `ks remote accept rule` → 1 단계 (RUNNING) | 수칙 편입, 변경 요청 `열림` · 진입 단계 10, 낡은 검사 결과 삭제 | 진입 단계 있음 (자동) |
-| 2 | `ks checkpoint complete` | 사용자 확인 | — |
-| 3 | `ks where` | 다음 단계 = 10 (열린 변경 요청의 가장 상류 진입 단계) | — |
-| 4 | `ks checkpoint start 10` | 추가 · 변경된 수칙만 다시 검사, 검사 결과 추가 | 모든 수칙에 검사 결과 1 개 |
-| 5 | FAIL 이 있으면 | 코드를 고치고 다시 검사 (지금의 FAIL 처리와 같다) | — |
-| 6 | 모두 PASS | 변경 요청 상태 `완료`, `ks checkpoint complete` | — |
+| 1 | `ks remote check rule` · `pull rule` · `diff rule` | 받을지 정한다. 안 받으면 `discard` | — |
+| 2 | `ks remote accept rule` → 1 단계 (RUNNING) | 수칙 편입, 변경 요청 `열림` · 진입 단계 10, 낡은 검사 결과 삭제, PRULE 처리 표 · 관계 | 진입 단계 있음 (자동) |
+| 3 | 같은 체크포인트 | AI 가 처리 표를 채우고 PRULE 을 고친다 · 지운다 · 새로 만든다 | — |
+| 4 | `ks checkpoint complete` | 사용자 확인 | — |
+| 5 | `ks where` | 다음 단계 = 10 (열린 변경 요청의 가장 상류 진입 단계) | — |
+| 6 | `ks checkpoint start 10` | 검사 결과가 없는 수칙만 검사 (추가 · 변경된 RULE, 고친 PRULE). PRULE 이 대체한 RULE 은 검사하지 않는다 | 대체되지 않은 RULE 과 모든 PRULE 에 검사 결과 1 개 |
+| 7 | FAIL 이 있으면 | 코드를 고치거나, 이 프로젝트에서 받아들이기로 하면 PRULE 을 만들어 대체한다. 다시 검사 | — |
+| 8 | 모두 PASS | 변경 요청 상태 `완료`, `ks checkpoint complete` | — |
+| 9 | 코드를 고쳤으면 | 9 · 12 단계 테스트를 다시 돌리고 확정 | — |
 
 2 단계(요구사항)로 편입하는 다른 안은 변경 요청이 없어 "왜 바뀌었나" 가 남지 않고, 완료 뒤 다음 단계가 3 단계라 외부 인터페이스부터 다시 밟으라는 안내가 나온다.
 
@@ -138,25 +167,52 @@ KiottySpecStatusResult KiottySpec_writeMeta(KiottySpecContext *context, KiottySp
 - `exportRules` 는 가장 최근 완료 체크포인트의 수칙만 담은 `.kisp` 를 쓴다 (push 의 3).
 - 새 struct 는 5.7 을 따른다 (union · bool 없음, 순차 배치, `static_assert(sizeof)`).
 
+- 본문 diff: `KiottySpecTextField` 에 `KIOTTY_SPEC_TEXT_FIELD_BODY = KIOTTY_SPEC_CHANGED_FIELD_BODY` 를 더하고 `openTextDiffCursor` 가 본문도 비교한다 (지금은 제목 · 요약만). enum 값 추가라 기존 값은 그대로다.
+
 ### 3.2 CLI (`app/cli`)
 
 - `kiotty_git.cpp`: `git` 실행 (Windows `CreateProcessW`, POSIX `posix_spawnp`), 시간 제한, 종료 코드 · stdout. `git` 이 없으면 "git 을 찾을 수 없음".
 - `kiotty_remote_commands.cpp`: 1 장의 명령들.
+- `ks diff FROM TO --kind K --modified --body`: 바뀐 항목의 본문을 줄 단위 diff 로 찍는다 (`--title` · `--summary` 와 같은 모양). 본문이 바뀐 항목만 찍는다.
 
 ## 4. 단계
 
 | 단계 | 내용 | 끝났다는 기준 |
 | --- | --- | --- |
-| R0 | 모델 2: 변경 요청 상태 `백로그`, 출처 `공통 수칙`, model 1 파일 열기 (5 장) | 유닛 테스트: model 1 파일을 열고 다음 쓰기에 머리줄이 model 2, 백로그는 열린 변경 요청으로 세지 않음 |
-| R1 | meta 읽기 · 쓰기, `openRuleDiffCursor`, `exportRules` | 유닛 테스트: 같음 · 추가 · 삭제 · 필드별 변경, 완료 체크포인트 기준 내보내기 |
-| R2 | `acceptRules` | 유닛 테스트: 조건 세 가지 거부, 부모 순서, 관계가 걸린 삭제, 실패 시 되돌림, 변경 요청과 관계, 진입 단계 min(10, 다음 단계), 낡은 검사 결과 삭제 |
+| R0 | 모델 2: 변경 요청 상태 `백로그`, 출처 `공통 수칙`, Kind `private_rule` 과 관계 (5 장), model 1 파일 열기. 10 단계 확정 조건에서 대체된 RULE 제외 · PRULE 포함 | 유닛 테스트: model 1 파일을 열고 다음 쓰기에 머리줄이 model 2, 백로그는 열린 변경 요청으로 세지 않음, 대체된 RULE 은 검사 결과 없이 확정 |
+| R1 | meta 읽기 · 쓰기, `openRuleDiffCursor`, `exportRules`, 본문 text diff 와 `ks diff --body` | 유닛 테스트: 같음 · 추가 · 삭제 · 필드별 변경, 완료 체크포인트 기준 내보내기 (PRULE 은 빠짐), 본문 diff |
+| R2 | `acceptRules` | 유닛 테스트: 조건 세 가지 거부, 부모 순서, 관계가 걸린 삭제, 실패 시 되돌림, 변경 요청과 관계, 진입 단계 min(10, 다음 단계), 낡은 검사 결과 삭제, PRULE 은 removed 면 연결 해제 · modified 면 유지 · 처리 표 행과 관계 |
 | R3 | git 실행기, `open` · `close` · `push` · `check` · `pull` | 시스템 테스트 (아래) |
 | R4 | `list` · `diff` · `body` · `accept` · `discard` | 시스템 테스트 (아래) |
-| R5 | 이 저장소에서 첫 push, 다른 프로젝트 하나에서 받기 | 실제 GitHub 로 1.2 전체 |
+| R5 | `docs/deviations.md` 의 편차를 PRULE 로 옮기고 문서를 지운다 (5.2) | 코드 검사 다시 판정, 모두 PASS |
+| R6 | 이 저장소에서 첫 push, 다른 프로젝트 하나에서 받기 | 실제 GitHub 로 1.2 전체 |
 
-시스템 테스트는 GitHub 대신 임시 디렉토리의 `git init --bare` 를 원격으로 써서 네트워크 없이 돈다. 시나리오: A push → B check `changed` → B pull · diff · body → B accept → B check `same` → A 다시 수정 · push → B 가 받기 전에 로컬 수정 후 push 하면 거부 → B discard.
+시스템 테스트는 GitHub 대신 임시 디렉토리의 `git init --bare` 를 원격으로 써서 네트워크 없이 돈다. 시나리오: A push → B check `changed` → B pull · diff · body → B accept → B check `same` → A 다시 수정 · push → B 가 받기 전에 로컬 수정 후 push 하면 거부 → B discard. PRULE 시나리오: B 의 PRULE 이 대체하던 RULE 을 A 가 지우고 · 고친 뒤 B accept → 연결 해제 · 유지, 처리 표 두 행, push 에 PRULE 이 없음.
 
-## 5. 함께 바꿀 모델: 변경 요청 상태 `백로그`
+## 5. 함께 바꿀 모델 (모델 2)
+
+모두 목록 끝에 덧붙인다. 파일은 Kind · 태그 · 관계를 이름으로 저장하므로 기존 줄은 바뀌지 않는다. 바뀌는 것은 머리줄 `model 1 → model 2` 뿐이다.
+
+### 5.1 개별 개발 수칙 `private_rule` (사용자 결정 2026-11-13)
+
+이 프로젝트에만 유효한 수칙. 원격과 교환하지 않고, 공통 수칙보다 우선한다.
+
+| 종류 | 이름 | 내용 |
+| --- | --- | --- |
+| Kind | `private_rule` 개별 개발 수칙, 접두사 `PRULE`, 2 단계 | 공통 수칙(`rule`)과 따로 둔다. 원격 명령은 `rule` 만 보므로 구조상 새지 않고, ID 가 원격 RULE-xxx 와 겹치지 않고, accept 가 지우지 않는다 |
+| 태그 | `수칙 종류` (private_rule) | `rule` 과 같은 값 |
+| 관계 | `대체 개발 수칙`: private_rule → rule, many | 이 PRULE 이 이기는 공통 수칙. 없으면 더하기 수칙 |
+| 관계 | `검사 개별 개발 수칙`: code_inspection_result → private_rule, single | PRULE 의 검사 결과 |
+| 관계 | `영향 개별 개발 수칙`: change_request → private_rule, many | accept 가 영향받은 PRULE 을 건다 |
+
+- 적용되는 수칙 = (공통 수칙 − PRULE 이 대체한 것) + PRULE 전부. 우선순위는 `대체 개발 수칙` 관계로 명시한 것만 적용한다.
+- 10 단계 짝 조건: 대체되지 않은 RULE 과 모든 PRULE 에 검사 결과 1 개. 대체된 RULE 은 검사하지 않는다.
+
+### 5.2 편차 문서를 PRULE 로
+
+`docs/deviations.md` 의 편차(3.3 · 3.4 · 4.2 · 4.17 · 6.1 · 6.3 · 6.4 등)는 사실상 이 프로젝트의 개별 개발 수칙이다. 편차마다 PRULE 을 만들고 원 수칙에 `대체 개발 수칙` 을 건다. 본문에 범위와 근거(CR-011 · CR-014)를 옮긴다. 4.17 의 `tools/lint_accepted.txt` 는 PRULE 본문이 가리킨다.
+
+### 5.3 변경 요청 상태 `백로그`
 
 아이디어만 기록하고 아직 반영하지 않는 변경 요청을 위해, 변경 요청의 `상태` 태그에 `백로그` 를 더한다 (사용자 요청 2026-11-11).
 
