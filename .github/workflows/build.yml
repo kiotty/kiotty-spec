@@ -1,0 +1,36 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build
+        run: cmake --build build --config Debug --parallel
+
+      - name: Test
+        run: |
+          if [ -d build/Debug ]; then bin=build/Debug; ext=.exe; else bin=build; ext=; fi
+          for test in core datasource context model cli api system e2e; do
+            echo "::group::kiotty_${test}_test"
+            "$bin/kiotty_${test}_test$ext"
+            echo "::endgroup::"
+          done

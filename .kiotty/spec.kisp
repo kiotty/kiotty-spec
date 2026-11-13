@@ -36,7 +36,7 @@ checkpoint	O	30	29	8	done	1794493703	CR-013 ST-021 경우 8 · 9 추가
 checkpoint	O	31	30	9	done	1794493721	시스템 테스트 실행 (bf3c64e Debug)
 checkpoint	O	32	31	10	done	1794493776	CR-013 반영 후 코드 검사
 checkpoint	O	33	32	11	done	1794493904	E2E 테스트 계획 (외부 인터페이스 묶음 19)
-checkpoint	O	34	33	12	running	1794495783	E2E 테스트 실행 (235297e Debug)
+checkpoint	O	34	33	12	done	1794495783	E2E 테스트 실행 (235297e Debug)
 checkpoint	O	35	34	1	done	1794496545	CR-014 2.1 마저 지키기, 남은 위반은 편차로
 checkpoint	O	36	35	3	done	1794496550	CR-014 인터페이스 에러 코드
 checkpoint	O	37	36	4	done	1794496556	CR-014 설계 반영
