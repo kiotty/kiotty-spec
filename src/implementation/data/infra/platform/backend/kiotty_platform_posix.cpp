@@ -3,6 +3,7 @@
 #include "implementation/data/infra/platform/kiotty_platform.h"
 
 #include "implementation/core/kiotty_text_view.h"
+#include "implementation/core/kiotty_utf8.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -68,6 +69,8 @@ bool isSeparator(char letter) { return letter == '/'; }
 
 KiottySpecStatus convertPath(Span<const char> path, Span<NativeLetter> native)
 {
+    const bool is_valid = isValidUtf8(path);
+    if (!is_valid) { return KIOTTY_SPEC_STATUS_INVALID_UTF8; }
     const size_t path_length = path.length();
     const bool is_too_long = path_length >= native.length();
     if (is_too_long) { return KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED; }
