@@ -81,6 +81,9 @@ private:
     void checkOneToOne(const PairRule& rule);
     void checkTargetPairs(const PairRule& rule, uint32_t relation);
     void checkSingleTargets(entity::ItemKind test_kind, uint32_t relation);
+    void checkCodeInspection();
+    void checkRulePairs(uint32_t relation, uint32_t replaced);
+    void checkInspectionTargets(uint32_t rule_relation, uint32_t private_relation);
     void checkResults();
     void checkPassingResults();
     void checkClosedChangeRequests();

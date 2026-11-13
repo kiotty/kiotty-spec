@@ -19,10 +19,11 @@ enum class ItemKind : uint32_t {
     SYSTEM_TEST_RESULT,
     CODE_INSPECTION_RESULT,
     END_TO_END_TEST_PLAN,
-    END_TO_END_TEST_RESULT
+    END_TO_END_TEST_RESULT,
+    PRIVATE_RULE
 };
 
-constexpr size_t ITEM_KIND_COUNT = 13;
+constexpr size_t ITEM_KIND_COUNT = 14;
 
 enum class Step : uint32_t {
     CHANGE_REQUEST_REPORTED = 1,

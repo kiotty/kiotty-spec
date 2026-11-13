@@ -632,7 +632,7 @@ static int e2e014(void)
                         sizeof(KiottySpecSubject) == 4,
                     "1 SUCCESS 0, enum 4 바이트");
     passed &= check(KIOTTY_SPEC_ITEM_KIND_CHANGE_REQUEST == 1 && KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST_RESULT == 13 &&
-                        KIOTTY_SPEC_ITEM_KIND_COUNT == 13 && KIOTTY_SPEC_STEP_CHANGE_REQUEST_REPORTED == 1 &&
+                        KIOTTY_SPEC_ITEM_KIND_PRIVATE_RULE == 14 && KIOTTY_SPEC_ITEM_KIND_COUNT == 14 && KIOTTY_SPEC_STEP_CHANGE_REQUEST_REPORTED == 1 &&
                         KIOTTY_SPEC_STEP_END_TO_END_TEST_RUN == 12 && KIOTTY_SPEC_CHECKPOINT_STATE_STARTED == 1 &&
                         KIOTTY_SPEC_CHECKPOINT_STATE_DONE == 3 && KIOTTY_SPEC_ACTOR_USER == 1 && KIOTTY_SPEC_ACTOR_AI == 2,
                     "1 Kind · 단계 · 상태 · actor 는 1 부터 문서 순서");
@@ -787,7 +787,7 @@ static int e2e018(void)
               SIZE_IS(KiottySpecErrorResult, 280) & SIZE_IS(KiottySpecItemResult, 440) & SIZE_IS(KiottySpecItemHandleResult, 16) &
               SIZE_IS(KiottySpecTagResult, 32) & SIZE_IS(KiottySpecCheckpointResult, 104) &
               SIZE_IS(KiottySpecCheckpointHandleResult, 16) & SIZE_IS(KiottySpecPositionResult, 48) &
-              SIZE_IS(KiottySpecModelResult, 72) & SIZE_IS(KiottySpecDiffSummaryResult, 336);
+              SIZE_IS(KiottySpecModelResult, 72) & SIZE_IS(KiottySpecDiffSummaryResult, 360);
     KiottySpecContext* context = openSpec("e2e018");
     if (!check(context != NULL, "열기")) { return 0; }
     start(context, KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING);

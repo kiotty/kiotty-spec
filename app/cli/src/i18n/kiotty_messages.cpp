@@ -24,7 +24,7 @@ constexpr Message MESSAGES[] = {
       "Kind: change_request requirement rule external_interface design unit_test_plan "
       "milestone unit_test_result\n"
       "      system_test_plan system_test_result code_inspection_result e2e_test_plan "
-      "e2e_test_result\n"
+      "e2e_test_result private_rule\n"
       "      한글 모델 이름도 받는다 (`ks model` 의 name 열).\n"
       "DB: <루트>/.kiotty/spec.kisp\n\n" },
     { MessageKey::INIT_SYNOPSIS, "[--name N]" },

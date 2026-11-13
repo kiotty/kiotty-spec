@@ -76,7 +76,7 @@ bool testModels()
     ok = expectTrue(models.model(ItemKind::CODE_INSPECTION_RESULT).created_in == entity::Step::CODE_INSPECTING, "inspection step") && ok;
     ok = expectTrue(models.model(ItemKind::CHANGE_REQUEST).tags.length == 3, "change request tags") && ok;
     ok = expectTrue(models.model(ItemKind::MILESTONE).tags.length == 0, "milestone has no tags") && ok;
-    ok = expectTrue(models.model(ItemKind::CHANGE_REQUEST).relations.length == 5, "change request relations") && ok;
+    ok = expectTrue(models.model(ItemKind::CHANGE_REQUEST).relations.length == 6, "change request relations") && ok;
     return ok;
 }
 
@@ -129,6 +129,46 @@ bool testRelations()
     return ok;
 }
 
+bool hasRelation(ItemKind kind, const char* name, ItemKind target, entity::Cardinality cardinality)
+{
+    const impl::ModelCatalog& models = catalog();
+    const auto found = models.finder().findRelation(kind, textOf(name));
+    if (!found) { return false; }
+    const entity::RelationDefinition& definition = models.finder().relationsOf(kind)[found.value];
+    return definition.target_kind == target && definition.cardinality == cardinality;
+}
+
+bool hasTagBit(ItemKind kind, const char* tag, const char* bit, uint32_t position)
+{
+    const impl::ModelCatalog& models = catalog();
+    const auto found = models.finder().findTag(kind, textOf(tag));
+    if (!found) { return false; }
+    const auto bit_index = models.finder().findTagBit(kind, found.value, textOf(bit));
+    return static_cast<bool>(bit_index) && bit_index.value == position;
+}
+
+bool testModelTwo()
+{
+    const impl::ModelCatalog& models = catalog();
+    const entity::Model& rule = models.model(ItemKind::PRIVATE_RULE);
+    bool ok = expectTrue(static_cast<uint32_t>(ItemKind::PRIVATE_RULE) == 14, "private rule is kind 14");
+    ok = expectTrue(entity::kindName(ItemKind::PRIVATE_RULE) == "private_rule", "private rule name") && ok;
+    ok = expectTrue(entity::parseKind("private_rule") == 14, "parse private rule") && ok;
+    ok = expectTrue(std::strcmp(rule.name.terminated(), "전용 개발 수칙") == 0, "private rule model name") && ok;
+    ok = expectTrue(std::strcmp(rule.id_prefix.terminated(), "PRULE") == 0, "private rule prefix") && ok;
+    ok = expectTrue(rule.created_in == entity::Step::REQUIREMENT_DISCUSSING, "private rule step") && ok;
+    ok = expectTrue(hasTagBit(ItemKind::PRIVATE_RULE, "수칙 종류", "테스트", 4), "private rule kind tag") && ok;
+    ok = expectTrue(hasRelation(ItemKind::PRIVATE_RULE, "대체 개발 수칙", ItemKind::RULE, entity::Cardinality::MANY), "replaces rules") && ok;
+    ok = expectTrue(hasRelation(ItemKind::CODE_INSPECTION_RESULT, "검사 전용 개발 수칙", ItemKind::PRIVATE_RULE, entity::Cardinality::SINGLE), "inspects private rule") && ok;
+    ok = expectTrue(hasRelation(ItemKind::CHANGE_REQUEST, "영향 전용 개발 수칙", ItemKind::PRIVATE_RULE, entity::Cardinality::MANY), "change request affects private rule") && ok;
+    ok = expectTrue(hasTagBit(ItemKind::CHANGE_REQUEST, "상태", "백로그", 4), "backlog state") && ok;
+    ok = expectTrue(hasTagBit(ItemKind::CHANGE_REQUEST, "출처", "공통 수칙", 3), "common rule source") && ok;
+    ok = expectTrue(hasTagBit(ItemKind::CHANGE_REQUEST, "상태", "거부", 3), "old state bits stay") && ok;
+    const auto milestone = models.finder().findRelation(ItemKind::CHANGE_REQUEST, textOf("관련 마일스톤"));
+    ok = expectTrue(static_cast<bool>(milestone) && milestone.value == 4, "old relation index stays") && ok;
+    return ok;
+}
+
 // 개발수칙 2.10: 빈 입력, 최대 길이, 최대 길이 + 1, 중간 null 바이트, 잘못된 UTF-8
 bool testParseKind()
 {
@@ -170,6 +210,7 @@ int main()
         {"relations", testRelations},
         {"parse kind", testParseKind},
         {"parse state", testParseState},
+        {"model two", testModelTwo},
     };
 
     int failed = 0;

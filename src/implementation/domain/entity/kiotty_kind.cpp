@@ -19,6 +19,7 @@ constexpr std::string_view KIND_NAMES[ITEM_KIND_COUNT] = {
     "code_inspection_result",
     "e2e_test_plan",
     "e2e_test_result",
+    "private_rule",
 };
 
 constexpr uint32_t CHECKPOINT_STATE_COUNT = 3;
@@ -65,7 +66,8 @@ bool hasDecision(ItemKind kind)
     case ItemKind::EXTERNAL_INTERFACE:
     case ItemKind::DESIGN:
     case ItemKind::UNIT_TEST_PLAN:
-    case ItemKind::MILESTONE: return true;
+    case ItemKind::MILESTONE:
+    case ItemKind::PRIVATE_RULE: return true;
     case ItemKind::CHANGE_REQUEST:
     case ItemKind::UNIT_TEST_RESULT:
     case ItemKind::SYSTEM_TEST_PLAN:

@@ -3,6 +3,7 @@
 #include "implementation/core/kiotty_fixed_string.h"
 #include "implementation/core/kiotty_text_view.h"
 #include "implementation/domain/usecases/checker/kiotty_acceptance_criteria.h"
+#include "implementation/domain/usecases/checker/kiotty_check_values.h"
 
 #include <string_view>
 #include <vector>
@@ -12,6 +13,9 @@ namespace kiotty::spec::implementation {
 namespace {
 
 using entity::ItemHandle;
+using check_values::clearValues;
+using check_values::readCount;
+using check_values::readValue;
 using entity::ItemKind;
 
 using IndexResult = Result<uint32_t, KiottySpecStatus>;
@@ -24,9 +28,6 @@ constexpr ItemKind RESULT_KINDS[] = { ItemKind::SYSTEM_TEST_RESULT,
 uint32_t findLowestStep(uint64_t value);
 bool isResultKind(ItemKind kind);
 size_t appendCondition(Span<UnmetCondition> rows, size_t length, const UnmetCondition& row);
-uint64_t readValue(Span<const uint64_t> values, size_t index);
-uint32_t readCount(Span<const uint32_t> counts, size_t index);
-void clearValues(Span<uint64_t> values);
 
 }
 
@@ -42,12 +43,7 @@ Span<const UnmetCondition> Checker::collect(entity::Step step)
                                  ItemKind::SYSTEM_TEST_PLAN, KIOTTY_SPEC_CONDITION_SYSTEM_TEST_PAIR,
                                  TargetFilter::FUNCTIONAL_REQUIREMENTS });
         break;
-    case entity::Step::CODE_INSPECTING:
-        checkOneToOne(PairRule { CODE_INSPECTION_RULE_RELATION, ItemKind::RULE,
-                                 ItemKind::CODE_INSPECTION_RESULT,
-                                 KIOTTY_SPEC_CONDITION_CODE_INSPECTION_PAIR,
-                                 TargetFilter::ALL_TARGETS });
-        break;
+    case entity::Step::CODE_INSPECTING: checkCodeInspection(); break;
     case entity::Step::END_TO_END_TEST_DISCUSSING:
         checkOneToOne(PairRule { END_TO_END_TEST_INTERFACE_RELATION, ItemKind::EXTERNAL_INTERFACE,
                                  ItemKind::END_TO_END_TEST_PLAN,
@@ -162,50 +158,6 @@ void Checker::checkMilestoneCoverage()
         const uint32_t count =
             is_design ? readCount(design_counts, index) : readCount(test_counts, index);
         if (count == 0) { add(KIOTTY_SPEC_CONDITION_MILESTONE_COVERAGE, index); }
-    }
-}
-
-void Checker::checkOneToOne(const PairRule& rule)
-{
-    const uint32_t relation = relationIndex(rule.test_kind, rule.relation_name);
-    checkTargetPairs(rule, relation);
-    checkSingleTargets(rule.test_kind, relation);
-}
-
-void Checker::checkTargetPairs(const PairRule& rule, uint32_t relation)
-{
-    const bool is_functional_only = rule.filter == TargetFilter::FUNCTIONAL_REQUIREMENTS;
-    const bool is_top_level_only = rule.filter == TargetFilter::TOP_LEVEL_TARGETS;
-    const TagBit functional = is_functional_only ? tagBit(ItemKind::REQUIREMENT,
-                                                          REQUIREMENT_KIND_TAG,
-                                                          FUNCTIONAL_REQUIREMENT_BIT)
-                                                 : TagBit {};
-    const Span<const uint64_t> kinds = loadTags(ItemKind::REQUIREMENT, functional.tag_index);
-    const Span<const uint32_t> test_counts =
-        loadRelationCounts(RelationEnd {rule.test_kind, relation, RelationSide::TO});
-    const size_t capacity = _workspace.items.slots().capacity();
-    for (size_t index = 0; index < capacity; ++index) {
-        const bool is_target = readKind(index) == rule.target_kind;
-        if (!is_target) { continue; }
-        const uint64_t kind_value = readValue(kinds, index);
-        if (is_functional_only && (kind_value & functional.bit) == 0) { continue; }
-        const bool is_child = is_top_level_only && hasParent(index);
-        if (is_child) { continue; }
-        const uint32_t test_count = readCount(test_counts, index);
-        if (test_count != 1) { add(rule.pair_condition, index); }
-    }
-}
-
-void Checker::checkSingleTargets(ItemKind test_kind, uint32_t relation)
-{
-    const Span<const uint32_t> target_counts =
-        loadRelationCounts(RelationEnd {test_kind, relation, RelationSide::FROM});
-    const size_t capacity = _workspace.items.slots().capacity();
-    for (size_t index = 0; index < capacity; ++index) {
-        const bool is_test = readKind(index) == test_kind;
-        if (!is_test) { continue; }
-        const uint32_t target_count = readCount(target_counts, index);
-        if (target_count != 1) { add(KIOTTY_SPEC_CONDITION_SINGLE_TARGET, index); }
     }
 }
 
@@ -367,23 +319,6 @@ size_t appendCondition(Span<UnmetCondition> rows, size_t length, const UnmetCond
     if (!slot) { return length; }
     *slot.value = row;
     return length + 1;
-}
-
-uint64_t readValue(Span<const uint64_t> values, size_t index)
-{
-    const Result<const uint64_t&, KiottySpecStatus> value = values.at(index);
-    return value ? *value.value : 0;
-}
-
-uint32_t readCount(Span<const uint32_t> counts, size_t index)
-{
-    const Result<const uint32_t&, KiottySpecStatus> count = counts.at(index);
-    return count ? *count.value : 0;
-}
-
-void clearValues(Span<uint64_t> values)
-{
-    for (uint64_t& value : values) { value = 0; }
 }
 
 }

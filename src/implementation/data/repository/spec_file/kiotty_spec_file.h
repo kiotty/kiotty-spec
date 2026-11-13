@@ -30,6 +30,7 @@ public:
     KiottySpecStatus load();
     KiottySpecStatus save();
     KiottySpecStatus checkUnchanged();
+    uint32_t modelVersion() const { return _model_version; }
 
 private:
     void clear();
@@ -38,6 +39,7 @@ private:
     OpenedFileResult openTemporaryFile();
     KiottySpecStatus writeLines(OpenedFile temporary_file);
     KiottySpecStatus readLine(const KispFileReader& reader);
+    KiottySpecStatus readHeader(std::string_view line);
     KiottySpecStatus finishLoad();
     KiottySpecStatus lineFailure(size_t line_number, KiottySpecStatus status);
     WorkAreas splitWork();
@@ -48,6 +50,7 @@ private:
     const SystemPath& _database;
     SystemPath _temporary_path {};
     uint64_t _hash {EMPTY_KISP_HASH};
+    uint32_t _model_version {MODEL_VERSION};
 };
 
 }

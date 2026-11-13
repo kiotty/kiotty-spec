@@ -17,10 +17,13 @@ static_assert(READ_BUFFER_BYTES + LINE_BYTES <= KIOTTY_SPEC_MIN_WORK_BUFFER_BYTE
               "work buffer minimum must hold the read buffer and one line");
 constexpr std::string_view CONFLICT_MARKERS[] = {"<<<<<<<", "=======", ">>>>>>>"};
 constexpr char COMMENT = '#';
+constexpr uint32_t UNKNOWN_MODEL_VERSION = 0;
+constexpr size_t HEADER_LINE_NUMBER = 1;
 constexpr char FIELD_SEPARATOR = '\t';
 
 using HashResult = Result<uint64_t, KiottySpecStatus>;
 
+uint32_t readModelVersion(std::string_view header);
 bool isConflictMarker(std::string_view line);
 bool isSameHash(uint64_t current_hash, uint64_t saved_hash);
 
@@ -88,6 +91,7 @@ KiottySpecStatus SpecFile::load()
 
 void SpecFile::clear()
 {
+    _model_version = MODEL_VERSION;
     _tables.meta.clear();
     _tables.checkpoints.clear();
     _tables.items.maintenance().clear();
@@ -128,11 +132,8 @@ KiottySpecStatus SpecFile::readLine(const KispFileReader& reader)
 {
     const std::string_view line = viewOf(reader.line());
     const size_t line_number = reader.lineNumber();
-    if (line_number == 1 && line != KISP_HEADER) {
-        return _tables.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
-                                     KIOTTY_SPEC_SUBJECT_FILE_FORMAT, _database.view(),
-                                     reader.lineNumber());
-    }
+    const bool is_header = line_number == HEADER_LINE_NUMBER;
+    if (is_header) { return readHeader(line); }
     const bool is_conflict_marker = isConflictMarker(line);
     if (is_conflict_marker) {
         return _tables.failure.raise(KIOTTY_SPEC_STATUS_CONFLICT, KIOTTY_SPEC_SUBJECT_MERGE_MARKER,
@@ -148,6 +149,18 @@ KiottySpecStatus SpecFile::readLine(const KispFileReader& reader)
                                      spanOf(line.substr(0, line.find(FIELD_SEPARATOR))));
     }
     return SpecParser(_tables).parse(fields.value);
+}
+
+KiottySpecStatus SpecFile::readHeader(std::string_view line)
+{
+    const uint32_t version = readModelVersion(line);
+    _model_version = version;
+    if (version == UNKNOWN_MODEL_VERSION) {
+        return _tables.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
+                                     KIOTTY_SPEC_SUBJECT_FILE_FORMAT, _database.view(),
+                                     HEADER_LINE_NUMBER);
+    }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 KiottySpecStatus SpecFile::lineFailure(size_t line_number, KiottySpecStatus status)
@@ -181,6 +194,13 @@ WorkAreas SpecFile::splitWork()
 }
 
 namespace {
+
+uint32_t readModelVersion(std::string_view header)
+{
+    if (header == KISP_HEADER) { return MODEL_VERSION; }
+    if (header == KISP_PREVIOUS_HEADER) { return PREVIOUS_MODEL_VERSION; }
+    return UNKNOWN_MODEL_VERSION;
+}
 
 bool isConflictMarker(std::string_view line)
 {

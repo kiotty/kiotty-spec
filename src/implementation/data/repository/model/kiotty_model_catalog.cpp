@@ -24,6 +24,8 @@ const std::string_view MILESTONE_DESIGN_RELATION {"포함 설계 사항"};
 const std::string_view MILESTONE_UNIT_TEST_RELATION {"포함 유닛 테스트"};
 const std::string_view SYSTEM_TEST_REQUIREMENT_RELATION {"검증 요구사항"};
 const std::string_view CODE_INSPECTION_RULE_RELATION {"검사 개발 수칙"};
+const std::string_view CODE_INSPECTION_PRIVATE_RULE_RELATION {"검사 전용 개발 수칙"};
+const std::string_view REPLACED_RULE_RELATION {"대체 개발 수칙"};
 const std::string_view END_TO_END_TEST_INTERFACE_RELATION {"검증 외부 인터페이스"};
 const std::string_view ACCEPTANCE_CRITERIA_KEYWORDS[ACCEPTANCE_CRITERIA_KEYWORD_COUNT] {
     "인수 조건", "인수조건"
@@ -77,14 +79,15 @@ const ModelSource MODEL_SOURCES[] = {
     {"코드 검사 결과", "CIR", ItemKind::CODE_INSPECTION_RESULT, Step::CODE_INSPECTING},
     {"E2E 테스트", "E2E", ItemKind::END_TO_END_TEST_PLAN, Step::END_TO_END_TEST_DISCUSSING},
     {"E2E 테스트 결과", "E2ER", ItemKind::END_TO_END_TEST_RESULT, Step::END_TO_END_TEST_RUN},
+    {"전용 개발 수칙", "PRULE", ItemKind::PRIVATE_RULE, Step::REQUIREMENT_DISCUSSING},
 };
 
 const TagSource TAG_SOURCES[] = {
-    { { "사용자 피드백", "이슈", "초기 요구" },
+    { { "사용자 피드백", "이슈", "초기 요구", "공통 수칙" },
       "출처",
       ItemKind::CHANGE_REQUEST,
       Cardinality::MANY },
-    { { "열림", "반영 중", "완료", "거부" },
+    { { "열림", "반영 중", "완료", "거부", "백로그" },
       "상태",
       ItemKind::CHANGE_REQUEST,
       Cardinality::SINGLE },
@@ -133,6 +136,10 @@ const TagSource TAG_SOURCES[] = {
       "결과",
       ItemKind::END_TO_END_TEST_RESULT,
       Cardinality::SINGLE },
+    { { "아키텍처", "컨벤션", "코딩 제약", "의존성", "테스트" },
+      "수칙 종류",
+      ItemKind::PRIVATE_RULE,
+      Cardinality::MANY },
 };
 
 const RelationSource RELATION_SOURCES[] = {
@@ -142,6 +149,8 @@ const RelationSource RELATION_SOURCES[] = {
       Cardinality::MANY },
     { "영향 설계 사항", ItemKind::CHANGE_REQUEST, ItemKind::DESIGN, Cardinality::MANY },
     { "관련 마일스톤", ItemKind::CHANGE_REQUEST, ItemKind::MILESTONE, Cardinality::MANY },
+    { "영향 전용 개발 수칙", ItemKind::CHANGE_REQUEST, ItemKind::PRIVATE_RULE,
+      Cardinality::MANY },
     { "관련 요구사항", ItemKind::REQUIREMENT, ItemKind::REQUIREMENT, Cardinality::MANY },
     { "관련 요구사항", ItemKind::EXTERNAL_INTERFACE, ItemKind::REQUIREMENT, Cardinality::MANY },
     { "관련 요구사항", ItemKind::DESIGN, ItemKind::REQUIREMENT, Cardinality::MANY },
@@ -155,10 +164,13 @@ const RelationSource RELATION_SOURCES[] = {
     { "대상 시스템 테스트", ItemKind::SYSTEM_TEST_RESULT, ItemKind::SYSTEM_TEST_PLAN,
       Cardinality::MANY },
     { "검사 개발 수칙", ItemKind::CODE_INSPECTION_RESULT, ItemKind::RULE, Cardinality::SINGLE },
+    { "검사 전용 개발 수칙", ItemKind::CODE_INSPECTION_RESULT, ItemKind::PRIVATE_RULE,
+      Cardinality::SINGLE },
     { "검증 외부 인터페이스", ItemKind::END_TO_END_TEST_PLAN, ItemKind::EXTERNAL_INTERFACE,
       Cardinality::SINGLE },
     { "대상 E2E 테스트", ItemKind::END_TO_END_TEST_RESULT, ItemKind::END_TO_END_TEST_PLAN,
       Cardinality::MANY },
+    { "대체 개발 수칙", ItemKind::PRIVATE_RULE, ItemKind::RULE, Cardinality::MANY },
 };
 
 static_assert(std::size(MODEL_SOURCES) == entity::ITEM_KIND_COUNT, "one model per kind");

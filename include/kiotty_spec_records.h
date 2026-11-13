@@ -373,7 +373,7 @@ static_assert(sizeof(KiottySpecCursorResult) <= 24, "unexpected padding");
 static_assert(sizeof(KiottySpecPositionResult) == 48, "unexpected padding");
 static_assert(sizeof(KiottySpecModelResult) == 72, "unexpected padding");
 static_assert(sizeof(KiottySpecContextResult) <= 16, "unexpected padding");
-static_assert(sizeof(KiottySpecDiffSummaryResult) == 336, "unexpected padding");
+static_assert(sizeof(KiottySpecDiffSummaryResult) == 360, "unexpected padding");
 static_assert(sizeof(KiottySpecConfiguration) <= 64, "unexpected padding");
 #endif
 

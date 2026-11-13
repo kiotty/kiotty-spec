@@ -12,7 +12,10 @@
 
 namespace kiotty::spec::implementation {
 
-inline constexpr std::string_view KISP_HEADER = "#kisp 2 model 1";
+inline constexpr std::string_view KISP_HEADER = "#kisp 2 model 2";
+inline constexpr std::string_view KISP_PREVIOUS_HEADER = "#kisp 2 model 1";
+inline constexpr uint32_t MODEL_VERSION = 2;
+inline constexpr uint32_t PREVIOUS_MODEL_VERSION = 1;
 inline constexpr std::string_view TABLE_MARKER = "TABLE";
 inline constexpr std::string_view LIVE_MARKER = "O";
 inline constexpr std::string_view REMOVED_MARKER = "X";

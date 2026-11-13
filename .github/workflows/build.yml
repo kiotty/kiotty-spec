@@ -29,7 +29,7 @@ jobs:
       - name: Test
         run: |
           if [ -d build/Debug ]; then bin=build/Debug; ext=.exe; else bin=build; ext=; fi
-          for test in core datasource context model cli api system e2e; do
+          for test in core datasource context model cli api rule_sync system e2e; do
             echo "::group::kiotty_${test}_test"
             "$bin/kiotty_${test}_test$ext"
             echo "::endgroup::"

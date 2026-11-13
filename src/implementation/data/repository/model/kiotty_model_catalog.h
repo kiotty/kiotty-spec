@@ -29,14 +29,16 @@ extern const std::string_view MILESTONE_DESIGN_RELATION;
 extern const std::string_view MILESTONE_UNIT_TEST_RELATION;
 extern const std::string_view SYSTEM_TEST_REQUIREMENT_RELATION;
 extern const std::string_view CODE_INSPECTION_RULE_RELATION;
+extern const std::string_view CODE_INSPECTION_PRIVATE_RULE_RELATION;
+extern const std::string_view REPLACED_RULE_RELATION;
 extern const std::string_view END_TO_END_TEST_INTERFACE_RELATION;
 extern const std::string_view ACCEPTANCE_CRITERIA_KEYWORDS[ACCEPTANCE_CRITERIA_KEYWORD_COUNT];
 
 class ModelCatalog
 {
 public:
-    static constexpr size_t TAG_COUNT = 13;
-    static constexpr size_t RELATION_COUNT = 19;
+    static constexpr size_t TAG_COUNT = 14;
+    static constexpr size_t RELATION_COUNT = 22;
     static constexpr size_t BIT_NAME_COUNT = TAG_COUNT * entity::TAG_BIT_COUNT;
 
     ModelCatalog() = default;

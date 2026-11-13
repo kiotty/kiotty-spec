@@ -114,7 +114,7 @@ bool testValueBoundaries(KiottySpecContext* context)
 {
     const KiottySpecStatus invalid = KIOTTY_SPEC_STATUS_INVALID_ARGUMENT;
     const KiottySpecItemKind no_kind = static_cast<KiottySpecItemKind>(0);
-    const KiottySpecItemKind past_kind = static_cast<KiottySpecItemKind>(14);
+    const KiottySpecItemKind past_kind = static_cast<KiottySpecItemKind>(KIOTTY_SPEC_ITEM_KIND_COUNT + 1);
     const KiottySpecCheckpointHandle high_bits = (KiottySpecCheckpointHandle{1} << 32) | 1;
     bool passed = expectTrue(createItem(context, no_kind, textOf(""), textOf("a"), textOf("")).code == invalid, "kind 0");
     passed = expectTrue(createItem(context, past_kind, textOf(""), textOf("a"), textOf("")).code == invalid, "kind past the last") && passed;
@@ -158,7 +158,7 @@ bool testQueryBoundaries(KiottySpecContext* context)
     tag_query.tag_index = 99;
     passed = expectTrue(KiottySpec_openItemCursor(context, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, &tag_query, 1).code == invalid,
                         "tag query past the model") && passed;
-    passed = expectTrue(KiottySpec_openItemCursor(context, static_cast<KiottySpecItemKind>(14), nullptr, 0).code == invalid,
+    passed = expectTrue(KiottySpec_openItemCursor(context, static_cast<KiottySpecItemKind>(KIOTTY_SPEC_ITEM_KIND_COUNT + 1), nullptr, 0).code == invalid,
                         "item cursor kind past the last") && passed;
     passed = expectTrue(KiottySpec_openRelationCursor(context, textOf("REQ-001"), static_cast<KiottySpecDirection>(9)).code == invalid,
                         "direction past the last") && passed;
@@ -203,7 +203,7 @@ bool testReopen(KiottySpecContext* context)
 {
     const std::string path = g_root + "/.kiotty/spec.kisp";
     const std::string before = readAll(path);
-    bool passed = expectTrue(before.rfind("#kisp 2 model 1\n", 0) == 0, "file starts with header");
+    bool passed = expectTrue(before.rfind("#kisp 2 model 2\n", 0) == 0, "file starts with header");
     passed = expectTrue(before.find("\nbody\tO\t") != std::string::npos &&before.find("## 인수 조건\\n- 저장된다\\n") != std::string::npos, "body line in file") && passed;
     passed = expectTrue(!std::filesystem::exists(g_root + "/.kiotty/spec"), "no body directory") && passed;
     KiottySpecConfiguration configuration {};

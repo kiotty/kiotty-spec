@@ -142,6 +142,12 @@ target_link_libraries(kiotty_api_test PRIVATE kiotty_spec)
 kiotty_warnings(kiotty_api_test)
 kiotty_no_exceptions(kiotty_api_test)
 
+# CR-015 테스트: 모델 2, 전용 개발 수칙, 원격 수칙 공유를 C 인터페이스로 부른다.
+add_executable(kiotty_rule_sync_test tests/rule_sync/rule_sync_test.cpp)
+target_link_libraries(kiotty_rule_sync_test PRIVATE kiotty_spec)
+kiotty_warnings(kiotty_rule_sync_test)
+kiotty_no_exceptions(kiotty_rule_sync_test)
+
 # 시스템 테스트: 기능 요구사항의 인수 조건을 C 인터페이스로 실행한다 (ST-001 ~ ST-031).
 add_executable(kiotty_system_test tests/system/system_test.cpp)
 target_link_libraries(kiotty_system_test PRIVATE kiotty_spec)
