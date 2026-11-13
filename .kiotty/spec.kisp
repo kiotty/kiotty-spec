@@ -6,7 +6,8 @@ TABLE	checkpoint	O/X	sequence	previous	step	state	created_at	description
 checkpoint	O	41	-	12	done	1794496742	E2E 테스트 실행 (965b26d Debug)
 checkpoint	O	42	41	1	done	1794533703	CR-015 공통 개발 수칙 원격 공유 (rule sync v1)
 checkpoint	O	43	42	2	done	1794545082	CR-015 요구사항 반영
-checkpoint	O	44	43	3	running	1794548217	CR-015 외부 인터페이스 반영
+checkpoint	O	44	43	3	done	1794548217	CR-015 외부 인터페이스 반영
+checkpoint	O	45	44	4	running	1794549015	CR-015 설계 반영
 TABLE	item	O/X	key	id
 item	O	00593058	CIR-020
 item	O	00ab1435	DSN-078
@@ -83,6 +84,7 @@ item	O	1d097706	CIR-059
 item	O	1dd0de2b	CIR-016
 item	O	1e275797	UI-020
 item	O	1e5137eb	UI-163
+item	O	1f36b6f5	DSN-096
 item	O	1f9bd33c	REQ-032
 item	O	1fa07e01	UI-129
 item	O	1fdea022	UI-026
@@ -199,6 +201,7 @@ item	O	4996c5f2	UI-146
 item	O	49a5e527	E2E-001
 item	O	4a0c9ac5	RULE-027
 item	O	4a212847	UI-049
+item	O	4b8c3bef	DSN-097
 item	O	4b931850	RULE-039
 item	O	4c0a532a	UT-077
 item	O	4c3f6656	UI-131
@@ -211,6 +214,7 @@ item	O	4d02ef15	UI-005
 item	O	4d436d0d	CIR-073
 item	O	4e547267	DSN-004
 item	O	4e9678f3	UT-059
+item	O	4eb0c862	DSN-104
 item	O	4f46cf12	RULE-072
 item	O	4f804f78	ST-005
 item	O	4f8ec1fa	CIR-050
@@ -223,6 +227,7 @@ item	O	52022365	UT-039
 item	O	522dcd2d	REQ-012
 item	O	5265c117	UI-059
 item	O	5266da2e	UI-075
+item	O	52942a10	DSN-101
 item	O	52a01925	UI-045
 item	O	52ede9df	CIR-049
 item	O	53bb7345	REQ-005
@@ -325,6 +330,7 @@ item	O	7e66c64a	UI-047
 item	O	7e68584c	REQ-029
 item	O	7ea7218f	UT-052
 item	O	7ee22562	DSN-052
+item	O	7f3ed4cf	DSN-103
 item	O	7f44dc49	DSN-042
 item	O	7f82e1fc	UI-125
 item	O	80568adc	UI-121
@@ -375,6 +381,7 @@ item	O	93bdba16	E2ER-006
 item	O	94ce118e	DSN-080
 item	O	94e3d6ee	DSN-039
 item	O	95376c8b	UI-158
+item	O	957aa736	DSN-100
 item	O	959084d4	RULE-055
 item	O	95c318d7	UI-088
 item	O	95e1f869	UI-013
@@ -400,6 +407,7 @@ item	O	9bcc3b7d	DSN-019
 item	O	9c969009	UT-070
 item	O	9d0cea7a	CIR-065
 item	O	9db86b2a	DSN-077
+item	O	9e6dcb4a	DSN-105
 item	O	9ea5c49d	DSN-032
 item	O	9f976785	REQ-039
 item	O	a05b6682	UT-073
@@ -474,6 +482,7 @@ item	O	b92730c1	UI-040
 item	O	b937cc81	CIR-005
 item	O	b943b917	ST-015
 item	O	b95d931a	UI-073
+item	O	b98dfee9	DSN-102
 item	O	b9a28d9f	UT-022
 item	O	b9eee54e	DSN-051
 item	O	b9f7ebe2	REQ-015
@@ -521,6 +530,7 @@ item	O	cc4f8228	CIR-060
 item	O	cd23d5c3	UT-040
 item	O	cd2da8cb	REQ-006
 item	O	cd2e6aa6	UT-003
+item	O	cd2f3c8d	DSN-099
 item	O	cdad8d64	E2E-013
 item	O	ce280297	REQ-017
 item	O	ce5d963a	DSN-055
@@ -549,6 +559,7 @@ item	O	d729b40d	UI-102
 item	O	d7d58524	DSN-028
 item	O	d7eb983a	UI-137
 item	O	d86b7227	UI-100
+item	O	d878d266	DSN-098
 item	O	d899d5c4	DSN-063
 item	O	d9035721	ST-009
 item	O	d988a84f	UT-068
@@ -660,6 +671,7 @@ item_version	O	011ed8df	41	design	-	흐름 · 체크포인트 확정		23714c423e
 item_version	O	0196d2e3	41	code_inspection_result	-	6.8 외부와 주고받는 문자열은 UTF-8 이다.	PASS	0201350b3dfbd23f
 item_version	O	021f95cd	41	system_test_result	-	항목을 종류별 모델대로 분류하고 연결한다	kiotty_system_test, 965b26d Debug	-
 item_version	O	02360e37	41	design	-	SpecFile (data/repository/spec_file/kiotty_spec_file.h)	.kisp 사양 파일과 메모리의 store 를 맞춘다: 통째로 읽기(load), 다시 쓰기(save), 밖에서 바뀌었는지 보기(checkUnchanged).	d4f73fc4bdaa4032
+item_version	O	02360e37	45	design	-	SpecFile (data/repository/spec_file/kiotty_spec_file.h)	.kisp 사양 파일과 메모리의 store 를 맞춘다: 통째로 읽기(load), 다시 쓰기(save), 밖에서 바뀌었는지 보기(checkUnchanged).	3a9d1d5e6ecded4c
 item_version	O	0291ef05	41	code_inspection_result	-	0. 원칙	PASS	f759ee54be260dcb
 item_version	O	029979bf	41	rule	969657b8	4.11 부정 조건을 피한다.	4.11 부정 조건을 피한다. if (!isEmpty()) 대신 if (hasItems()). 이중 부정 금지.	52812be755a87794
 item_version	O	031f1260	41	external_interface	fcda3877	KiottySpecItemKind	항목 13 종류. 값은 1 부터이며 kind_mask 의 비트 (kind - 1)	35a9d827637f99f3
@@ -674,9 +686,11 @@ item_version	O	04e60bf1	41	unit_test_plan	def6c251	result (testResult)		a9d73124
 item_version	O	0648ffe1	41	unit_test_plan	c6c00c78	line decoder inputs (testLineDecoderInputs)	개발수칙 2.10: 빈 입력, 최대 길이, 최대 길이 + 1, 중간 null 바이트, 잘못된 UTF-8	52ad1c6c87f3876c
 item_version	O	065fa99a	41	system_test_plan	39a38e52	기록을 git 으로 보관하고 병합한다	REQ-004 의 인수 조건 4 개	d0a1ccae38aef91b
 item_version	O	0673118d	41	design	-	kind (domain/entity/kiotty_kind.h)	Kind · 단계 · 체크포인트 상태의 값과 영문 이름 표 (설계서 v1 3.1).	25ffa5bcfc4dc998
+item_version	O	0673118d	45	design	-	kind (domain/entity/kiotty_kind.h)	Kind · 단계 · 체크포인트 상태의 값과 영문 이름 표 (설계서 v1 3.1).	59cb130bdc49292b
 item_version	O	067ecec1	41	external_interface	9019c5a7	KiottySpec_readDecisionAt	그 시점의 결정 기록	e2b991589c7089bb
 item_version	O	07728b44	41	design	-	kisp_file (data/datasource/kiotty_kisp_file.h)	.kisp 파일을 줄마다 읽으며 줄 해시를 쌓고, 임시 파일에 쓴 뒤 rename 으로 바꾼다.	b0741d0cc019c8fb
 item_version	O	07e965d1	41	design	-	디렉토리 app/cli/		89a212e391e56262
+item_version	O	07e965d1	45	design	-	디렉토리 app/cli/		d847ecda377a3e68
 item_version	O	0831a2e4	41	system_test_result	-	지난 시점의 내용을 읽는다	kiotty_system_test, 965b26d Debug	-
 item_version	O	0857a7da	41	external_interface	b7bb9da8	KiottySpec_setItemParent	상위 항목을 정하거나 없앤다	7d9298c79d41c56a
 item_version	O	08fe2a2b	41	rule	-	9. 리뷰 체크리스트		e9550585a34067cb
@@ -730,6 +744,7 @@ item_version	O	1d097706	41	code_inspection_result	-	6. 설계	PASS	20153e2389c02
 item_version	O	1dd0de2b	41	code_inspection_result	-	2.2 포인터는 항상 길이와 함께 다닌다.	PASS	17cc9c73323e8a95
 item_version	O	1e275797	41	external_interface	83f7146f	KiottySpec_createContext	설정 용량으로 컨텍스트를 만든다	f6363785fe9d385f
 item_version	O	1e5137eb	44	external_interface	48a9ab3c	KiottySpecRuleDiff	개발 수칙 하나의 차이	314ec4e376d4f52f
+item_version	O	1f36b6f5	45	design	-	remote_record (domain/entity/kiotty_remote_record.h)	원격 상태 값: 원격 저장소 주소와 기준 버전(git commit)	3a71ee1b6c66b181
 item_version	O	1f9bd33c	41	requirement	-	C 경계에서 실패는 상태 코드로만 알린다		4ebed2e425530904
 item_version	O	1fa07e01	41	external_interface	a5336127	KiottySpecCursorResult	상태, 커서, 전체 개수	02e8cfa3f8ee9837
 item_version	O	1fdea022	41	external_interface	70f78fd9	KiottySpec_formatKind	Kind 의 영문 snake_case 이름	d798c542c6d5f8d0
@@ -794,6 +809,7 @@ item_version	O	35e96b19	41	unit_test_plan	c6c00c78	kisp file write and hash (tes
 item_version	O	365e6c3f	41	code_inspection_result	-	3.2 포인터로 연결된 자료구조는 쓰지 않는다.	PASS	b760e4509f53fe54
 item_version	O	36e5888d	41	rule	17e806a6	3.1 같은 시점에 함께 읽는 필드만 같은 struct 에 둔다.		098181f61bdaad07
 item_version	O	375e4f1d	41	design	-	메모리 정책 · 작업 버퍼와 커서		f527f251496fab22
+item_version	O	375e4f1d	45	design	-	메모리 정책 · 작업 버퍼와 커서		d29dc5a16453ae0d
 item_version	O	3788c303	41	unit_test_plan	cd23d5c3	diff (testDiff)	설계서 v1 5.4 의 호출 예와 같은 모양의 변화를 두 체크포인트에 걸쳐 만든다.	2c139239b05f02f1
 item_version	O	37a2c03a	41	external_interface	2665e8cd	KiottySpec_fetchIdPage	ID 커서의 다음 페이지	83b588fae0488f20
 item_version	O	37a4b025	41	external_interface	95e1f869	KiottySpec_fetchTextDiffPage	글자 차이 커서의 다음 페이지	d0479f65f1238c03
@@ -837,6 +853,7 @@ item_version	O	45d0a870	41	e2e_test_plan	-	항목 목록과 커서	UI-006 항목
 item_version	O	4611bb03	41	rule	17e806a6	3.3 순회는 index 순서로 풀 전체를 훑는다.		0f4c1a429e8adbc2
 item_version	O	46567ed8	41	design	-	PastReader (context/kiotty_past_reader.h)	그 시점의 항목 버전 · 태그 · 본문 · 결정 기록을 읽는다 (설계서 v1 5.4).	75844674f339cae2
 item_version	O	46908f11	41	design	-	Checker (domain/usecases/checker/kiotty_checker.h)	단계별 확정 조건 (설계서 v1 5.2, 정의서 R-3 ~ R-5, R-10).	8564b49f7c153214
+item_version	O	46908f11	45	design	-	Checker (domain/usecases/checker/kiotty_checker.h)	단계별 확정 조건 (설계서 v1 5.2, 정의서 R-3 ~ R-5, R-10).	2cc186c038a8b10a
 item_version	O	47954855	41	design	-	디렉토리 src/implementation/domain/entity/		85e5ec44c1867697
 item_version	O	48100f44	41	unit_test_plan	c6c00c78	unicode path (testUnicodePath)		3152a8c265a3271e
 item_version	O	487fb454	41	system_test_plan	45a4ca49	오래된 기록을 정리한다	REQ-024 의 인수 조건 3 개	aad990aad0c12c65
@@ -849,18 +866,21 @@ item_version	O	4996c5f2	41	external_interface	48a9ab3c	KiottySpecName	이름 글
 item_version	O	49a5e527	41	e2e_test_plan	-	컨텍스트와 사양 파일	UI-001 컨텍스트와 사양 파일 묶음을 C 프로그램으로 구동해 검증	a99f96eda9ef5cc7
 item_version	O	4a0c9ac5	41	rule	17e806a6	3.2 포인터로 연결된 자료구조는 쓰지 않는다.	3.2 포인터로 연결된 자료구조는 쓰지 않는다. 배열 + index 로 만든다.	74393a711ace59f2
 item_version	O	4a212847	41	external_interface	2665e8cd	KiottySpec_openChildCursor	하위 항목 커서를 연다	a431e4c21cf3274e
+item_version	O	4b8c3bef	45	design	-	RemoteState (domain/usecases/remote/kiotty_remote_state.h)	원격 상태를 meta 의 remote.url · remote.rule_base 로 읽고 쓴다. 체크포인트와 무관	a4141c4bc3a3165b
 item_version	O	4b931850	41	rule	969657b8	4.6 auto 는 우변에 타입이 보일 때(생성자 호출, Result 반환)만 쓴다.	4.6 auto 는 우변에 타입이 보일 때(생성자 호출, Result 반환)만 쓴다. 숫자·bool 은 타입을 적는다.	221040699431c056
 item_version	O	4c0a532a	41	unit_test_plan	d988a84f	parse arguments bytes (testParseArgumentsBytes)		dedfdcccf4f025c7
 item_version	O	4c3f6656	41	external_interface	a5336127	KiottySpecModelResult	상태와 모델	8189034b339d5b50
 item_version	O	4c5d0ba1	41	rule	1753b045	6.7 크로스 플랫폼 클래스는 backend 헤더를 선택하고 Payload 멤버로 구현을 감춘다.		68c702cb706c24fb
 item_version	O	4c5e5e82	41	rule	969657b8	4.4 이름		46e1492b108121f0
 item_version	O	4c940f50	41	design	-	ModelCatalog (data/repository/model/kiotty_model_catalog.h)	모델 표: Kind 별 태그 정의(48 비트 이름)와 관계 정의(이름, 대상 Kind, 개수 제한).	b817f102fa02c7c1
+item_version	O	4c940f50	45	design	-	ModelCatalog (data/repository/model/kiotty_model_catalog.h)	모델 표: Kind 별 태그 정의(48 비트 이름)와 관계 정의(이름, 대상 Kind, 개수 제한).	282a29a423cd8549
 item_version	O	4cc711b5	41	external_interface	a415fab7	KiottySpecContext	라이브러리 인스턴스. 안이 감춰진 구조체	0a8e50bc004496f6
 item_version	O	4ccfc889	41	unit_test_plan	d988a84f	parse checkpoint argument (testParseCheckpointArgument)		c7c3b875d9f5ec6b
 item_version	O	4d02ef15	41	external_interface	-	관계	모델에 정의된 관계를 만들고 끊고 본다	d3da2494d288493f
 item_version	O	4d436d0d	41	code_inspection_result	-	8. i18n	PASS	3cdc1654e5941a83
 item_version	O	4e547267	41	design	-	디렉토리 src/implementation/data/datasource/		4b9d19eaf89cce01
 item_version	O	4e9678f3	41	unit_test_plan	a44597b9	parse kind (testParseKind)		3d01153ac2f8cc68
+item_version	O	4eb0c862	45	design	-	흐름 · 원격 수칙 비교		c9991da41d096169
 item_version	O	4f46cf12	41	rule	dc2a5ab3	7.4 core/ 는 범용 자료구조와 유틸만 둔다.		bb9b6cf8c6f48d9f
 item_version	O	4f804f78	41	system_test_plan	39a38e52	밖에서 바뀐 파일을 덮어쓰지 않는다	REQ-005 의 인수 조건 2 개	0ac24e7393e45754
 item_version	O	4f8ec1fa	41	code_inspection_result	-	4.17 method 는 그 개념이 할 수 있는 동작을 나타내는 짧은 동사로 쓴다.	PASS	b4fcb92e0629e590
@@ -873,6 +893,7 @@ item_version	O	52022365	41	unit_test_plan	a39102db	cursor kind and handles (test
 item_version	O	522dcd2d	41	requirement	f40870e2	항목 ID 를 바꾼다		24cf8c59e1518f37
 item_version	O	5265c117	41	external_interface	3dd02f08	KiottySpec_fetchCheckpointPage	체크포인트 커서의 다음 페이지	99c05e970281b909
 item_version	O	5266da2e	41	external_interface	9019c5a7	KiottySpec_readItemTagAt	그 시점의 태그 값	6424dfc68a9945c8
+item_version	O	52942a10	45	design	-	RuleAcceptor (domain/usecases/rule_sync/kiotty_rule_acceptor.h)	받아 둔 개발 수칙을 쓰기 한 번으로 새 Step 1 체크포인트에 편입한다	64fb404a359fd564
 item_version	O	52a01925	41	external_interface	4d02ef15	KiottySpec_openRelationCursor	항목 하나의 관계 커서를 연다	36a179997b9b86f2
 item_version	O	52ede9df	41	code_inspection_result	-	4.16 const 가 기본이다.	PASS	3ad29622972d6c36
 item_version	O	53bb7345	41	requirement	26e7649a	밖에서 바뀐 파일을 덮어쓰지 않는다		5619dc5ace70931f
@@ -978,6 +999,7 @@ item_version	O	7e66c64a	41	external_interface	4d02ef15	KiottySpec_fetchRelationP
 item_version	O	7e68584c	41	requirement	2deab145	제목과 요약의 글자 차이를 본다		a9dff14128f0cd3c
 item_version	O	7ea7218f	41	unit_test_plan	cd23d5c3	실패 이유와 상태 이름	실패한 호출의 이유 문장과 상태 코드 이름을 읽는다	515a3804e34560fb
 item_version	O	7ee22562	41	design	-	ItemTables (data/repository/item/kiotty_item_tables.h)	ItemStore 가 소유하는 표 묶음.	852b44541f3d957e
+item_version	O	7f3ed4cf	45	design	-	RuleExporter (domain/usecases/rule_sync/kiotty_rule_exporter.h)	가장 최근 체크포인트가 DONE 일 때만 개발 수칙 파일을 내보낸다	39f29acb0fb4f04c
 item_version	O	7f44dc49	41	design	-	FileWriter (data/datasource/kiotty_file_writer.h)	파일을 새로 만들어 조각마다 이어 쓴다.	2669f3480624c6f2
 item_version	O	7f82e1fc	41	external_interface	a5336127	KiottySpecItemHandleResult	상태와 항목 핸들	1a02f7abfe4f304a
 item_version	O	80568adc	41	external_interface	a5336127	KiottySpecStatusResult	상태만	dd78083d77093a8d
@@ -987,6 +1009,7 @@ item_version	O	81639d02	41	rule	969657b8	4.2 한 함수는 한 추상 수준이�
 item_version	O	81ad2c8b	41	unit_test_plan	def6c251	fixed string is compact (testFixedStringIsCompact)		7637dc8ad82a8542
 item_version	O	81b27814	41	unit_test_plan	def6c251	text buffer (testTextBuffer)		2af1521b2d368f8e
 item_version	O	820ad0e7	41	design	-	디렉토리 src/implementation/domain/usecases/		0f94998621b0574d
+item_version	O	820ad0e7	45	design	-	디렉토리 src/implementation/domain/usecases/		a4f2a1bf8f73d0ad
 item_version	O	8216aca2	41	e2e_test_result	-	지난 시점 읽기	kiotty_e2e_test, 965b26d Debug	-
 item_version	O	82791019	41	design	-	WriteScope (domain/usecases/workspace/kiotty_write_scope.h)	쓰기 하나를 가장 최근 체크포인트에 묶는다.	15500d0589ca2072
 item_version	O	8325a2aa	41	code_inspection_result	-	4. 가독성	PASS	2ec590004418581d
@@ -1029,6 +1052,7 @@ item_version	O	93bdba16	41	e2e_test_result	-	항목 목록과 커서	kiotty_e2e_
 item_version	O	94ce118e	41	design	-	HistoryFinder (context/kiotty_history_finder.h)	체크포인트 이력과 현재 위치 (설계서 v1 8).	a060c7d7b0903a72
 item_version	O	94e3d6ee	41	design	-	platform (data/infra/platform/kiotty_platform.h)	운영체제별 파일 기능(열기 · 읽기 · 쓰기 · 폴더 · 이름 바꾸기)과 경로 변환의 선언.	c40499690cc38b18
 item_version	O	95376c8b	44	external_interface	8e936061	KiottySpec_fetchRuleDiffPage	수칙 차이 커서의 다음 페이지	15ef240e3cc1c316
+item_version	O	957aa736	45	design	-	RuleDiffer (context/kiotty_rule_differ.h)	두 컨텍스트의 개발 수칙 차이 커서와 수칙 본문의 줄 단위 차이 커서	8b4172531ba3d69e
 item_version	O	959084d4	41	rule	291c4670	5.2 C interface 는 <Organization><Project>_ 접두사를 붙인다.		d89b1c199516116d
 item_version	O	95c318d7	41	external_interface	fcda3877	KiottySpecChange	항목 · 관계의 추가 · 수정 · 삭제	58b5fa8686b76d0d
 item_version	O	95e1f869	41	external_interface	-	글자 차이	제목 · 요약이 두 시점 사이에 어떻게 바뀌었는지 조각으로 받는다	d01ff5aa8d6a86b8
@@ -1054,6 +1078,7 @@ item_version	O	9bcc3b7d	41	design	-	흐름 · 정리 (prune)		19da684410ce4cf0
 item_version	O	9c969009	41	unit_test_plan	d988a84f	parse actor (testParseActor)		38d364f8b57cb764
 item_version	O	9d0cea7a	41	code_inspection_result	-	6.6 C interface 로 여러 인스턴스를 내보내는 조회는 커서로 한다.	PASS	9e3a1b33dce30f5b
 item_version	O	9db86b2a	41	design	-	DiffRange (context/kiotty_diff_range.h)	비교할 두 체크포인트 sequence	30ee0f8367d9ae1b
+item_version	O	9e6dcb4a	45	design	-	흐름 · 원격 수칙 편입 · 내보내기 · 원격 상태		ede331642245e1be
 item_version	O	9ea5c49d	41	design	-	Span (core/kiotty_span.h)	포인터와 길이를 함께 다니게 하는 Span<T> (개발수칙 2.2).	7b78e738295332b7
 item_version	O	9f976785	43	requirement	-	개발 수칙을 다른 프로젝트와 나눈다	개발 수칙을 원격 git 저장소에 올리고, 다른 프로젝트가 원할 때 받아 비교하고 새 체크포인트로 편입한다	2c2bd326f76c9b85
 item_version	O	a05b6682	41	unit_test_plan	d988a84f	parse tag spec (testParseTagSpec)		4e73c8fc88bc5365
@@ -1084,6 +1109,7 @@ item_version	O	a7dfed4a	41	change_request	-	E2E 테스트는 외부 인터페이
 item_version	O	a8fbd9e6	41	rule	969657b8	4.10 멤버 변수를 쓰는 계산은 멤버를 인자로 받는 보조 함수로 뺀다.	4.10 멤버 변수를 쓰는 계산은 멤버를 인자로 받는 보조 함수로 뺀다. 메서드는 멤버를 모아 넘기고 결과를 저장하는 일만 한다.	e4e1edf96f836f3c
 item_version	O	a916dc80	41	external_interface	a5336127	KiottySpecTagResult	상태와 태그	633cf3a943a1b15d
 item_version	O	a9305235	41	design	-	SpecTables (data/repository/spec_file/kiotty_spec_tables.h)	파일과 오가는 store 와 모델 표.	15857ad586047ce9
+item_version	O	a9305235	45	design	-	SpecTables (data/repository/spec_file/kiotty_spec_tables.h)	파일과 오가는 store 와 모델 표.	44ce2a60e748fc5a
 item_version	O	a942eff9	41	design	-	FixedVector (core/kiotty_fixed_vector.h)	용량을 생성할 때 한 번 확보하는 가변 길이 배열 (개발수칙 1.6).	0d776489f360dfb6
 item_version	O	a956e4b6	41	code_inspection_result	-	5.1 에러는 Result<Value, Code> 리턴값으로만 전달한다.	PASS	d3951b9f4df95005
 item_version	O	a95c9671	41	system_test_plan	ee4483d0	정해진 관계로만 연결한다	REQ-016 의 인수 조건 5 개	3ddeab9d49538feb
@@ -1093,6 +1119,7 @@ item_version	O	a9cd2fb6	41	system_test_plan	45a4ca49	사용자만 체크포인�
 item_version	O	aa52d61a	41	code_inspection_result	-	6.7 크로스 플랫폼 클래스는 backend 헤더를 선택하고 Payload 멤버로 구현을 감춘다.	PASS	70bd4fc9318496f1
 item_version	O	ab4f315c	41	code_inspection_result	-	1.9 모든 변수는 선언과 동시에 {} 로 초기화한다.	PASS	216c0f801b284ab9
 item_version	O	ac9f5341	41	design	-	OpenedContext (context/kiotty_opened_context.h)	사양 파일을 연 뒤에만 얻는 맥락.	2306793a57f8326e
+item_version	O	ac9f5341	45	design	-	OpenedContext (context/kiotty_opened_context.h)	사양 파일을 연 뒤에만 얻는 맥락.	0853a602cbef9c06
 item_version	O	acb68f0e	41	system_test_result	-	체크포인트를 시작하고 쓰기를 묶는다	kiotty_system_test, 965b26d Debug	-
 item_version	O	ad336141	41	unit_test_plan	c6c00c78	field parser inputs (testFieldParserInputs)		52fa97cf2ca72b06
 item_version	O	ad6b635f	41	change_request	-	큰 클래스 나누기	public method 7 개를 넘는 6 개 클래스를 세부 클래스로 나눈다	2ae5ea580e2c8e5c
@@ -1130,6 +1157,7 @@ item_version	O	b92730c1	41	external_interface	de592f6c	KiottySpec_readItemTag	�
 item_version	O	b937cc81	41	code_inspection_result	-	1.2 전역 Context 가 모든 인스턴스를 소유하고, 소멸자가 전부 해제한다.	PASS	43cdeddd8125cad0
 item_version	O	b943b917	41	system_test_plan	ee4483d0	항목에 태그를 붙여 분류한다	REQ-015 의 인수 조건 4 개	0b67d2864883b27a
 item_version	O	b95d931a	41	external_interface	21ded3ba	KiottySpec_fetchRelationDiffPage	관계 변화 커서의 다음 페이지	2072004641e2b75e
+item_version	O	b98dfee9	45	design	-	RuleSpecWriter (data/repository/spec_file/kiotty_rule_spec_writer.h)	가장 최근 체크포인트의 개발 수칙만 체크포인트 하나로 접어 새 .kisp 로 쓴다	8adbb08cfc99c4a6
 item_version	O	b9a28d9f	41	unit_test_plan	def6c251	span text (testSpanText)		2bd5db9f83025beb
 item_version	O	b9eee54e	41	design	-	ItemStore (data/repository/item/kiotty_item_store.h)	항목 버전 표와 현재 뷰 (항목 풀 + 태그 풀 + ID 색인, 설계서 v1 10.1).	ca9bc7c768b33407
 item_version	O	b9f7ebe2	41	requirement	29885efc	항목에 태그를 붙여 분류한다		378dd52b23f3de2f
@@ -1158,10 +1186,13 @@ item_version	O	c289ed95	41	code_inspection_result	-	1.8 재귀는 쓰지 않는�
 item_version	O	c2945a3c	41	unit_test_plan	def6c251	fixed string overflow clears (testFixedStringOverflowClears)		4bd4dd7aea680e89
 item_version	O	c29acf52	41	rule	b19d9182	1.8 재귀는 쓰지 않는다.	1.8 재귀는 쓰지 않는다. 깊이 제한이 있는 명시적 스택(FixedVector)으로 바꾼다.	c0cfdf1156b2cc3c
 item_version	O	c2ac95b5	41	design	-	Context (context/kiotty_context.h)	store · usecase · 커서 · 경로 작업 영역을 소유한다. 쓰는 쪽은 writeSide(), 읽는 쪽은 readSide() 로 나눈다 (CR-010).	fa73c38aeb2debfe
+item_version	O	c2ac95b5	45	design	-	Context (context/kiotty_context.h)	store · usecase · 커서 · 경로 작업 영역을 소유한다. 쓰는 쪽은 writeSide(), 읽는 쪽은 readSide() 로 나눈다 (CR-010).	22ab06e2ea74052a
 item_version	O	c2e66a3f	41	design	-	spec_adapter (kiotty_spec_adapter.h)	C 인터페이스와 implementation 사이의 얇은 어댑터가 함께 쓰는 도우미.	3dd4eb3215d296cc
+item_version	O	c2e66a3f	45	design	-	spec_adapter (kiotty_spec_adapter.h)	C 인터페이스와 implementation 사이의 얇은 어댑터가 함께 쓰는 도우미.	f479574554a02b51
 item_version	O	c39b1670	41	rule	17e806a6	3.5 다른 스레드가 쓰는 데이터는 alignas(64) 로 캐시 라인을 분리한다.		3f1048c07a9368d6
 item_version	O	c3f906cb	41	rule	dc2a5ab3	7.1 C++ 라이브러리		1a57055844d4adce
 item_version	O	c4d3ef5c	41	design	-	흐름 · 사양 파일 열기		6b0b937be333bf11
+item_version	O	c4d3ef5c	45	design	-	흐름 · 사양 파일 열기		ad0fc6622e2ce138
 item_version	O	c5ae4dcd	41	external_interface	fcda3877	KiottySpecStep	12 단계	813450077d6459d0
 item_version	O	c65b2d10	41	system_test_result	-	체크포인트 사이에 바뀐 것을 본다	kiotty_system_test, 965b26d Debug	-
 item_version	O	c67367ba	41	external_interface	48a9ab3c	KiottySpecRelationDefinition	관계 정의	ac1f49dd31ad8046
@@ -1178,9 +1209,11 @@ item_version	O	cd23d5c3	41	unit_test_plan	-	C 인터페이스 테스트 (kiotty_
 item_version	O	cd2da8cb	41	requirement	26e7649a	형식이 다른 파일은 열지 않는다		64ee563e6ca564f7
 item_version	O	cd2da8cb	43	requirement	26e7649a	형식이 다른 파일은 열지 않는다		83ccf229f7a2e43e
 item_version	O	cd2e6aa6	41	unit_test_plan	def6c251	result reference (testResultReference)		f283ca6317b1d2fc
+item_version	O	cd2f3c8d	45	design	-	RuleDiffStore (context/kiotty_rule_diff_store.h)	수칙 차이 커서와 본문 차이 커서의 작업 영역 (커서 슬롯마다 행 · 글 · 줄 구간)	c37a737822483242
 item_version	O	cdad8d64	41	e2e_test_plan	-	글자 차이	UI-013 글자 차이 묶음을 C 프로그램으로 구동해 검증	a0d459ad8f4e1c01
 item_version	O	ce280297	41	requirement	29885efc	모델을 읽는다		36693dee76d43351
 item_version	O	ce5d963a	41	design	-	MetaStore (data/repository/meta/kiotty_meta_store.h)	프로젝트 meta (project.name, project.created_at)	12709f20013ded6c
+item_version	O	ce5d963a	45	design	-	MetaStore (data/repository/meta/kiotty_meta_store.h)	프로젝트 meta (project.name, project.created_at)	be0b4905c2ff8ccc
 item_version	O	ce66c051	41	requirement	f40870e2	항목의 제목 · 요약 · 본문을 고친다		453b86497e49c004
 item_version	O	ce6f920b	41	unit_test_plan	a44597b9	models (testModels)		8d81636a45a03ead
 item_version	O	cedc19ca	41	rule	969657b8	4.16 const 가 기본이다.	4.16 const 가 기본이다. 바뀌는 변수만 non-const 로 둔다.	853926645cb612e2
@@ -1207,6 +1240,7 @@ item_version	O	d729b40d	41	external_interface	48a9ab3c	KiottySpecRelation	관계
 item_version	O	d7d58524	41	design	-	number (core/kiotty_number.h)	10진수 글자 전체를 수로 바꾼다.	d598d5abb2b51eea
 item_version	O	d7eb983a	41	external_interface	3eda8983	KiottySpec_fetchTagDefinitionPage	태그 정의 커서의 다음 페이지	e79d997250097b2e
 item_version	O	d86b7227	41	external_interface	48a9ab3c	KiottySpecItem	항목 (424 바이트)	cedac2149c5f3bbc
+item_version	O	d878d266	45	design	-	line_diff (core/kiotty_line_diff.h)	두 글을 줄 단위로 비교해 같음 · 지움 · 더함 줄 구간으로 나눈다	fd157c338cbb6e3c
 item_version	O	d899d5c4	41	design	-	Editor (domain/usecases/editor/kiotty_editor.h)	항목 쓰기. structure() 는 StructureEditor (createItem · renameItem · setParent · removeItem), content() 는 ContentEditor (updateItem · writeBody · setTag · writeDecision) 를 돌려준다. 쓰기 시작은 WriteScope 가 맡는다 (CR-010).	b86d46a3c938c164
 item_version	O	d9035721	41	system_test_plan	c7511506	항목의 제목 · 요약 · 본문을 고친다	REQ-009 의 인수 조건 6 개	af0a8b622ad4986c
 item_version	O	d988a84f	41	unit_test_plan	-	CLI 단위 테스트 (kiotty_cli_test)		871ba8424b06a7b6
@@ -1289,6 +1323,7 @@ item_version	O	f6b74667	41	design	-	text_diff (core/kiotty_text_diff.h)	두 글�
 item_version	O	f6ebe467	41	code_inspection_result	-	7.2 GUI · CLI · 서버 데몬	PASS	6bbbbbedc7ec9f9a
 item_version	O	f723c1bd	41	code_inspection_result	-	2.5 외부에는 포인터를 내보내지 않는다.	PASS	ec76657319b0c420
 item_version	O	f7fffbc9	41	design	-	CursorPool (context/kiotty_cursor_pool.h)	커서 슬롯 풀. 슬롯은 포인터 대신 CursorSlot 참조로 다루고 페이지는 subspan 으로 꺼낸다 (CR-008).	e1c7747896d8e439
+item_version	O	f7fffbc9	45	design	-	CursorPool (context/kiotty_cursor_pool.h)	커서 슬롯 풀. 슬롯은 포인터 대신 CursorSlot 참조로 다루고 페이지는 subspan 으로 꺼낸다 (CR-008).	d5770ba9cd3aaf0f
 item_version	O	f8a460e7	41	rule	969657b8	4.5 bool 인자를 쓰지 않는다.	4.5 bool 인자를 쓰지 않는다. enum class 로 바꾼다. 출력 인자를 쓰지 않는다. 리턴값으로 돌려준다.	471df930c07e269b
 item_version	O	f96a9036	41	external_interface	b7bb9da8	KiottySpec_readItemBody	현재 본문을 읽는다	b7ed4b94a1263216
 item_version	O	f971c3c9	41	code_inspection_result	-	9. 리뷰 체크리스트	PASS	7470a314d94ad314
@@ -1327,6 +1362,7 @@ tag	O	0196d2e3	결과	41	PASS
 tag	O	021f95cd	결과	41	PASS
 tag	O	02360e37	설계 종류	41	모듈
 tag	O	02360e37	구현 상태	41	구현 완료
+tag	O	02360e37	구현 상태	45	변경 필요
 tag	O	0291ef05	결과	41	PASS
 tag	O	029979bf	수칙 종류	41	컨벤션
 tag	O	031f1260	인터페이스 종류	41	C 타입
@@ -1340,11 +1376,13 @@ tag	O	04e60bf1	구현 상태	41	구현 완료
 tag	O	0648ffe1	구현 상태	41	구현 완료
 tag	O	0673118d	설계 종류	41	모듈
 tag	O	0673118d	구현 상태	41	구현 완료
+tag	O	0673118d	구현 상태	45	변경 필요
 tag	O	067ecec1	인터페이스 종류	41	C 함수
 tag	O	07728b44	설계 종류	41	모듈
 tag	O	07728b44	구현 상태	41	구현 완료
 tag	O	07e965d1	설계 종류	41	디렉토리
 tag	O	07e965d1	구현 상태	41	구현 완료
+tag	O	07e965d1	구현 상태	45	변경 필요
 tag	O	0831a2e4	결과	41	PASS
 tag	O	0857a7da	인터페이스 종류	41	C 함수
 tag	O	08fe2a2b	수칙 종류	41	테스트
@@ -1407,6 +1445,8 @@ tag	O	1d097706	결과	41	PASS
 tag	O	1dd0de2b	결과	41	PASS
 tag	O	1e275797	인터페이스 종류	41	C 함수
 tag	O	1e5137eb	인터페이스 종류	44	C 타입
+tag	O	1f36b6f5	설계 종류	45	모듈
+tag	O	1f36b6f5	구현 상태	45	미구현
 tag	O	1f9bd33c	요구사항 종류	41	품질 요구사항
 tag	O	1fa07e01	인터페이스 종류	41	C 타입
 tag	O	1fdea022	인터페이스 종류	41	C 함수
@@ -1480,6 +1520,7 @@ tag	O	365e6c3f	결과	41	PASS
 tag	O	36e5888d	수칙 종류	41	코딩 제약
 tag	O	375e4f1d	설계 종류	41	메모리 정책
 tag	O	375e4f1d	구현 상태	41	구현 완료
+tag	O	375e4f1d	구현 상태	45	변경 필요
 tag	O	3788c303	구현 상태	41	구현 완료
 tag	O	37a2c03a	인터페이스 종류	41	C 함수
 tag	O	37a4b025	인터페이스 종류	41	C 함수
@@ -1519,6 +1560,7 @@ tag	O	46567ed8	설계 종류	41	모듈
 tag	O	46567ed8	구현 상태	41	구현 완료
 tag	O	46908f11	설계 종류	41	모듈
 tag	O	46908f11	구현 상태	41	구현 완료
+tag	O	46908f11	구현 상태	45	변경 필요
 tag	O	47954855	설계 종류	41	디렉토리
 tag	O	47954855	구현 상태	41	구현 완료
 tag	O	48100f44	구현 상태	41	구현 완료
@@ -1529,6 +1571,8 @@ tag	O	493cacd6	결과	41	PASS
 tag	O	4996c5f2	인터페이스 종류	41	C 타입
 tag	O	4a0c9ac5	수칙 종류	41	코딩 제약
 tag	O	4a212847	인터페이스 종류	41	C 함수
+tag	O	4b8c3bef	설계 종류	45	모듈
+tag	O	4b8c3bef	구현 상태	45	미구현
 tag	O	4b931850	수칙 종류	41	컨벤션
 tag	O	4c0a532a	구현 상태	41	구현 완료
 tag	O	4c3f6656	인터페이스 종류	41	C 타입
@@ -1536,6 +1580,7 @@ tag	O	4c5d0ba1	수칙 종류	41	아키텍처
 tag	O	4c5e5e82	수칙 종류	41	컨벤션
 tag	O	4c940f50	설계 종류	41	모듈
 tag	O	4c940f50	구현 상태	41	구현 완료
+tag	O	4c940f50	구현 상태	45	변경 필요
 tag	O	4cc711b5	인터페이스 종류	41	C 타입
 tag	O	4ccfc889	구현 상태	41	구현 완료
 tag	O	4d02ef15	인터페이스 종류	41	C 함수
@@ -1543,6 +1588,8 @@ tag	O	4d436d0d	결과	41	PASS
 tag	O	4e547267	설계 종류	41	디렉토리
 tag	O	4e547267	구현 상태	41	구현 완료
 tag	O	4e9678f3	구현 상태	41	구현 완료
+tag	O	4eb0c862	설계 종류	45	동작 흐름
+tag	O	4eb0c862	구현 상태	45	미구현
 tag	O	4f46cf12	수칙 종류	41	아키텍처
 tag	O	4f8ec1fa	결과	41	PASS
 tag	O	504cb7db	인터페이스 종류	41	C 타입
@@ -1554,6 +1601,8 @@ tag	O	52022365	구현 상태	41	구현 완료
 tag	O	522dcd2d	요구사항 종류	41	기능 요구사항
 tag	O	5265c117	인터페이스 종류	41	C 함수
 tag	O	5266da2e	인터페이스 종류	41	C 함수
+tag	O	52942a10	설계 종류	45	모듈
+tag	O	52942a10	구현 상태	45	미구현
 tag	O	52a01925	인터페이스 종류	41	C 함수
 tag	O	52ede9df	결과	41	PASS
 tag	O	53bb7345	요구사항 종류	41	기능 요구사항
@@ -1674,6 +1723,8 @@ tag	O	7e68584c	요구사항 종류	41	기능 요구사항
 tag	O	7ea7218f	구현 상태	41	미구현
 tag	O	7ee22562	설계 종류	41	모듈
 tag	O	7ee22562	구현 상태	41	구현 완료
+tag	O	7f3ed4cf	설계 종류	45	모듈
+tag	O	7f3ed4cf	구현 상태	45	미구현
 tag	O	7f44dc49	설계 종류	41	모듈
 tag	O	7f44dc49	구현 상태	41	구현 완료
 tag	O	7f82e1fc	인터페이스 종류	41	C 타입
@@ -1686,6 +1737,7 @@ tag	O	81ad2c8b	구현 상태	41	구현 완료
 tag	O	81b27814	구현 상태	41	구현 완료
 tag	O	820ad0e7	설계 종류	41	디렉토리
 tag	O	820ad0e7	구현 상태	41	구현 완료
+tag	O	820ad0e7	구현 상태	45	변경 필요
 tag	O	8216aca2	결과	41	PASS
 tag	O	82791019	설계 종류	41	모듈
 tag	O	82791019	구현 상태	41	구현 완료
@@ -1735,6 +1787,8 @@ tag	O	94ce118e	구현 상태	41	구현 완료
 tag	O	94e3d6ee	설계 종류	41	모듈
 tag	O	94e3d6ee	구현 상태	41	구현 완료
 tag	O	95376c8b	인터페이스 종류	44	C 함수
+tag	O	957aa736	설계 종류	45	모듈
+tag	O	957aa736	구현 상태	45	미구현
 tag	O	959084d4	수칙 종류	41	컨벤션
 tag	O	95c318d7	인터페이스 종류	41	C 타입
 tag	O	95e1f869	인터페이스 종류	41	C 함수
@@ -1763,6 +1817,8 @@ tag	O	9c969009	구현 상태	41	구현 완료
 tag	O	9d0cea7a	결과	41	PASS
 tag	O	9db86b2a	설계 종류	41	모듈
 tag	O	9db86b2a	구현 상태	41	구현 완료
+tag	O	9e6dcb4a	설계 종류	45	동작 흐름
+tag	O	9e6dcb4a	구현 상태	45	미구현
 tag	O	9ea5c49d	설계 종류	41	모듈
 tag	O	9ea5c49d	구현 상태	41	구현 완료
 tag	O	9f976785	요구사항 종류	43	기능 요구사항
@@ -1797,6 +1853,7 @@ tag	O	a8fbd9e6	수칙 종류	41	컨벤션
 tag	O	a916dc80	인터페이스 종류	41	C 타입
 tag	O	a9305235	설계 종류	41	모듈
 tag	O	a9305235	구현 상태	41	구현 완료
+tag	O	a9305235	구현 상태	45	변경 필요
 tag	O	a942eff9	설계 종류	41	모듈
 tag	O	a942eff9	구현 상태	41	구현 완료
 tag	O	a956e4b6	결과	41	PASS
@@ -1806,6 +1863,7 @@ tag	O	aa52d61a	결과	41	PASS
 tag	O	ab4f315c	결과	41	PASS
 tag	O	ac9f5341	설계 종류	41	모듈
 tag	O	ac9f5341	구현 상태	41	구현 완료
+tag	O	ac9f5341	구현 상태	45	변경 필요
 tag	O	acb68f0e	결과	41	PASS
 tag	O	ad336141	구현 상태	41	구현 완료
 tag	O	ad6b635f	출처	41	사용자 피드백
@@ -1848,6 +1906,8 @@ tag	O	b8f97e35	구현 상태	41	구현 완료
 tag	O	b92730c1	인터페이스 종류	41	C 함수
 tag	O	b937cc81	결과	41	PASS
 tag	O	b95d931a	인터페이스 종류	41	C 함수
+tag	O	b98dfee9	설계 종류	45	모듈
+tag	O	b98dfee9	구현 상태	45	미구현
 tag	O	b9a28d9f	구현 상태	41	구현 완료
 tag	O	b9eee54e	설계 종류	41	모듈
 tag	O	b9eee54e	구현 상태	41	구현 완료
@@ -1877,12 +1937,15 @@ tag	O	c2945a3c	구현 상태	41	구현 완료
 tag	O	c29acf52	수칙 종류	41	코딩 제약
 tag	O	c2ac95b5	설계 종류	41	모듈
 tag	O	c2ac95b5	구현 상태	41	구현 완료
+tag	O	c2ac95b5	구현 상태	45	변경 필요
 tag	O	c2e66a3f	설계 종류	41	모듈
 tag	O	c2e66a3f	구현 상태	41	구현 완료
+tag	O	c2e66a3f	구현 상태	45	변경 필요
 tag	O	c39b1670	수칙 종류	41	코딩 제약
 tag	O	c3f906cb	수칙 종류	41	아키텍처
 tag	O	c4d3ef5c	설계 종류	41	동작 흐름
 tag	O	c4d3ef5c	구현 상태	41	구현 완료
+tag	O	c4d3ef5c	구현 상태	45	변경 필요
 tag	O	c5ae4dcd	인터페이스 종류	41	C 타입
 tag	O	c65b2d10	결과	41	PASS
 tag	O	c67367ba	인터페이스 종류	41	C 타입
@@ -1897,9 +1960,12 @@ tag	O	cc4f8228	결과	41	PASS
 tag	O	cd23d5c3	구현 상태	41	구현 완료
 tag	O	cd2da8cb	요구사항 종류	41	기능 요구사항
 tag	O	cd2e6aa6	구현 상태	41	구현 완료
+tag	O	cd2f3c8d	설계 종류	45	모듈
+tag	O	cd2f3c8d	구현 상태	45	미구현
 tag	O	ce280297	요구사항 종류	41	기능 요구사항
 tag	O	ce5d963a	설계 종류	41	모듈
 tag	O	ce5d963a	구현 상태	41	구현 완료
+tag	O	ce5d963a	구현 상태	45	변경 필요
 tag	O	ce66c051	요구사항 종류	41	기능 요구사항
 tag	O	ce6f920b	구현 상태	41	변경 필요
 tag	O	cedc19ca	수칙 종류	41	컨벤션
@@ -1922,6 +1988,8 @@ tag	O	d7d58524	설계 종류	41	모듈
 tag	O	d7d58524	구현 상태	41	구현 완료
 tag	O	d7eb983a	인터페이스 종류	41	C 함수
 tag	O	d86b7227	인터페이스 종류	41	C 타입
+tag	O	d878d266	설계 종류	45	모듈
+tag	O	d878d266	구현 상태	45	미구현
 tag	O	d899d5c4	설계 종류	41	모듈
 tag	O	d899d5c4	구현 상태	41	구현 완료
 tag	O	d988a84f	구현 상태	41	구현 완료
@@ -2013,6 +2081,7 @@ tag	O	f6ebe467	결과	41	PASS
 tag	O	f723c1bd	결과	41	PASS
 tag	O	f7fffbc9	설계 종류	41	모듈
 tag	O	f7fffbc9	구현 상태	41	구현 완료
+tag	O	f7fffbc9	구현 상태	45	변경 필요
 tag	O	f8a460e7	수칙 종류	41	컨벤션
 tag	O	f96a9036	인터페이스 종류	41	C 함수
 tag	O	f971c3c9	결과	41	PASS
@@ -2062,8 +2131,10 @@ relation	O	0196d2e3	code_inspection_result	검사 개발 수칙	2fa1b0d6	41
 relation	O	021f95cd	system_test_result	대상 시스템 테스트	ee4483d0	41
 relation	O	02360e37	design	관련 요구사항	094df44a	41
 relation	O	02360e37	design	관련 요구사항	53bb7345	41
+relation	O	02360e37	design	관련 요구사항	8e986d2a	45
 relation	O	02360e37	design	관련 요구사항	cd2da8cb	41
 relation	O	02360e37	design	관련 요구사항	d3dea456	41
+relation	O	02360e37	design	관련 외부 인터페이스	7bf57868	45
 relation	O	02360e37	design	관련 외부 인터페이스	83f7146f	41
 relation	O	02360e37	design	의존 설계 사항	07728b44	41
 relation	O	02360e37	design	의존 설계 사항	62e5e1c3	41
@@ -2081,7 +2152,9 @@ relation	O	0648ffe1	unit_test_plan	검증 설계 사항	74827f62	41
 relation	O	065fa99a	system_test_plan	검증 요구사항	d3dea456	41
 relation	O	0673118d	design	관련 요구사항	a9677d5d	41
 relation	O	0673118d	design	관련 요구사항	ce280297	41
+relation	O	0673118d	design	관련 요구사항	d3c1ae03	45
 relation	O	0673118d	design	관련 요구사항	f40870e2	41
+relation	O	0673118d	design	관련 외부 인터페이스	fcda3877	45
 relation	O	07728b44	design	관련 요구사항	53bb7345	41
 relation	O	07728b44	design	관련 요구사항	6b981e43	41
 relation	O	07728b44	design	관련 요구사항	d3dea456	41
@@ -2093,6 +2166,11 @@ relation	O	07728b44	design	의존 설계 사항	7f44dc49	41
 relation	O	07728b44	design	의존 설계 사항	9ea5c49d	41
 relation	O	07728b44	design	의존 설계 사항	b8f97e35	41
 relation	O	07e965d1	design	관련 요구사항	26e7649a	41
+relation	O	07e965d1	design	관련 요구사항	9f976785	45
+relation	O	07e965d1	design	관련 요구사항	b8a19a4d	45
+relation	O	07e965d1	design	관련 요구사항	d526c487	45
+relation	O	07e965d1	design	관련 요구사항	d638ccb6	45
+relation	O	07e965d1	design	관련 요구사항	ed67adf1	45
 relation	O	0831a2e4	system_test_result	대상 시스템 테스트	a56b99fa	41
 relation	O	090da302	e2e_test_result	대상 E2E 테스트	8fcdd7bb	41
 relation	O	091e5168	code_inspection_result	검사 개발 수칙	c39b1670	41
@@ -2188,6 +2266,11 @@ relation	O	1cbb1f84	change_request	영향 개발 수칙	e667522e	41
 relation	O	1ce50985	unit_test_plan	검증 설계 사항	f7fffbc9	41
 relation	O	1d097706	code_inspection_result	검사 개발 수칙	1753b045	41
 relation	O	1dd0de2b	code_inspection_result	검사 개발 수칙	5d9c30a3	41
+relation	O	1f36b6f5	design	관련 요구사항	d526c487	45
+relation	O	1f36b6f5	design	관련 외부 인터페이스	28766afe	45
+relation	O	1f36b6f5	design	관련 외부 인터페이스	a7be36e8	45
+relation	O	1f36b6f5	design	의존 설계 사항	6aa51734	45
+relation	O	1f36b6f5	design	의존 설계 사항	9ea5c49d	45
 relation	O	205b72b0	system_test_plan	검증 요구사항	7821230f	41
 relation	O	207c560c	code_inspection_result	검사 개발 수칙	a9827729	41
 relation	O	211b0a1a	design	관련 요구사항	214d9c30	41
@@ -2305,7 +2388,10 @@ relation	O	35e96b19	unit_test_plan	검증 설계 사항	07728b44	41
 relation	O	35e96b19	unit_test_plan	검증 설계 사항	7f44dc49	41
 relation	O	365e6c3f	code_inspection_result	검사 개발 수칙	4a0c9ac5	41
 relation	O	375e4f1d	design	관련 요구사항	214d9c30	41
+relation	O	375e4f1d	design	관련 요구사항	77161f26	45
 relation	O	375e4f1d	design	관련 요구사항	87374f9d	41
+relation	O	375e4f1d	design	관련 외부 인터페이스	283f1d08	45
+relation	O	375e4f1d	design	관련 외부 인터페이스	b49aad16	45
 relation	O	3788c303	unit_test_plan	검증 설계 사항	00ab1435	41
 relation	O	3788c303	unit_test_plan	검증 설계 사항	101104b9	41
 relation	O	3788c303	unit_test_plan	검증 설계 사항	3023a527	41
@@ -2347,8 +2433,10 @@ relation	O	46567ed8	design	의존 설계 사항	89f09ead	41
 relation	O	46567ed8	design	의존 설계 사항	9606f537	41
 relation	O	46567ed8	design	의존 설계 사항	9ea5c49d	41
 relation	O	46908f11	design	관련 요구사항	7821230f	41
+relation	O	46908f11	design	관련 요구사항	d3c1ae03	45
 relation	O	46908f11	design	관련 요구사항	f9e66987	41
 relation	O	46908f11	design	관련 외부 인터페이스	3dd02f08	41
+relation	O	46908f11	design	관련 외부 인터페이스	899af4ad	45
 relation	O	46908f11	design	의존 설계 사항	434b35f3	41
 relation	O	46908f11	design	의존 설계 사항	81354d90	41
 relation	O	46908f11	design	의존 설계 사항	8553ef57	41
@@ -2369,9 +2457,21 @@ relation	O	48a9ab3c	external_interface	관련 요구사항	f40870e2	41
 relation	O	48a9ab3c	external_interface	관련 요구사항	fa77317d	41
 relation	O	493cacd6	system_test_result	대상 시스템 테스트	d5121133	41
 relation	O	49a5e527	e2e_test_plan	검증 외부 인터페이스	83f7146f	41
+relation	O	4b8c3bef	design	관련 요구사항	b8a19a4d	45
+relation	O	4b8c3bef	design	관련 요구사항	d526c487	45
+relation	O	4b8c3bef	design	관련 요구사항	d638ccb6	45
+relation	O	4b8c3bef	design	관련 외부 인터페이스	28766afe	45
+relation	O	4b8c3bef	design	관련 외부 인터페이스	a7be36e8	45
+relation	O	4b8c3bef	design	의존 설계 사항	1f36b6f5	45
+relation	O	4b8c3bef	design	의존 설계 사항	434b35f3	45
+relation	O	4b8c3bef	design	의존 설계 사항	81354d90	45
+relation	O	4b8c3bef	design	의존 설계 사항	9ea5c49d	45
+relation	O	4b8c3bef	design	의존 설계 사항	ce5d963a	45
 relation	O	4c0a532a	unit_test_plan	검증 설계 사항	07e965d1	41
 relation	O	4c940f50	design	관련 요구사항	29885efc	41
+relation	O	4c940f50	design	관련 요구사항	7821230f	45
 relation	O	4c940f50	design	관련 요구사항	ce280297	41
+relation	O	4c940f50	design	관련 요구사항	d3c1ae03	45
 relation	O	4c940f50	design	관련 외부 인터페이스	3eda8983	41
 relation	O	4c940f50	design	관련 외부 인터페이스	70f78fd9	41
 relation	O	4c940f50	design	의존 설계 사항	434b35f3	41
@@ -2385,10 +2485,27 @@ relation	O	4e547267	design	관련 요구사항	094df44a	41
 relation	O	4e547267	design	관련 요구사항	63fa3db0	41
 relation	O	4e547267	design	관련 요구사항	d3dea456	41
 relation	O	4e9678f3	unit_test_plan	검증 설계 사항	0673118d	41
+relation	O	4eb0c862	design	관련 요구사항	77161f26	45
+relation	O	4eb0c862	design	관련 외부 인터페이스	283f1d08	45
+relation	O	4eb0c862	design	관련 외부 인터페이스	95376c8b	45
+relation	O	4eb0c862	design	관련 외부 인터페이스	b49aad16	45
 relation	O	4f804f78	system_test_plan	검증 요구사항	53bb7345	41
 relation	O	4f8ec1fa	code_inspection_result	검사 개발 수칙	54741482	41
 relation	O	508aa9ca	system_test_result	대상 시스템 테스트	45a4ca49	41
 relation	O	52022365	unit_test_plan	검증 설계 사항	f7fffbc9	41
+relation	O	52942a10	design	관련 요구사항	8e986d2a	45
+relation	O	52942a10	design	관련 요구사항	d3c1ae03	45
+relation	O	52942a10	design	관련 외부 인터페이스	72e91839	45
+relation	O	52942a10	design	의존 설계 사항	1084ebd3	45
+relation	O	52942a10	design	의존 설계 사항	434b35f3	45
+relation	O	52942a10	design	의존 설계 사항	4b8c3bef	45
+relation	O	52942a10	design	의존 설계 사항	7305bd84	45
+relation	O	52942a10	design	의존 설계 사항	81354d90	45
+relation	O	52942a10	design	의존 설계 사항	8553ef57	45
+relation	O	52942a10	design	의존 설계 사항	9ac20d4f	45
+relation	O	52942a10	design	의존 설계 사항	9ea5c49d	45
+relation	O	52942a10	design	의존 설계 사항	b5d0f058	45
+relation	O	52942a10	design	의존 설계 사항	e22babae	45
 relation	O	52ede9df	code_inspection_result	검사 개발 수칙	cedc19ca	41
 relation	O	5406acfb	system_test_plan	검증 요구사항	fc13027d	41
 relation	O	554b9f4b	code_inspection_result	검사 개발 수칙	62b091a0	41
@@ -2564,6 +2681,14 @@ relation	O	7ee22562	design	의존 설계 사항	778e3a58	41
 relation	O	7ee22562	design	의존 설계 사항	89f09ead	41
 relation	O	7ee22562	design	의존 설계 사항	9606f537	41
 relation	O	7ee22562	design	의존 설계 사항	edcaf421	41
+relation	O	7f3ed4cf	design	관련 요구사항	b8a19a4d	45
+relation	O	7f3ed4cf	design	관련 외부 인터페이스	f0b19790	45
+relation	O	7f3ed4cf	design	의존 설계 사항	434b35f3	45
+relation	O	7f3ed4cf	design	의존 설계 사항	62e5e1c3	45
+relation	O	7f3ed4cf	design	의존 설계 사항	81354d90	45
+relation	O	7f3ed4cf	design	의존 설계 사항	93a6dc83	45
+relation	O	7f3ed4cf	design	의존 설계 사항	9ea5c49d	45
+relation	O	7f3ed4cf	design	의존 설계 사항	b98dfee9	45
 relation	O	7f44dc49	design	관련 요구사항	6b981e43	41
 relation	O	7f44dc49	design	의존 설계 사항	9ea5c49d	41
 relation	O	7f44dc49	design	의존 설계 사항	b8f97e35	41
@@ -2581,8 +2706,11 @@ relation	O	81354d90	design	의존 설계 사항	ce5d963a	41
 relation	O	81354d90	design	의존 설계 사항	fa997aaf	41
 relation	O	81ad2c8b	unit_test_plan	검증 설계 사항	6aa51734	41
 relation	O	81b27814	unit_test_plan	검증 설계 사항	f5762d28	41
+relation	O	820ad0e7	design	관련 요구사항	8e986d2a	45
 relation	O	820ad0e7	design	관련 요구사항	a9677d5d	41
+relation	O	820ad0e7	design	관련 요구사항	b8a19a4d	45
 relation	O	820ad0e7	design	관련 요구사항	d3dea456	41
+relation	O	820ad0e7	design	관련 요구사항	d526c487	45
 relation	O	820ad0e7	design	관련 요구사항	f9e66987	41
 relation	O	8216aca2	e2e_test_result	대상 E2E 테스트	ff58af5d	41
 relation	O	82791019	design	관련 요구사항	6b981e43	41
@@ -2673,6 +2801,20 @@ relation	O	94e3d6ee	design	관련 요구사항	3d2b2666	41
 relation	O	94e3d6ee	design	관련 요구사항	63fa3db0	41
 relation	O	94e3d6ee	design	의존 설계 사항	93a6dc83	41
 relation	O	94e3d6ee	design	의존 설계 사항	9ea5c49d	41
+relation	O	957aa736	design	관련 요구사항	77161f26	45
+relation	O	957aa736	design	관련 외부 인터페이스	283f1d08	45
+relation	O	957aa736	design	관련 외부 인터페이스	95376c8b	45
+relation	O	957aa736	design	관련 외부 인터페이스	b49aad16	45
+relation	O	957aa736	design	의존 설계 사항	34f7dd98	45
+relation	O	957aa736	design	의존 설계 사항	434b35f3	45
+relation	O	957aa736	design	의존 설계 사항	7305bd84	45
+relation	O	957aa736	design	의존 설계 사항	81354d90	45
+relation	O	957aa736	design	의존 설계 사항	9ea5c49d	45
+relation	O	957aa736	design	의존 설계 사항	b5d0f058	45
+relation	O	957aa736	design	의존 설계 사항	cd2f3c8d	45
+relation	O	957aa736	design	의존 설계 사항	d878d266	45
+relation	O	957aa736	design	의존 설계 사항	e22babae	45
+relation	O	957aa736	design	의존 설계 사항	f7fffbc9	45
 relation	O	95e1f869	external_interface	관련 요구사항	7e68584c	41
 relation	O	9606f537	design	관련 요구사항	54fe9b64	41
 relation	O	9606f537	design	관련 요구사항	d3dea456	41
@@ -2710,6 +2852,13 @@ relation	O	9c969009	unit_test_plan	검증 설계 사항	07e965d1	41
 relation	O	9d0cea7a	code_inspection_result	검사 개발 수칙	e667522e	41
 relation	O	9db86b2a	design	관련 요구사항	9a4dab28	41
 relation	O	9db86b2a	design	관련 외부 인터페이스	21ded3ba	41
+relation	O	9e6dcb4a	design	관련 요구사항	8e986d2a	45
+relation	O	9e6dcb4a	design	관련 요구사항	b8a19a4d	45
+relation	O	9e6dcb4a	design	관련 요구사항	d526c487	45
+relation	O	9e6dcb4a	design	관련 외부 인터페이스	28766afe	45
+relation	O	9e6dcb4a	design	관련 외부 인터페이스	72e91839	45
+relation	O	9e6dcb4a	design	관련 외부 인터페이스	a7be36e8	45
+relation	O	9e6dcb4a	design	관련 외부 인터페이스	f0b19790	45
 relation	O	9ea5c49d	design	관련 요구사항	39921859	41
 relation	O	9ea5c49d	design	의존 설계 사항	434b35f3	41
 relation	O	a05b6682	unit_test_plan	검증 설계 사항	07e965d1	41
@@ -2748,6 +2897,7 @@ relation	O	a7dfed4a	change_request	영향 요구사항	f9e66987	41
 relation	O	a7dfed4a	change_request	영향 설계 사항	46908f11	41
 relation	O	a9305235	design	관련 요구사항	cd2da8cb	41
 relation	O	a9305235	design	관련 요구사항	d3dea456	41
+relation	O	a9305235	design	관련 외부 인터페이스	7bf57868	45
 relation	O	a9305235	design	의존 설계 사항	13e5e9f0	41
 relation	O	a9305235	design	의존 설계 사항	4c940f50	41
 relation	O	a9305235	design	의존 설계 사항	8553ef57	41
@@ -2763,18 +2913,27 @@ relation	O	a9cd2fb6	system_test_plan	검증 요구사항	f9e66987	41
 relation	O	aa52d61a	code_inspection_result	검사 개발 수칙	4c5d0ba1	41
 relation	O	ab4f315c	code_inspection_result	검사 개발 수칙	48975878	41
 relation	O	ac9f5341	design	관련 요구사항	26e7649a	41
+relation	O	ac9f5341	design	관련 요구사항	77161f26	45
+relation	O	ac9f5341	design	관련 요구사항	8e986d2a	45
+relation	O	ac9f5341	design	관련 요구사항	b8a19a4d	45
+relation	O	ac9f5341	design	관련 요구사항	d526c487	45
 relation	O	ac9f5341	design	관련 요구사항	f9e66987	41
 relation	O	ac9f5341	design	관련 외부 인터페이스	3dd02f08	41
 relation	O	ac9f5341	design	관련 외부 인터페이스	83f7146f	41
+relation	O	ac9f5341	design	관련 외부 인터페이스	8e936061	45
 relation	O	ac9f5341	design	의존 설계 사항	00ab1435	41
 relation	O	ac9f5341	design	의존 설계 사항	33c7d59e	41
 relation	O	ac9f5341	design	의존 설계 사항	33eb04e1	41
 relation	O	ac9f5341	design	의존 설계 사항	46908f11	41
+relation	O	ac9f5341	design	의존 설계 사항	4b8c3bef	45
 relation	O	ac9f5341	design	의존 설계 사항	4c940f50	41
+relation	O	ac9f5341	design	의존 설계 사항	52942a10	45
 relation	O	ac9f5341	design	의존 설계 사항	62e5e1c3	41
 relation	O	ac9f5341	design	의존 설계 사항	7c54b750	41
+relation	O	ac9f5341	design	의존 설계 사항	7f3ed4cf	45
 relation	O	ac9f5341	design	의존 설계 사항	81354d90	41
 relation	O	ac9f5341	design	의존 설계 사항	87ddb0bb	41
+relation	O	ac9f5341	design	의존 설계 사항	957aa736	45
 relation	O	ac9f5341	design	의존 설계 사항	9ea5c49d	41
 relation	O	ac9f5341	design	의존 설계 사항	d899d5c4	41
 relation	O	ac9f5341	design	의존 설계 사항	f7fffbc9	41
@@ -2815,6 +2974,13 @@ relation	O	b8f97e35	design	의존 설계 사항	62e5e1c3	41
 relation	O	b8f97e35	design	의존 설계 사항	9ea5c49d	41
 relation	O	b937cc81	code_inspection_result	검사 개발 수칙	34c2abef	41
 relation	O	b943b917	system_test_plan	검증 요구사항	b9f7ebe2	41
+relation	O	b98dfee9	design	관련 요구사항	b8a19a4d	45
+relation	O	b98dfee9	design	관련 외부 인터페이스	f0b19790	45
+relation	O	b98dfee9	design	의존 설계 사항	07728b44	45
+relation	O	b98dfee9	design	의존 설계 사항	434b35f3	45
+relation	O	b98dfee9	design	의존 설계 사항	74827f62	45
+relation	O	b98dfee9	design	의존 설계 사항	9ea5c49d	45
+relation	O	b98dfee9	design	의존 설계 사항	a9305235	45
 relation	O	b9a28d9f	unit_test_plan	검증 설계 사항	a5767c78	41
 relation	O	b9eee54e	design	관련 요구사항	214d9c30	41
 relation	O	b9eee54e	design	관련 요구사항	f40870e2	41
@@ -2851,21 +3017,31 @@ relation	O	c2ac95b5	design	관련 요구사항	094df44a	41
 relation	O	c2ac95b5	design	관련 요구사항	214d9c30	41
 relation	O	c2ac95b5	design	관련 요구사항	26e7649a	41
 relation	O	c2ac95b5	design	관련 요구사항	416925b2	41
+relation	O	c2ac95b5	design	관련 요구사항	77161f26	45
+relation	O	c2ac95b5	design	관련 요구사항	8e986d2a	45
+relation	O	c2ac95b5	design	관련 요구사항	b8a19a4d	45
+relation	O	c2ac95b5	design	관련 요구사항	d526c487	45
 relation	O	c2ac95b5	design	관련 외부 인터페이스	83f7146f	41
+relation	O	c2ac95b5	design	관련 외부 인터페이스	8e936061	45
 relation	O	c2ac95b5	design	의존 설계 사항	00ab1435	41
 relation	O	c2ac95b5	design	의존 설계 사항	02360e37	41
 relation	O	c2ac95b5	design	의존 설계 사항	13e5e9f0	41
 relation	O	c2ac95b5	design	의존 설계 사항	33c7d59e	41
 relation	O	c2ac95b5	design	의존 설계 사항	33eb04e1	41
 relation	O	c2ac95b5	design	의존 설계 사항	46908f11	41
+relation	O	c2ac95b5	design	의존 설계 사항	4b8c3bef	45
 relation	O	c2ac95b5	design	의존 설계 사항	4c940f50	41
+relation	O	c2ac95b5	design	의존 설계 사항	52942a10	45
 relation	O	c2ac95b5	design	의존 설계 사항	62e5e1c3	41
 relation	O	c2ac95b5	design	의존 설계 사항	7c54b750	41
+relation	O	c2ac95b5	design	의존 설계 사항	7f3ed4cf	45
 relation	O	c2ac95b5	design	의존 설계 사항	81354d90	41
 relation	O	c2ac95b5	design	의존 설계 사항	8553ef57	41
 relation	O	c2ac95b5	design	의존 설계 사항	87ddb0bb	41
+relation	O	c2ac95b5	design	의존 설계 사항	957aa736	45
 relation	O	c2ac95b5	design	의존 설계 사항	ac9f5341	41
 relation	O	c2ac95b5	design	의존 설계 사항	b9eee54e	41
+relation	O	c2ac95b5	design	의존 설계 사항	cd2f3c8d	45
 relation	O	c2ac95b5	design	의존 설계 사항	ce5d963a	41
 relation	O	c2ac95b5	design	의존 설계 사항	d899d5c4	41
 relation	O	c2ac95b5	design	의존 설계 사항	f5762d28	41
@@ -2873,9 +3049,13 @@ relation	O	c2ac95b5	design	의존 설계 사항	f7fffbc9	41
 relation	O	c2ac95b5	design	의존 설계 사항	fa997aaf	41
 relation	O	c2e66a3f	design	관련 요구사항	1f9bd33c	41
 relation	O	c2e66a3f	design	관련 요구사항	39921859	41
+relation	O	c2e66a3f	design	관련 요구사항	77161f26	45
+relation	O	c2e66a3f	design	관련 요구사항	8e986d2a	45
+relation	O	c2e66a3f	design	관련 요구사항	d526c487	45
 relation	O	c2e66a3f	design	관련 외부 인터페이스	21ded3ba	41
 relation	O	c2e66a3f	design	관련 외부 인터페이스	2665e8cd	41
 relation	O	c2e66a3f	design	관련 외부 인터페이스	3149b286	41
+relation	O	c2e66a3f	design	관련 외부 인터페이스	37a4b025	45
 relation	O	c2e66a3f	design	관련 외부 인터페이스	3dd02f08	41
 relation	O	c2e66a3f	design	관련 외부 인터페이스	3eda8983	41
 relation	O	c2e66a3f	design	관련 외부 인터페이스	48a9ab3c	41
@@ -2883,6 +3063,7 @@ relation	O	c2e66a3f	design	관련 외부 인터페이스	4d02ef15	41
 relation	O	c2e66a3f	design	관련 외부 인터페이스	70f78fd9	41
 relation	O	c2e66a3f	design	관련 외부 인터페이스	7ac5b218	41
 relation	O	c2e66a3f	design	관련 외부 인터페이스	83f7146f	41
+relation	O	c2e66a3f	design	관련 외부 인터페이스	8e936061	45
 relation	O	c2e66a3f	design	관련 외부 인터페이스	9019c5a7	41
 relation	O	c2e66a3f	design	관련 외부 인터페이스	95e1f869	41
 relation	O	c2e66a3f	design	관련 외부 인터페이스	a415fab7	41
@@ -2892,14 +3073,19 @@ relation	O	c2e66a3f	design	관련 외부 인터페이스	de592f6c	41
 relation	O	c2e66a3f	design	관련 외부 인터페이스	f0dc6547	41
 relation	O	c2e66a3f	design	관련 외부 인터페이스	f1cd20c5	41
 relation	O	c2e66a3f	design	관련 외부 인터페이스	fcda3877	41
+relation	O	c2e66a3f	design	의존 설계 사항	4b8c3bef	45
+relation	O	c2e66a3f	design	의존 설계 사항	52942a10	45
 relation	O	c2e66a3f	design	의존 설계 사항	6aa51734	41
 relation	O	c2e66a3f	design	의존 설계 사항	7c54b750	41
+relation	O	c2e66a3f	design	의존 설계 사항	7f3ed4cf	45
+relation	O	c2e66a3f	design	의존 설계 사항	957aa736	45
 relation	O	c2e66a3f	design	의존 설계 사항	9db86b2a	41
 relation	O	c2e66a3f	design	의존 설계 사항	c2ac95b5	41
 relation	O	c2e66a3f	design	의존 설계 사항	c7ebd6c1	41
 relation	O	c4d3ef5c	design	관련 요구사항	094df44a	41
 relation	O	c4d3ef5c	design	관련 요구사항	cd2da8cb	41
 relation	O	c4d3ef5c	design	관련 요구사항	d3dea456	41
+relation	O	c4d3ef5c	design	관련 외부 인터페이스	7bf57868	45
 relation	O	c4d3ef5c	design	관련 외부 인터페이스	83f7146f	41
 relation	O	c65b2d10	system_test_result	대상 시스템 테스트	9641e961	41
 relation	O	c7511506	system_test_plan	검증 요구사항	f40870e2	41
@@ -2910,8 +3096,19 @@ relation	O	c889a548	unit_test_plan	검증 설계 사항	c2ac95b5	41
 relation	O	c889a548	unit_test_plan	검증 설계 사항	ce5d963a	41
 relation	O	cc4f8228	code_inspection_result	검사 개발 수칙	316c1a3c	41
 relation	O	cd2e6aa6	unit_test_plan	검증 설계 사항	434b35f3	41
+relation	O	cd2f3c8d	design	관련 요구사항	77161f26	45
+relation	O	cd2f3c8d	design	관련 외부 인터페이스	283f1d08	45
+relation	O	cd2f3c8d	design	관련 외부 인터페이스	95376c8b	45
+relation	O	cd2f3c8d	design	관련 외부 인터페이스	b49aad16	45
+relation	O	cd2f3c8d	design	의존 설계 사항	434b35f3	45
+relation	O	cd2f3c8d	design	의존 설계 사항	89f09ead	45
+relation	O	cd2f3c8d	design	의존 설계 사항	99f8ef23	45
+relation	O	cd2f3c8d	design	의존 설계 사항	9ea5c49d	45
 relation	O	cdad8d64	e2e_test_plan	검증 외부 인터페이스	95e1f869	41
 relation	O	ce5d963a	design	관련 요구사항	416925b2	41
+relation	O	ce5d963a	design	관련 요구사항	d526c487	45
+relation	O	ce5d963a	design	관련 외부 인터페이스	28766afe	45
+relation	O	ce5d963a	design	관련 외부 인터페이스	a7be36e8	45
 relation	O	ce5d963a	design	의존 설계 사항	0a97bb84	41
 relation	O	ce5d963a	design	의존 설계 사항	434b35f3	41
 relation	O	ce5d963a	design	의존 설계 사항	6aa51734	41
@@ -2935,6 +3132,10 @@ relation	O	d7d58524	design	관련 요구사항	39921859	41
 relation	O	d7d58524	design	의존 설계 사항	434b35f3	41
 relation	O	d7d58524	design	의존 설계 사항	6aa51734	41
 relation	O	d7d58524	design	의존 설계 사항	9ea5c49d	41
+relation	O	d878d266	design	관련 요구사항	77161f26	45
+relation	O	d878d266	design	관련 외부 인터페이스	283f1d08	45
+relation	O	d878d266	design	의존 설계 사항	434b35f3	45
+relation	O	d878d266	design	의존 설계 사항	9ea5c49d	45
 relation	O	d899d5c4	design	관련 요구사항	14beca10	41
 relation	O	d899d5c4	design	관련 요구사항	522dcd2d	41
 relation	O	d899d5c4	design	관련 요구사항	581c4cbc	41
@@ -3030,6 +3231,30 @@ relation	O	e7fca2bf	change_request	영향 외부 인터페이스	a415fab7	44
 relation	O	e7fca2bf	change_request	영향 외부 인터페이스	a5336127	44
 relation	O	e7fca2bf	change_request	영향 외부 인터페이스	f0dc6547	44
 relation	O	e7fca2bf	change_request	영향 외부 인터페이스	fcda3877	44
+relation	O	e7fca2bf	change_request	영향 설계 사항	02360e37	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	0673118d	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	07e965d1	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	1f36b6f5	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	375e4f1d	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	46908f11	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	4b8c3bef	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	4c940f50	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	4eb0c862	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	52942a10	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	7f3ed4cf	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	820ad0e7	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	957aa736	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	9e6dcb4a	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	a9305235	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	ac9f5341	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	b98dfee9	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	c2ac95b5	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	c2e66a3f	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	c4d3ef5c	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	cd2f3c8d	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	ce5d963a	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	d878d266	45
+relation	O	e7fca2bf	change_request	영향 설계 사항	f7fffbc9	45
 relation	O	e99323f1	design	관련 요구사항	1a205b6c	41
 relation	O	e99323f1	design	관련 요구사항	214d9c30	41
 relation	O	eab30498	e2e_test_result	대상 E2E 테스트	cdad8d64	41
@@ -3064,8 +3289,12 @@ relation	O	f6b74667	design	의존 설계 사항	9ea5c49d	41
 relation	O	f6ebe467	code_inspection_result	검사 개발 수칙	933cbc00	41
 relation	O	f723c1bd	code_inspection_result	검사 개발 수칙	5af628cf	41
 relation	O	f7fffbc9	design	관련 요구사항	214d9c30	41
+relation	O	f7fffbc9	design	관련 요구사항	77161f26	45
 relation	O	f7fffbc9	design	관련 요구사항	87374f9d	41
 relation	O	f7fffbc9	design	관련 외부 인터페이스	2665e8cd	41
+relation	O	f7fffbc9	design	관련 외부 인터페이스	283f1d08	45
+relation	O	f7fffbc9	design	관련 외부 인터페이스	95376c8b	45
+relation	O	f7fffbc9	design	관련 외부 인터페이스	b49aad16	45
 relation	O	f7fffbc9	design	의존 설계 사항	434b35f3	41
 relation	O	f7fffbc9	design	의존 설계 사항	562b0381	41
 relation	O	f7fffbc9	design	의존 설계 사항	89f09ead	41
@@ -3116,13 +3345,14 @@ decision	O	rule	41	- RULE-001 · 출처 : 개발 수칙 v2 권장안 문서를 �
 decision	O	external_interface	41	- UI-001 · 출처 : 공개 헤더 include/kiotty_spec.h 의 함수 61 개와 타입 55 개를 그대로 옮김. 시그니처 · 타입 정의는 헤더에서 뽑아 본문에 둠 (2026-11-10)\n- UI-001 · 구조 : 헤더 절을 따라 함수 그룹 13 개(UI-001 ~ 013), 타입 그룹 5 개(UI-014 ~ 018), 용량 상수 하나(UI-019). 함수 · 타입은 그 아래 하위 항목 (UI-020 ~ 135) [기각: 함수마다 최상위 — 목록이 길어 묶음이 안 보임]\n- UI-001 · 관계 : 관련 요구사항은 그룹에만 건다. 하위 함수는 상위 그룹으로 따라감 [기각: 함수마다 관계 — 같은 관계가 수십 번 반복]\n- UI-001 · 에러 코드 : 쓰기 공통 실패(체크포인트 없음 · DONE · 밖에서 바뀜 · 파일 교체 실패 · 용량)는 쓰기 함수마다 같은 문구로 적음\n- UI-020 · ks 명령줄 : 이번 단계에 넣지 않음. 인터페이스 종류에 명령줄이 없어 모델을 정할 때 함께 다룸\n- REQ-035 · 연결 없음 : 쓰기 시간(REQ-035) 과 빌드 환경(REQ-037) 은 인터페이스가 아니라서 연결하지 않음\n
 decision	O	external_interface	44	- UI-001 · 출처 : 공개 헤더 include/kiotty_spec.h 의 함수 61 개와 타입 55 개를 그대로 옮김. 시그니처 · 타입 정의는 헤더에서 뽑아 본문에 둠 (2026-11-10)\r\n- UI-001 · 구조 : 헤더 절을 따라 함수 그룹 13 개(UI-001 ~ 013), 타입 그룹 5 개(UI-014 ~ 018), 용량 상수 하나(UI-019). 함수 · 타입은 그 아래 하위 항목 (UI-020 ~ 135) [기각: 함수마다 최상위 — 목록이 길어 묶음이 안 보임]\r\n- UI-001 · 관계 : 관련 요구사항은 그룹에만 건다. 하위 함수는 상위 그룹으로 따라감 [기각: 함수마다 관계 — 같은 관계가 수십 번 반복]\r\n- UI-001 · 에러 코드 : 쓰기 공통 실패(체크포인트 없음 · DONE · 밖에서 바뀜 · 파일 교체 실패 · 용량)는 쓰기 함수마다 같은 문구로 적음\r\n- UI-020 · ks 명령줄 : 이번 단계에 넣지 않음. 인터페이스 종류에 명령줄이 없어 모델을 정할 때 함께 다룸\r\n- REQ-035 · 연결 없음 : 쓰기 시간(REQ-035) 과 빌드 환경(REQ-037) 은 인터페이스가 아니라서 연결하지 않음\r\n- UI-154 · 원격 상태 : 원격 주소와 기준 버전만 readRemote · writeRemote 로 다룸. 체크포인트와 무관하게 사양 파일에 바로 씀 [기각: 범용 meta 키-값 — 쓸 값이 둘뿐이고 키 규칙을 설명해야 함] (사용자 결정 2026-11-13)\n- UI-154 · 편입 결과 : acceptRules 는 체크포인트와 변경 요청 ID 만 돌려줌. 나머지는 비교 · 관계 · 영향 커서로 다시 읽음. 변경 요청 본문(처리 표 포함)은 호출자가 씀 (사용자 결정 2026-11-13)\n- UI-154 · git : git 실행 · 내려받기는 명령줄 도구 몫이라 C 함수에 없음. 받아 둔 파일은 두 번째 컨텍스트로 넘김\n
 decision	O	design	41	- DSN-020 · 출처 : 지금 구현(src/) 에서 거꾸로 뽑음. 구현 상태는 모두 구현 완료 (2026-11-10)\n- DSN-020 · 모듈 단위 : 헤더 하나 = 모듈 하나 (66 개). 이름은 헤더 이름과 같은 클래스, 없으면 헤더 이름 [기각: 클래스 하나 = 모듈 하나 — 레코드 struct 까지 수백 개]\n- DSN-020 · 본문 : 책임은 헤더 주석, 인터페이스는 public 선언, 멤버는 멤버 변수를 헤더에서 그대로 뽑음\n- DSN-020 · 의존 : #include 를 의존 설계 사항 관계로 (모듈 사이만)\n- DSN-001 · 디렉토리 : include, C 어댑터, implementation 6 개, app/cli 로 9 개. ks 명령줄은 디렉토리만 두고 모듈은 넣지 않음\n- DSN-010 · 메모리 정책 : 초기화 때 확보, 버전 표 4 배, 본문 영역, 작업 버퍼와 커서\n- DSN-014 · 동작 흐름 : 열기, 쓰기 한 번, 확정, 목록 질의, 비교, 정리 6 개. 참여 모듈은 본문에만 적고 관계로 걸지 않음\n- DSN-036 · 쓰지 않는 코드 : 지움 (2026-11-10, 사용자 결정). text 8 개, utf8 cutUtf8, file_system 7 개(경로 정규화 · relativeInside · 파일 통째 읽기 · 쓰기 · 길이 · 실행 비트), platform sameChar · isAbsolute · makeExecutable. checked* 는 테스트만 쓰지만 개발수칙 2.4 · 9 의 도구라 남김\n
+decision	O	design	45	- DSN-020 · 출처 : 지금 구현(src/) 에서 거꾸로 뽑음. 구현 상태는 모두 구현 완료 (2026-11-10)\r\n- DSN-020 · 모듈 단위 : 헤더 하나 = 모듈 하나 (66 개). 이름은 헤더 이름과 같은 클래스, 없으면 헤더 이름 [기각: 클래스 하나 = 모듈 하나 — 레코드 struct 까지 수백 개]\r\n- DSN-020 · 본문 : 책임은 헤더 주석, 인터페이스는 public 선언, 멤버는 멤버 변수를 헤더에서 그대로 뽑음\r\n- DSN-020 · 의존 : #include 를 의존 설계 사항 관계로 (모듈 사이만)\r\n- DSN-001 · 디렉토리 : include, C 어댑터, implementation 6 개, app/cli 로 9 개. ks 명령줄은 디렉토리만 두고 모듈은 넣지 않음\r\n- DSN-010 · 메모리 정책 : 초기화 때 확보, 버전 표 4 배, 본문 영역, 작업 버퍼와 커서\r\n- DSN-014 · 동작 흐름 : 열기, 쓰기 한 번, 확정, 목록 질의, 비교, 정리 6 개. 참여 모듈은 본문에만 적고 관계로 걸지 않음\r\n- DSN-036 · 쓰지 않는 코드 : 지움 (2026-11-10, 사용자 결정). text 8 개, utf8 cutUtf8, file_system 7 개(경로 정규화 · relativeInside · 파일 통째 읽기 · 쓰기 · 길이 · 실행 비트), platform sameChar · isAbsolute · makeExecutable. checked* 는 테스트만 쓰지만 개발수칙 2.4 · 9 의 도구라 남김\r\n- DSN-101 · 편입 : writer 를 직접 써 쓰기 한 번 [기각: Editor 등 조합 — 호출마다 저장]. 진입 단계는 어댑터가 계산\n- DSN-099 · 비교 영역 : 커서마다 초기화 때 확보, 상한은 상수 [기각: C 설정 필드 추가]\n- DSN-098 · 본문 diff : 줄 단위 LCS [기각: 글자 단위 — 표가 길이의 제곱]\n- 변경 예정 : 기존 설계는 "변경 예정 (CR-015)" 절과 변경 필요 태그, 구현 뒤 헤더에서 다시 뽑음\n
 decision	O	unit_test_plan	41	- UT-001 · 출처 : 지금 tests/ 의 테스트 실행 파일 5 개를 상위, 그 안의 테스트 함수 44 개를 하위로 옮김 (2026-11-10)\n- UT-002 · 기대 결과 : 테스트 함수의 검사 라벨(expectTrue · expectSegments 의 마지막 글자 인자)을 그대로 적음 [기각: 다시 풀어 씀 — 코드와 어긋나기 쉬움]\n- UT-040 · 검증 대상 : C 인터페이스 테스트는 지나가는 usecase · store · context 모듈을 모두 검증 설계 사항으로 걸음\n- UT-050 · 새 계획 : 테스트가 부르지 않는 결정 기록, 초기화, 실패 이유, 정리, 체크포인트 목록 · 지나온 단계를 UT-050 ~ 054 로 계획 (미구현)\n- DSN-036 · 검증 없음 : core/kiotty_text.h 의 쓰지 않는 함수 8 개(std::string, SQLite 시절 잔재)는 지움 (2026-11-10). 남은 nowEpochSeconds 는 시각이라 테스트하지 않음\n
 TABLE	body	O/X	key	text
 body	O	00593058	결과: PASS\n근거: 수동 검토 (include/ src/ app/ tests/)\n판단: C interface 의 문자열은 모두 길이를 가진 KiottySpecText 로 받고 parseText(src/kiotty_spec_adapter.cpp) 가 길이 · 중간 null 바이트 · UTF-8 을 검사한다. FixedString::assign 은 먼저 비우고 항상 null 로 끝나게 쓴다.\n
 body	O	00ab1435	## 책임\n체크포인트 사이 비교 (설계서 v1 5.4). 버전 행만 읽고 본문 내용은 돌려주지 않는다.\n\n타입: KindCounts, Differ\n\n## 모듈 인터페이스\n```cpp\n// class Differ\nDiffer(Workspace& workspace, CursorPool& cursors, TextDiffStore& store);\nResult<DiffRange, KiottySpecStatus> range(uint32_t from, uint32_t to);\nResult<uint32_t, KiottySpecStatus> point(uint32_t checkpoint);\nKiottySpecStatus summarize(DiffRange range, uint32_t kind_mask, uint32_t field_mask, KindCounts (&counts)[entity::ITEM_KIND_COUNT]);\nCursorIdResult items(DiffRange range, uint32_t kind_mask, uint32_t field_mask);\nCursorIdResult relations(DiffRange range, uint32_t kind_mask);\nPastReader past();\nTextDiffer text();\n// 함수\nstatic_assert(sizeof(KindCounts) == 24, "unexpected padding");\nItemDiffRow unpackItemDiff(const CursorRow& row);\nRelationDiffRow unpackRelationDiff(const CursorRow& row);\n```\n\n## 멤버 변수\n```cpp\n// KindCounts\nuint32_t added {0};\nuint32_t modified {0};\nuint32_t removed {0};\nuint32_t relations_added {0};\nuint32_t relations_removed {0};\nbool has_decision_change {false};\n// Differ\nWorkspace& _workspace;\nCursorPool& _cursors;\nTextDiffStore& _store;\n```\n\n## 의존 모듈\n- DSN-075 CursorPool\n- DSN-076 cursor_rows\n- DSN-077 DiffRange\n- DSN-081 ItemDiffQuery\n- DSN-082 PastReader\n- DSN-083 RelationDiffQuery\n- DSN-095 TextDiffStore\n- DSN-084 TextDiffer\n- DSN-029 Result\n- DSN-032 Span\n- DSN-058 item_records\n- DSN-072 Workspace\n
 body	O	011ed8df	## 참여 모듈\n- DSN-085 spec_adapter\n- DSN-094 OpenedContext\n- DSN-064 Lifecycle\n- DSN-062 Checker\n- DSN-047 CheckpointWriter\n- DSN-072 Workspace\n\n## 순서\n1. KiottySpec_completeCheckpoint 가 ValueParser 로 actor 를 parse 하고 ContextWriteSide::completeCheckpoint 를 부른다\n2. Lifecycle::openCompletion 이 actor 가 USER 인지 보고, 파일을 새로 읽고 가장 최근 체크포인트를 고른다. 이미 DONE 이면 그대로 성공\n3. Checker::collect 가 그 단계의 조건(인수 조건, 마일스톤 포함, 1:1, 결과 PASS, 진입 단계)을 현재 뷰로 검사해 어긋난 항목 ID 를 모은다\n4. Lifecycle::complete 가 어긋난 조건이 없으면 CheckpointWriter 로 DONE 으로 바꾸고 Workspace::finish 로 파일에 쓴다. 있으면 PRECONDITION\n5. Lifecycle 과 Checker 는 서로를 들지 않고, ContextWriteSide 가 순서대로 부른다 (개발수칙 6.5)\n\n## 데이터 흐름\n현재 뷰 (태그 · 관계 · 본문) → 어긋난 조건 목록 → 체크포인트 상태\n
 body	O	0196d2e3	결과: PASS\n근거: 수동 검토 (include/ src/ app/ tests/)\n판단: 외부와 주고받는 문자열은 모두 UTF-8 이다. Windows CLI 는 wmain 의 argv 와 환경 변수를 CP_UTF8 로 바꾸고, 라이브러리 경로는 Windows backend 가 UTF-16 과 UTF-8 사이를 CP_UTF8 로 바꾼다.\n
-body	O	02360e37	## 책임\n.kisp 사양 파일과 메모리의 store 를 맞춘다: 통째로 읽기(load), 다시 쓰기(save), 밖에서 바뀌었는지 보기(checkUnchanged). 모든 store 를 채우므로 repository 층에 둔다 (CR-006).\n\n타입: WorkAreas, SpecFile\n\n## 모듈 인터페이스\n```cpp\n// class SpecFile\nSpecFile(const SpecTables& tables, TextBuffer& work, const FileSystem& file_system, const SystemPath& database);\nKiottySpecStatus load();\nKiottySpecStatus save();\nKiottySpecStatus checkUnchanged();\n// 함수\nstatic_assert(sizeof(WorkAreas) == 32, "unexpected padding");\n```\n\n## 멤버 변수\n```cpp\n// WorkAreas\nSpan<char> buffer {};\nSpan<char> line {};\n// SpecFile\nSpecTables _tables;\nTextBuffer& _work;\nconst FileSystem& _file_system;\nconst SystemPath& _database;\nSystemPath _temporary_path {};\nuint64_t _hash {EMPTY_KISP_HASH};\n```\n\n## 의존 모듈\n- DSN-032 Span\n- DSN-033 TextBuffer\n- DSN-041 FileSystem\n- DSN-043 kisp_file\n- DSN-070 SpecTables\n
+body	O	02360e37	## 책임\r\n.kisp 사양 파일과 메모리의 store 를 맞춘다: 통째로 읽기(load), 다시 쓰기(save), 밖에서 바뀌었는지 보기(checkUnchanged). 모든 store 를 채우므로 repository 층에 둔다 (CR-006).\r\n\r\n타입: WorkAreas, SpecFile\r\n\r\n## 모듈 인터페이스\r\n```cpp\r\n// class SpecFile\r\nSpecFile(const SpecTables& tables, TextBuffer& work, const FileSystem& file_system, const SystemPath& database);\r\nKiottySpecStatus load();\r\nKiottySpecStatus save();\r\nKiottySpecStatus checkUnchanged();\r\n// 함수\r\nstatic_assert(sizeof(WorkAreas) == 32, "unexpected padding");\r\n```\r\n\r\n## 멤버 변수\r\n```cpp\r\n// WorkAreas\r\nSpan<char> buffer {};\r\nSpan<char> line {};\r\n// SpecFile\r\nSpecTables _tables;\r\nTextBuffer& _work;\r\nconst FileSystem& _file_system;\r\nconst SystemPath& _database;\r\nSystemPath _temporary_path {};\r\nuint64_t _hash {EMPTY_KISP_HASH};\r\n```\r\n\r\n## 의존 모듈\r\n- DSN-032 Span\r\n- DSN-033 TextBuffer\r\n- DSN-041 FileSystem\r\n- DSN-043 kisp_file\r\n- DSN-070 SpecTables\r\n\n## 변경 예정 (CR-015)\n- 첫 줄 검사: "#kisp 2 model 2" 와 "#kisp 2 model 1" 을 받는다. 그 밖은 지금처럼 거부한다. 읽은 모델 버전을 기억한다.\n- uint32_t modelVersion() const 를 더한다 (RuleAcceptor 가 local · remote 모델 버전이 같은지 본다).\n- save 는 언제나 지금 모델 버전(2) 머리줄로 쓴다. 다른 줄은 그대로다.\n
 body	O	0291ef05	결과: PASS\r\n근거: node tools/lint.js --rule 0\r\n
 body	O	029979bf	## 수칙\r\r\n4.11 부정 조건을 피한다. `if (!isEmpty())` 대신 `if (hasItems())`. 이중 부정 금지.\r\r\n
 body	O	031f1260	## 정의\n```c\ntypedef enum KiottySpecItemKind {\n    KIOTTY_SPEC_ITEM_KIND_CHANGE_REQUEST = 1,\n    KIOTTY_SPEC_ITEM_KIND_REQUIREMENT,\n    KIOTTY_SPEC_ITEM_KIND_RULE,\n    KIOTTY_SPEC_ITEM_KIND_EXTERNAL_INTERFACE,\n    KIOTTY_SPEC_ITEM_KIND_DESIGN,\n    KIOTTY_SPEC_ITEM_KIND_UNIT_TEST_PLAN,\n    KIOTTY_SPEC_ITEM_KIND_MILESTONE,\n    KIOTTY_SPEC_ITEM_KIND_UNIT_TEST_RESULT,\n    KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST_PLAN,\n    KIOTTY_SPEC_ITEM_KIND_SYSTEM_TEST_RESULT,\n    KIOTTY_SPEC_ITEM_KIND_CODE_INSPECTION_RESULT,\n    KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST_PLAN,\n    KIOTTY_SPEC_ITEM_KIND_END_TO_END_TEST_RESULT,\n    KIOTTY_SPEC_ITEM_KIND_PRIVATE_RULE\n} KiottySpecItemKind;\n```\n\n## 의미\n항목 14 종류. 값은 1 부터이며 kind_mask 의 비트 (kind - 1)\n
@@ -3135,10 +3365,10 @@ body	O	04c783ea	- 보이는 모든 문장은 Key 를 가진다. Key → 언어�
 body	O	04e60bf1	## 대상\ntests/core/core_test.cpp 의 testResult\n\n## 전제 조건\ncore/ 헤더와 kiotty_text_diff.cpp 만 링크한 실행 파일. 파일 · 사양 파일을 쓰지 않는다\n\n## 행동\ntestResult 를 실행한다\n\n## 기대 결과\n- success is truthy\n- failure is falsy\n- success keeps value\n- failure value is default\n
 body	O	0648ffe1	## 대상\ntests/datasource/datasource_test.cpp 의 testLineDecoderInputs\n\n개발수칙 2.10: 빈 입력, 최대 길이, 최대 길이 + 1, 중간 null 바이트, 잘못된 UTF-8\n\n## 전제 조건\ndatasource 소스만 링크한 실행 파일. 작업 폴더에 임시 파일을 만들고 지운다\n\n## 행동\ntestLineDecoderInputs 를 실행한다\n\n## 기대 결과\n- empty line is one empty field\n- longest line fits\n- one byte more\n- null byte passes to the parser\n- parser rejects null byte\n- utf-8 is checked by the parser\n- parser rejects invalid utf-8\n- unknown escape\n- dangling escape\n- too many fields\n
 body	O	065fa99a	## 대상\nREQ-004 기록을 git 으로 보관하고 병합한다\n\n## 전제 조건\n빌드한 라이브러리를 C 인터페이스로만 쓴다. 시험마다 새 임시 폴더에 사양 파일을 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | 같은 체크포인트에서 갈라진 두 브랜치가 서로 다른 항목을 추가 · 수정 | git 으로 병합한 뒤 연다 | 충돌 없이 두 브랜치의 변경이 모두 보인다 |\n| 2 | 병합 충돌 표시가 남은 사양 파일 | 연다 | 충돌 표시가 남아 있다는 이유와 줄 번호로 거부 |\n| 3 | 병합으로 같은 레코드 버전이 두 줄이 되거나 같은 ID 가 두 항목에 붙은 파일 | 연다 | 어느 줄인지와 함께 거부 |\n| 4 | 기록을 열고 아무것도 바꾸지 않음 | 쓰기를 한 번 한다 | 파일이 바이트까지 같다 |\n
-body	O	0673118d	## 책임\nKind · 단계 · 체크포인트 상태의 값과 영문 이름 표 (설계서 v1 3.1).\n\n## 모듈 인터페이스\n```cpp\n// 함수\nconstexpr size_t ITEM_KIND_COUNT = 13;\nconstexpr size_t STEP_COUNT = 12;\nconstexpr size_t ACTOR_COUNT = 2;\nbool isValidKind(uint32_t value);\nbool isValidStep(uint32_t value);\nbool isValidActor(uint32_t value);\nsize_t kindIndex(ItemKind kind);\nstd::string_view kindName(ItemKind kind);\nuint32_t parseKind(std::string_view name);\nstd::string_view stateName(CheckpointState state);\nuint32_t parseState(std::string_view name);\nbool hasDecision(ItemKind kind);\n```\n\n## 멤버 변수\n없음\n\n## 의존 모듈\n없음\n
+body	O	0673118d	## 책임\r\nKind · 단계 · 체크포인트 상태의 값과 영문 이름 표 (설계서 v1 3.1).\r\n\r\n## 모듈 인터페이스\r\n```cpp\r\n// 함수\r\nconstexpr size_t ITEM_KIND_COUNT = 13;\r\nconstexpr size_t STEP_COUNT = 12;\r\nconstexpr size_t ACTOR_COUNT = 2;\r\nbool isValidKind(uint32_t value);\r\nbool isValidStep(uint32_t value);\r\nbool isValidActor(uint32_t value);\r\nsize_t kindIndex(ItemKind kind);\r\nstd::string_view kindName(ItemKind kind);\r\nuint32_t parseKind(std::string_view name);\r\nstd::string_view stateName(CheckpointState state);\r\nuint32_t parseState(std::string_view name);\r\nbool hasDecision(ItemKind kind);\r\n```\r\n\r\n## 멤버 변수\r\n없음\r\n\r\n## 의존 모듈\r\n없음\r\n\n## 변경 예정 (CR-015)\n- ItemKind 끝에 PRIVATE_RULE (= 14) 를 붙이고 ITEM_KIND_COUNT 를 14 로. 이름 표에 영문 private_rule, 한글 전용 개발 수칙, 접두사 PRULE, 단계 Step 2 (요구사항).\n- 값은 끝에 붙이므로 기존 Kind 의 값 · kind_mask 비트는 그대로다.\n
 body	O	067ecec1	## 시그니처\n```c\nKiottySpecSizeResult KiottySpec_readDecisionAt(KiottySpecContext *context, KiottySpecItemKind kind, KiottySpecCheckpointHandle checkpoint, KiottySpecBuffer buffer);\n```\n\n## 사전조건\ncontext 는 KiottySpec_createContext 로 만들고 KiottySpec_open 으로 사양 파일을 연 것\n\n## 사후조건\nbuffer 에 그 시점의 결정 기록\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- INVALID_ARGUMENT: 결정 기록이 없는 Kind\n- CAPACITY_EXCEEDED: buffer.data 가 NULL 이거나 buffer.capacity 가 null 종료까지 담기에 작음. value 는 필요한 바이트 수\n- INVALID_ARGUMENT: checkpoint 의 상위 32 비트가 0 이 아님\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\nbuffer 는 호출자 메모리다. 성공하면 null 종료로 채운다.\n
 body	O	07728b44	## 책임\n.kisp 파일을 줄마다 읽으며 줄 해시를 쌓고, 임시 파일에 쓴 뒤 rename 으로 바꾼다.\n\n타입: KispFileReader, KispFileWriter\n\n## 모듈 인터페이스\n```cpp\n// class KispFileReader\nKispFileReader(OpenedFile file, Span<char> buffer, Span<char> decode_area);\nResult<bool, KiottySpecStatus> next();\nResult<KispFields, KiottySpecStatus> fields() const;\nSpan<const char> line() const;\nsize_t lineNumber() const;\nuint64_t hash() const;\n// class KispFileWriter\nKispFileWriter(const FileSystem& file_system, OpenedFile temporary_file, Span<const char> path, Span<const char> temporary_path);\n~KispFileWriter();\nKispFileWriter(const KispFileWriter&) = delete;\nKispFileWriter& operator=(const KispFileWriter&) = delete;\nKiottySpecStatus write(Span<const char> line);\nKiottySpecStatus commit();\nuint64_t hash() const;\n// 함수\nconstexpr uint64_t EMPTY_KISP_HASH = 0xcbf29ce484222325ull;\nconstexpr char KISP_TEMPORARY_SUFFIX[] = ".tmp";\nOpenedFileResult openKispFile(const FileSystem& file_system, Span<const char> path);\nResult<uint64_t, KiottySpecStatus> hashKispFile(const FileSystem& file_system,;\n```\n\n## 멤버 변수\n```cpp\n// KispFileReader\nFileReader _file;\nKispLineDecoder _decoder;\nsize_t _line_number {0};\nuint64_t _hash {EMPTY_KISP_HASH};\n// KispFileWriter\nconst FileSystem& _file_system;\nFileWriter _file;\nSpan<const char> _path;\nSpan<const char> _temporary_path;\nuint64_t _hash {EMPTY_KISP_HASH};\n```\n\n## 의존 모듈\n- DSN-029 Result\n- DSN-032 Span\n- DSN-040 FileReader\n- DSN-041 FileSystem\n- DSN-042 FileWriter\n- DSN-044 kisp_line\n- DSN-090 OpenedFile\n
-body	O	07e965d1	## 역할\napp/cli/src/ 에 명령줄 도구 ks 를 둔다: main.cpp, presentation/ (commands · input · handler · output), i18n/, infra/ (개발수칙 7.2). 라이브러리는 C 인터페이스만 쓰고, C 함수 하나를 CLI 의 usecase 하나로 본다 (docs/deviations.md).\n
+body	O	07e965d1	## 역할\r\napp/cli/src/ 에 명령줄 도구 ks 를 둔다: main.cpp, presentation/ (commands · input · handler · output), i18n/, infra/ (개발수칙 7.2). 라이브러리는 C 인터페이스만 쓰고, C 함수 하나를 CLI 의 usecase 하나로 본다 (docs/deviations.md).\r\n\n## 변경 예정 (CR-015)\n- ks remote 명령 (open · close · push · check · pull · list · diff · body · accept · discard) 과 git 실행기를 둔다. git 은 Windows CreateProcessW, POSIX posix_spawnp 로 실행하고 시간 제한 · 종료 코드 · 표준 출력을 받는다. 받아 둔 파일은 .kiotty/remote/rule.kisp, pull 이 .kiotty/.gitignore 에 remote/ 를 넣는다.\n- 명령줄은 지금처럼 디렉토리만 설계에 두고 모듈은 넣지 않는다.\n
 body	O	0857a7da	## 시그니처\n```c\nKiottySpecStatusResult KiottySpec_setItemParent(KiottySpecContext *context, KiottySpecText id, KiottySpecText parent_id);\n```\n\n## 사전조건\ncontext 는 KiottySpec_createContext 로 만들고 KiottySpec_open 으로 사양 파일을 연 것. 가장 최근 체크포인트가 DONE 이 아님\n\n## 사후조건\nparent_id 길이가 0 이면 최상위 항목이 된다\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- NOT_FOUND: 그 ID 의 항목이 없음\n- INVALID_ARGUMENT: ID 형식이 잘못됨 (영문자 · 숫자로 시작, 영문자 · 숫자 · - · _ 만, 15 바이트 이하)\n- INVALID_ARGUMENT: 상위 관계가 순환함\n- PRECONDITION: 체크포인트가 없음\n- CONFIRMED: 가장 최근 체크포인트가 DONE\n- CONFLICT: 연 뒤에 사양 파일이 밖에서 바뀜 (다시 읽은 뒤 거부)\n- INPUT_OUTPUT: 사양 파일을 바꿀 수 없음 (다른 프로그램이 열고 있음 등)\n- POOL_IS_FULL · CAPACITY_EXCEEDED: 풀이나 버전 표의 용량을 넘음\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\n입력 KiottySpecText 는 호출 동안만 읽고 복사한다. null 종료를 가정하지 않으며 data 가 NULL 이면 빈 글이다.\n
 body	O	08fe2a2b	PR 마다 아래 열다섯 가지에 모두 "예" 여야 한다.\r\n\r\n1. 초기화 함수 밖에 힙 할당이 없다.\r\n2. 모든 Handle 접근이 generation 을 검증한다.\r\n3. 외부 입력은 `parse*` 하나를 지나고, 내부에서 다시 검증하지 않는다.\r\n4. 길이 없는 포인터 인자가 없다.\r\n5. 2.3 의 금지 함수가 없다.\r\n6. 정수 덧셈·곱셈이 `checked*` 를 쓰거나 넘칠 수 없음이 자명하다.\r\n7. 새 struct 는 `static_assert(sizeof)` 가 있고 hot/cold 가 나뉘어 있다.\r\n8. 함수 30줄, 중첩 2단, 인자 4개를 넘지 않는다.\r\n9. `switch` 에 `default` 가 없고 모든 enum 멤버가 있다.\r\n10. 새 `parse*` 함수는 2.10 의 다섯 입력을 테스트한다.\r\n11. 새 C interface 함수는 `<Organization><Project>_` 접두사를 가진다.\r\n12. 추가된 소스 줄에 주석이 없다. Release 준비 PR 은 예외다.\r\n13. 새 method 는 동사로 시작하고, 멤버 접근 method 는 필요한 이유가 PR 에 적혀 있다. `core/` 는 예외다.\r\n14. `core/` 파일이 도메인 용어나 `KiottySpec*` 레코드 타입을 담지 않는다.\r\n15. 새 에러 enum 이 없고, 모든 에러는 `include/kiotty_spec.h` 의 값을 쓴다.\r\n16. C interface 의 인자·반환값·struct 에 `union` 이 없고, 참·거짓 값은 `bool` 이 아니라 `<Organization><Project>Bool` (`int32_t` typedef) 이다 (5.7).\n
 body	O	091e5168	결과: PASS\n근거: 수동 검토 (include/ src/ app/ tests/)\n판단: std::thread, std::atomic, mutex, condition_variable, std::async, CreateThread, pthread 가 없다. 다른 스레드가 쓰는 데이터가 없어 적용할 곳이 없다.\n
@@ -3187,6 +3417,7 @@ body	O	1d097706	결과: PASS\n근거: 하위 수칙 결과의 합\n판단: 하�
 body	O	1dd0de2b	결과: PASS\r\n근거: node tools/lint.js --rule 2.2\r\n
 body	O	1e275797	## 시그니처\n```c\nKiottySpecContextResult KiottySpec_createContext(const KiottySpecConfiguration *configuration);\n```\n\n## 사전조건\nconfiguration 이 NULL 이 아님. 0 인 용량은 기본값\n\n## 사후조건\n풀 · 커서 · 버퍼를 모두 확보한 컨텍스트. 이후 힙 할당은 없다\n\n## 에러 코드\n- INVALID_ARGUMENT: configuration 이 NULL\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\n컨텍스트는 호출자가 KiottySpec_releaseContext 로 한 번 해제한다. 할당 실패는 프로세스 종료다.\n
 body	O	1e5137eb	## 정의\n```c\ntypedef struct KiottySpecRuleDiff {\n    char             id[KIOTTY_SPEC_MAX_ID_LENGTH + 1];\n    char             title[KIOTTY_SPEC_MAX_TITLE_LENGTH + 1];\n    KiottySpecChange change;\n    uint32_t         changed_fields;\n} KiottySpecRuleDiff;\n```\n\n## 의미\n개발 수칙 하나의 차이. title 은 원격 쪽 제목이고 REMOVED 이면 local 쪽 제목. changed_fields 는 MODIFIED 일 때 KiottySpecChangedField 비트\n
+body	O	1f36b6f5	## 책임\n원격 상태 값과 그 검사. 주소는 UTF-8 글, 기준 버전은 빈 글이거나 16 진수 소문자 글이다. 주소가 없으면 기준 버전도 없다.\n\n타입: RemoteRecord\n\n## 모듈 인터페이스\n```cpp\n// struct RemoteRecord\nFixedString<MAX_URL_LENGTH> url;\nFixedString<MAX_COMMIT_LENGTH> rule_base;\n// 함수\nconstexpr size_t MAX_URL_LENGTH = 511;\nconstexpr size_t MAX_COMMIT_LENGTH = 64;\nbool isValidCommit(Span<const char> commit);          // 빈 글이거나 [0-9a-f]+\nKiottySpecStatus checkRemote(const RemoteRecord& remote); // UTF-8, 기준 버전 형식, 주소 없이 기준 버전 금지\n```\n\n## 멤버 변수\n```cpp\n// RemoteRecord\nFixedString<MAX_URL_LENGTH> url;\nFixedString<MAX_COMMIT_LENGTH> rule_base;\n```\n\n## 의존 모듈\n- DSN-024 FixedString\n- DSN-032 Span\n
 body	O	1f9bd33c	## 지표\n공개 C 함수 호출에서 예외가 호출자에게 전파되거나 상태 없이 실패하는 경우의 수\n\n## 목표값\n0. 모든 함수는 상태 코드가 든 결과를 돌려주고, 실패 이유는 문장으로 따로 읽을 수 있으며, 상태 코드는 이름으로 바꿀 수 있다. 라이브러리는 예외 없이 빌드된다.\n\n## 측정 방법\nNULL 컨텍스트 · 잘못된 핸들 · 없는 ID · 범위 밖 열거값을 공개 함수에 넣는 테스트에서 상태 코드가 성공이 아니고 실패 이유가 비어 있지 않은지 확인\n
 body	O	1fa07e01	## 정의\n```c\ntypedef struct KiottySpecCursorResult {\n    KiottySpecCursor value;\n    size_t           total;\n    KiottySpecStatus code;\n    uint32_t         reserved;\n} KiottySpecCursorResult;\n```\n\n## 의미\n상태, 커서, 전체 개수\n
 body	O	1fdea022	## 시그니처\n```c\nKiottySpecNameResult KiottySpec_formatKind(KiottySpecItemKind kind);\n```\n\n## 사전조건\n없음\n\n## 사후조건\nvalue 에 Kind 의 영문 snake_case 이름\n\n## 에러 코드\n- INVALID_ARGUMENT: 알 수 없는 Kind (value 는 빈 글)\n\n\n## 소유권\n결과는 값으로 돌려준다. value 는 null 종료 이름이다.\n
@@ -3248,7 +3479,7 @@ body	O	3561a109	## 대상\ntests/api/api_test.cpp 의 testOutsideChange\n\n연 �
 body	O	35e96b19	## 대상\ntests/datasource/datasource_test.cpp 의 testKispFileWriteAndHash\n\n## 전제 조건\ndatasource 소스만 링크한 실행 파일. 작업 폴더에 임시 파일을 만들고 지운다\n\n## 행동\ntestKispFileWriteAndHash 를 실행한다\n\n## 기대 결과\n- missing file hash\n- open kisp writer\n- nothing replaced before commit\n- commit\n- reader hash matches writer hash\n- abandoned write leaves file\n- temporary file removed\n- read fields\n
 body	O	365e6c3f	결과: PASS\n근거: 수동 검토 (include/ src/ app/ tests/)\n판단: src/ · include/ 에 연결 리스트, 포인터 트리, 노드를 할당하는 map 이 없고 트리 · 관계는 정렬 배열과 index 로 나타낸다. app/ 의 std::map 은 docs/deviations.md 의 3.2 편차다.\n
 body	O	36e5888d	- 매 루프 읽는 hot 필드와 가끔 읽는 cold 필드(이름, 설명)는 같은 index 를 쓰는 두 배열로 나눈다.\n\n```cpp\nstruct SessionState { uint32_t last_seen_milliseconds; uint16_t flags; };  // 매 틱 스캔\nstruct SessionInfo  { FixedString<64> user; FixedString<32> device; };    // 조회 시만\n\nstruct SessionRepository\n{\n    LazyPool<SessionState> states;   // Handle.index 공유\n    std::vector<SessionInfo> infos;  // 초기화 때 states.capacity() 로 확보\n};\n```\n
-body	O	375e4f1d	## 정책\n파일 읽기 버퍼(64 KiB)와 줄 영역(33 KiB) 은 work_buffer_bytes 를 나눠 쓴다. 목록 질의는 결과 행의 키만 커서 슬롯에 담고, 페이지를 받을 때 레코드를 다시 읽는다 (개발수칙 6.6).\n
+body	O	375e4f1d	## 정책\r\n파일 읽기 버퍼(64 KiB)와 줄 영역(33 KiB) 은 work_buffer_bytes 를 나눠 쓴다. 목록 질의는 결과 행의 키만 커서 슬롯에 담고, 페이지를 받을 때 레코드를 다시 읽는다 (개발수칙 6.6).\r\n\n## 변경 예정 (CR-015)\n- RuleDiffStore: 커서 슬롯마다 수칙 차이 행 MAX_RULE_DIFF_ROWS(512) × 약 160 바이트, 두 본문 2 × (MAX_BODY_LENGTH + 1), 줄 구간 (MAX_DIFF_LINES × 2 + 1) × 16 바이트. 줄 LCS 표 (MAX_DIFF_LINES + 1)^2 바이트는 모든 커서가 함께 쓴다. 기본 max_cursors 16 에서 약 3.4 MB, 초기화 때 한 번 확보한다.\n- 상한은 C 설정(KiottySpecConfiguration)에 넣지 않고 상수로 둔다. 넘으면 CAPACITY_EXCEEDED.\n
 body	O	3788c303	## 대상\ntests/api/api_test.cpp 의 testDiff\n\n설계서 v1 5.4 의 호출 예와 같은 모양의 변화를 두 체크포인트에 걸쳐 만든다.\n\n## 전제 조건\n라이브러리 전체를 링크하고 임시 폴더의 .kiotty/spec.kisp 를 C 함수로만 연다. 앞 테스트의 기록 위에 다음 테스트가 이어진다\n\n## 행동\ntestDiff 를 실행한다\n\n## 기대 결과\n- complete first\n- summary range\n- summary items\n- summary relations\n- kind mask\n- four item diffs\n- body only\n- removed item\n- modified fields\n- added item\n- null page\n- field mask keeps added and removed\n- relation diffs\n- removed at to\n- read item at\n- read tag at\n- old body empty\n- text diff pieces\n- text diff page\n- end of pieces\n- closed cursor\n- body rejected\n- body rejected names the field\n- invalid handle\n- null range\n- wrong cursor type\n- null query\n- null item diff query\n- null relation diff query\n- reversed range\n- missing checkpoint\n
 body	O	37a2c03a	## 시그니처\n```c\nKiottySpecStatusResult KiottySpec_fetchIdPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecIdPage *page);\n```\n\n## 사전조건\n열린 영향 커서\n\n## 사후조건\npage 에 ID\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- INVALID_ARGUMENT: page 가 NULL\n- INVALID_HANDLE: 닫혔거나 잘못된 커서\n- WRONG_CURSOR_TYPE: 다른 종류의 커서\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\npage 는 호출자 메모리다. 한 번에 최대 KIOTTY_SPEC_PAGE_CAPACITY 개를 채우고 length 에 개수를 둔다. length 가 0 이면 끝이다.\n
 body	O	37a4b025	## 시그니처\n```c\nKiottySpecStatusResult KiottySpec_fetchTextDiffPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecTextDiffPage *page);\n```\n\n## 사전조건\n열린 글자 차이 커서\n\n## 사후조건\npage 에 같음 · 지움 · 더함 조각을 순서대로 채운다. 조각 text 는 null 종료 복사본이고 length 는 바이트 수\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- INVALID_ARGUMENT: page 가 NULL\n- INVALID_HANDLE: 닫혔거나 잘못된 커서\n- WRONG_CURSOR_TYPE: 다른 종류의 커서\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\npage 는 호출자 메모리다. 한 번에 최대 KIOTTY_SPEC_PAGE_CAPACITY 개를 채우고 length 에 개수를 둔다. length 가 0 이면 끝이다.\n
@@ -3285,7 +3516,7 @@ body	O	45a6b4e8	## 대상\nREQ-029 제목과 요약의 글자 차이를 본다\n
 body	O	45d0a870	## 대상\nUI-006 항목 목록과 커서\n\n## 전제 조건\n빌드한 라이브러리를 C 프로그램(tests/e2e/e2e_test.c, C11)이 include/ 의 헤더만으로 링크해 구동한다. 시나리오마다 새 임시 폴더의 .kiotty/spec.kisp 를 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | 설계 사항 70 개 | DESIGN 항목 커서를 열고 페이지를 끝까지 받는다 | total 70, 페이지 길이 64 · 6 · 0 |\n| 2 | 태그가 다른 요구사항 둘 | 태그 조건으로 항목 커서를 연다 | 조건에 맞는 하나만 |\n| 3 | 상위 하나에 하위 둘 | 하위 커서를 연다 | total 2 |\n| 4 | UI-001 → REQ-001 관계 | REQ-001 의 영향 커서를 열고 ID 페이지를 받는다 | ID 페이지에 UI-001 |\n| 5 | 열린 커서 | 닫고 다시 페이지를 받는다 | INVALID_HANDLE |\n
 body	O	4611bb03	- Handle 목록을 따라가며 흩어진 슬롯을 읽지 않는다.\n- 다른 풀의 데이터가 필요하면 index 를 먼저 모으고(1차 패스) 그 풀을 순서대로 읽는다(2차 패스).\n
 body	O	46567ed8	## 책임\n그 시점의 항목 버전 · 태그 · 본문 · 결정 기록을 읽는다 (설계서 v1 5.4).\n\n타입: ItemVersionView, PastReader\n\n## 모듈 인터페이스\n```cpp\n// class PastReader\nexplicit PastReader(Workspace& workspace);\nResult<ItemVersionView, KiottySpecStatus> itemAt(Span<const char> id, uint32_t checkpoint);\nResult<uint64_t, KiottySpecStatus> tagAt(Span<const char> id, uint32_t tag, uint32_t checkpoint);\nResult<size_t, KiottySpecStatus> readBodyAt(Span<const char> id, uint32_t checkpoint, Span<char> buffer);\nResult<size_t, KiottySpecStatus> readDecisionAt(entity::ItemKind kind, uint32_t checkpoint, Span<char> buffer);\n// 함수\nstatic_assert(sizeof(ItemVersionView) == 440, "unexpected padding");\n```\n\n## 멤버 변수\n```cpp\n// ItemVersionView\nentity::ItemLabel label {};\nentity::ItemState state {};\nentity::IdText parent_id {};\n// PastReader\nWorkspace& _workspace;\n```\n\n## 의존 모듈\n- DSN-029 Result\n- DSN-032 Span\n- DSN-058 item_records\n- DSN-061 version_records\n- DSN-072 Workspace\n
-body	O	46908f11	## 책임\n단계별 확정 조건 (설계서 v1 5.2, 정의서 R-3 ~ R-5, R-10). 태그 · 관계 이름은 모델 표에서 찾는다. 1:1 짝은 PairRule 의 TargetFilter 로 대상을 고른다: 시스템 테스트는 기능 요구사항만, E2E 테스트는 상위 항목이 없는 외부 인터페이스(묶음)만 (CR-013).\n\n타입: UnmetCondition, TagBit, PairRule, Checker\n\n## 모듈 인터페이스\n```cpp\n// class Checker\nChecker(Workspace& workspace, size_t max_items);\nSpan<const UnmetCondition> collect(entity::Step step);\nsize_t openChangeRequestCount();\nuint32_t earliestEntryStep();\n// 함수\nstatic_assert(sizeof(UnmetCondition) == 20, "unexpected padding");\nstatic_assert(sizeof(TagBit) == 16, "unexpected padding");\nstatic_assert(sizeof(PairRule) == 32, "unexpected padding");\n```\n\n## 멤버 변수\n```cpp\n// UnmetCondition\nentity::IdText id {};\nKiottySpecCondition condition {KIOTTY_SPEC_CONDITION_ENTRY_STEP};\n// TagBit\nstatic constexpr uint32_t MISSING = 0xFFFFFFFFu;\nuint64_t bit {0};\nuint32_t tag_index {MISSING};\n// PairRule\nstd::string_view relation_name {};\nentity::ItemKind target_kind {};\nentity::ItemKind test_kind {};\nKiottySpecCondition pair_condition {KIOTTY_SPEC_CONDITION_ENTRY_STEP};\nTargetFilter filter {TargetFilter::ALL_TARGETS};\n// Checker\nWorkspace& _workspace;\nstd::vector<char> _body;\nstd::vector<UnmetCondition> _rows;\nstd::vector<uint64_t> _state_values;\nstd::vector<uint64_t> _tag_values;\nstd::vector<uint32_t> _relation_counts;\nstd::vector<uint32_t> _second_relation_counts;\nsize_t _length {0};\n```\n\n## 의존 모듈\n- DSN-029 Result\n- DSN-032 Span\n- DSN-056 RelationStore\n- DSN-058 item_records\n- DSN-072 Workspace\n
+body	O	46908f11	## 책임\r\n단계별 확정 조건 (설계서 v1 5.2, 정의서 R-3 ~ R-5, R-10). 태그 · 관계 이름은 모델 표에서 찾는다. 1:1 짝은 PairRule 의 TargetFilter 로 대상을 고른다: 시스템 테스트는 기능 요구사항만, E2E 테스트는 상위 항목이 없는 외부 인터페이스(묶음)만 (CR-013).\r\n\r\n타입: UnmetCondition, TagBit, PairRule, Checker\r\n\r\n## 모듈 인터페이스\r\n```cpp\r\n// class Checker\r\nChecker(Workspace& workspace, size_t max_items);\r\nSpan<const UnmetCondition> collect(entity::Step step);\r\nsize_t openChangeRequestCount();\r\nuint32_t earliestEntryStep();\r\n// 함수\r\nstatic_assert(sizeof(UnmetCondition) == 20, "unexpected padding");\r\nstatic_assert(sizeof(TagBit) == 16, "unexpected padding");\r\nstatic_assert(sizeof(PairRule) == 32, "unexpected padding");\r\n```\r\n\r\n## 멤버 변수\r\n```cpp\r\n// UnmetCondition\r\nentity::IdText id {};\r\nKiottySpecCondition condition {KIOTTY_SPEC_CONDITION_ENTRY_STEP};\r\n// TagBit\r\nstatic constexpr uint32_t MISSING = 0xFFFFFFFFu;\r\nuint64_t bit {0};\r\nuint32_t tag_index {MISSING};\r\n// PairRule\r\nstd::string_view relation_name {};\r\nentity::ItemKind target_kind {};\r\nentity::ItemKind test_kind {};\r\nKiottySpecCondition pair_condition {KIOTTY_SPEC_CONDITION_ENTRY_STEP};\r\nTargetFilter filter {TargetFilter::ALL_TARGETS};\r\n// Checker\r\nWorkspace& _workspace;\r\nstd::vector<char> _body;\r\nstd::vector<UnmetCondition> _rows;\r\nstd::vector<uint64_t> _state_values;\r\nstd::vector<uint64_t> _tag_values;\r\nstd::vector<uint32_t> _relation_counts;\r\nstd::vector<uint32_t> _second_relation_counts;\r\nsize_t _length {0};\r\n```\r\n\r\n## 의존 모듈\r\n- DSN-029 Result\r\n- DSN-032 Span\r\n- DSN-056 RelationStore\r\n- DSN-058 item_records\r\n- DSN-072 Workspace\r\n\n## 변경 예정 (CR-015)\n- Step 10: 짝 검사를 둘로 나눈다. (1) rule 과 "검사 개발 수칙" 1:1, 단 "대체 개발 수칙" 관계로 가리켜진 rule 은 뺀다 (새 TargetFilter::UNREPLACED_TARGETS). (2) private_rule 과 "검사 전용 개발 수칙" 1:1 (ALL_TARGETS).\n- 검사 결과 하나는 두 관계 중 정확히 하나만 갖는다 (SINGLE_TARGET 조건을 두 관계의 합으로 센다).\n- 백로그 상태는 열린 변경 요청에 들지 않는다 (isOpenChangeRequest 는 열림 · 반영 중만 보므로 코드는 그대로).\n
 body	O	47954855	## 역할\n값 객체 레코드, Kind · 단계 · actor 값, 모델 정의, 실패 기록. 포인터 없는 고정 크기 (개발수칙 1.4).\n
 body	O	48100f44	## 대상\ntests/datasource/datasource_test.cpp 의 testUnicodePath\n\n## 전제 조건\ndatasource 소스만 링크한 실행 파일. 작업 폴더에 임시 파일을 만들고 지운다\n\n## 행동\ntestUnicodePath 를 실행한다\n\n## 기대 결과\n- open unicode writer\n- unicode file exists\n- unicode file has the native name\n- unicode file removed\n- empty path is no file\n- invalid utf-8 path\n
 body	O	487fb454	## 대상\nREQ-024 오래된 기록을 정리한다\n\n## 전제 조건\n빌드한 라이브러리를 C 인터페이스로만 쓴다. 시험마다 새 임시 폴더에 사양 파일을 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | 확정 체크포인트 B 와 그 이전 A | 사용자가 B 를 기준으로 정리한다 | A 가 지워지고 B 시점 내용은 그대로, 지운 수 1 |\n| 2 | 진행 중인 체크포인트 | 그것을 기준으로 정리한다 | 기준은 완료된 체크포인트여야 한다는 이유로 거부 |\n| 3 | 없음 | AI 가 정리한다 | 사용자만 할 수 있다는 이유로 거부 |\n
@@ -3296,18 +3527,20 @@ body	O	4996c5f2	## 정의\n```c\ntypedef struct KiottySpecName {\n    char value
 body	O	49a5e527	## 대상\nUI-001 컨텍스트와 사양 파일\n\n## 전제 조건\n빌드한 라이브러리를 C 프로그램(tests/e2e/e2e_test.c, C11)이 include/ 의 헤더만으로 링크해 구동한다. 시나리오마다 새 임시 폴더의 .kiotty/spec.kisp 를 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | 기본 설정(모든 값 0) | 컨텍스트를 만든다 | 성공하고 컨텍스트가 있다 |\n| 2 | - | 설정 NULL 로 컨텍스트를 만든다 | INVALID_ARGUMENT |\n| 3 | 연 적 없는 컨텍스트 | 프로젝트를 초기화한다 | 실패하고, 마지막 실패 이유의 status 가 그 코드와 같다 |\n| 4 | 없는 폴더 아래 경로 | 사양 파일을 연다 | 성공하고 사양 파일이 만들어진다 |\n| 5 | 연 컨텍스트 | 프로젝트 이름 "e2e" 로 초기화한다 | 성공 |\n| 6 | 없는 ID 로 항목을 읽어 실패시킨다 | 마지막 실패 이유를 읽는다 | status NOT_FOUND, 문장에 그 ID 가 있고 null 로 끝난다 |\n| 7 | - | SUCCESS 상태 이름을 읽는다 | "SUCCESS" |\n| 8 | 연 컨텍스트 | 컨텍스트를 해제한다 | 끝까지 실행된다 (NULL 해제도 안전) |\n
 body	O	4a0c9ac5	- 연결 리스트, 포인터 트리, 노드 할당 map 금지. 트리는 `parent_index`, `first_child_index` 배열로 표현한다.\n
 body	O	4a212847	## 시그니처\n```c\nKiottySpecCursorResult KiottySpec_openChildCursor(KiottySpecContext *context, KiottySpecText id);\n```\n\n## 사전조건\ncontext 는 KiottySpec_createContext 로 만들고 KiottySpec_open 으로 사양 파일을 연 것\n\n## 사후조건\nid 를 상위로 둔 항목\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- NOT_FOUND: 그 ID 의 항목이 없음\n- INVALID_ARGUMENT: ID 형식이 잘못됨 (영문자 · 숫자로 시작, 영문자 · 숫자 · - · _ 만, 15 바이트 이하)\n- POOL_IS_FULL: 열린 커서가 max_cursors 개\n- CAPACITY_EXCEEDED: 결과 행이 max_cursor_rows 를 넘음\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\n입력 KiottySpecText 는 호출 동안만 읽고 복사한다. null 종료를 가정하지 않으며 data 가 NULL 이면 빈 글이다. 커서는 컨텍스트의 커서 풀 슬롯이다. 다 쓰면 KiottySpec_closeCursor 로 닫는다. KiottySpec_releaseContext 가 남은 커서를 모두 정리한다.\n
+body	O	4b8c3bef	## 책임\n원격 상태를 사양 파일의 meta 두 키(remote.url, remote.rule_base)로 읽고 쓴다. 쓰기는 WriteScope 를 쓰지 않는다: refresh → meta 를 바꾸거나 지움 → Workspace::finish. 그래서 가장 최근 체크포인트가 DONE 이어도 쓰고 체크포인트 이력에 남지 않는다 (OpenedContext::initialize 와 같은 방식). 실패하면 finish 가 파일을 다시 읽어 되돌린다.\n\n타입: RemoteState\n\n## 모듈 인터페이스\n```cpp\n// class RemoteState\nexplicit RemoteState(Workspace& workspace);\nResult<RemoteRecord, KiottySpecStatus> read() const;\nKiottySpecStatus write(const RemoteRecord& remote);      // 둘 다 빈 글이면 두 키를 지운다\nKiottySpecStatus writeBase(Span<const char> rule_base); // 편입 · 올리기 뒤 기준 버전만 (같은 쓰기 안에서 부르는 쪽이 finish)\n```\n\n## 멤버 변수\n```cpp\n// RemoteState\nWorkspace& _workspace;\n```\n\n## 의존 모듈\n- DSN-096 remote_record\n- DSN-055 MetaStore\n- DSN-072 Workspace\n- DSN-029 Result\n- DSN-032 Span\n
 body	O	4b931850	## 수칙\r\r\n4.6 `auto` 는 우변에 타입이 보일 때(생성자 호출, `Result` 반환)만 쓴다. 숫자·bool 은 타입을 적는다.\r\r\n
 body	O	4c0a532a	## 대상\ntests/cli/cli_test.cpp 의 testParseArgumentsBytes\n\n## 전제 조건\nkiotty_cli 라이브러리를 링크하고 사양 파일 없이 CLI 의 parse 함수를 직접 부른다\n\n## 행동\ntestParseArgumentsBytes 를 실행한다\n\n## 기대 결과\n- null byte in an option value is kept\n- bad UTF-8 positional is left to the library\n- known flag takes no value\n
 body	O	4c3f6656	## 정의\n```c\ntypedef struct KiottySpecModelResult {\n    KiottySpecModel  value;\n    KiottySpecStatus code;\n    uint32_t         reserved;\n} KiottySpecModelResult;\n```\n\n## 의미\n상태와 모델\n
 body	O	4c5d0ba1	```cpp\n#ifdef _WIN32\n#include "backend/kiotty_windows_socket.h"\n#else\n#include "backend/kiotty_posix_socket.h"\n#endif\n\nclass Socket\n{\npublic:\n    Result<size_t, ErrorCode> read(Span<char> output);\nprivate:\n    SocketPayload _payload;  // backend 에서 정의\n};\n```\n
 body	O	4c5e5e82	| 대상 | 규칙 | 예 |\r\r\n| --- | --- | --- |\r\r\n| 함수 | 동사 + 목적어, camelCase | `openCursor`, `parseConfiguration` |\r\r\n| bool | `is` / `has` / `can` | `isValid`, `hasChildren` |\r\r\n| 변수 | snake_case, 단위 포함 | `timeout_milliseconds`, `buffer_length` |\r\r\n| private 멤버 | `_` 접두 | `_free_count` |\r\r\n| 상수, enum 멤버 | UPPER_SNAKE | `MAX_SESSIONS`, `POOL_IS_FULL` |\r\r\n| 클래스, enum, 타입 | PascalCase | `LazyPool`, `ErrorCode` |\r\r\n| 파일 | `<organization>_snake_case(클래스명).h` / `.cpp`, 파일 하나 = 클래스 하나. 조직 이름 접두사로 다른 라이브러리 헤더와 겹치지 않게 한다 | `kiotty_lazy_pool.h`, `kiotty_lazy_pool.cpp` |\r\r\n| namespace | `<organization>::<project>::implementation`. 예: `kiotty::spec::implementation`. 조직·프로젝트 이름은 사용자가 정한다. | |\r\r\n\r\r\n- 약어를 쓰지 않는다. 이름은 네 단어 이하.\r\r\n
-body	O	4c940f50	## 책임\n모델 표: Kind 별 태그 정의(48 비트 이름)와 관계 정의(이름, 대상 Kind, 개수 제한). 읽기 전용 데이터라 repository 층에 둔다 (CR-006).\n\n## 모듈 인터페이스\n```cpp\n// class ModelCatalog\nModelCatalog() = default;\nModelCatalog(const ModelCatalog&) = delete;\nModelCatalog& operator=(const ModelCatalog&) = delete;\nKiottySpecStatus load();\nconst entity::Model& model(entity::ItemKind kind) const;\nModelFinder finder() const;\nKiottySpecStatus checkTagValue(entity::ItemKind kind, uint32_t tag, uint64_t value) const;\nKiottySpecStatus checkRelation(entity::ItemKind from, uint32_t relation, entity::ItemKind to) const;\n// 함수\nconstexpr size_t ACCEPTANCE_CRITERIA_KEYWORD_COUNT = 2;\n```\n\n## 멤버 변수\n```cpp\n// ModelCatalog\nstatic constexpr size_t TAG_COUNT = 13;\nstatic constexpr size_t RELATION_COUNT = 19;\nstatic constexpr size_t BIT_NAME_COUNT = TAG_COUNT * entity::TAG_BIT_COUNT;\nentity::TagName _bit_names[BIT_NAME_COUNT] {};\nentity::Model _models[entity::ITEM_KIND_COUNT] {};\nentity::TagDefinition _tags[TAG_COUNT] {};\nentity::RelationDefinition _relations[RELATION_COUNT] {};\n```\n\n## 의존 모듈\n- DSN-029 Result\n- DSN-032 Span\n- DSN-060 Model\n- DSN-066 ModelFinder\n
+body	O	4c940f50	## 책임\r\n모델 표: Kind 별 태그 정의(48 비트 이름)와 관계 정의(이름, 대상 Kind, 개수 제한). 읽기 전용 데이터라 repository 층에 둔다 (CR-006).\r\n\r\n## 모듈 인터페이스\r\n```cpp\r\n// class ModelCatalog\r\nModelCatalog() = default;\r\nModelCatalog(const ModelCatalog&) = delete;\r\nModelCatalog& operator=(const ModelCatalog&) = delete;\r\nKiottySpecStatus load();\r\nconst entity::Model& model(entity::ItemKind kind) const;\r\nModelFinder finder() const;\r\nKiottySpecStatus checkTagValue(entity::ItemKind kind, uint32_t tag, uint64_t value) const;\r\nKiottySpecStatus checkRelation(entity::ItemKind from, uint32_t relation, entity::ItemKind to) const;\r\n// 함수\r\nconstexpr size_t ACCEPTANCE_CRITERIA_KEYWORD_COUNT = 2;\r\n```\r\n\r\n## 멤버 변수\r\n```cpp\r\n// ModelCatalog\r\nstatic constexpr size_t TAG_COUNT = 13;\r\nstatic constexpr size_t RELATION_COUNT = 19;\r\nstatic constexpr size_t BIT_NAME_COUNT = TAG_COUNT * entity::TAG_BIT_COUNT;\r\nentity::TagName _bit_names[BIT_NAME_COUNT] {};\r\nentity::Model _models[entity::ITEM_KIND_COUNT] {};\r\nentity::TagDefinition _tags[TAG_COUNT] {};\r\nentity::RelationDefinition _relations[RELATION_COUNT] {};\r\n```\r\n\r\n## 의존 모듈\r\n- DSN-029 Result\r\n- DSN-032 Span\r\n- DSN-060 Model\r\n- DSN-066 ModelFinder\r\n\n## 변경 예정 (CR-015)\n- MODEL_SOURCES 에 private_rule 모델: 태그 "수칙 종류" (rule 과 같은 값), 관계 없음.\n- 관계 정의 끝에: "대체 개발 수칙" private_rule → rule (many), "검사 전용 개발 수칙" code_inspection_result → private_rule (single), "영향 전용 개발 수칙" change_request → private_rule (many).\n- 변경 요청 태그 값 끝에: 상태 "백로그", 출처 "공통 수칙". 비트 번호는 끝에 붙여 기존 번호를 밀지 않는다.\n- 모델 버전 상수를 2 로 (MODEL_VERSION = 2, 하나 아래 버전 1 도 연다).\n
 body	O	4cc711b5	## 정의\n```c\ntypedef struct KiottySpecContext KiottySpecContext;\n```\n\n## 의미\n라이브러리 인스턴스. 안이 감춰진 구조체\n
 body	O	4ccfc889	## 대상\ntests/cli/cli_test.cpp 의 testParseCheckpointArgument\n\n## 전제 조건\nkiotty_cli 라이브러리를 링크하고 사양 파일 없이 CLI 의 parse 함수를 직접 부른다\n\n## 행동\ntestParseCheckpointArgument 를 실행한다\n\n## 기대 결과\n- empty argument is rejected\n- current is accepted\n- dash is accepted\n- nine digits are accepted\n- ten digits are rejected\n- null byte is rejected\n- bad UTF-8 is rejected\n
 body	O	4d02ef15	## 목적\n모델에 정의된 관계를 만들고 끊고 본다\n\n## 포함\n- KiottySpec_addRelation\n- KiottySpec_removeRelation\n- KiottySpec_openRelationCursor\n- KiottySpec_openRelationCursorByModel\n- KiottySpec_fetchRelationPage\n
 body	O	4d436d0d	결과: PASS\r\n근거: node tools/lint.js --rule 8\r\n
 body	O	4e547267	## 역할\n파일 열기 · 읽기 · 쓰기와 .kisp 줄 형식. 운영체제에 따라 다른 코드는 data/infra/ 에 둔다.\n
 body	O	4e9678f3	## 대상\ntests/model/model_test.cpp 의 testParseKind\n\n## 전제 조건\nentity 와 모델 표 소스만 링크한 실행 파일\n\n## 행동\ntestParseKind 를 실행한다\n\n## 기대 결과\n- kind empty\n- kind max length\n- kind max length + 1\n- kind null byte\n- kind invalid utf-8\n- kind design\n
+body	O	4eb0c862	## 참여 모듈\n- DSN-100 RuleDiffer\n- DSN-099 RuleDiffStore\n- DSN-098 line_diff\n- DSN-075 CursorPool\n- DSN-085 spec_adapter\n\n## 순서\n1. C 어댑터가 local · remote 컨텍스트가 서로 다르고 둘 다 열렸는지 검사하고, remote 의 Workspace 를 얻는다\n2. RuleDiffer::open 이 두 현재 뷰의 rule 항목을 ID 순으로 걸으며 추가 · 삭제 · 변경과 다른 필드를 RuleDiffStore 의 행에 쓰고, 커서 행에는 행 위치만 둔다\n3. fetchRuleDiffPage 는 RULE_DIFF 커서에서 행을 꺼내 KiottySpecRuleDiff 로 옮긴다. remote 를 닫았어도 읽힌다\n4. RuleDiffer::openBody 가 두 본문을 RuleDiffStore 에 복사하고 line_diff 로 줄 구간을 만든다\n5. fetchTextDiffPage 는 커서 종류가 BODY_DIFF 이면 RuleDiffer::nextPiece 로, TEXT_DIFF 이면 지금처럼 TextDiffer::next 로 조각을 꺼낸다\n\n## 데이터 흐름\n두 현재 뷰의 rule 항목 → ID 로 맞춘 쌍 → 수칙 차이 행 / 두 본문 → 줄 해시 → LCS 표 → 줄 구간 → 글자 조각\n
 body	O	4f46cf12	- `core/` 는 도메인 용어(항목, 체크포인트, 링크, 마일스톤 등)와 도메인 레코드를 담지 않는다.\n- `core/` 는 C 인터페이스의 레코드 타입(`KiottySpec*` 구조체)을 담지 않는다. 에러 enum 만 `include/` 에서 가져온다.\n- 도메인 레코드를 C 구조체로 바꾸는 코드(커서 상자 등)는 `context/` 에 둔다.\n- `core/` 는 `include/kiotty_spec.h` 의 에러 enum 외에는 프로젝트 고유 헤더에 의존하지 않는다.\n
 body	O	4f804f78	## 대상\nREQ-005 밖에서 바뀐 파일을 덮어쓰지 않는다\n\n## 전제 조건\n빌드한 라이브러리를 C 인터페이스로만 쓴다. 시험마다 새 임시 폴더에 사양 파일을 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | 작업 공간 둘이 같은 파일을 열었다 | 한쪽이 쓴 뒤 다른 쪽이 쓴다 | 나중 쓰기는 충돌로 거부되고 그쪽 작업 공간에 앞쪽 변경이 보인다 |\n| 2 | 같은 상태에서 거부된 쪽 | 같은 쓰기를 다시 한다 | 성공한다 |\n
 body	O	4f8ec1fa	결과: PASS\n근거: node tools/lint.js --rule 4.17\n판단: docs/deviations.md: tools/lint_accepted.txt 의 기존 이름 117 개(122 곳)는 편차 (CR-014). 그 밖의 이름은 위반 없음\n
@@ -3319,6 +3552,7 @@ body	O	52022365	## 대상\ntests/context/context_test.cpp 의 testCursorKindAndH
 body	O	522dcd2d	## 진술\n사용자는 항목의 ID 만 바꿀 수 있다. 관계 · 태그 · 본문 · 이력은 그대로 따라오고, 지난 시점의 기록도 새 ID 로 보인다. ID 바꾸기는 체크포인트에 묶이지 않는다.\n\n## 근거 시나리오\n번호 체계를 정리하면서 LOGIN 처럼 임시로 붙인 ID 를 REQ-040 으로 바꾼다. 연결된 설계와 테스트의 관계는 고칠 필요가 없다.\n\n## 인수 조건\n- 전제 조건: 관계와 본문이 있는 REQ-005 / 행동: REQ-050 으로 바꾼다 / 기대 결과: REQ-050 으로 같은 관계와 본문이 보이고 REQ-005 는 없다\n- 전제 조건: REQ-001, REQ-002 / 행동: REQ-001 을 REQ-002 로 바꾼다 / 기대 결과: 이미 있는 ID 라는 이유로 거부\n
 body	O	5265c117	## 시그니처\n```c\nKiottySpecStatusResult KiottySpec_fetchCheckpointPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecCheckpointPage *page);\n```\n\n## 사전조건\n열린 체크포인트 커서\n\n## 사후조건\npage 에 핸들과 레코드\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- INVALID_ARGUMENT: page 가 NULL\n- INVALID_HANDLE: 닫혔거나 잘못된 커서\n- WRONG_CURSOR_TYPE: 다른 종류의 커서\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\npage 는 호출자 메모리다. 한 번에 최대 KIOTTY_SPEC_PAGE_CAPACITY 개를 채우고 length 에 개수를 둔다. length 가 0 이면 끝이다.\n
 body	O	5266da2e	## 시그니처\n```c\nKiottySpecTagResult KiottySpec_readItemTagAt(KiottySpecContext *context, KiottySpecText id, uint32_t tag, KiottySpecCheckpointHandle checkpoint);\n```\n\n## 사전조건\ncontext 는 KiottySpec_createContext 로 만들고 KiottySpec_open 으로 사양 파일을 연 것\n\n## 사후조건\n그 시점의 값. 없었으면 0\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- INVALID_ARGUMENT: ID 형식이 잘못됨 (영문자 · 숫자로 시작, 영문자 · 숫자 · - · _ 만, 15 바이트 이하)\n- NOT_FOUND: 그 시점에 항목이 없었음\n- INVALID_ARGUMENT: checkpoint 의 상위 32 비트가 0 이 아님\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\n입력 KiottySpecText 는 호출 동안만 읽고 복사한다. null 종료를 가정하지 않으며 data 가 NULL 이면 빈 글이다.\n
+body	O	52942a10	## 책임\nREQ-044 의 1 ~ 6 을 쓰기 한 번으로 한다. 다른 흐름(Editor · RelationEditor · Lifecycle)을 부르지 않고 repository 의 writer 를 직접 쓴다 (개발수칙 6.5, CR-006). 그 흐름들은 호출마다 파일을 저장해 원자성이 깨지고 75 개 수칙에 수 초가 걸린다. 받아 둔 수칙은 SpecParser 를 지나 이미 검사된 값이다.\n\n순서: 사용자 확인 → refresh → 가장 최근 체크포인트 DONE 확인 → 모델 버전 같음 확인 (SpecFile::modelVersion) → 차이 없음이면 거부 → 체크포인트 생성 → 변경 요청 생성(ID 발급, 태그 출처 · 상태 · 진입 단계, 본문) → 수칙 추가(상위 먼저) · 고침 · 삭제 → 바뀌거나 지운 수칙의 검사 결과 삭제 → 지운 수칙을 가리키던 "대체 개발 수칙" 관계 삭제 → 관계 "영향 개발 수칙" · "영향 전용 개발 수칙" → RemoteState::writeBase → Workspace::finish. 어디서든 실패하면 finish 가 파일을 다시 읽어 되돌린다.\n\n진입 단계(Step 10 과 편입 직전 다음 단계 중 앞선 것)는 현재 위치를 계산하는 HistoryFinder 가 context 층에 있으므로 부르는 쪽(C 어댑터)이 계산해 draft 로 넘긴다.\n\n타입: AcceptDraft, AcceptOutcome, RuleAcceptor\n\n## 모듈 인터페이스\n```cpp\n// class RuleAcceptor\nexplicit RuleAcceptor(Workspace& local);\nResult<AcceptOutcome, KiottySpecStatus> accept(const Workspace& remote, const AcceptDraft& draft, entity::Actor actor);\n```\n\n## 멤버 변수\n```cpp\n// AcceptDraft\nSpan<const char> description;\nSpan<const char> title;\nSpan<const char> summary;\nSpan<const char> body;\nSpan<const char> rule_base;\nentity::Step entry_step;\n// AcceptOutcome\nuint32_t checkpoint {0};\nentity::IdText change_request {};\n// RuleAcceptor\nWorkspace& _local;\n```\n\n## 의존 모듈\n- DSN-097 RemoteState\n- DSN-047 CheckpointWriter\n- DSN-054 ItemWriter\n- DSN-053 ItemTags\n- DSN-056 RelationStore\n- DSN-045 BodyStore\n- DSN-066 ModelFinder\n- DSN-072 Workspace\n- DSN-029 Result\n- DSN-032 Span\n
 body	O	52a01925	## 시그니처\n```c\nKiottySpecCursorResult KiottySpec_openRelationCursor(KiottySpecContext *context, KiottySpecText id, KiottySpecDirection direction);\n```\n\n## 사전조건\ncontext 는 KiottySpec_createContext 로 만들고 KiottySpec_open 으로 사양 파일을 연 것\n\n## 사후조건\nUPSTREAM 은 이 항목이 from 인 관계, DOWNSTREAM 은 to 인 관계, BOTH 는 둘 다\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- NOT_FOUND: 그 ID 의 항목이 없음\n- INVALID_ARGUMENT: ID 형식이 잘못됨 (영문자 · 숫자로 시작, 영문자 · 숫자 · - · _ 만, 15 바이트 이하)\n- INVALID_ARGUMENT: 잘못된 direction\n- POOL_IS_FULL: 열린 커서가 max_cursors 개\n- CAPACITY_EXCEEDED: 결과 행이 max_cursor_rows 를 넘음\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\n입력 KiottySpecText 는 호출 동안만 읽고 복사한다. null 종료를 가정하지 않으며 data 가 NULL 이면 빈 글이다. 커서는 컨텍스트의 커서 풀 슬롯이다. 다 쓰면 KiottySpec_closeCursor 로 닫는다. KiottySpec_releaseContext 가 남은 커서를 모두 정리한다.\n
 body	O	52ede9df	결과: PASS\r\n근거: node tools/lint.js --rule 4.16\r\n
 body	O	53bb7345	## 진술\n사양 파일을 연 뒤에 다른 프로그램(git pull, 다른 작업 공간)이 파일을 바꾸면, 다음 쓰기는 충돌로 거부되고 작업 공간은 파일을 다시 읽어 최신 기록을 갖는다.\n\n## 근거 시나리오\nAI 가 사양 파일을 열어 둔 사이 사용자가 git pull 로 파일을 바꾼다. AI 의 다음 쓰기는 거부되고, AI 는 다시 읽은 최신 기록을 보고 같은 쓰기를 다시 한다.\n\n## 인수 조건\n- 전제 조건: 작업 공간 둘이 같은 파일을 열었다 / 행동: 한쪽이 쓴 뒤 다른 쪽이 쓴다 / 기대 결과: 나중 쓰기는 충돌로 거부되고 그쪽 작업 공간에 앞쪽 변경이 보인다\n- 전제 조건: 같은 상태에서 거부된 쪽 / 행동: 같은 쓰기를 다시 한다 / 기대 결과: 성공한다\n
@@ -3411,6 +3645,7 @@ body	O	7e66c64a	## 시그니처\n```c\nKiottySpecStatusResult KiottySpec_fetchRe
 body	O	7e68584c	## 진술\n사용자는 항목 하나의 제목이나 요약이 두 체크포인트 사이에 어떻게 바뀌었는지 같은 부분 · 지운 부분 · 더한 부분의 조각으로 본다.\n\n## 근거 시나리오\n요약 한 줄이 고쳐졌을 때 어느 단어가 바뀌었는지 바로 본다.\n\n## 인수 조건\n- 전제 조건: 요약 "저장한다" 를 "모두 저장한다" 로 고쳤다 / 행동: 요약의 글자 차이를 본다 / 기대 결과: 더한 조각 "모두 " 와 같은 조각 "저장한다"\n- 전제 조건: 같은 항목 / 행동: 본문의 글자 차이를 요청한다 / 기대 결과: 거부\n
 body	O	7ea7218f	## 대상\ntests/api/api_test.cpp 에 더할 테스트 (아직 없음)\n\n## 전제 조건\n라이브러리 전체를 링크하고 임시 폴더의 .kiotty/spec.kisp 를 C 함수로만 연다. 앞 테스트의 기록 위에 다음 테스트가 이어진다. 없는 ID 로 항목을 읽어 실패시킨다\n\n## 행동\n실패한 호출의 이유 문장과 상태 코드 이름을 읽는다\n\n## 기대 결과\n- 상태가 NOT_FOUND\n- 실패 이유에 그 ID 가 들어 있음\n- 작은 버퍼로 실패 이유를 읽으면 CAPACITY_EXCEEDED 와 필요한 바이트 수\n- NULL 컨텍스트로 부른 함수는 INVALID_ARGUMENT\n- 상태 코드 이름이 "NOT_FOUND", 모르는 값은 "UNKNOWN"\n
 body	O	7ee22562	## 책임\nItemStore 가 소유하는 표 묶음. 세부 클래스는 이것을 reference 로 받는다 (개발수칙 4.19). 버전 표 (names · versions · tag_versions) 가 파일 내용이고, 나머지는 거기서 만든 현재 뷰다.\n\n타입: ItemCapacity, ItemTables\n\n## 모듈 인터페이스\n```cpp\n// struct ItemTables\nexplicit ItemTables(const ItemCapacity& capacity) : names(capacity.versions), versions(capacity.versions), tag_versions(capacity.tag_versions), version_labels(capacity.versions + 1), items(capacity.items), labels(capacity.items), id_index(capacity.items), key_index(capacity.items), keys(capacity.items, entity::NO_KEY), parents(capacity.items, entity::NO_KEY), tags(capacity.tags), order(capacity.versions), bodies(capacity.body_bytes, capacity.versions);\n// 함수\nstatic_assert(sizeof(ItemCapacity) == 40, "unexpected padding");\nHandle pickLabelHandle(const entity::ItemVersion& version);\n```\n\n## 멤버 변수\n```cpp\n// ItemCapacity\nsize_t items {};\nsize_t tags {};\nsize_t versions {};\nsize_t tag_versions {};\nsize_t body_bytes {};\n// ItemTables\nFixedMap<uint32_t, entity::IdText> names;\nVersionTable<entity::ItemVersion> versions;\nVersionTable<entity::TagVersion> tag_versions;\nItemLabelPool version_labels;\nLazyPool<entity::ItemState, entity::ItemHandle> items;\nstd::vector<entity::ItemLabel> labels;\nFixedMap<entity::IdText, uint32_t> id_index;\nFixedMap<uint32_t, uint32_t> key_index;\nstd::vector<uint32_t> keys;\nstd::vector<uint32_t> parents;\nstd::vector<entity::TagRecord> tags;\nsize_t tag_count {0};\nstd::vector<uint32_t> order;\nBodyStore bodies;\n```\n\n## 의존 모듈\n- DSN-087 DetailPool\n- DSN-023 FixedMap\n- DSN-027 LazyPool\n- DSN-038 VersionTable\n- DSN-045 BodyStore\n- DSN-058 item_records\n- DSN-061 version_records\n
+body	O	7f3ed4cf	## 책임\n내보내기 조건(가장 최근 체크포인트 DONE)을 검사하고 경로를 절대 경로로 바꾼 뒤 RuleSpecWriter 로 쓴다. local 사양 파일은 바꾸지 않는다.\n\n타입: RuleExporter\n\n## 모듈 인터페이스\n```cpp\n// class RuleExporter\nRuleExporter(Workspace& local, FileSystem& files, PathResolver& paths);\nKiottySpecStatus exportTo(Span<const char> path);\n```\n\n## 멤버 변수\n```cpp\n// RuleExporter\nWorkspace& _local;\nFileSystem& _files;\nPathResolver& _paths;\n```\n\n## 의존 모듈\n- DSN-102 RuleSpecWriter\n- DSN-041 FileSystem\n- DSN-089 system_path\n- DSN-072 Workspace\n- DSN-029 Result\n- DSN-032 Span\n
 body	O	7f44dc49	## 책임\n파일을 새로 만들어 조각마다 이어 쓴다. 소멸자가 닫는다.\n\n## 모듈 인터페이스\n```cpp\n// class FileWriter\nexplicit FileWriter(OpenedFile file);\nFileWriter(const FileWriter&) = delete;\nFileWriter& operator=(const FileWriter&) = delete;\nKiottySpecStatus write(Span<const char> content);\nbool isOpen() const;\nvoid close();\n```\n\n## 멤버 변수\n```cpp\n// FileWriter\nOpenedFile _file;\n```\n\n## 의존 모듈\n- DSN-032 Span\n- DSN-090 OpenedFile\n
 body	O	7f82e1fc	## 정의\n```c\ntypedef struct KiottySpecItemHandleResult {\n    KiottySpecItemHandle value;\n    KiottySpecStatus     code;\n    uint32_t             reserved;\n} KiottySpecItemHandleResult;\n```\n\n## 의미\n상태와 항목 핸들\n
 body	O	80568adc	## 정의\n```c\ntypedef struct KiottySpecStatusResult           { KiottySpecStatus code; } KiottySpecStatusResult;\n```\n\n## 의미\n상태만\n
@@ -3419,7 +3654,7 @@ body	O	81354d90	## 책임\n흐름이 함께 쓰는 store · 모델 표 · 사양
 body	O	81639d02	```cpp\nusing ServerResult = Result<ServerHandle, ErrorCode>;\n\nServerResult createServer(Context& context, const ServerConfiguration& configuration)\n{\n    Handle handle = context.servers.acquire();\n    if (!handle.valid()) { return ServerResult::failure(ErrorCode::POOL_IS_FULL); }\n\n    auto server = context.servers.get(handle);\n    if (!server) { return ServerResult::failure(server.code); }\n\n    ErrorCode code = server.value.initialize(configuration);\n    if (code != ErrorCode::SUCCESS) { return ServerResult::failure(code); }\n\n    return ServerResult::success(handle);\n}\n```\n
 body	O	81ad2c8b	## 대상\ntests/core/core_test.cpp 의 testFixedStringIsCompact\n\n## 전제 조건\ncore/ 헤더와 kiotty_text_diff.cpp 만 링크한 실행 파일. 파일 · 사양 파일을 쓰지 않는다\n\n## 행동\ntestFixedStringIsCompact 를 실행한다\n\n## 기대 결과\n- fixed string orders by text\n- append fills to capacity\n
 body	O	81b27814	## 대상\ntests/core/core_test.cpp 의 testTextBuffer\n\n## 전제 조건\ncore/ 헤더와 kiotty_text_diff.cpp 만 링크한 실행 파일. 파일 · 사양 파일을 쓰지 않는다\n\n## 행동\ntestTextBuffer 를 실행한다\n\n## 기대 결과\n- append fits\n- append fills capacity\n- append over capacity fails\n- failed append keeps text\n- text stays null terminated\n- clear keeps capacity\n
-body	O	820ad0e7	## 역할\n사용자 기능 단위 폴더: editor/ (항목 · 관계 편집), lifecycle/ (체크포인트), checker/ (확정 조건 검사), workspace/ (흐름이 함께 쓰는 store 묶음과 쓰기 범위). 같은 층위의 흐름은 서로를 들지 않는다 (개발수칙 6.5 · 7.1).\n
+body	O	820ad0e7	## 역할\r\n사용자 기능 단위 폴더: editor/ (항목 · 관계 편집), lifecycle/ (체크포인트), checker/ (확정 조건 검사), workspace/ (흐름이 함께 쓰는 store 묶음과 쓰기 범위). 같은 층위의 흐름은 서로를 들지 않는다 (개발수칙 6.5 · 7.1).\r\n\n## 변경 예정 (CR-015)\n- 폴더 둘을 더한다: remote/ (원격 상태), rule_sync/ (수칙 편입 · 내보내기).\n
 body	O	82791019	## 책임\n쓰기 하나를 가장 최근 체크포인트에 묶는다. 만들 때 체크포인트를 고른다. 부른 자리에서 쓰고 버린다. finish 가 성공이면 파일에 옮기고, 실패면 파일에서 다시 읽는다.\n\n## 모듈 인터페이스\n```cpp\n// class WriteScope\nexplicit WriteScope(Workspace& workspace);\nWriteScope(const WriteScope&) = delete;\nWriteScope& operator=(const WriteScope&) = delete;\nResult<uint32_t, KiottySpecStatus> sequence() const;\nKiottySpecStatus finish(KiottySpecStatus status);\n```\n\n## 멤버 변수\n```cpp\n// WriteScope\nWorkspace& _workspace;\nResult<uint32_t, KiottySpecStatus> _sequence;\n```\n\n## 의존 모듈\n- DSN-029 Result\n- DSN-058 item_records\n- DSN-072 Workspace\n
 body	O	8325a2aa	결과: PASS\n근거: 하위 수칙 결과의 합\n판단: 하위 수칙 18개 중 FAIL: 없음\n
 body	O	837e16d6	결과: PASS\r\n근거: node tools/lint.js --rule 2.3\r\n
@@ -3456,6 +3691,7 @@ body	O	93a6dc83	## 책임\n경로 타입(SystemPath · NativePath · PathArea) �
 body	O	94ce118e	## 책임\n체크포인트 이력과 현재 위치 (설계서 v1 8). Finder 의 세부 클래스 (개발수칙 4.19).\n\n타입: Position, HistoryFinder\n\n## 모듈 인터페이스\n```cpp\n// class HistoryFinder\nHistoryFinder(Workspace& workspace, CursorPool& cursors, Checker& checker);\nCursorIdResult checkpoints(uint32_t step);\nCursorIdResult stepRuns();\nCursorIdResult unmetConditions();\nResult<Position, KiottySpecStatus> position();\n// 함수\nstatic_assert(sizeof(Position) == 32, "unexpected padding");\n```\n\n## 멤버 변수\n```cpp\n// Position\nuint64_t pending_writes {0};\nuint64_t open_change_requests {0};\nuint32_t current {0};\nuint32_t step {0};\nuint32_t state {0};\nuint32_t next_step {0};\n// HistoryFinder\nWorkspace& _workspace;\nCursorPool& _cursors;\nChecker& _checker;\n```\n\n## 의존 모듈\n- DSN-075 CursorPool\n- DSN-076 cursor_rows\n- DSN-029 Result\n- DSN-062 Checker\n- DSN-072 Workspace\n
 body	O	94e3d6ee	## 책임\n운영체제별 파일 기능(열기 · 읽기 · 쓰기 · 폴더 · 이름 바꾸기)과 경로 변환의 선언. Windows 와 POSIX backend 가 구현한다 (개발수칙 6.7).\n\n## 모듈 인터페이스\n```cpp\n// 함수\nbool isSeparator(char letter);\nsize_t rootLength(Span<const char> path);\nKiottySpecStatus convertPath(Span<const char> path, Span<NativeLetter> native);\nDescriptorResult openFile(const NativePath& path, OpenMode mode);\nint readSome(int descriptor, Span<char> buffer);\nint writeSome(int descriptor, Span<const char> content);\nvoid closeFile(int descriptor);\nbool makeDirectory(const NativePath& path);\nbool isDirectory(const NativePath& path);\nbool isFile(const NativePath& path);\nKiottySpecStatus removeFile(const NativePath& path);\nKiottySpecStatus renameFile(const NativePath& from, const NativePath& to);\n```\n\n## 멤버 변수\n없음\n\n## 의존 모듈\n- DSN-032 Span\n- DSN-089 system_path\n
 body	O	95376c8b	## 시그니처\n```c\nKiottySpecStatusResult KiottySpec_fetchRuleDiffPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecRuleDiffPage *page);\n```\n\n## 사전조건\ncontext 는 커서를 연 local 컨텍스트. 열린 수칙 차이 커서\n\n## 사후조건\npage 에 수칙 차이 (ID, 제목, 변화, 다른 필드)\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- INVALID_ARGUMENT: page 가 NULL\n- INVALID_HANDLE: 닫혔거나 잘못된 커서\n- WRONG_CURSOR_TYPE: 다른 종류의 커서\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\npage 는 호출자 메모리다. 한 번에 최대 KIOTTY_SPEC_PAGE_CAPACITY 개를 채우고 length 에 개수를 둔다. length 가 0 이면 끝이다.\n
+body	O	957aa736	## 책임\nlocal · remote 두 Workspace 의 현재 뷰에서 Kind 가 rule 인 항목을 ID 로 맞춰 비교한다. 다른 필드는 제목 · 요약 · 상위(상위 항목의 ID 로 비교) · 태그(태그 이름과 비트 이름으로 비교) · 본문(BodyStore 의 글). 전용 개발 수칙은 보지 않는다. 열 때 행을 RuleDiffStore 에 모두 만들고 커서 행에는 영역 위치만 둔다. 본문 차이는 두 본문을 RuleDiffStore 에 복사하고 line_diff 로 줄 구간을 만든다. 조각을 꺼낼 때 MAX_DIFF_TEXT_BYTES 를 넘는 줄은 UTF-8 경계에서 여러 조각으로 나눈다.\n\n타입: RuleDiffer\n\n## 모듈 인터페이스\n```cpp\n// class RuleDiffer\nRuleDiffer(Workspace& local, CursorPool& cursors, RuleDiffStore& store);\nCursorIdResult open(const Workspace& remote);                            // CursorKind::RULE_DIFF\nResult<RuleDiffRecord, KiottySpecStatus> next(CursorId cursor);\nCursorIdResult openBody(const Workspace& remote, Span<const char> id); // CursorKind::BODY_DIFF\nResult<TextPiece, KiottySpecStatus> nextPiece(CursorId cursor);\n```\n\n## 멤버 변수\n```cpp\n// RuleDiffer\nWorkspace& _local;\nCursorPool& _cursors;\nRuleDiffStore& _store;\n```\n\n## 의존 모듈\n- DSN-099 RuleDiffStore\n- DSN-098 line_diff\n- DSN-075 CursorPool\n- DSN-050 ItemReader\n- DSN-053 ItemTags\n- DSN-045 BodyStore\n- DSN-066 ModelFinder\n- DSN-072 Workspace\n- DSN-029 Result\n- DSN-032 Span\n
 body	O	959084d4	- 함수: `<Organization><Project>_functionName`. 예: `KiottySpec_createServer`.\r\r\n- 타입: `<Organization><Project><TypeName>`. 예: `KiottySpecServer`.\r\r\n- enum 멤버: `<ORGANIZATION>_<PROJECT>_<TYPE>_<MEMBER>`. 예: `KIOTTY_SPEC_STATUS_SUCCESS`. C enum 은 이름 공간이 없으므로 타입 이름을 넣어 충돌을 막는다.\r\r\n- 매크로: `<ORGANIZATION>_<PROJECT>_<NAME>`. 예: `KIOTTY_SPEC_API`.\r\r\n- 약어 금지(4.4)는 C interface 에도 적용한다. 예: `Db` 대신 `DATABASE`, `InvalidArg` 대신 `INVALID_ARGUMENT`.\r\r\n- 조직·프로젝트 이름은 사용자가 정한다. 임의로 정하지 않는다.\r\r\n- C interface 는 프로젝트의 모든 에러를 덮는 C enum 하나를 가진다.\r\r\n\r\r\n```c\r\r\nServerResult KiottySpec_createServer(GlobalContext* context, const ServerConfiguration configuration);\r\r\n```\r\r\n
 body	O	95c318d7	## 정의\n```c\ntypedef enum KiottySpecChange {\n    KIOTTY_SPEC_CHANGE_ADDED = 1,\n    KIOTTY_SPEC_CHANGE_MODIFIED,\n    KIOTTY_SPEC_CHANGE_REMOVED\n} KiottySpecChange;\n```\n\n## 의미\n항목 · 관계의 추가 · 수정 · 삭제\n
 body	O	95e1f869	## 목적\n제목 · 요약이 두 시점 사이에 어떻게 바뀌었는지 조각으로 받는다\n\n## 포함\n- KiottySpec_openTextDiffCursor\n- KiottySpec_fetchTextDiffPage\n
@@ -3480,6 +3716,7 @@ body	O	9bcc3b7d	## 참여 모듈\n- DSN-064 Lifecycle\n- DSN-051 ItemStore\n- DS
 body	O	9c969009	## 대상\ntests/cli/cli_test.cpp 의 testParseActor\n\n## 전제 조건\nkiotty_cli 라이브러리를 링크하고 사양 파일 없이 CLI 의 parse 함수를 직접 부른다\n\n## 행동\ntestParseActor 를 실행한다\n\n## 기대 결과\n- empty actor is ai\n- user actor is accepted\n- longer actor is rejected\n- actor with null byte is rejected\n- actor with bad UTF-8 is rejected\n- ai actor is accepted\n
 body	O	9d0cea7a	결과: PASS\n근거: 수동 검토 (include/ src/ app/ tests/)\n판단: 여러 인스턴스를 내보내는 C 함수는 모두 커서(open*Cursor · fetch*Page · closeCursor)로 내보내고, 태그 · 관계 정의도 CR-003 뒤 커서로만 읽는다. implementation 안에서 커서를 여는 곳은 모두 C 함수의 open*Cursor 를 위한 것이고 내부 흐름은 index 로 바로 읽는다. CLI 의 ks history · ks tag show 가 단건 조회를 반복하는 것은 CR-012 로 바뀐 6.6 에서 위반이 아니다.\n
 body	O	9db86b2a	## 책임\n비교할 두 체크포인트 sequence\n\n## 모듈 인터페이스\n```cpp\n// 함수\nstatic_assert(sizeof(DiffRange) == 8, "unexpected padding");\n```\n\n## 멤버 변수\n```cpp\n// DiffRange\nuint32_t from {0};\nuint32_t to {0};\n```\n\n## 의존 모듈\n없음\n
+body	O	9e6dcb4a	## 참여 모듈\n- DSN-085 spec_adapter\n- DSN-097 RemoteState\n- DSN-101 RuleAcceptor\n- DSN-103 RuleExporter\n- DSN-102 RuleSpecWriter\n- DSN-080 HistoryFinder\n- DSN-068 SpecFile\n\n## 순서\n1. 원격 상태: C 어댑터가 KiottySpecRemote 를 RemoteRecord 로 parse 하고 (null 종료 · UTF-8 · 기준 버전 형식) RemoteState::write 가 meta 를 바꾸고 바로 저장한다\n2. 편입: C 어댑터가 KiottySpecAcceptInput 을 AcceptDraft 로 parse 하고, HistoryFinder 로 다음 단계를 읽어 진입 단계 = min(Step 10, 다음 단계) 를 draft 에 넣는다\n3. RuleAcceptor::accept 가 조건을 검사하고 체크포인트 · 변경 요청 · 수칙 · 검사 결과 · 관계 · 기준 버전을 store 에 쓴 뒤 한 번 저장한다. 실패하면 파일을 다시 읽는다\n4. 내보내기: RuleExporter 가 DONE 을 확인하고 RuleSpecWriter 가 임시 파일에 쓴 뒤 rename 한다\n5. git 실행 · 받아 둔 파일 관리는 명령줄 도구(app/cli)가 한다\n\n## 데이터 흐름\n받아 둔 rule.kisp → remote Workspace → (diff) → local store 의 버전 행 추가 → .kisp 한 번 저장 / local 현재 뷰의 rule → 접은 .kisp\n
 body	O	9ea5c49d	## 책임\n포인터와 길이를 함께 다니게 하는 Span<T> (개발수칙 2.2).\n\n## 모듈 인터페이스\n```cpp\n// class Span\nSpan();\nSpan(Element* data, size_t length);\ntemplate <typename Other, typename = std::enable_if_t<std::is_same<const Other, Element>::value>> Span(Span<Other> other);\nElement* data() const;\nsize_t length() const;\nElement* begin() const;\nElement* end() const;\nElement& operator[](size_t index) const;\nResult<Element&, KiottySpecStatus> at(size_t index) const;\nResult<Span<Element>, KiottySpecStatus> subspan(size_t offset, size_t length) const;\nKiottySpecStatus copyFrom(Span<const Element> source) const;\n// 함수\nSpan<Element> viewVector(std::vector<Element>& values);\nSpan<const Element> viewVector(const std::vector<Element>& values);\n```\n\n## 멤버 변수\n```cpp\n// Span\nElement* _data;\nsize_t _length;\n```\n\n## 의존 모듈\n- DSN-029 Result\n
 body	O	9f976785	## 진술\n여러 프로젝트가 같은 개발 수칙을 쓰도록, 사용자는 한 프로젝트의 개발 수칙을 원격 git 저장소에 올리고, 다른 프로젝트는 원할 때 그것을 받아 지금 수칙과 비교한 뒤 새 체크포인트로 편입한다. 받는 일은 자동으로 일어나지 않는다. 개발 수칙은 체크포인트 이력의 일부라서 언제 받을지는 사용자가 정한다. 나누는 것은 개발 수칙뿐이며, 그 프로젝트에만 유효한 전용 개발 수칙과 다른 종류의 항목은 원격으로 나가지 않는다.\n\n## 근거 시나리오\n1. 프로젝트 A 에서 개발 수칙을 고치고 체크포인트를 확정한 뒤 원격 저장소에 올린다.\n2. 프로젝트 B 의 사용자가 원격이 바뀌었는지 확인하고 받아 둔다.\n3. AI 가 받아 둔 수칙과 B 의 수칙의 차이를 수칙마다 한 줄로 요약하고, 사용자가 받을지 정한다.\n4. 받기로 하면 B 에 새 체크포인트와 변경 요청이 생기고, B 는 코드 검사부터 새 수칙으로 다시 돈다.\n\n## 인수 조건\n- 전제 조건: 프로젝트 A 가 개발 수칙을 올렸고 B 는 수칙이 다르다 / 행동: B 가 받아 편입한다 / 기대 결과: B 의 개발 수칙이 A 의 것과 같다\n- 전제 조건: 전용 개발 수칙이 있는 프로젝트 A / 행동: A 가 개발 수칙을 올린다 / 기대 결과: 원격 저장소에 전용 개발 수칙이 없다\n
 body	O	a05b6682	## 대상\ntests/cli/cli_test.cpp 의 testParseTagSpec\n\n## 전제 조건\nkiotty_cli 라이브러리를 링크하고 사양 파일 없이 CLI 의 parse 함수를 직접 부른다\n\n## 행동\ntestParseTagSpec 를 실행한다\n\n## 기대 결과\n- empty tag spec is rejected\n- tag spec without a name is rejected\n- longest tag name is accepted\n- tag name past the longest is rejected\n- tag name without bits is accepted\n- tag name with null byte is rejected\n- bad UTF-8 name is left to the model lookup\n
@@ -3503,7 +3740,7 @@ body	O	a7be36e8	## 시그니처\n```c\nKiottySpecRemoteResult KiottySpec_readRem
 body	O	a7dfed4a	## 요구\nE2E 테스트는 외부 인터페이스 묶음(상위 항목이 없는 외부 인터페이스 항목, 지금 UI-001 ~ UI-019)과 1:1 로 짝짓는다. 묶음 아래의 C 함수 · C 타입 항목은 E2E 테스트와 짝을 보지 않고, 묶음의 E2E 시나리오가 함께 검증한다. Step 11 확정 조건도 묶음만 본다.\n\n## 근거\n- 외부 인터페이스 항목은 묶음 19 · C 함수 63 · C 타입 71 로 153 개다. 항목마다 E2E 를 두면 타입 정의 하나하나에 E2E 가 생겨 실익이 적다.\n- 사용자 결정 (2026-11-12): E2E 범위는 묶음 19 개.\n\n## 반영\n- REQ-021 진술 · 인수 조건, docs/requirements/definition.md 의 E2E 짝 규칙을 고친다.\n- Checker 의 Step 11 짝 규칙을 TargetFilter::TOP_LEVEL_TARGETS 로 바꾼다 (상위 항목이 있는 대상은 건너뛴다).\n- 시스템 테스트 ST-021 에 경우 8 · 9 를 더한다.\n
 body	O	a8fbd9e6	```cpp\r\r\nnamespace {\r\r\nint32_t sumWithOffset(int32_t a, int32_t b, int32_t offset) { return a + b + offset; }\r\r\n}\r\r\n\r\r\nbool A::doSomething(int32_t a, int32_t b)\r\r\n{\r\r\n    _c = sumWithOffset(a, b, _d);\r\r\n    return _c > 10;\r\r\n}\r\r\n```\r\r\n
 body	O	a916dc80	## 정의\n```c\ntypedef struct KiottySpecTagResult {\n    KiottySpecTag    value;\n    KiottySpecStatus code;\n    uint32_t         reserved;\n} KiottySpecTagResult;\n```\n\n## 의미\n상태와 태그\n
-body	O	a9305235	## 책임\n파일과 오가는 store 와 모델 표. SpecFile 이 세부 클래스에 빌려준다.\n\n## 모듈 인터페이스\n```cpp\n// 함수\ninline constexpr std::string_view KISP_HEADER = "#kisp 2 model 1";\ninline constexpr std::string_view TABLE_MARKER = "TABLE";\ninline constexpr std::string_view LIVE_MARKER = "O";\ninline constexpr std::string_view REMOVED_MARKER = "X";\ninline constexpr std::string_view NONE_MARKER = "-";\ninline constexpr std::string_view META_TABLE = "meta";\ninline constexpr std::string_view CHECKPOINT_TABLE = "checkpoint";\ninline constexpr std::string_view ITEM_TABLE = "item";\ninline constexpr std::string_view ITEM_VERSION_TABLE = "item_version";\ninline constexpr std::string_view TAG_TABLE = "tag";\ninline constexpr std::string_view RELATION_TABLE = "relation";\ninline constexpr std::string_view DECISION_TABLE = "decision";\ninline constexpr std::string_view BODY_TABLE = "body";\nstatic_assert(sizeof(SpecTables) == 56, "unexpected padding");\n```\n\n## 멤버 변수\n```cpp\n// SpecTables\nentity::Failure& failure;\nconst ModelCatalog& catalog;\nMetaStore& meta;\nCheckpointStore& checkpoints;\nItemStore& items;\nRelationStore& relations;\nDecisionStore& decisions;\n```\n\n## 의존 모듈\n- DSN-022 Failure\n- DSN-046 CheckpointStore\n- DSN-048 DecisionStore\n- DSN-051 ItemStore\n- DSN-055 MetaStore\n- DSN-056 RelationStore\n- DSN-065 ModelCatalog\n
+body	O	a9305235	## 책임\r\n파일과 오가는 store 와 모델 표. SpecFile 이 세부 클래스에 빌려준다.\r\n\r\n## 모듈 인터페이스\r\n```cpp\r\n// 함수\r\ninline constexpr std::string_view KISP_HEADER = "#kisp 2 model 1";\r\ninline constexpr std::string_view TABLE_MARKER = "TABLE";\r\ninline constexpr std::string_view LIVE_MARKER = "O";\r\ninline constexpr std::string_view REMOVED_MARKER = "X";\r\ninline constexpr std::string_view NONE_MARKER = "-";\r\ninline constexpr std::string_view META_TABLE = "meta";\r\ninline constexpr std::string_view CHECKPOINT_TABLE = "checkpoint";\r\ninline constexpr std::string_view ITEM_TABLE = "item";\r\ninline constexpr std::string_view ITEM_VERSION_TABLE = "item_version";\r\ninline constexpr std::string_view TAG_TABLE = "tag";\r\ninline constexpr std::string_view RELATION_TABLE = "relation";\r\ninline constexpr std::string_view DECISION_TABLE = "decision";\r\ninline constexpr std::string_view BODY_TABLE = "body";\r\nstatic_assert(sizeof(SpecTables) == 56, "unexpected padding");\r\n```\r\n\r\n## 멤버 변수\r\n```cpp\r\n// SpecTables\r\nentity::Failure& failure;\r\nconst ModelCatalog& catalog;\r\nMetaStore& meta;\r\nCheckpointStore& checkpoints;\r\nItemStore& items;\r\nRelationStore& relations;\r\nDecisionStore& decisions;\r\n```\r\n\r\n## 의존 모듈\r\n- DSN-022 Failure\r\n- DSN-046 CheckpointStore\r\n- DSN-048 DecisionStore\r\n- DSN-051 ItemStore\r\n- DSN-055 MetaStore\r\n- DSN-056 RelationStore\r\n- DSN-065 ModelCatalog\r\n\n## 변경 예정 (CR-015)\n- KISP_HEADER 를 "#kisp 2 model 2" 로, 바로 아래 버전 머리줄 KISP_PREVIOUS_HEADER = "#kisp 2 model 1" 을 더한다.\n
 body	O	a942eff9	## 책임\n용량을 생성할 때 한 번 확보하는 가변 길이 배열 (개발수칙 1.6).\n\n## 모듈 인터페이스\n```cpp\n// class FixedVector\nKiottySpecStatus append(Element element);\nvoid clear();\nsize_t length() const;\nstatic constexpr size_t capacity();\nElement& operator[](size_t index);\nconst Element& operator[](size_t index) const;\nResult<Element&, KiottySpecStatus> at(size_t index);\n```\n\n## 멤버 변수\n```cpp\n// FixedVector\nElement _values[Capacity] {};\nsize_t _length {0};\n```\n\n## 의존 모듈\n- DSN-029 Result\n
 body	O	a956e4b6	결과: PASS\r\n근거: node tools/lint.js --rule 5.1\r\n
 body	O	a95c9671	## 대상\nREQ-016 정해진 관계로만 연결한다\n\n## 전제 조건\n빌드한 라이브러리를 C 인터페이스로만 쓴다. 시험마다 새 임시 폴더에 사양 파일을 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | 유닛 테스트와 설계 사항 | 검증 설계 사항으로 연결한다 | 연결되고 설계 사항의 아래 관계에 그 테스트가 보인다 |\n| 2 | 유닛 테스트와 요구사항 | 검증 설계 사항으로 연결한다 | 모델에 없는 관계라는 이유로 거부 |\n| 3 | 이미 있는 관계 | 같은 관계를 다시 만든다 | 이미 있다는 이유로 거부 |\n| 4 | 없는 관계 | 끊는다 | 없다는 상태 |\n| 5 | 마일스톤 둘이 각각 설계 사항을 포함 | 포함 설계 사항 관계 전체를 본다 | 두 관계 |\n
@@ -3512,7 +3749,7 @@ body	O	a9827729	- 에러 enum 은 공개 헤더 `include/kiotty_spec.h` 의 하�
 body	O	a9cd2fb6	## 대상\nREQ-021 사용자만 체크포인트를 확정하고, 단계별 조건을 검사한다\n\n## 전제 조건\n빌드한 라이브러리를 C 인터페이스로만 쓴다. 시험마다 새 임시 폴더에 사양 파일을 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | 진행 중인 체크포인트 | AI 가 확정한다 | 사용자만 할 수 있다는 이유로 거부 |\n| 2 | 인수 조건 절이 없는 기능 요구사항이 있는 Step 2 체크포인트 | 사용자가 확정한다 | 거부되고 그 요구사항 ID 가 보인다 |\n| 3 | 어느 마일스톤에도 없는 설계 사항이 있는 Step 6 체크포인트 | 사용자가 확정한다 | 거부되고 그 설계 사항 ID 가 보인다 |\n| 4 | 시스템 테스트가 둘인 기능 요구사항이 있는 Step 8 체크포인트 | 사용자가 확정한다 | 거부되고 그 요구사항 ID 가 보인다 |\n| 5 | 결과가 FAIL 인 시스템 테스트 결과가 있는 Step 12 체크포인트 | 사용자가 확정한다 | 거부되고 그 결과 ID 가 보인다 |\n| 6 | 조건이 없는 Step 4 체크포인트 | 사용자가 확정한다 | 확정된다 |\n| 7 | 확정된 체크포인트 | 다시 확정한다 | 그대로 성공 |\n| 8 | E2E 테스트가 없는 외부 인터페이스 묶음과, E2E 테스트가 없는 하위 외부 인터페이스 항목이 있는 Step 11 체크포인트 | 사용자가 확정한다 | 거부되고 그 묶음 ID 만 보인다 |\n| 9 | 외부 인터페이스 묶음마다 E2E 테스트가 하나인 Step 11 체크포인트 | 사용자가 확정한다 | 확정된다 |\n
 body	O	aa52d61a	결과: PASS\n근거: 수동 검토 (include/ src/ app/ tests/)\n판단: 라이브러리의 OS 의존 구현은 data/infra/platform/backend/ 의 windows · posix 파일에만 있고 #ifdef 로 골라 빌드된다. FileSystem · PathResolver 는 platform 함수만 거친다.\n
 body	O	ab4f315c	결과: PASS\r\n근거: node tools/lint.js --rule 1.9\r\n
-body	O	ac9f5341	## 책임\n사양 파일을 연 뒤에만 얻는 맥락. 쓰는 쪽(ContextWriteSide) 과 읽는 쪽(ContextReadSide) 을 내주고, 여러 흐름을 잇는 상위 흐름(체크포인트 확정)을 둔다 (CR-002 · CR-006, 개발수칙 6.1 · 6.5).\n\n타입: ContextWriteSide, ContextReadSide, OpenedContext\n\n## 모듈 인터페이스\n```cpp\n// class ContextWriteSide\nContextWriteSide(Editor& editor, RelationEditor& relation_editor, Lifecycle& lifecycle, Checker& checker);\nEditor& editor() const;\nRelationEditor& relationEditor() const;\nLifecycle& lifecycle() const;\nKiottySpecStatus completeCheckpoint(entity::Actor actor) const;\n// class ContextReadSide\nContextReadSide(const ModelCatalog& catalog, Finder& finder, Differ& differ, CursorPool& cursors);\nconst ModelCatalog& catalog() const;\nFinder& finder() const;\nDiffer& differ() const;\nCursorPool& cursors() const;\n// class OpenedContext\nOpenedContext(Workspace& workspace, const ContextWriteSide& write_side, const ContextReadSide& read_side, const SystemPath& root);\nOpenedContext(const OpenedContext&) = delete;\nOpenedContext& operator=(const OpenedContext&) = delete;\nKiottySpecStatus initialize(Span<const char> name);\nentity::Failure& failure();\nWorkspace& workspace();\nContextWriteSide writeSide() const;\nContextReadSide readSide() const;\n```\n\n## 멤버 변수\n```cpp\n// ContextWriteSide\nEditor& _editor;\nRelationEditor& _relation_editor;\nLifecycle& _lifecycle;\nChecker& _checker;\n// ContextReadSide\nconst ModelCatalog& _catalog;\nFinder& _finder;\nDiffer& _differ;\nCursorPool& _cursors;\n// OpenedContext\nContextWriteSide _write_side;\nContextReadSide _read_side;\nWorkspace& _workspace;\nconst SystemPath& _root;\n```\n\n## 의존 모듈\n- DSN-075 CursorPool\n- DSN-078 Differ\n- DSN-079 Finder\n- DSN-032 Span\n- DSN-041 FileSystem\n- DSN-022 Failure\n- DSN-062 Checker\n- DSN-063 Editor\n- DSN-064 Lifecycle\n- DSN-065 ModelCatalog\n- DSN-067 RelationEditor\n- DSN-072 Workspace\n
+body	O	ac9f5341	## 책임\r\n사양 파일을 연 뒤에만 얻는 맥락. 쓰는 쪽(ContextWriteSide) 과 읽는 쪽(ContextReadSide) 을 내주고, 여러 흐름을 잇는 상위 흐름(체크포인트 확정)을 둔다 (CR-002 · CR-006, 개발수칙 6.1 · 6.5).\r\n\r\n타입: ContextWriteSide, ContextReadSide, OpenedContext\r\n\r\n## 모듈 인터페이스\r\n```cpp\r\n// class ContextWriteSide\r\nContextWriteSide(Editor& editor, RelationEditor& relation_editor, Lifecycle& lifecycle, Checker& checker);\r\nEditor& editor() const;\r\nRelationEditor& relationEditor() const;\r\nLifecycle& lifecycle() const;\r\nKiottySpecStatus completeCheckpoint(entity::Actor actor) const;\r\n// class ContextReadSide\r\nContextReadSide(const ModelCatalog& catalog, Finder& finder, Differ& differ, CursorPool& cursors);\r\nconst ModelCatalog& catalog() const;\r\nFinder& finder() const;\r\nDiffer& differ() const;\r\nCursorPool& cursors() const;\r\n// class OpenedContext\r\nOpenedContext(Workspace& workspace, const ContextWriteSide& write_side, const ContextReadSide& read_side, const SystemPath& root);\r\nOpenedContext(const OpenedContext&) = delete;\r\nOpenedContext& operator=(const OpenedContext&) = delete;\r\nKiottySpecStatus initialize(Span<const char> name);\r\nentity::Failure& failure();\r\nWorkspace& workspace();\r\nContextWriteSide writeSide() const;\r\nContextReadSide readSide() const;\r\n```\r\n\r\n## 멤버 변수\r\n```cpp\r\n// ContextWriteSide\r\nEditor& _editor;\r\nRelationEditor& _relation_editor;\r\nLifecycle& _lifecycle;\r\nChecker& _checker;\r\n// ContextReadSide\r\nconst ModelCatalog& _catalog;\r\nFinder& _finder;\r\nDiffer& _differ;\r\nCursorPool& _cursors;\r\n// OpenedContext\r\nContextWriteSide _write_side;\r\nContextReadSide _read_side;\r\nWorkspace& _workspace;\r\nconst SystemPath& _root;\r\n```\r\n\r\n## 의존 모듈\r\n- DSN-075 CursorPool\r\n- DSN-078 Differ\r\n- DSN-079 Finder\r\n- DSN-032 Span\r\n- DSN-041 FileSystem\r\n- DSN-022 Failure\r\n- DSN-062 Checker\r\n- DSN-063 Editor\r\n- DSN-064 Lifecycle\r\n- DSN-065 ModelCatalog\r\n- DSN-067 RelationEditor\r\n- DSN-072 Workspace\r\n\n## 변경 예정 (CR-015)\n- ContextWriteSide 에 remote() (RemoteState&), ruleAcceptor(), ruleExporter() 를 더한다 (public 7 개 이하).\n- ContextReadSide 에 ruleDiffer() 를 더한다.\n
 body	O	ad336141	## 대상\ntests/datasource/datasource_test.cpp 의 testFieldParserInputs\n\n## 전제 조건\ndatasource 소스만 링크한 실행 파일. 작업 폴더에 임시 파일을 만들고 지운다\n\n## 행동\ntestFieldParserInputs 를 실행한다\n\n## 기대 결과\n- key value\n- no key is rejected\n- optional key none\n- sequence zero\n- hash none\n- text empty\n- text max length\n- text max length + 1\n- text null byte\n- text invalid utf-8\n- missing field\n
 body	O	ad6b635f	## 요구\npublic method 가 7 개를 넘는 클래스를 세부 클래스로 나눈다 (개발 수칙 4.1 수치 한계, 4.18 큰 클래스 나누기).\n\n## 근거 (CP-0014 코드 검사)\nCIR-033 (4.1), CIR-051 (4.18): 6 건. 검사 도구가 public / private 구분을 잘못 읽던 문제를 고친 뒤 드러났다.\n- Context 12 개, VersionTable 11 개, ItemReader 9 개, ItemHistory 8 개, RelationStore 8 개, Editor 8 개.\n\n## 방향 (설계에서 정한다)\n- 4.18 대로 원래 클래스의 멤버 reference 를 생성자로 받는 세부 클래스(읽는 쪽 · 쓰는 쪽 등 한 맥락)로 나누고, 원래 클래스는 그 세부 클래스를 만들어 돌려주는 짧은 method 를 둔다.\n- Context 는 흐름별 접근자를 묶어 public method 를 7 개 이하로 줄인다.\n
 body	O	ad7ef8fa	## 정의\n```c\ntypedef enum KiottySpecTextField {\n    KIOTTY_SPEC_TEXT_FIELD_TITLE   = KIOTTY_SPEC_CHANGED_FIELD_TITLE,\n    KIOTTY_SPEC_TEXT_FIELD_SUMMARY = KIOTTY_SPEC_CHANGED_FIELD_SUMMARY\n} KiottySpecTextField;\n```\n\n## 의미\n글자 차이를 볼 필드\n
@@ -3547,6 +3784,7 @@ body	O	b92730c1	## 시그니처\n```c\nKiottySpecTagResult KiottySpec_readItemTa
 body	O	b937cc81	결과: PASS\n근거: 수동 검토 (include/ src/ app/ tests/)\n판단: 모든 풀·버퍼·저장소(ItemStore 의 LazyPool·DetailPool, CursorPool, TextDiffStore, DecisionStore 의 DetailPool 포함)는 Context 멤버로 생성자(src/implementation/context/kiotty_context.cpp:19-37)에서 확보되고, KiottySpec_releaseContext(src/kiotty_spec_context.cpp:44-45)가 unique_ptr 로 Context 를 소멸시켜 전부 해제된다. src/·include/ 에 바뀌는 전역·정적 상태는 없다. tests/ 의 전역은 테스트 하네스 상태라 라이브러리 인스턴스 소유와 무관하다.\n
 body	O	b943b917	## 대상\nREQ-015 항목에 태그를 붙여 분류한다\n\n## 전제 조건\n빌드한 라이브러리를 C 인터페이스로만 쓴다. 시험마다 새 임시 폴더에 사양 파일을 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | 요구사항 | 요구사항 종류를 기능 요구사항으로 정하고 읽는다 | 기능 요구사항 |\n| 2 | 요구사항 | 설계 종류 태그(다른 종류의 태그)를 붙인다 | 거부 |\n| 3 | 변경 요청 | 하나만 가질 수 있는 상태 태그에 값 둘을 준다 | 모델의 태그 정의에 맞지 않는다는 이유로 거부 |\n| 4 | 태그가 있는 항목 | 그 태그를 비운다 | 태그가 없다 |\n
 body	O	b95d931a	## 시그니처\n```c\nKiottySpecStatusResult KiottySpec_fetchRelationDiffPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecRelationDiffPage *page);\n```\n\n## 사전조건\n열린 관계 변화 커서\n\n## 사후조건\npage 에 관계 변화\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- INVALID_ARGUMENT: page 가 NULL\n- INVALID_HANDLE: 닫혔거나 잘못된 커서\n- WRONG_CURSOR_TYPE: 다른 종류의 커서\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\npage 는 호출자 메모리다. 한 번에 최대 KIOTTY_SPEC_PAGE_CAPACITY 개를 채우고 length 에 개수를 둔다. length 가 0 이면 끝이다.\n
+body	O	b98dfee9	## 책임\n올릴 수칙 파일을 쓴다. SpecWriter 와 같은 표 머리 · 정렬 · 이스케이프 규칙으로 쓰되, Kind 가 rule 인 항목의 현재 버전만 sequence 1 의 DONE 체크포인트(Step 2) 하나로 접는다. meta 는 project.name 만, 원격 상태 · 결정 기록 · 다른 Kind · 전용 개발 수칙은 쓰지 않는다. 임시 파일에 쓴 뒤 rename 으로 바꾼다 (kisp_file).\n\n타입: RuleSpecWriter\n\n## 모듈 인터페이스\n```cpp\n// class RuleSpecWriter\nRuleSpecWriter(const SpecTables& tables, KispFileWriter& file, Span<char> area);\nKiottySpecStatus write(uint32_t checkpoint);\n```\n\n## 멤버 변수\n```cpp\n// RuleSpecWriter\nSpecTables _tables;\nKispFileWriter& _file;\nSpan<char> _area;\n```\n\n## 의존 모듈\n- DSN-070 SpecTables\n- DSN-043 kisp_file\n- DSN-044 kisp_line\n- DSN-029 Result\n- DSN-032 Span\n
 body	O	b9a28d9f	## 대상\ntests/core/core_test.cpp 의 testSpanText\n\n## 전제 조건\ncore/ 헤더와 kiotty_text_diff.cpp 만 링크한 실행 파일. 파일 · 사양 파일을 쓰지 않는다\n\n## 행동\ntestSpanText 를 실행한다\n\n## 기대 결과\n- span text append\n- span text keeps on overflow\n- span text is terminated\n- span text appends empty\n- span text without area\n- span text without area has no terminator room\n- span text terminates one byte area\n- one byte area holds no text\n
 body	O	b9eee54e	## 책임\n항목 버전 표와 현재 뷰 (항목 풀 + 태그 풀 + ID 색인, 설계서 v1 10.1). 본문은 풀에 두지 않고 BodyStore 에서만 읽는다 (3.7). 표를 소유하고, 기능은 세부 클래스에 나눠 맡긴다 (개발수칙 4.19). 세부 클래스는 부른 자리에서 쓰고 버린다.\n\n타입: ItemMaintenance, ItemStore\n\n## 모듈 인터페이스\n```cpp\n// class ItemMaintenance\nItemMaintenance(ItemTables& tables, entity::Failure& failure);\nvoid clear();\nKiottySpecStatus rebuild();\nvoid prune(uint32_t base);\n// class ItemStore\nItemStore(entity::Failure& failure, const ItemCapacity& capacity);\nItemTables& tables();\nItemMaintenance maintenance();\nItemHistory history();\nItemReader reader();\nItemSlots slots() const;\nItemTags tags() const;\nItemWriter writer();\n```\n\n## 멤버 변수\n```cpp\n// ItemMaintenance\nItemTables& _tables;\nentity::Failure& _failure;\n// ItemStore\nentity::Failure& _failure;\nItemTables _tables;\n```\n\n## 의존 모듈\n- DSN-022 Failure\n- DSN-032 Span\n- DSN-049 ItemHistory\n- DSN-050 ItemReader\n- DSN-052 ItemTables\n- DSN-053 ItemTags\n- DSN-054 ItemWriter\n- DSN-061 version_records\n
 body	O	b9f7ebe2	## 진술\nAI 는 항목 종류의 모델에 있는 태그만 붙인다. 태그 값은 모델이 정한 값 이름 중에서 고르며, 여러 값을 가질 수 있는 태그와 하나만 가질 수 있는 태그가 있다. 값을 비우면 태그가 없어진다.\n\n## 근거 시나리오\n요구사항에 "요구사항 종류 = 기능 요구사항" 을, 변경 요청에 "상태 = 열림" 과 "진입 단계 = Step 4" 를 붙인다.\n\n## 인수 조건\n- 전제 조건: 요구사항 / 행동: 요구사항 종류를 기능 요구사항으로 정하고 읽는다 / 기대 결과: 기능 요구사항\n- 전제 조건: 요구사항 / 행동: 설계 종류 태그(다른 종류의 태그)를 붙인다 / 기대 결과: 거부\n- 전제 조건: 변경 요청 / 행동: 하나만 가질 수 있는 상태 태그에 값 둘을 준다 / 기대 결과: 모델의 태그 정의에 맞지 않는다는 이유로 거부\n- 전제 조건: 태그가 있는 항목 / 행동: 그 태그를 비운다 / 기대 결과: 태그가 없다\n
@@ -3569,11 +3807,11 @@ body	O	c27153d0	## 대상\ntests/core/core_test.cpp 의 testFixedMap\n\n## 전�
 body	O	c289ed95	결과: PASS\r\n근거: node tools/lint.js --rule 1.8\r\n
 body	O	c2945a3c	## 대상\ntests/core/core_test.cpp 의 testFixedStringOverflowClears\n\n## 전제 조건\ncore/ 헤더와 kiotty_text_diff.cpp 만 링크한 실행 파일. 파일 · 사양 파일을 쓰지 않는다\n\n## 행동\ntestFixedStringOverflowClears 를 실행한다\n\n## 기대 결과\n- assign too long fails\n- failed assign clears\n
 body	O	c29acf52	## 수칙\n1.8 재귀는 쓰지 않는다. 깊이 제한이 있는 명시적 스택(`FixedVector`)으로 바꾼다.\n
-body	O	c2ac95b5	## 책임\n라이브러리 인스턴스 하나가 쓰는 store · usecase · 커서 · 버퍼를 모두 소유하고 사양 파일을 연다 (개발수칙 1.2).\n\n타입: Configuration, Context\n\n## 모듈 인터페이스\n```cpp\n// class Context\nexplicit Context(const Configuration& configuration);\nContext(const Context&) = delete;\nContext& operator=(const Context&) = delete;\nKiottySpecStatus open(Span<const char> database);\nOpenedContextResult opened();\nentity::Failure& failure();\n// 함수\nconstexpr size_t VERSION_FACTOR = 4;\nconstexpr size_t DEFAULT_MAX_ITEMS = 4096;\nconstexpr size_t DEFAULT_MAX_RELATIONS = 16384;\nconstexpr size_t DEFAULT_MAX_TAGS = 8192;\nconstexpr size_t DEFAULT_MAX_CHECKPOINTS = 4096;\nconstexpr size_t DEFAULT_MAX_DECISION_VERSIONS = 1024;\nconstexpr size_t DEFAULT_MAX_BODY_BYTES = 16 * 1024 * 1024;\nconstexpr size_t DEFAULT_MAX_CURSORS = 16;\nconstexpr size_t DEFAULT_MAX_CURSOR_ROWS = 4096;\nconstexpr size_t DEFAULT_WORK_BUFFER_BYTES = 256 * 1024;\nstatic_assert(sizeof(Configuration) == 104, "unexpected padding");\n```\n\n## 멤버 변수\n```cpp\n// Configuration\nsize_t max_items {DEFAULT_MAX_ITEMS};\nsize_t max_relations {DEFAULT_MAX_RELATIONS};\nsize_t max_tags {DEFAULT_MAX_TAGS};\nsize_t max_checkpoints {DEFAULT_MAX_CHECKPOINTS};\nsize_t max_decision_versions {DEFAULT_MAX_DECISION_VERSIONS};\nsize_t max_body_bytes {DEFAULT_MAX_BODY_BYTES};\nsize_t max_cursors {DEFAULT_MAX_CURSORS};\nsize_t max_cursor_rows {DEFAULT_MAX_CURSOR_ROWS};\nsize_t work_buffer_bytes {DEFAULT_WORK_BUFFER_BYTES};\nsize_t max_item_versions {DEFAULT_MAX_ITEMS * VERSION_FACTOR};\nsize_t max_tag_versions {DEFAULT_MAX_TAGS * VERSION_FACTOR};\nsize_t max_relation_versions {DEFAULT_MAX_RELATIONS * VERSION_FACTOR};\nsize_t cursor_pool_rows {DEFAULT_MAX_CURSORS * DEFAULT_MAX_CURSOR_ROWS};\n// Context\nSystemPath _root {};\nSystemPath _database {};\nPathArea _paths {};\nPathResolver _path_resolver;\nFileSystem _file_system;\nentity::Failure _failure {};\nTextBuffer _work;\nModelCatalog _catalog {};\nMetaStore _meta {};\nCheckpointStore _checkpoints;\nItemStore _items;\nRelationStore _relations;\nDecisionStore _decisions;\nSpecFile _file;\nWorkspace _workspace;\nChecker _checker;\nLifecycle _lifecycle;\nEditor _editor;\nRelationEditor _relation_editor;\nCursorPool _cursors;\nTextDiffStore _text_diffs;\nFinder _finder;\nDiffer _differ;\nstd::optional<OpenedContext> _opened {};\n```\n\n## 의존 모듈\n- DSN-075 CursorPool\n- DSN-078 Differ\n- DSN-079 Finder\n- DSN-094 OpenedContext\n- DSN-022 Failure\n- DSN-033 TextBuffer\n- DSN-041 FileSystem\n- DSN-046 CheckpointStore\n- DSN-048 DecisionStore\n- DSN-051 ItemStore\n- DSN-055 MetaStore\n- DSN-056 RelationStore\n- DSN-062 Checker\n- DSN-063 Editor\n- DSN-064 Lifecycle\n- DSN-065 ModelCatalog\n- DSN-067 RelationEditor\n- DSN-068 SpecFile\n- DSN-072 Workspace\n
-body	O	c2e66a3f	## 책임\nC 인터페이스와 implementation 사이의 얇은 어댑터가 함께 쓰는 도우미. 밖에서 온 글은 Boundary · FieldParser 가, enum · 정수 · 관계 인자는 ValueParser 가, 질의 조건(Kind · 단계 필터, 방향, 텍스트 필드, 태그 조건, 관계 index)은 QueryParser 가, 체크포인트 구간 · 시점은 RangeParser 가 parse 하고 (CR-004 · CR-014, 개발수칙 2.1), 내부 레코드를 C 구조체로 바꾼다.\n\n타입: KiottySpecContext, FieldParser, Boundary, ValueParser, QueryParser, RangeParser\n\n## 모듈 인터페이스\n```cpp\n// struct KiottySpecContext\nexplicit KiottySpecContext(const kiotty::spec::implementation::Configuration& configuration) : context(configuration);\n// class FieldParser\nexplicit FieldParser(entity::Failure& failure);\nTextResult parse(KiottySpecText text, Field field) const;\n// class Boundary\nexplicit Boundary(impl::OpenedContext& context);\nTextResult parse(KiottySpecText text, Field field) const;\nTextResult parseNewId(KiottySpecText id) const;\nHandleResult resolve(KiottySpecText id) const;\nRecordResult read(KiottySpecItemHandle item) const;\nKiottySpecCursorResult wrap(const impl::CursorIdResult& opened) const;\nKiottySpecStatus checkTag(entity::ItemKind kind, uint32_t tag, impl::Span<const char> id) const;\n// class ValueParser\nexplicit ValueParser(impl::OpenedContext& context);\nKindResult parseKind(KiottySpecItemKind kind) const;\nKindResult parseDecisionKind(KiottySpecItemKind kind) const;\nStepResult parseStep(KiottySpecStep step) const;\nActorResult parseActor(KiottySpecActor actor) const;\nSequenceResult parseCheckpoint(KiottySpecCheckpointHandle handle) const;\nTagResult parseTag(KiottySpecItemHandle item, uint32_t tag, uint64_t value) const;\nRelationResult parseRelation(KiottySpecText from_id, uint32_t relation, KiottySpecText to_id) const;\n// class QueryParser\nexplicit QueryParser(impl::OpenedContext& context);\nFilterResult parseKindFilter(KiottySpecItemKind kind) const;\nFilterResult parseStepFilter(KiottySpecStep step) const;\nDirectionResult parseDirection(KiottySpecDirection direction) const;\nFilterResult parseTextField(KiottySpecTextField field) const;\nTagQueryResult parseTagQuery(KiottySpecTagQuery query) const;\nFilterResult parseRelationIndex(entity::ItemKind kind, uint32_t relation) const;\n// class RangeParser\nexplicit RangeParser(impl::OpenedContext& context);\nRangeResult parseRange(const KiottySpecDiffQuery* query) const;\nSequenceResult parsePoint(KiottySpecCheckpointHandle checkpoint) const;\n// 함수\nconstexpr uint32_t SHIFT = 32;\nconstexpr uint64_t LOW_MASK = 0xFFFFFFFFu;\nKindResult parseKindCode(KiottySpecItemKind kind);\nStateResult parseStateCode(KiottySpecCheckpointState state);\nOpenedResult findOpenedContext(KiottySpecContext* context);\nTextResult parseText(KiottySpecText text, size_t max_length);\nConfigurationResult parseConfiguration(const KiottySpecConfiguration& configuration);\nKiottySpecItemHandle toHandle(entity::ItemHandle handle);\nentity::ItemHandle fromHandle(KiottySpecItemHandle handle);\nKiottySpecCheckpointHandle toCheckpoint(entity::CheckpointHandle handle);\nKiottySpecItem toItem(const entity::ItemState& state, const entity::ItemLabel& label);\nKiottySpecCheckpoint toCheckpointRecord(const entity::CheckpointRecord& record,;\nKiottySpecTag toTag(KiottySpecItemHandle item, KiottySpecItemKind model, uint32_t tag,;\nKiottySpecStatusResult status(KiottySpecStatus code);\nKiottySpecSizeResult sizeResult(KiottySpecStatus code, size_t value);\nKiottySpecCursorResult cursorFailure(KiottySpecStatus code);\nKiottySpecNameResult nameResult(std::string_view name);\nvoid copyTerminated(impl::Span<char> target, impl::Span<const char> source);\nimpl::Span<char> toSpan(KiottySpecBuffer buffer);\nimpl::OptionalText toOptionalText(impl::Span<const char> text);\n```\n\n## 멤버 변수\n```cpp\n// KiottySpecContext\nkiotty::spec::implementation::Context context;\n// FieldParser\nentity::Failure& _failure;\n// Boundary\nimpl::OpenedContext& _context;\n// ValueParser\nimpl::OpenedContext& _context;\n// QueryParser\nimpl::OpenedContext& _context;\n// RangeParser\nimpl::OpenedContext& _context;\n```\n\n## 의존 모듈\n- DSN-074 Context\n- DSN-077 DiffRange\n- DSN-079 Finder\n- DSN-024 FixedString\n- DSN-035 text_view\n
+body	O	c2ac95b5	## 책임\r\n라이브러리 인스턴스 하나가 쓰는 store · usecase · 커서 · 버퍼를 모두 소유하고 사양 파일을 연다 (개발수칙 1.2).\r\n\r\n타입: Configuration, Context\r\n\r\n## 모듈 인터페이스\r\n```cpp\r\n// class Context\r\nexplicit Context(const Configuration& configuration);\r\nContext(const Context&) = delete;\r\nContext& operator=(const Context&) = delete;\r\nKiottySpecStatus open(Span<const char> database);\r\nOpenedContextResult opened();\r\nentity::Failure& failure();\r\n// 함수\r\nconstexpr size_t VERSION_FACTOR = 4;\r\nconstexpr size_t DEFAULT_MAX_ITEMS = 4096;\r\nconstexpr size_t DEFAULT_MAX_RELATIONS = 16384;\r\nconstexpr size_t DEFAULT_MAX_TAGS = 8192;\r\nconstexpr size_t DEFAULT_MAX_CHECKPOINTS = 4096;\r\nconstexpr size_t DEFAULT_MAX_DECISION_VERSIONS = 1024;\r\nconstexpr size_t DEFAULT_MAX_BODY_BYTES = 16 * 1024 * 1024;\r\nconstexpr size_t DEFAULT_MAX_CURSORS = 16;\r\nconstexpr size_t DEFAULT_MAX_CURSOR_ROWS = 4096;\r\nconstexpr size_t DEFAULT_WORK_BUFFER_BYTES = 256 * 1024;\r\nstatic_assert(sizeof(Configuration) == 104, "unexpected padding");\r\n```\r\n\r\n## 멤버 변수\r\n```cpp\r\n// Configuration\r\nsize_t max_items {DEFAULT_MAX_ITEMS};\r\nsize_t max_relations {DEFAULT_MAX_RELATIONS};\r\nsize_t max_tags {DEFAULT_MAX_TAGS};\r\nsize_t max_checkpoints {DEFAULT_MAX_CHECKPOINTS};\r\nsize_t max_decision_versions {DEFAULT_MAX_DECISION_VERSIONS};\r\nsize_t max_body_bytes {DEFAULT_MAX_BODY_BYTES};\r\nsize_t max_cursors {DEFAULT_MAX_CURSORS};\r\nsize_t max_cursor_rows {DEFAULT_MAX_CURSOR_ROWS};\r\nsize_t work_buffer_bytes {DEFAULT_WORK_BUFFER_BYTES};\r\nsize_t max_item_versions {DEFAULT_MAX_ITEMS * VERSION_FACTOR};\r\nsize_t max_tag_versions {DEFAULT_MAX_TAGS * VERSION_FACTOR};\r\nsize_t max_relation_versions {DEFAULT_MAX_RELATIONS * VERSION_FACTOR};\r\nsize_t cursor_pool_rows {DEFAULT_MAX_CURSORS * DEFAULT_MAX_CURSOR_ROWS};\r\n// Context\r\nSystemPath _root {};\r\nSystemPath _database {};\r\nPathArea _paths {};\r\nPathResolver _path_resolver;\r\nFileSystem _file_system;\r\nentity::Failure _failure {};\r\nTextBuffer _work;\r\nModelCatalog _catalog {};\r\nMetaStore _meta {};\r\nCheckpointStore _checkpoints;\r\nItemStore _items;\r\nRelationStore _relations;\r\nDecisionStore _decisions;\r\nSpecFile _file;\r\nWorkspace _workspace;\r\nChecker _checker;\r\nLifecycle _lifecycle;\r\nEditor _editor;\r\nRelationEditor _relation_editor;\r\nCursorPool _cursors;\r\nTextDiffStore _text_diffs;\r\nFinder _finder;\r\nDiffer _differ;\r\nstd::optional<OpenedContext> _opened {};\r\n```\r\n\r\n## 의존 모듈\r\n- DSN-075 CursorPool\r\n- DSN-078 Differ\r\n- DSN-079 Finder\r\n- DSN-094 OpenedContext\r\n- DSN-022 Failure\r\n- DSN-033 TextBuffer\r\n- DSN-041 FileSystem\r\n- DSN-046 CheckpointStore\r\n- DSN-048 DecisionStore\r\n- DSN-051 ItemStore\r\n- DSN-055 MetaStore\r\n- DSN-056 RelationStore\r\n- DSN-062 Checker\r\n- DSN-063 Editor\r\n- DSN-064 Lifecycle\r\n- DSN-065 ModelCatalog\r\n- DSN-067 RelationEditor\r\n- DSN-068 SpecFile\r\n- DSN-072 Workspace\r\n\n## 변경 예정 (CR-015)\n- 새 멤버: RuleDiffStore _rule_diffs, RemoteState _remote, RuleAcceptor _rule_acceptor, RuleExporter _rule_exporter, RuleDiffer _rule_differ. 초기화 때 RuleDiffStore 영역을 max_cursors 만큼 확보한다 (DSN-013).\n- 다른 Context 의 Workspace 를 빌려 쓰는 함수(비교 · 편입)는 remote 의 OpenedContext 로부터 Workspace 를 받는다. 포인터를 보관하지 않고 호출 동안만 쓴다.\n
+body	O	c2e66a3f	## 책임\r\nC 인터페이스와 implementation 사이의 얇은 어댑터가 함께 쓰는 도우미. 밖에서 온 글은 Boundary · FieldParser 가, enum · 정수 · 관계 인자는 ValueParser 가, 질의 조건(Kind · 단계 필터, 방향, 텍스트 필드, 태그 조건, 관계 index)은 QueryParser 가, 체크포인트 구간 · 시점은 RangeParser 가 parse 하고 (CR-004 · CR-014, 개발수칙 2.1), 내부 레코드를 C 구조체로 바꾼다.\r\n\r\n타입: KiottySpecContext, FieldParser, Boundary, ValueParser, QueryParser, RangeParser\r\n\r\n## 모듈 인터페이스\r\n```cpp\r\n// struct KiottySpecContext\r\nexplicit KiottySpecContext(const kiotty::spec::implementation::Configuration& configuration) : context(configuration);\r\n// class FieldParser\r\nexplicit FieldParser(entity::Failure& failure);\r\nTextResult parse(KiottySpecText text, Field field) const;\r\n// class Boundary\r\nexplicit Boundary(impl::OpenedContext& context);\r\nTextResult parse(KiottySpecText text, Field field) const;\r\nTextResult parseNewId(KiottySpecText id) const;\r\nHandleResult resolve(KiottySpecText id) const;\r\nRecordResult read(KiottySpecItemHandle item) const;\r\nKiottySpecCursorResult wrap(const impl::CursorIdResult& opened) const;\r\nKiottySpecStatus checkTag(entity::ItemKind kind, uint32_t tag, impl::Span<const char> id) const;\r\n// class ValueParser\r\nexplicit ValueParser(impl::OpenedContext& context);\r\nKindResult parseKind(KiottySpecItemKind kind) const;\r\nKindResult parseDecisionKind(KiottySpecItemKind kind) const;\r\nStepResult parseStep(KiottySpecStep step) const;\r\nActorResult parseActor(KiottySpecActor actor) const;\r\nSequenceResult parseCheckpoint(KiottySpecCheckpointHandle handle) const;\r\nTagResult parseTag(KiottySpecItemHandle item, uint32_t tag, uint64_t value) const;\r\nRelationResult parseRelation(KiottySpecText from_id, uint32_t relation, KiottySpecText to_id) const;\r\n// class QueryParser\r\nexplicit QueryParser(impl::OpenedContext& context);\r\nFilterResult parseKindFilter(KiottySpecItemKind kind) const;\r\nFilterResult parseStepFilter(KiottySpecStep step) const;\r\nDirectionResult parseDirection(KiottySpecDirection direction) const;\r\nFilterResult parseTextField(KiottySpecTextField field) const;\r\nTagQueryResult parseTagQuery(KiottySpecTagQuery query) const;\r\nFilterResult parseRelationIndex(entity::ItemKind kind, uint32_t relation) const;\r\n// class RangeParser\r\nexplicit RangeParser(impl::OpenedContext& context);\r\nRangeResult parseRange(const KiottySpecDiffQuery* query) const;\r\nSequenceResult parsePoint(KiottySpecCheckpointHandle checkpoint) const;\r\n// 함수\r\nconstexpr uint32_t SHIFT = 32;\r\nconstexpr uint64_t LOW_MASK = 0xFFFFFFFFu;\r\nKindResult parseKindCode(KiottySpecItemKind kind);\r\nStateResult parseStateCode(KiottySpecCheckpointState state);\r\nOpenedResult findOpenedContext(KiottySpecContext* context);\r\nTextResult parseText(KiottySpecText text, size_t max_length);\r\nConfigurationResult parseConfiguration(const KiottySpecConfiguration& configuration);\r\nKiottySpecItemHandle toHandle(entity::ItemHandle handle);\r\nentity::ItemHandle fromHandle(KiottySpecItemHandle handle);\r\nKiottySpecCheckpointHandle toCheckpoint(entity::CheckpointHandle handle);\r\nKiottySpecItem toItem(const entity::ItemState& state, const entity::ItemLabel& label);\r\nKiottySpecCheckpoint toCheckpointRecord(const entity::CheckpointRecord& record,;\r\nKiottySpecTag toTag(KiottySpecItemHandle item, KiottySpecItemKind model, uint32_t tag,;\r\nKiottySpecStatusResult status(KiottySpecStatus code);\r\nKiottySpecSizeResult sizeResult(KiottySpecStatus code, size_t value);\r\nKiottySpecCursorResult cursorFailure(KiottySpecStatus code);\r\nKiottySpecNameResult nameResult(std::string_view name);\r\nvoid copyTerminated(impl::Span<char> target, impl::Span<const char> source);\r\nimpl::Span<char> toSpan(KiottySpecBuffer buffer);\r\nimpl::OptionalText toOptionalText(impl::Span<const char> text);\r\n```\r\n\r\n## 멤버 변수\r\n```cpp\r\n// KiottySpecContext\r\nkiotty::spec::implementation::Context context;\r\n// FieldParser\r\nentity::Failure& _failure;\r\n// Boundary\r\nimpl::OpenedContext& _context;\r\n// ValueParser\r\nimpl::OpenedContext& _context;\r\n// QueryParser\r\nimpl::OpenedContext& _context;\r\n// RangeParser\r\nimpl::OpenedContext& _context;\r\n```\r\n\r\n## 의존 모듈\r\n- DSN-074 Context\r\n- DSN-077 DiffRange\r\n- DSN-079 Finder\r\n- DSN-024 FixedString\r\n- DSN-035 text_view\r\n\n## 변경 예정 (CR-015)\n- RemoteParser 를 더한다: KiottySpecRemote → RemoteRecord (배열 안 null 종료, UTF-8, 기준 버전 형식), KiottySpecAcceptInput → AcceptDraft (길이 · UTF-8 · 기준 버전). 밖의 값은 여기 하나만 지난다 (개발수칙 2.1).\n- 새 어댑터 파일 src/kiotty_spec_remote.cpp 에 UI-155 ~ 161 의 C 함수를 둔다. 두 컨텍스트를 받는 함수는 같은 컨텍스트 · 열지 않은 컨텍스트를 먼저 거부한다.\n- KiottySpec_fetchTextDiffPage 는 커서 종류가 BODY_DIFF 이면 RuleDiffer::nextPiece 로 조각을 꺼낸다.\n- acceptRules 는 HistoryFinder 로 다음 단계를 읽어 진입 단계 min(Step 10, 다음 단계) 를 AcceptDraft 에 넣는다.\n
 body	O	c39b1670	## 수칙\n3.5 다른 스레드가 쓰는 데이터는 `alignas(64)` 로 캐시 라인을 분리한다.\n
 body	O	c3f906cb	```\ninclude/\n    library_name.h          # C interface\nsrc/\n    library_name.cpp        # C interface ↔ implementation 얇은 어댑터\n    implementation/\n        context/            # 모든 인스턴스 소유 (1.2), C 경계의 커서 상자 (7.4)\n        core/               # 범용 자료구조와 유틸 (7.4)\n        domain/\n            entity/         # 값 객체. 하드웨어 제약을 모른다\n            usecases/       # 사용자 기능 단위. function1/, function2/\n        data/\n            repository/     # 기능 단위 보관 클래스. module1/, module2/\n            states/         # repository 의 상태\n            datasource/     # 메모리 공급. 고정 크기 풀, Local DB, Remote DB\n            infra/          # 플랫폼 구현. class1/backend/, class1/<organization>_class1.h\nsingle_header/              # 스크립트로만 생성\n```\n
-body	O	c4d3ef5c	## 참여 모듈\n- DSN-074 Context\n- DSN-089 system_path\n- DSN-065 ModelCatalog\n- DSN-068 SpecFile\n- DSN-090 OpenedFile\n- DSN-043 kisp_file\n- DSN-044 kisp_line\n- DSN-069 SpecParser\n- DSN-051 ItemStore\n- DSN-056 RelationStore\n- DSN-094 OpenedContext\n\n## 순서\n1. Context::open 이 경로를 검사하고 PathResolver 로 절대 경로로 바꾼 뒤 ModelCatalog::load 로 모델 표를 적재한다\n2. SpecFile::load 가 store 를 비우고 OpenedFile · KispFileReader 로 줄마다 읽는다. 첫 줄은 #kisp 2 model 1 이어야 하고, 충돌 표시 줄은 거부한다. 파일이 없으면 빈 사양으로 본다\n3. KispLineDecoder 가 필드로 나누고 SpecParser 가 표 이름에 따라 버전 표 · 이름 표 · 본문에 넣는다\n4. finishLoad 가 버전 표를 정렬하고 중복 버전을 찾은 뒤 ItemStore · RelationStore 의 현재 뷰를 다시 만든다. 읽은 줄의 해시를 기억한다\n5. 성공하면 Context 가 OpenedContext 를 만든다. C 함수는 OpenedContext 를 얻어야만 쓰는 쪽 · 읽는 쪽을 쓴다 (개발수칙 6.1)\n\n## 데이터 흐름\n.kisp 줄 → 필드 → 버전 표 (항목 · 태그 · 관계 · 결정 기록 · 체크포인트 · meta · 본문) → 현재 뷰 (항목 풀 · 태그 · 관계 · ID 색인)\n
+body	O	c4d3ef5c	## 참여 모듈\r\n- DSN-074 Context\r\n- DSN-089 system_path\r\n- DSN-065 ModelCatalog\r\n- DSN-068 SpecFile\r\n- DSN-090 OpenedFile\r\n- DSN-043 kisp_file\r\n- DSN-044 kisp_line\r\n- DSN-069 SpecParser\r\n- DSN-051 ItemStore\r\n- DSN-056 RelationStore\r\n- DSN-094 OpenedContext\r\n\r\n## 순서\r\n1. Context::open 이 경로를 검사하고 PathResolver 로 절대 경로로 바꾼 뒤 ModelCatalog::load 로 모델 표를 적재한다\r\n2. SpecFile::load 가 store 를 비우고 OpenedFile · KispFileReader 로 줄마다 읽는다. 첫 줄은 #kisp 2 model 1 이어야 하고, 충돌 표시 줄은 거부한다. 파일이 없으면 빈 사양으로 본다\r\n3. KispLineDecoder 가 필드로 나누고 SpecParser 가 표 이름에 따라 버전 표 · 이름 표 · 본문에 넣는다\r\n4. finishLoad 가 버전 표를 정렬하고 중복 버전을 찾은 뒤 ItemStore · RelationStore 의 현재 뷰를 다시 만든다. 읽은 줄의 해시를 기억한다\r\n5. 성공하면 Context 가 OpenedContext 를 만든다. C 함수는 OpenedContext 를 얻어야만 쓰는 쪽 · 읽는 쪽을 쓴다 (개발수칙 6.1)\r\n\r\n## 데이터 흐름\r\n.kisp 줄 → 필드 → 버전 표 (항목 · 태그 · 관계 · 결정 기록 · 체크포인트 · meta · 본문) → 현재 뷰 (항목 풀 · 태그 · 관계 · ID 색인)\r\n\n## 변경 예정 (CR-015)\n- 2 번: 첫 줄은 #kisp 2 model 2 이거나 바로 아래 버전 #kisp 2 model 1 이어야 한다. 모델 1 파일은 그대로 읽고, 다음 저장 때 머리줄만 model 2 로 쓴다.\n
 body	O	c5ae4dcd	## 정의\n```c\ntypedef enum KiottySpecStep {\n    KIOTTY_SPEC_STEP_CHANGE_REQUEST_REPORTED = 1,\n    KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING,\n    KIOTTY_SPEC_STEP_EXTERNAL_INTERFACE_DISCUSSING,\n    KIOTTY_SPEC_STEP_DESIGN_DISCUSSING,\n    KIOTTY_SPEC_STEP_UNIT_TEST_PLAN_DISCUSSING,\n    KIOTTY_SPEC_STEP_DEVELOPMENT_PLAN_DISCUSSING,\n    KIOTTY_SPEC_STEP_IMPLEMENTING,\n    KIOTTY_SPEC_STEP_SYSTEM_TEST_PLAN_DISCUSSING,\n    KIOTTY_SPEC_STEP_SYSTEM_TEST_RUN,\n    KIOTTY_SPEC_STEP_CODE_INSPECTING,\n    KIOTTY_SPEC_STEP_END_TO_END_TEST_DISCUSSING,\n    KIOTTY_SPEC_STEP_END_TO_END_TEST_RUN\n} KiottySpecStep;\n```\n\n## 의미\n12 단계\n
 body	O	c67367ba	## 정의\n```c\ntypedef struct KiottySpecRelationDefinition {\n    char                  name[KIOTTY_SPEC_MAX_TAG_NAME_LENGTH + 1];\n    KiottySpecItemKind    target_kind;\n    KiottySpecCardinality cardinality;\n    uint32_t              index;\n} KiottySpecRelationDefinition;\n```\n\n## 의미\n관계 정의\n
 body	O	c6762108	## 정의\n```c\ntypedef enum KiottySpecCondition {\n    KIOTTY_SPEC_CONDITION_ENTRY_STEP = 1,\n    KIOTTY_SPEC_CONDITION_ACCEPTANCE_CRITERIA,\n    KIOTTY_SPEC_CONDITION_MILESTONE_COVERAGE,\n    KIOTTY_SPEC_CONDITION_SYSTEM_TEST_PAIR,\n    KIOTTY_SPEC_CONDITION_END_TO_END_TEST_PAIR,\n    KIOTTY_SPEC_CONDITION_CODE_INSPECTION_PAIR,\n    KIOTTY_SPEC_CONDITION_SINGLE_TARGET,\n    KIOTTY_SPEC_CONDITION_PASSING_RESULT,\n    KIOTTY_SPEC_CONDITION_CLOSED_CHANGE_REQUEST\n} KiottySpecCondition;\n```\n\n## 의미\n단계별 확정 조건의 종류. 어긋난 조건 커서의 condition\n
@@ -3588,9 +3826,10 @@ body	O	cc4f8228	결과: PASS\n근거: 수동 검토 (include/ src/ app/ tests/)\
 body	O	cd23d5c3	## 대상\ntests/api/api_test.cpp\n\n## 전제 조건\n라이브러리 전체를 링크하고 임시 폴더의 .kiotty/spec.kisp 를 C 함수로만 연다. 앞 테스트의 기록 위에 다음 테스트가 이어진다\n\n## 행동\n실행 파일을 돌린다\n\n## 기대 결과\n모든 테스트가 PASS 이고 마지막 줄이 "0 failed", 종료 코드 0\n
 body	O	cd2da8cb	## 진술\n사양 파일의 첫 줄에는 형식 버전과 모델 버전이 있다. 버전이 다르거나 사양 파일이 아닌 파일, 줄이 깨진 파일은 이유와 줄 번호를 알려 주며 열지 않는다. 단, 모델 버전이 바로 이전(모델 1)인 파일은 지금 모델에 종류 · 태그 값 · 관계를 덧붙이기만 한 차이라서 그대로 열고, 다음 쓰기에서 첫 줄을 지금 모델 버전으로 쓴다. 기존 줄은 바뀌지 않는다. 지금보다 높은 모델 버전은 열지 않는다.\n\n## 근거 시나리오\n사용자가 옛 형식의 파일이나 다른 파일을 잘못 연다. 기록이 엉뚱하게 바뀌기 전에 거부되고, 옮기기 도구를 쓰라는 안내를 받는다.\n\n## 인수 조건\n- 전제 조건: 첫 줄의 형식 버전이 다른 파일 / 행동: 연다 / 기대 결과: 형식이나 모델 버전이 다르다는 이유로 거부\n- 전제 조건: 첫 줄이 모델 1 인 파일 / 행동: 열고 항목 하나를 고친다 / 기대 결과: 열리고, 첫 줄은 지금 모델 버전이 되고 다른 기존 줄은 그대로\n- 전제 조건: 첫 줄의 모델 버전이 지금보다 높은 파일 / 행동: 연다 / 기대 결과: 모델 버전이 다르다는 이유로 거부\n- 전제 조건: 모델에 없는 태그 이름이 적힌 줄 / 행동: 연다 / 기대 결과: 그 줄 번호와 태그 이름으로 거부\n- 전제 조건: 잘못된 이스케이프가 있는 줄 / 행동: 연다 / 기대 결과: 그 줄 번호로 거부\n
 body	O	cd2e6aa6	## 대상\ntests/core/core_test.cpp 의 testResultReference\n\n## 전제 조건\ncore/ 헤더와 kiotty_text_diff.cpp 만 링크한 실행 파일. 파일 · 사양 파일을 쓰지 않는다\n\n## 행동\ntestResultReference 를 실행한다\n\n## 기대 결과\n- reference success points to target\n- reference failure is null\n
+body	O	cd2f3c8d	## 책임\n수칙 차이 커서는 열 때 행(ID, 제목, 변화, 다른 필드)을 모두 만들어 두어야 remote 컨텍스트를 닫아도 페이지를 읽을 수 있다. 제목(127 바이트)은 커서 행(40 바이트)에 들어가지 않으므로 이 영역에 둔다. 본문 차이 커서는 두 본문(각 16 KB)과 줄 구간을 둔다. 모두 Context 초기화 때 max_cursors 만큼 확보한다 (DSN-013).\n\n타입: RuleDiffRecord, RuleDiffStore\n\n## 모듈 인터페이스\n```cpp\n// class RuleDiffStore\nexplicit RuleDiffStore(size_t max_cursors);\nSpan<RuleDiffRecord> rowsOf(size_t cursor_index);                       // MAX_RULE_DIFF_ROWS 개\nResult<Span<char>, KiottySpecStatus> textOf(size_t cursor_index, TextSource source);\nSpan<LineSegment> segmentsOf(size_t cursor_index);                      // MAX_DIFF_LINES * 2 + 1 개\nSpan<uint8_t> lineTable();                                              // 모든 커서가 함께 씀 (열 때만 씀)\n// 함수\nconstexpr size_t MAX_RULE_DIFF_ROWS = 512;\n```\n\n## 멤버 변수\n```cpp\n// RuleDiffRecord\nentity::IdText id {};\nentity::TitleText title {};\nuint32_t change {0};\nuint32_t changed_fields {0};\n// RuleDiffStore\nstd::vector<RuleDiffRecord> _rows;\nstd::vector<char> _texts;\nstd::vector<LineSegment> _segments;\nstd::vector<uint8_t> _line_table;\n```\n\n## 의존 모듈\n- DSN-058 item_records\n- DSN-088 text_hunks\n- DSN-029 Result\n- DSN-032 Span\n
 body	O	cdad8d64	## 대상\nUI-013 글자 차이\n\n## 전제 조건\n빌드한 라이브러리를 C 프로그램(tests/e2e/e2e_test.c, C11)이 include/ 의 헤더만으로 링크해 구동한다. 시나리오마다 새 임시 폴더의 .kiotty/spec.kisp 를 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | 제목이 "관계를 링크 타입으로 검사한다" 에서 "관계를 모델의 관계 정의로 검사한다" 로 바뀜 | 제목 글자 차이 커서를 열고 페이지를 받는다 | 같음 "관계를 ", 지움 "링크 타입으로", 더함 "모델의 관계 정의로", 같음 " 검사한다" |\n| 2 | - | BODY 필드로 연다 | INVALID_ARGUMENT |\n
 body	O	ce280297	## 진술\n누구든 항목 종류마다 한글 이름, ID 접두어, 그 종류를 만드는 단계, 태그 정의(이름, 값 이름, 값 개수 제한), 관계 정의(이름, 목적어 종류, 개수 제한)를 읽는다. 종류는 사양 파일과 같은 영문 이름으로도 주고받는다.\n\n## 근거 시나리오\n새 세션의 AI 가 작업 전에 모델을 읽어 어떤 태그와 관계를 쓸 수 있는지 안다.\n\n## 인수 조건\n- 전제 조건: 없음 / 행동: 설계 사항의 모델을 읽는다 / 기대 결과: 이름 설계 사항, 접두어 DSN, 단계 4, 태그 2 개, 관계 3 개\n- 전제 조건: 없음 / 행동: 영문 이름 design 을 종류로 바꾼다 / 기대 결과: 설계 사항\n- 전제 조건: 없음 / 행동: 없는 영문 이름을 바꾼다 / 기대 결과: 모르는 이름이라는 결과\n
-body	O	ce5d963a	## 책임\n프로젝트 meta (project.name, project.created_at)\n\n## 모듈 인터페이스\n```cpp\n// class MetaStore\nMetaStore();\nvoid clear();\nKiottySpecStatus set(Span<const char> key, Span<const char> value);\nResult<MetaValue, KiottySpecStatus> get(Span<const char> key) const;\nconst FixedMap<MetaKey, MetaValue>& all() const;\n// 함수\nconstexpr size_t MAX_META_KEY_LENGTH = 63;\nconstexpr size_t MAX_META_VALUE_LENGTH = 255;\nconstexpr size_t MAX_META_ENTRIES = 32;\n```\n\n## 멤버 변수\n```cpp\n// MetaStore\nFixedMap<MetaKey, MetaValue> _entries;\n```\n\n## 의존 모듈\n- DSN-023 FixedMap\n- DSN-024 FixedString\n- DSN-029 Result\n- DSN-032 Span\n
+body	O	ce5d963a	## 책임\r\n프로젝트 meta (project.name, project.created_at)\r\n\r\n## 모듈 인터페이스\r\n```cpp\r\n// class MetaStore\r\nMetaStore();\r\nvoid clear();\r\nKiottySpecStatus set(Span<const char> key, Span<const char> value);\r\nResult<MetaValue, KiottySpecStatus> get(Span<const char> key) const;\r\nconst FixedMap<MetaKey, MetaValue>& all() const;\r\n// 함수\r\nconstexpr size_t MAX_META_KEY_LENGTH = 63;\r\nconstexpr size_t MAX_META_VALUE_LENGTH = 255;\r\nconstexpr size_t MAX_META_ENTRIES = 32;\r\n```\r\n\r\n## 멤버 변수\r\n```cpp\r\n// MetaStore\r\nFixedMap<MetaKey, MetaValue> _entries;\r\n```\r\n\r\n## 의존 모듈\r\n- DSN-023 FixedMap\r\n- DSN-024 FixedString\r\n- DSN-029 Result\r\n- DSN-032 Span\r\n\n## 변경 예정 (CR-015)\n- MAX_META_VALUE_LENGTH 를 511 로 (원격 주소 MAX_URL_LENGTH). 읽고 쓰는 줄 영역이 이 길이를 담는지 확인한다.\n- KiottySpecStatus erase(Span<const char> key) 를 더한다 (원격 상태를 잊을 때 키를 지움).\n
 body	O	ce66c051	## 진술\nAI 는 항목의 제목과 요약을 따로 또는 함께 고치고, 본문은 통째로 다시 쓴다. 주지 않은 필드는 그대로다. 제목 127, 요약 255, 본문 16384 바이트를 넘거나 UTF-8 이 아닌 글은 거부된다. 빈 본문을 쓰면 본문이 없어진다.\n\n## 근거 시나리오\nAI 가 피드백을 받아 요구사항의 요약만 고치고, 인수 조건을 더한 본문을 다시 쓴다.\n\n## 인수 조건\n- 전제 조건: 제목과 요약이 있는 항목 / 행동: 요약만 고친다 / 기대 결과: 요약만 바뀌고 제목은 그대로\n- 전제 조건: 같은 항목 / 행동: 빈 제목으로 고친다 / 기대 결과: 거부\n- 전제 조건: 같은 항목 / 행동: 16384 바이트를 넘는 본문을 쓴다 / 기대 결과: 상한을 넘었다는 이유로 거부\n- 전제 조건: 같은 항목 / 행동: UTF-8 이 아닌 제목을 준다 / 기대 결과: UTF-8 이 아니라는 이유로 거부\n- 전제 조건: 본문이 있는 항목 / 행동: 본문 길이보다 작은 버퍼로 읽는다 / 기대 결과: 버퍼가 작다는 상태와 필요한 바이트 수\n- 전제 조건: 본문이 있는 항목 / 행동: 빈 본문을 쓴다 / 기대 결과: 본문이 비어 있다\n
 body	O	ce6f920b	## 대상\ntests/model/model_test.cpp 의 testModels\n\n## 전제 조건\nentity 와 모델 표 소스만 링크한 실행 파일\n\n## 행동\ntestModels 를 실행한다\n\n## 기대 결과\n- design name\n- e2e result prefix\n- inspection step\n- change request tags\n- milestone has no tags\n- change request relations\n
 body	O	cedc19ca	## 수칙\r\r\n4.16 `const` 가 기본이다. 바뀌는 변수만 non-const 로 둔다.\r\r\n
@@ -3614,6 +3853,7 @@ body	O	d729b40d	## 정의\n```c\ntypedef struct KiottySpecRelation {\n    Kiotty
 body	O	d7d58524	## 책임\n10진수 글자 전체를 수로 바꾼다. 비었거나, 숫자가 아닌 글자가 있거나, maximum 을 넘으면 INVALID_ARGUMENT\n\n## 모듈 인터페이스\n```cpp\n// 함수\nconstexpr uint64_t FNV_OFFSET_BASIS = 0xcbf29ce484222325ull;\nconstexpr uint64_t FNV_PRIME = 0x100000001b3ull;\nconstexpr size_t MAX_HEX_DIGITS = 16;\nResult<uint64_t, KiottySpecStatus> parseDecimal(Span<const char> text, uint64_t maximum);\nResult<uint64_t, KiottySpecStatus> parseHex(Span<const char> text, size_t digits);\nHexText formatHex(uint64_t number, size_t digits);\nuint64_t mix64(uint64_t value);\nuint64_t hash64(Span<const char> bytes, uint64_t seed = FNV_OFFSET_BASIS);\n```\n\n## 멤버 변수\n없음\n\n## 의존 모듈\n- DSN-024 FixedString\n- DSN-029 Result\n- DSN-032 Span\n
 body	O	d7eb983a	## 시그니처\n```c\nKiottySpecStatusResult KiottySpec_fetchTagDefinitionPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecTagDefinitionPage *page);\n```\n\n## 사전조건\n열린 태그 정의 커서\n\n## 사후조건\npage 에 태그 이름, 비트별 값 이름, 값 개수 제한(MANY · SINGLE)\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- INVALID_ARGUMENT: page 가 NULL\n- INVALID_HANDLE: 닫혔거나 잘못된 커서\n- WRONG_CURSOR_TYPE: 다른 종류의 커서\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\npage 는 호출자 메모리다. 한 번에 최대 KIOTTY_SPEC_PAGE_CAPACITY 개를 채우고 length 에 개수를 둔다. length 가 0 이면 끝이다.\n
 body	O	d86b7227	## 정의\n```c\ntypedef struct KiottySpecItem {\n    char                       summary[KIOTTY_SPEC_MAX_SUMMARY_LENGTH + 1];\n    char                       title[KIOTTY_SPEC_MAX_TITLE_LENGTH + 1];\n    char                       id[KIOTTY_SPEC_MAX_ID_LENGTH + 1];\n    KiottySpecCheckpointHandle checkpoint;\n    KiottySpecItemHandle       parent;\n    KiottySpecItemKind         kind;\n    uint32_t                   reserved;\n} KiottySpecItem;\n```\n\n## 의미\n항목 (424 바이트)\n
+body	O	d878d266	## 책임\n본문처럼 긴 글을 줄 단위로 비교한다. 글자 단위 비교(text_diff)는 표가 글 길이의 제곱이라 본문(16 KB)에 쓸 수 없다. 줄마다 해시를 내고 최장 공통 부분열(LCS) 표로 같은 줄을 맞춘다. 표와 결과 영역은 부르는 쪽이 준다 (개발수칙 1 장, 초기화 때 확보).\n\n타입: LineSegment\n\n## 모듈 인터페이스\n```cpp\n// 함수\nconstexpr size_t MAX_DIFF_LINES = 1024;\nsize_t lineTableBytes(size_t max_lines);                // (max_lines + 1)^2\nResult<size_t, KiottySpecStatus> diffLines(Span<const char> before, Span<const char> after,\n                                           Span<uint8_t> table, Span<LineSegment> segments);\n// struct LineSegment { uint32_t offset; uint32_t length; uint32_t change; uint32_t source; }\n```\n\n## 멤버 변수\n```cpp\n// LineSegment\nuint32_t offset {0};   // source 글 안의 바이트 위치\nuint32_t length {0};   // 줄바꿈 포함 바이트 수\nuint32_t change {0};   // KiottySpecTextChange 값\nuint32_t source {0};   // 0 before, 1 after\n```\n\n## 의존 모듈\n- DSN-029 Result\n- DSN-032 Span\n
 body	O	d899d5c4	## 책임\n항목 · 본문 · 태그 · 결정 기록 쓰기. 관계는 RelationEditor 가 맡는다. 입력을 검사하고, 체크포인트에 묶고, DB 와 풀을 함께 고친다.\n\n타입: StructureEditor, ContentEditor, Editor\n\n## 모듈 인터페이스\n```cpp\n// class StructureEditor\nexplicit StructureEditor(Workspace& workspace);\nResult<entity::IdText, KiottySpecStatus> createItem(entity::ItemKind kind, Span<const char> id, Span<const char> title, Span<const char> summary);\nKiottySpecStatus renameItem(Span<const char> id, Span<const char> new_id);\nKiottySpecStatus setParent(Span<const char> id, Span<const char> parent_id);\nKiottySpecStatus removeItem(Span<const char> id);\n// class ContentEditor\nexplicit ContentEditor(Workspace& workspace);\nKiottySpecStatus updateItem(Span<const char> id, OptionalText title, OptionalText summary);\nKiottySpecStatus writeBody(Span<const char> id, Span<const char> body);\nKiottySpecStatus setTag(const entity::TagRecord& tag);\nKiottySpecStatus writeDecision(entity::ItemKind kind, Span<const char> text);\n// class Editor\nexplicit Editor(Workspace& workspace);\nStructureEditor structure();\nContentEditor content();\n```\n\n## 멤버 변수\n```cpp\n// StructureEditor\nWorkspace& _workspace;\n// ContentEditor\nWorkspace& _workspace;\n// Editor\nWorkspace& _workspace;\n```\n\n## 의존 모듈\n- DSN-029 Result\n- DSN-032 Span\n- DSN-058 item_records\n- DSN-072 Workspace\n
 body	O	d9035721	## 대상\nREQ-009 항목의 제목 · 요약 · 본문을 고친다\n\n## 전제 조건\n빌드한 라이브러리를 C 인터페이스로만 쓴다. 시험마다 새 임시 폴더에 사양 파일을 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | 제목과 요약이 있는 항목 | 요약만 고친다 | 요약만 바뀌고 제목은 그대로 |\n| 2 | 같은 항목 | 빈 제목으로 고친다 | 거부 |\n| 3 | 같은 항목 | 16384 바이트를 넘는 본문을 쓴다 | 상한을 넘었다는 이유로 거부 |\n| 4 | 같은 항목 | UTF-8 이 아닌 제목을 준다 | UTF-8 이 아니라는 이유로 거부 |\n| 5 | 본문이 있는 항목 | 본문 길이보다 작은 버퍼로 읽는다 | 버퍼가 작다는 상태와 필요한 바이트 수 |\n| 6 | 본문이 있는 항목 | 빈 본문을 쓴다 | 본문이 비어 있다 |\n
 body	O	d988a84f	## 대상\ntests/cli/cli_test.cpp\n\n## 전제 조건\nkiotty_cli 라이브러리를 링크하고 사양 파일 없이 CLI 의 parse 함수를 직접 부른다\n\n## 행동\nkiotty_cli_test 를 실행한다\n\n## 기대 결과\n- 모든 테스트가 PASS\n
@@ -3686,7 +3926,7 @@ body	O	f618c7f5	```\n-Wall -Wextra -Werror -Wconversion -Wsign-compare -Wshadow 
 body	O	f6b74667	## 책임\n두 글의 글자 단위 diff 를 같음 · 지움 · 더함 조각으로 나눈다.\n\n## 모듈 인터페이스\n```cpp\n// 함수\nconstexpr size_t MAX_DIFF_TEXT_BYTES = 255;\nstatic_assert(sizeof(TextSegment) == 8, "unexpected padding");\nResult<size_t, KiottySpecStatus> diffText(Span<const char> before, Span<const char> after,;\n```\n\n## 멤버 변수\n```cpp\n// TextSegment\nuint16_t offset {};\nuint16_t length {};\nuint16_t reserved {};\nTextChange change {};\nTextSource source {};\n```\n\n## 의존 모듈\n- DSN-029 Result\n- DSN-032 Span\n
 body	O	f6ebe467	결과: PASS\n근거: node tools/lint.js --rule 7.2\n
 body	O	f723c1bd	결과: PASS\r\n근거: node tools/lint.js --rule 2.5\r\n
-body	O	f7fffbc9	## 책임\n커서 슬롯 풀. 목록 질의의 결과 행 키를 담고, 커서 종류와 generation 으로 잘못된 커서를 거부한다.\n\n타입: CursorRow, CursorSlot, CursorPool\n\n## 모듈 인터페이스\n```cpp\n// class CursorPool\nCursorPool(size_t max_cursors, size_t max_rows, size_t total_rows);\nCursorIdResult open(CursorKind kind);\nKiottySpecStatus push(CursorId cursor, const CursorRow &row);\nCursorRowsResult fetch(CursorId cursor, CursorKind kind, size_t max_count);\nResult<size_t, KiottySpecStatus> total(CursorId cursor);\nKiottySpecStatus close(CursorId cursor);\nResult<entity::CursorHandle, KiottySpecStatus> locate(CursorId cursor, CursorKind kind);\nsize_t capacity() const;\n// 함수\nstatic_assert(sizeof(CursorRow) == 40, "unexpected padding");\nstatic_assert(sizeof(CursorSlot) == 24, "unexpected padding");\n```\n\n## 멤버 변수\n```cpp\n// CursorRow\nuint64_t first {0};\nuint64_t second {0};\nuint64_t third {0};\nuint64_t fourth {0};\nint64_t number {0};\n// CursorSlot\nsize_t length {0};\nsize_t position {0};\nCursorKind kind {CursorKind::NONE};\n// CursorPool\nLazyPool<CursorSlot, entity::CursorHandle> _slots;\nstd::vector<CursorRow> _rows;\nsize_t _max_rows;\n```\n\n## 의존 모듈\n- DSN-027 LazyPool\n- DSN-029 Result\n- DSN-032 Span\n- DSN-058 item_records\n
+body	O	f7fffbc9	## 책임\r\n커서 슬롯 풀. 목록 질의의 결과 행 키를 담고, 커서 종류와 generation 으로 잘못된 커서를 거부한다.\r\n\r\n타입: CursorRow, CursorSlot, CursorPool\r\n\r\n## 모듈 인터페이스\r\n```cpp\r\n// class CursorPool\r\nCursorPool(size_t max_cursors, size_t max_rows, size_t total_rows);\r\nCursorIdResult open(CursorKind kind);\r\nKiottySpecStatus push(CursorId cursor, const CursorRow &row);\r\nCursorRowsResult fetch(CursorId cursor, CursorKind kind, size_t max_count);\r\nResult<size_t, KiottySpecStatus> total(CursorId cursor);\r\nKiottySpecStatus close(CursorId cursor);\r\nResult<entity::CursorHandle, KiottySpecStatus> locate(CursorId cursor, CursorKind kind);\r\nsize_t capacity() const;\r\n// 함수\r\nstatic_assert(sizeof(CursorRow) == 40, "unexpected padding");\r\nstatic_assert(sizeof(CursorSlot) == 24, "unexpected padding");\r\n```\r\n\r\n## 멤버 변수\r\n```cpp\r\n// CursorRow\r\nuint64_t first {0};\r\nuint64_t second {0};\r\nuint64_t third {0};\r\nuint64_t fourth {0};\r\nint64_t number {0};\r\n// CursorSlot\r\nsize_t length {0};\r\nsize_t position {0};\r\nCursorKind kind {CursorKind::NONE};\r\n// CursorPool\r\nLazyPool<CursorSlot, entity::CursorHandle> _slots;\r\nstd::vector<CursorRow> _rows;\r\nsize_t _max_rows;\r\n```\r\n\r\n## 의존 모듈\r\n- DSN-027 LazyPool\r\n- DSN-029 Result\r\n- DSN-032 Span\r\n- DSN-058 item_records\r\n\n## 변경 예정 (CR-015)\n- CursorKind 끝에 RULE_DIFF, BODY_DIFF 를 더한다.\n
 body	O	f8a460e7	## 수칙\r\r\n4.5 bool 인자를 쓰지 않는다. `enum class` 로 바꾼다. 출력 인자를 쓰지 않는다. 리턴값으로 돌려준다.\r\r\n
 body	O	f96a9036	## 시그니처\n```c\nKiottySpecSizeResult KiottySpec_readItemBody(KiottySpecContext *context, KiottySpecText id, KiottySpecBuffer buffer);\n```\n\n## 사전조건\ncontext 는 KiottySpec_createContext 로 만들고 KiottySpec_open 으로 사양 파일을 연 것\n\n## 사후조건\nbuffer 에 null 종료 본문, value 는 길이. 본문이 없으면 0\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- NOT_FOUND: 그 ID 의 항목이 없음\n- INVALID_ARGUMENT: ID 형식이 잘못됨 (영문자 · 숫자로 시작, 영문자 · 숫자 · - · _ 만, 15 바이트 이하)\n- CAPACITY_EXCEEDED: buffer.data 가 NULL 이거나 buffer.capacity 가 null 종료까지 담기에 작음. value 는 필요한 바이트 수\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\n입력 KiottySpecText 는 호출 동안만 읽고 복사한다. null 종료를 가정하지 않으며 data 가 NULL 이면 빈 글이다. buffer 는 호출자 메모리다. 성공하면 null 종료로 채운다.\n
 body	O	f971c3c9	결과: PASS\n근거: node tools/lint.js --rule 9\n
