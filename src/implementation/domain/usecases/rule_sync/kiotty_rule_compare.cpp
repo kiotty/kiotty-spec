@@ -1,69 +1,23 @@
 #include "implementation/domain/usecases/rule_sync/kiotty_rule_compare.h"
 
+#include "implementation/core/kiotty_text_view.h"
+
 namespace kiotty::spec::implementation {
 
 namespace {
 
 using entity::ItemHandle;
 using entity::ItemKind;
+using StateResult = Result<const entity::ItemState&, KiottySpecStatus>;
+using LabelResult = Result<const entity::ItemLabel&, KiottySpecStatus>;
 
 constexpr int LOCAL_FIRST = -1;
 constexpr int REMOTE_FIRST = 1;
 
 uint32_t compareLabels(RuleSide local, RuleSide remote);
 bool hasSameTags(RuleSide local, RuleSide remote);
-bool hasSameText(Span<const char> left, Span<const char> right);
 uint32_t toBits(KiottySpecChangedField field);
 
-}
-
-size_t skipToRule(Workspace& workspace, size_t position)
-{
-    const size_t count = workspace.items.slots().count();
-    size_t current = position;
-    while (current < count) {
-        const auto state = workspace.items.reader().get(ruleAt(workspace, current));
-        const bool is_rule = state && (*state.value).kind == ItemKind::RULE;
-        if (is_rule) { return current; }
-        ++current;
-    }
-    return count;
-}
-
-ItemHandle ruleAt(Workspace& workspace, size_t position)
-{
-    const size_t count = workspace.items.slots().count();
-    if (position >= count) { return entity::INVALID_ITEM_HANDLE; }
-    const uint32_t slot = workspace.items.slots().readIdOrder(position);
-    return workspace.items.slots().handleAt(slot);
-}
-
-std::string_view idOf(RuleSide side)
-{
-    const auto label = side.workspace.items.reader().label(side.handle);
-    return label ? std::string_view((*label.value).id) : std::string_view();
-}
-
-std::string_view parentIdOf(RuleSide side)
-{
-    const auto state = side.workspace.items.reader().get(side.handle);
-    if (!state) { return std::string_view(); }
-    const ItemHandle parent = (*state.value).parent;
-    if (!parent.isValid()) { return std::string_view(); }
-    return idOf(RuleSide {side.workspace, parent});
-}
-
-uint32_t compareRules(RuleSide local, RuleSide remote)
-{
-    const bool is_same_parent = parentIdOf(local) == parentIdOf(remote);
-    const bool is_same_tags = hasSameTags(local, remote);
-    const bool is_same_body = hasSameText(local.workspace.items.reader().body(local.handle),
-                                          remote.workspace.items.reader().body(remote.handle));
-    uint32_t fields = compareLabels(local, remote);
-    fields |= is_same_parent ? 0u : toBits(KIOTTY_SPEC_CHANGED_FIELD_PARENT);
-    fields |= is_same_tags ? 0u : toBits(KIOTTY_SPEC_CHANGED_FIELD_TAGS);
-    fields |= is_same_body ? 0u : toBits(KIOTTY_SPEC_CHANGED_FIELD_BODY);
-    return fields;
 }
 
 int compareOrder(RuleSide local, RuleSide remote, RuleOrder order)
@@ -78,18 +32,71 @@ int compareOrder(RuleSide local, RuleSide remote, RuleOrder order)
 RuleOrder advanceOrder(RulePair pair, RuleOrder order, int compared)
 {
     RuleOrder next = order;
-    if (compared <= 0) { next.local = skipToRule(pair.local, order.local + 1); }
-    if (compared >= 0) { next.remote = skipToRule(pair.remote, order.remote + 1); }
+    const bool is_local_used = compared <= 0;
+    const bool is_remote_used = compared >= 0;
+    if (is_local_used) { next.local = skipToRule(pair.local, order.local + 1); }
+    if (is_remote_used) { next.remote = skipToRule(pair.remote, order.remote + 1); }
     return next;
+}
+
+uint32_t compareRules(RuleSide local, RuleSide remote)
+{
+    const bool is_same_parent = parentIdOf(local) == parentIdOf(remote);
+    const bool is_same_tags = hasSameTags(local, remote);
+    const std::string_view before = viewOf(local.workspace.items.reader().bodyOf(local.handle));
+    const std::string_view after = viewOf(remote.workspace.items.reader().bodyOf(remote.handle));
+    const bool is_same_body = before == after;
+    uint32_t fields = compareLabels(local, remote);
+    fields |= is_same_parent ? 0u : toBits(KIOTTY_SPEC_CHANGED_FIELD_PARENT);
+    fields |= is_same_tags ? 0u : toBits(KIOTTY_SPEC_CHANGED_FIELD_TAGS);
+    fields |= is_same_body ? 0u : toBits(KIOTTY_SPEC_CHANGED_FIELD_BODY);
+    return fields;
+}
+
+std::string_view parentIdOf(RuleSide side)
+{
+    const StateResult state = side.workspace.items.reader().get(side.handle);
+    if (!state) { return std::string_view(); }
+    const ItemHandle parent = (*state.value).parent;
+    const bool has_parent = parent.isValid();
+    if (!has_parent) { return std::string_view(); }
+    return idOf(RuleSide {side.workspace, parent});
+}
+
+std::string_view idOf(RuleSide side)
+{
+    const LabelResult label = side.workspace.items.reader().label(side.handle);
+    return label ? std::string_view((*label.value).id) : std::string_view();
+}
+
+size_t skipToRule(const Workspace& workspace, size_t position)
+{
+    const size_t count = workspace.items.slots().count();
+    for (size_t current = position; current < count; ++current) {
+        const StateResult state = workspace.items.reader().get(ruleOf(workspace, current));
+        const bool is_rule = state && (*state.value).kind == ItemKind::RULE;
+        if (is_rule) { return current; }
+    }
+    return count;
+}
+
+ItemHandle ruleOf(const Workspace& workspace, size_t position)
+{
+    const size_t count = workspace.items.slots().count();
+    const bool is_inside = position < count;
+    if (!is_inside) { return entity::INVALID_ITEM_HANDLE; }
+    const uint32_t slot = workspace.items.slots().readIdOrder(position);
+    return workspace.items.slots().handleAt(slot);
 }
 
 namespace {
 
 uint32_t compareLabels(RuleSide local, RuleSide remote)
 {
-    const auto left = local.workspace.items.reader().label(local.handle);
-    const auto right = remote.workspace.items.reader().label(remote.handle);
-    if (!left || !right) { return 0; }
+    const LabelResult left = local.workspace.items.reader().label(local.handle);
+    const LabelResult right = remote.workspace.items.reader().label(remote.handle);
+    const bool has_labels = left && right;
+    if (!has_labels) { return 0; }
     const entity::ItemLabel& before = *left.value;
     const entity::ItemLabel& after = *right.value;
     const bool is_same_title = std::string_view(before.title) == std::string_view(after.title);
@@ -107,15 +114,10 @@ bool hasSameTags(RuleSide local, RuleSide remote)
     for (uint32_t tag = 0; tag < tag_count; ++tag) {
         const uint64_t before = local.workspace.items.tags().value(local.handle, tag);
         const uint64_t after = remote.workspace.items.tags().value(remote.handle, tag);
-        if (before != after) { return false; }
+        const bool is_same = before == after;
+        if (!is_same) { return false; }
     }
     return true;
-}
-
-bool hasSameText(Span<const char> left, Span<const char> right)
-{
-    return std::string_view(left.data(), left.length()) ==
-           std::string_view(right.data(), right.length());
 }
 
 uint32_t toBits(KiottySpecChangedField field) { return static_cast<uint32_t>(field); }

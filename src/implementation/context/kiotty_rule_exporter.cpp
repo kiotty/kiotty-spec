@@ -1,4 +1,4 @@
-#include "implementation/domain/usecases/rule_sync/kiotty_rule_exporter.h"
+#include "implementation/context/kiotty_rule_exporter.h"
 
 namespace kiotty::spec::implementation {
 

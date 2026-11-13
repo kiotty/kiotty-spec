@@ -11,13 +11,13 @@
 namespace kiotty::spec::implementation {
 
 struct RuleSide {
-    Workspace& workspace;
-    entity::ItemHandle handle;
+    const Workspace& workspace;
+    entity::ItemHandle handle {};
 };
 
 struct RulePair {
-    Workspace& local;
-    Workspace& remote;
+    const Workspace& local;
+    const Workspace& remote;
 };
 
 struct RuleOrder {
@@ -29,12 +29,12 @@ static_assert(sizeof(RuleSide) == 16, "unexpected padding");
 static_assert(sizeof(RulePair) == 16, "unexpected padding");
 static_assert(sizeof(RuleOrder) == 16, "unexpected padding");
 
-size_t skipToRule(Workspace& workspace, size_t position);
-entity::ItemHandle ruleAt(Workspace& workspace, size_t position);
-std::string_view idOf(RuleSide side);
-std::string_view parentIdOf(RuleSide side);
-uint32_t compareRules(RuleSide local, RuleSide remote);
 int compareOrder(RuleSide local, RuleSide remote, RuleOrder order);
 RuleOrder advanceOrder(RulePair pair, RuleOrder order, int compared);
+uint32_t compareRules(RuleSide local, RuleSide remote);
+std::string_view parentIdOf(RuleSide side);
+std::string_view idOf(RuleSide side);
+size_t skipToRule(const Workspace& workspace, size_t position);
+entity::ItemHandle ruleOf(const Workspace& workspace, size_t position);
 
 }

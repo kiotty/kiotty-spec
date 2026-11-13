@@ -11,6 +11,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
 namespace kiotty::spec::implementation {
 
@@ -21,18 +22,19 @@ public:
         : _local(local), _cursors(cursors), _store(store)
     {}
 
-    CursorIdResult open(Workspace& remote);
+    CursorIdResult open(const Workspace& remote);
     Result<RuleDiffRecord, KiottySpecStatus> next(CursorId cursor);
-    CursorIdResult openBody(Workspace& remote, Span<const char> id);
-    Result<TextPiece, KiottySpecStatus> nextPiece(CursorId cursor);
+    CursorIdResult openBody(const Workspace& remote, Span<const char> id);
+    Result<TextPiece, KiottySpecStatus> fetchPiece(CursorId cursor);
 
 private:
     KiottySpecStatus checkFree(const std::optional<CursorId>& active, CursorKind kind);
     Result<size_t, KiottySpecStatus> collectRows(RulePair pair);
     KiottySpecStatus pushRows(CursorId cursor, size_t count);
-    KiottySpecStatus fillBody(CursorId cursor, TextPair texts);
-    KiottySpecStatus storeBodies(TextPair texts);
+    KiottySpecStatus fillBody(CursorId cursor, const TextPair& texts);
+    KiottySpecStatus storeBodies(const TextPair& texts);
     KiottySpecStatus pushPieces(CursorId cursor, Span<const TextSegment> segments);
+    KiottySpecStatus pushSegment(CursorId cursor, TextSegment segment);
 
     Workspace& _local;
     CursorPool& _cursors;

@@ -8,7 +8,7 @@ using namespace kiotty::spec::adapter;
 namespace {
 
 KiottySpecKindDiff convertKindDiff(const impl::KindCounts& count);
-impl::Result<impl::TextPiece, KiottySpecStatus> nextPiece(impl::OpenedContext& context,
+impl::Result<impl::TextPiece, KiottySpecStatus> fetchPiece(const impl::OpenedContext& context,
                                                          KiottySpecCursor cursor);
 KiottySpecItemHandle findCurrentHandle(impl::ItemReader reader, impl::Span<const char> id);
 
@@ -244,7 +244,7 @@ KiottySpecStatusResult KiottySpec_fetchTextDiffPage(KiottySpecContext* context,
     page->length = 0;
     const impl::Span<KiottySpecTextDiff> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     while (page->length < KIOTTY_SPEC_PAGE_CAPACITY) {
-        const auto piece = nextPiece(*spec.value, cursor);
+        const auto piece = fetchPiece(*spec.value, cursor);
         if (!piece) { return status(piece.code); }
         const size_t piece_length = piece.value.text.length();
         if (piece_length == 0) { break; }
@@ -264,11 +264,11 @@ KiottySpecStatusResult KiottySpec_fetchTextDiffPage(KiottySpecContext* context,
 
 namespace {
 
-impl::Result<impl::TextPiece, KiottySpecStatus> nextPiece(impl::OpenedContext& context,
+impl::Result<impl::TextPiece, KiottySpecStatus> fetchPiece(const impl::OpenedContext& context,
                                                          KiottySpecCursor cursor)
 {
     const auto body = context.readSide().cursors().locate(cursor, impl::CursorKind::BODY_DIFF);
-    if (body) { return context.ruleSync().differ().nextPiece(cursor); }
+    if (body) { return context.ruleSync().differ().fetchPiece(cursor); }
     return context.readSide().differ().text().next(cursor);
 }
 

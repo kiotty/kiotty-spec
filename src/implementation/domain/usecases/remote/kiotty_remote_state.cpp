@@ -9,11 +9,10 @@ namespace kiotty::spec::implementation {
 namespace {
 
 using entity::RemoteRecord;
+using MetaResult = Result<MetaValue, KiottySpecStatus>;
 
 constexpr std::string_view URL_KEY = "remote.url";
 constexpr std::string_view RULE_BASE_KEY = "remote.rule_base";
-
-KiottySpecStatus storeValue(MetaStore& meta, std::string_view key, Span<const char> value);
 
 }
 
@@ -23,14 +22,15 @@ Result<RemoteRecord, KiottySpecStatus> RemoteState::read() const
     const KiottySpecStatus fresh = _workspace.refresh();
     if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return RemoteResult::failure(fresh); }
     RemoteRecord remote {};
-    const auto url = _workspace.meta.get(spanOf(URL_KEY));
-    const auto base = _workspace.meta.get(spanOf(RULE_BASE_KEY));
-    KiottySpecStatus status = KIOTTY_SPEC_STATUS_SUCCESS;
-    if (url) { status = remote.url.assign(url.value.view()); }
-    if (base && status == KIOTTY_SPEC_STATUS_SUCCESS) {
-        status = remote.rule_base.assign(base.value.view());
-    }
-    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return RemoteResult::failure(status); }
+    const MetaResult url = _workspace.meta.get(spanOf(URL_KEY));
+    const MetaResult base = _workspace.meta.get(spanOf(RULE_BASE_KEY));
+    const KiottySpecStatus url_status =
+        url ? remote.url.assign(url.value.view()) : KIOTTY_SPEC_STATUS_SUCCESS;
+    const KiottySpecStatus base_status =
+        base ? remote.rule_base.assign(base.value.view()) : KIOTTY_SPEC_STATUS_SUCCESS;
+    const bool is_read =
+        url_status == KIOTTY_SPEC_STATUS_SUCCESS && base_status == KIOTTY_SPEC_STATUS_SUCCESS;
+    if (!is_read) { return RemoteResult::failure(KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED); }
     return RemoteResult::success(remote);
 }
 
@@ -42,9 +42,9 @@ KiottySpecStatus RemoteState::write(const RemoteRecord& remote)
     }
     const KiottySpecStatus fresh = _workspace.refresh();
     if (fresh != KIOTTY_SPEC_STATUS_SUCCESS) { return fresh; }
-    KiottySpecStatus status = storeValue(_workspace.meta, URL_KEY, remote.url.view());
+    KiottySpecStatus status = storeMeta(URL_KEY, remote.url.view());
     if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
-        status = storeValue(_workspace.meta, RULE_BASE_KEY, remote.rule_base.view());
+        status = storeMeta(RULE_BASE_KEY, remote.rule_base.view());
     }
     return _workspace.finish(status);
 }
@@ -56,21 +56,17 @@ KiottySpecStatus RemoteState::writeBase(Span<const char> rule_base)
         return _workspace.failure.raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
                                         KIOTTY_SPEC_SUBJECT_REMOTE);
     }
-    return storeValue(_workspace.meta, RULE_BASE_KEY, rule_base);
+    return storeMeta(RULE_BASE_KEY, rule_base);
 }
 
-namespace {
-
-KiottySpecStatus storeValue(MetaStore& meta, std::string_view key, Span<const char> value)
+KiottySpecStatus RemoteState::storeMeta(std::string_view key, Span<const char> value)
 {
     const bool is_empty = value.length() == 0;
     if (is_empty) {
-        meta.erase(spanOf(key));
+        _workspace.meta.erase(spanOf(key));
         return KIOTTY_SPEC_STATUS_SUCCESS;
     }
-    return meta.set(spanOf(key), value);
-}
-
+    return _workspace.meta.set(spanOf(key), value);
 }
 
 }

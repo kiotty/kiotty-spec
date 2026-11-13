@@ -13,7 +13,7 @@ using AcceptResult = impl::Result<impl::AcceptOutcome, KiottySpecStatus>;
 WorkspaceResult findRemote(KiottySpecContext* local, KiottySpecContext* remote);
 KiottySpecRemote toRemote(const entity::RemoteRecord& record);
 KiottySpecRuleDiff toRuleDiff(const impl::RuleDiffRecord& record);
-entity::Step pickEntryStep(impl::OpenedContext& context);
+entity::Step pickEntryStep(const impl::OpenedContext& context);
 KiottySpecAcceptResult acceptFailure(KiottySpecStatus code);
 
 }
@@ -61,12 +61,13 @@ KiottySpecStatusResult KiottySpec_fetchRuleDiffPage(KiottySpecContext* context,
     if (page == nullptr) { return status(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     page->length = 0;
     impl::RuleDiffer& differ = spec.value->ruleSync().differ();
-    while (page->length < KIOTTY_SPEC_PAGE_CAPACITY) {
-        const auto row = differ.next(cursor);
+    const impl::Span<KiottySpecRuleDiff> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
+    for (KiottySpecRuleDiff& element : elements) {
+        const impl::Result<impl::RuleDiffRecord, KiottySpecStatus> row = differ.next(cursor);
         if (!row) { return status(row.code); }
         const bool is_end = row.value.id.empty();
         if (is_end) { break; }
-        page->elements[page->length] = toRuleDiff(row.value);
+        element = toRuleDiff(row.value);
         ++page->length;
     }
     return status(KIOTTY_SPEC_STATUS_SUCCESS);
@@ -82,7 +83,8 @@ KiottySpecCursorResult KiottySpec_openRuleBodyDiffCursor(KiottySpecContext* loca
     const Boundary boundary(spec);
     const TextResult rule = boundary.parse(id, Field::ID);
     if (!rule) { return cursorFailure(rule.code); }
-    if (rule.value.length() == 0) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    const bool is_empty = rule.value.length() == 0;
+    if (is_empty) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
     const impl::CursorIdResult opened =
         spec.ruleSync().differ().openBody(*other.value, rule.value);
     return boundary.wrap(opened);
@@ -134,7 +136,8 @@ RemoteRecordResult RemoteParser::parseRemote(const KiottySpecRemote* remote) con
         impl::boundedText(remote->rule_base, sizeof(remote->rule_base));
     const bool is_url_ended = url.length() < sizeof(remote->url);
     const bool is_base_ended = base.length() < sizeof(remote->rule_base);
-    if (!is_url_ended || !is_base_ended) {
+    const bool is_ended = is_url_ended && is_base_ended;
+    if (!is_ended) {
         return RemoteRecordResult::failure(raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT));
     }
     entity::RemoteRecord record {};
@@ -160,7 +163,8 @@ DraftResult RemoteParser::parseAccept(const KiottySpecAcceptInput* input) const
     const TextResult base = parseCommit(input->rule_base);
     const bool is_parsed = description && title && summary && body && base;
     if (!is_parsed) { return DraftResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    if (title.value.length() == 0) {
+    const bool is_untitled = title.value.length() == 0;
+    if (is_untitled) {
         return DraftResult::failure(raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT));
     }
     impl::AcceptDraft draft {};
@@ -226,7 +230,7 @@ KiottySpecRuleDiff toRuleDiff(const impl::RuleDiffRecord& record)
     return diff;
 }
 
-entity::Step pickEntryStep(impl::OpenedContext& context)
+entity::Step pickEntryStep(const impl::OpenedContext& context)
 {
     const auto position = context.readSide().finder().history().position();
     const uint32_t inspecting = static_cast<uint32_t>(entity::Step::CODE_INSPECTING);

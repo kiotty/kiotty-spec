@@ -1,5 +1,7 @@
 #include "implementation/context/kiotty_rule_diff_store.h"
 
+#include "implementation/core/kiotty_checked.h"
+
 namespace kiotty::spec::implementation {
 
 namespace {
@@ -16,8 +18,10 @@ RuleDiffStore::RuleDiffStore()
 
 Result<Span<char>, KiottySpecStatus> RuleDiffStore::textOf(TextSource source)
 {
-    const size_t slot = static_cast<size_t>(source);
-    return viewVector(_texts).subspan(slot * BODY_SLOT_BYTES, BODY_SLOT_BYTES);
+    const Result<size_t, KiottySpecStatus> start =
+        checkedMultiply(static_cast<size_t>(source), BODY_SLOT_BYTES);
+    if (!start) { return Result<Span<char>, KiottySpecStatus>::failure(start.code); }
+    return viewVector(_texts).subspan(start.value, BODY_SLOT_BYTES);
 }
 
 LineWork RuleDiffStore::lineWork()

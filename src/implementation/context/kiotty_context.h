@@ -95,7 +95,7 @@ private:
     TextDiffStore _text_diffs;
     Finder _finder;
     Differ _differ;
-    RuleDiffStore _rule_diffs;
+    RuleDiffStore _rule_diffs {};
     RemoteState _remote;
     RuleAcceptor _rule_acceptor;
     RuleExporter _rule_exporter;

@@ -23,7 +23,7 @@ public:
     uint32_t key(entity::ItemHandle handle) const;
 
     Result<size_t, KiottySpecStatus> readBody(entity::ItemHandle handle, Span<char> buffer) const;
-    Span<const char> body(entity::ItemHandle handle) const;
+    Span<const char> bodyOf(entity::ItemHandle handle) const;
 
 private:
     ItemTables& _tables;

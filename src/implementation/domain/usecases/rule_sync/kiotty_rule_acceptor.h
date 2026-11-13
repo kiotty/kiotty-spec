@@ -10,6 +10,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 namespace kiotty::spec::implementation {
@@ -37,6 +38,7 @@ struct RuleChange {
 
 static_assert(sizeof(AcceptDraft) == 88, "unexpected padding");
 static_assert(sizeof(AcceptOutcome) == 20, "unexpected padding");
+static_assert(sizeof(RuleChange) == 24, "unexpected padding");
 
 class RuleAcceptor
 {
@@ -45,27 +47,34 @@ public:
         : _local(local), _changes(max_items), _marks(max_items)
     {}
 
-    Result<AcceptOutcome, KiottySpecStatus> accept(Workspace& remote, const AcceptDraft& draft,
-                                                   entity::Actor actor);
+    Result<AcceptOutcome, KiottySpecStatus> accept(const Workspace& remote,
+                                                   const AcceptDraft& draft, entity::Actor actor);
 
 private:
-    KiottySpecStatus checkAccept(Workspace& remote, entity::Actor actor);
-    KiottySpecStatus collectChanges(Workspace& remote);
-    Result<AcceptOutcome, KiottySpecStatus> applyAll(Workspace& remote, const AcceptDraft& draft);
+    Span<RuleChange> changes() { return viewVector(_changes).subspan(0, _change_count).value; }
+    KiottySpecStatus checkAccept(const Workspace& remote, entity::Actor actor);
+    KiottySpecStatus collectChanges(const Workspace& remote);
+    Result<AcceptOutcome, KiottySpecStatus> applyAll(const Workspace& remote,
+                                                     const AcceptDraft& draft);
     Result<entity::ItemHandle, KiottySpecStatus> createRequest(const AcceptDraft& draft,
                                                                uint32_t sequence);
     KiottySpecStatus tagRequest(entity::ItemHandle request, entity::Step entry_step,
                                 uint32_t sequence);
-    KiottySpecStatus copyRules(Workspace& remote, uint32_t sequence);
-    KiottySpecStatus copyRule(RuleSide remote, RuleChange& change, uint32_t sequence);
+    KiottySpecStatus copyRules(const Workspace& remote, uint32_t sequence);
+    Result<entity::ItemHandle, KiottySpecStatus> copyRule(RuleSide remote,
+                                                          const RuleChange& change,
+                                                          uint32_t sequence);
     KiottySpecStatus copyContent(RuleSide remote, entity::ItemHandle local, uint32_t sequence);
-    KiottySpecStatus linkParents(Workspace& remote, uint32_t sequence);
+    KiottySpecStatus linkParents(const Workspace& remote, uint32_t sequence);
+    KiottySpecStatus linkParent(RuleSide remote, entity::ItemHandle local, uint32_t sequence);
     KiottySpecStatus linkRequest(entity::ItemHandle request, uint32_t sequence);
     KiottySpecStatus linkPrivateRules(entity::ItemHandle request, uint32_t sequence);
     KiottySpecStatus removeResults(uint32_t sequence);
     KiottySpecStatus removeRules(uint32_t sequence);
-    bool isChangedTarget(entity::ItemHandle rule) const;
-    uint32_t relationOf(entity::ItemKind kind, std::string_view name) const;
+    size_t markReplacing(uint32_t relation);
+    size_t markInspecting(uint32_t relation);
+    bool isChangedTarget(entity::ItemHandle rule);
+    uint32_t findRelation(entity::ItemKind kind, std::string_view name) const;
 
     Workspace& _local;
     std::vector<RuleChange> _changes;

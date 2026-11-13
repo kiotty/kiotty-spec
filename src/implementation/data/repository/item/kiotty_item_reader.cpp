@@ -41,7 +41,7 @@ Result<size_t, KiottySpecStatus> ItemReader::readBody(ItemHandle handle, Span<ch
     return copyBody(_tables.bodies.find(key), buffer);
 }
 
-Span<const char> ItemReader::body(ItemHandle handle) const
+Span<const char> ItemReader::bodyOf(ItemHandle handle) const
 {
     const auto record = _tables.items.get(handle);
     if (!record) { return Span<const char>(); }

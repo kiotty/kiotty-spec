@@ -2,6 +2,7 @@
 #define KIOTTY_SPEC_H
 
 #include "kiotty_spec_records.h"
+#include "kiotty_spec_sync_records.h"
 
 #ifdef __cplusplus
 extern "C" {

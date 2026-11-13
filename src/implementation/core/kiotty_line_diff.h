@@ -11,10 +11,11 @@
 namespace kiotty::spec::implementation {
 
 constexpr size_t MAX_DIFF_LINES = 1024;
+constexpr size_t LINE_ROW_COUNT = 2;
 constexpr size_t LINE_MOVE_CELLS = MAX_DIFF_LINES * MAX_DIFF_LINES;
-constexpr size_t LINE_LENGTH_CELLS = (MAX_DIFF_LINES + 1) * 2;
-constexpr size_t LINE_START_CELLS = (MAX_DIFF_LINES + 1) * 2;
-constexpr size_t MAX_LINE_SEGMENTS = MAX_DIFF_LINES * 2 + 1;
+constexpr size_t LINE_LENGTH_CELLS = (MAX_DIFF_LINES + 1) * LINE_ROW_COUNT;
+constexpr size_t LINE_START_CELLS = (MAX_DIFF_LINES + 1) * LINE_ROW_COUNT;
+constexpr size_t MAX_LINE_SEGMENTS = MAX_DIFF_LINES * LINE_ROW_COUNT + 1;
 
 struct LineWork {
     Span<uint8_t> moves {};

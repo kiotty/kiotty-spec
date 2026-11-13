@@ -51,7 +51,8 @@ KiottySpecStatus SpecFile::exportRules(Span<const char> path, uint32_t checkpoin
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
     OpenedFileResult opened = OpenedFile::openForWriting(_file_system, _temporary_path.view());
     if (!opened) {
-        return _tables.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE, path);
+        return _tables.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE,
+                                     path);
     }
     const WorkAreas areas = splitWork();
     KispFileWriter file(_file_system, std::move(opened.value), path, _temporary_path.view());
@@ -59,7 +60,8 @@ KiottySpecStatus SpecFile::exportRules(Span<const char> path, uint32_t checkpoin
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
     status = file.commit();
     if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
-        return _tables.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE, path);
+        return _tables.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE,
+                                     path);
     }
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }

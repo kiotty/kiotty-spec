@@ -37,8 +37,9 @@ KiottySpecStatus RuleSpecWriter::write(uint32_t checkpoint)
 KiottySpecStatus RuleSpecWriter::writeMeta()
 {
     const KiottySpecStatus status = _file.write(spanOf(META_HEADER));
-    const auto name = _tables.meta.get(spanOf(PROJECT_NAME_KEY));
-    if (status != KIOTTY_SPEC_STATUS_SUCCESS || !name) { return status; }
+    const Result<MetaValue, KiottySpecStatus> name = _tables.meta.get(spanOf(PROJECT_NAME_KEY));
+    const bool has_name = status == KIOTTY_SPEC_STATUS_SUCCESS && name;
+    if (!has_name) { return status; }
     SpecLine line(KispLineEncoder(_area), META_TABLE, 0);
     line.add(spanOf(PROJECT_NAME_KEY));
     line.add(name.value.view());
@@ -49,7 +50,8 @@ KiottySpecStatus RuleSpecWriter::writeCheckpoint(uint32_t checkpoint)
 {
     const KiottySpecStatus status = _file.write(spanOf(CHECKPOINT_HEADER));
     const auto found = _tables.checkpoints.get(checkpoint);
-    if (status != KIOTTY_SPEC_STATUS_SUCCESS || !found) { return status; }
+    const bool has_checkpoint = status == KIOTTY_SPEC_STATUS_SUCCESS && found;
+    if (!has_checkpoint) { return status; }
     const entity::CheckpointRecord& record = *found.value;
     SpecLine line(KispLineEncoder(_area), CHECKPOINT_TABLE, 0);
     line.addDecimal(EXPORTED_CHECKPOINT);
@@ -86,9 +88,10 @@ KiottySpecStatus RuleSpecWriter::writeItemVersions(uint32_t checkpoint)
     const size_t name_count = tables.names.length();
     for (size_t index = 0; index < name_count && status == KIOTTY_SPEC_STATUS_SUCCESS; ++index) {
         const uint32_t key = tables.names.keyAt(index);
-        const auto latest = tables.versions.latest(key, checkpoint);
-        const bool is_rule = isRuleAt(key, checkpoint);
-        if (!is_rule || !latest) { continue; }
+        const Result<const ItemVersion&, KiottySpecStatus> latest =
+            tables.versions.latest(key, checkpoint);
+        const bool is_written = isRuleAt(key, checkpoint) && latest;
+        if (!is_written) { continue; }
         const ItemVersion& version = *latest.value;
         SpecLine line(KispLineEncoder(_area), ITEM_VERSION_TABLE, 0);
         line.addKey(key);
@@ -147,22 +150,25 @@ KiottySpecStatus RuleSpecWriter::writeBodies(uint32_t checkpoint)
     return status;
 }
 
+bool RuleSpecWriter::isCurrentTag(const TagVersion& version, uint32_t checkpoint) const
+{
+    const Result<const TagVersion&, KiottySpecStatus> latest =
+        _tables.items.tables().tag_versions.latest(version.identity(), checkpoint);
+    const bool is_current = isRuleAt(version.item.index, checkpoint) && latest;
+    if (!is_current) { return false; }
+    const bool is_latest = &*latest.value == &version;
+    return is_latest && version.removed == 0 && version.value != 0;
+}
+
 bool RuleSpecWriter::isRuleAt(uint32_t key, uint32_t checkpoint) const
 {
-    const auto version = _tables.items.tables().versions.latest(key, checkpoint);
+    const Result<const ItemVersion&, KiottySpecStatus> version =
+        _tables.items.tables().versions.latest(key, checkpoint);
     if (!version) { return false; }
     const ItemVersion& found = *version.value;
     return found.kind == ItemKind::RULE && found.removed == 0;
 }
 
-bool RuleSpecWriter::isCurrentTag(const TagVersion& version, uint32_t checkpoint) const
-{
-    const bool is_rule = isRuleAt(version.item.index, checkpoint);
-    const auto latest = _tables.items.tables().tag_versions.latest(version.identity(), checkpoint);
-    if (!is_rule || !latest) { return false; }
-    const bool is_latest = &*latest.value == &version;
-    return is_latest && version.removed == 0 && version.value != 0;
-}
 
 KiottySpecStatus RuleSpecWriter::emit(const Result<Span<const char>, KiottySpecStatus>& finished)
 {

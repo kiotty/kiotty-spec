@@ -21,14 +21,6 @@ typedef struct KiottySpecItemDraft {
     uint32_t           reserved;
 } KiottySpecItemDraft;
 
-typedef struct KiottySpecAcceptInput {
-    KiottySpecText description;
-    KiottySpecText title;
-    KiottySpecText summary;
-    KiottySpecText body;
-    KiottySpecText rule_base;
-} KiottySpecAcceptInput;
-
 typedef struct KiottySpecError {
     char              text[KIOTTY_SPEC_MAX_ERROR_TEXT_LENGTH + 1];
     uint64_t          line;
@@ -219,23 +211,6 @@ typedef struct KiottySpecTextDiffPage {
     size_t             length;
 } KiottySpecTextDiffPage;
 
-typedef struct KiottySpecRemote {
-    char url[KIOTTY_SPEC_MAX_URL_LENGTH + 1];
-    char rule_base[KIOTTY_SPEC_MAX_COMMIT_LENGTH + 1];
-} KiottySpecRemote;
-
-typedef struct KiottySpecRuleDiff {
-    char             id[KIOTTY_SPEC_MAX_ID_LENGTH + 1];
-    char             title[KIOTTY_SPEC_MAX_TITLE_LENGTH + 1];
-    KiottySpecChange change;
-    uint32_t         changed_fields;
-} KiottySpecRuleDiff;
-
-typedef struct KiottySpecRuleDiffPage {
-    KiottySpecRuleDiff elements[KIOTTY_SPEC_PAGE_CAPACITY];
-    size_t             length;
-} KiottySpecRuleDiffPage;
-
 typedef struct KiottySpecTagDefinitionPage {
     KiottySpecTagDefinition elements[KIOTTY_SPEC_PAGE_CAPACITY];
     size_t                  length;
@@ -273,19 +248,6 @@ typedef struct KiottySpecErrorResult {
     KiottySpecStatus code;
     uint32_t         reserved;
 } KiottySpecErrorResult;
-
-typedef struct KiottySpecRemoteResult {
-    KiottySpecRemote value;
-    KiottySpecStatus code;
-    uint32_t         reserved;
-} KiottySpecRemoteResult;
-
-typedef struct KiottySpecAcceptResult {
-    KiottySpecCheckpointHandle checkpoint;
-    char                       change_request[KIOTTY_SPEC_MAX_ID_LENGTH + 1];
-    KiottySpecStatus           code;
-    uint32_t                   reserved;
-} KiottySpecAcceptResult;
 
 typedef struct KiottySpecItemResult {
     KiottySpecItem       value;
@@ -412,12 +374,6 @@ static_assert(sizeof(KiottySpecPositionResult) == 48, "unexpected padding");
 static_assert(sizeof(KiottySpecModelResult) == 72, "unexpected padding");
 static_assert(sizeof(KiottySpecContextResult) <= 16, "unexpected padding");
 static_assert(sizeof(KiottySpecDiffSummaryResult) == 360, "unexpected padding");
-static_assert(sizeof(KiottySpecAcceptInput) <= 80, "unexpected padding");
-static_assert(sizeof(KiottySpecRemote) == 577, "unexpected padding");
-static_assert(sizeof(KiottySpecRuleDiff) == 152, "unexpected padding");
-static_assert(sizeof(KiottySpecRuleDiffPage) <= 9736, "unexpected padding");
-static_assert(sizeof(KiottySpecRemoteResult) == 588, "unexpected padding");
-static_assert(sizeof(KiottySpecAcceptResult) == 32, "unexpected padding");
 static_assert(sizeof(KiottySpecConfiguration) <= 64, "unexpected padding");
 #endif
 

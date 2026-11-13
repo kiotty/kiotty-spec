@@ -15,7 +15,7 @@
 #include "implementation/domain/usecases/editor/kiotty_relation_editor.h"
 #include "implementation/domain/usecases/remote/kiotty_remote_state.h"
 #include "implementation/domain/usecases/rule_sync/kiotty_rule_acceptor.h"
-#include "implementation/domain/usecases/rule_sync/kiotty_rule_exporter.h"
+#include "implementation/context/kiotty_rule_exporter.h"
 #include "implementation/domain/usecases/workspace/kiotty_workspace.h"
 
 namespace kiotty::spec::implementation {
@@ -82,10 +82,17 @@ private:
 };
 
 struct ContextSides {
+    ContextSides(const ContextWriteSide& write, const ContextReadSide& read,
+                 const RuleSyncSide& sync)
+        : write_side(write), read_side(read), rule_sync(sync)
+    {}
+
     ContextWriteSide write_side;
     ContextReadSide read_side;
     RuleSyncSide rule_sync;
 };
+
+static_assert(sizeof(ContextSides) == 96, "unexpected padding");
 
 class OpenedContext
 {

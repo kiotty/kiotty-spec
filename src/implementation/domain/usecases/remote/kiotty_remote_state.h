@@ -6,6 +6,8 @@
 #include "implementation/domain/entity/kiotty_remote_record.h"
 #include "implementation/domain/usecases/workspace/kiotty_workspace.h"
 
+#include <string_view>
+
 namespace kiotty::spec::implementation {
 
 class RemoteState
@@ -18,6 +20,8 @@ public:
     KiottySpecStatus writeBase(Span<const char> rule_base);
 
 private:
+    KiottySpecStatus storeMeta(std::string_view key, Span<const char> value);
+
     Workspace& _workspace;
 };
 
