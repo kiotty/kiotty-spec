@@ -2,12 +2,13 @@
 
 사양 DB 는 `.kiotty/spec.kisp`, CLI 는 `ks` (`build/Debug/ks.exe`). 진행 상황은 이 문서가 아니라 ks 로 확인한다.
 
-## 지금 어디까지 왔나 (2026-11-13)
+## 지금 어디까지 왔나 (2026-11-13, v0.0.0 이후)
 
-- 마지막 체크포인트는 CP-0041 (Step 12 E2E 테스트 실행, 확정). 12 단계를 한 바퀴 다 돌았다. 확정은 사용자가 하거나 사용자가 시킬 때만 한다 (`ks checkpoint complete --actor user`).
+- v0.0.0 (태그) 에서 12 단계를 한 바퀴 다 돌았다. 그 뒤 CP-0041 이전 기록을 prune 했다 (이전 이력은 v0.0.0 태그의 spec.kisp). 확정은 사용자가 하거나 사용자가 시킬 때만 한다 (`ks checkpoint complete --actor user`).
+- CI: `.github/workflows/build.yml` 이 Linux · macOS · Windows 에서 빌드하고 테스트 8 개를 돌린다.
+- 진행 중: CP-0042 (Step 1) 의 CR-015 공통 개발 수칙 원격 공유. 계획은 docs/plan/261111_rule_sync_v1.md, 결정 D1 ~ D3 · D5 · D6 은 아직 확인받지 않았다.
 - 시스템 테스트 31 개, E2E 19 개(tests/e2e/e2e_test.c, 외부 인터페이스 묶음과 1:1, CR-013) 모두 PASS. 코드 검사 결과도 모두 PASS.
 - CR-014 (2026-11-13): 2.1 은 고쳤고(QueryParser · RangeParser), 3.3 · 4.2 · 4.17 · 6.1 · 6.3 · 6.4 는 docs/deviations.md 의 편차다. 4.17 은 tools/lint_accepted.txt 의 기존 이름만 받아들이고 새 이름은 검사한다.
-- 다음에 할 일은 사용자와 정한다.
 
 ## 확인할 ks 명령
 
