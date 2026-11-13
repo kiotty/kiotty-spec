@@ -1,11 +1,13 @@
 #include "implementation/domain/entity/kiotty_item_id.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 #include "implementation/domain/entity/kiotty_kind.h"
+#include "implementation/domain/entity/kiotty_remote_record.h"
 #include "implementation/data/repository/model/kiotty_model_catalog.h"
 
 #include <cstdio>
 #include <cstring>
 #include <functional>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -46,6 +48,7 @@ bool testRecordSizes()
     ok = expectTrue(sizeof(entity::RelationRecord) == 24, "relation record 24") && ok;
     ok = expectTrue(sizeof(entity::CheckpointRecord) == 24, "checkpoint record 24") && ok;
     ok = expectTrue(sizeof(entity::RelationDefinition) == 72, "relation definition 72") && ok;
+    ok = expectTrue(sizeof(entity::RemoteRecord) == 577, "remote record 577") && ok;
     return ok;
 }
 
@@ -169,6 +172,30 @@ bool testModelTwo()
     return ok;
 }
 
+bool testRemoteRecord()
+{
+    entity::RemoteRecord remote {};
+    bool ok = expectTrue(entity::checkRemote(remote) == KIOTTY_SPEC_STATUS_SUCCESS, "empty remote");
+    remote.url.assign(textOf("https://example.com/rules.git"));
+    remote.rule_base.assign(textOf("0123456789abcdef"));
+    ok = expectTrue(entity::checkRemote(remote) == KIOTTY_SPEC_STATUS_SUCCESS, "url and base") && ok;
+    remote.rule_base.assign(textOf("ABC"));
+    ok = expectTrue(entity::checkRemote(remote) == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "upper case base") && ok;
+    remote.rule_base.assign(textOf("xyz"));
+    ok = expectTrue(entity::checkRemote(remote) == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "not hex base") && ok;
+    remote.url.clear();
+    remote.rule_base.assign(textOf("abc"));
+    ok = expectTrue(entity::checkRemote(remote) == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "base without url") && ok;
+    remote.url.assign(textOf("\xff"));
+    ok = expectTrue(entity::checkRemote(remote) == KIOTTY_SPEC_STATUS_INVALID_UTF8, "url not utf-8") && ok;
+    const std::string longest_url(entity::MAX_URL_LENGTH, 'u');
+    const std::string longest_base(entity::MAX_COMMIT_LENGTH, 'a');
+    remote.url.assign(textOf(longest_url.c_str()));
+    remote.rule_base.assign(textOf(longest_base.c_str()));
+    ok = expectTrue(entity::checkRemote(remote) == KIOTTY_SPEC_STATUS_SUCCESS, "longest url and base") && ok;
+    return ok;
+}
+
 // 개발수칙 2.10: 빈 입력, 최대 길이, 최대 길이 + 1, 중간 null 바이트, 잘못된 UTF-8
 bool testParseKind()
 {
@@ -211,6 +238,7 @@ int main()
         {"parse kind", testParseKind},
         {"parse state", testParseState},
         {"model two", testModelTwo},
+        {"remote record", testRemoteRecord},
     };
 
     int failed = 0;

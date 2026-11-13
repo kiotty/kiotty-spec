@@ -4,6 +4,7 @@
 #include "kiotty_fixed_string.h"
 #include "kiotty_fixed_vector.h"
 #include "kiotty_lazy_pool.h"
+#include "kiotty_line_diff.h"
 #include "kiotty_number.h"
 #include "kiotty_result.h"
 #include "kiotty_search.h"
@@ -17,6 +18,8 @@
 
 #include <cstdio>
 #include <cstring>
+#include <string>
+#include <vector>
 #include <functional>
 #include <initializer_list>
 #include <limits>
@@ -277,6 +280,47 @@ bool testTextDiff()
     return ok;
 }
 
+std::string lineDiff(const char* before, const char* after, core::TextChange change, size_t* count)
+{
+    static std::vector<uint8_t> moves(core::LINE_MOVE_CELLS);
+    static std::vector<uint16_t> lengths(core::LINE_LENGTH_CELLS);
+    static std::vector<uint16_t> starts(core::LINE_START_CELLS);
+    static std::vector<core::TextSegment> segments(core::MAX_LINE_SEGMENTS);
+    const core::LineWork work {core::Span<uint8_t>(moves.data(), moves.size()), core::Span<uint16_t>(lengths.data(), lengths.size()),
+                               core::Span<uint16_t>(starts.data(), starts.size())};
+    const auto result = core::diffLines(core::Span<const char>(before, std::strlen(before)), core::Span<const char>(after, std::strlen(after)),
+                                        work, core::Span<core::TextSegment>(segments.data(), segments.size()));
+    *count = result ? result.value : 0;
+    std::string joined;
+    for (size_t index = 0; index < *count; ++index) {
+        const core::TextSegment segment = segments[index];
+        const char* text = segment.source == core::TextSource::BEFORE ? before : after;
+        if (segment.change == change) { joined.append(text + segment.offset, segment.length); }
+    }
+    return joined;
+}
+
+bool testLineDiff()
+{
+    using core::TextChange;
+    size_t count = 0;
+    bool ok = expectTrue(lineDiff("a\nb\n", "a\nb\n", TextChange::UNCHANGED, &count) == "a\nb\n" && count == 1, "same text is one segment");
+    ok = expectTrue(lineDiff("a\nb\nc\n", "a\nB\nc\n", TextChange::REMOVED, &count) == "b\n" && count == 4, "middle line changes") && ok;
+    ok = expectTrue(lineDiff("a\nb\nc\n", "a\nB\nc\n", TextChange::ADDED, &count) == "B\n", "middle line added") && ok;
+    ok = expectTrue(lineDiff("a\n", "a\nb\n", TextChange::ADDED, &count) == "b\n" && count == 2, "line added at end") && ok;
+    ok = expectTrue(lineDiff("", "x\ny\n", TextChange::ADDED, &count) == "x\ny\n" && count == 1, "empty before") && ok;
+    ok = expectTrue(lineDiff("a\nlast", "a\nlast!", TextChange::REMOVED, &count) == "last", "last line without new line") && ok;
+    std::string many;
+    for (size_t index = 0; index <= core::MAX_DIFF_LINES; ++index) { many += "x\n"; }
+    std::vector<uint16_t> starts(core::LINE_START_CELLS);
+    const core::LineWork small {core::Span<uint8_t>(), core::Span<uint16_t>(), core::Span<uint16_t>(starts.data(), starts.size())};
+    const auto too_many = core::diffLines(core::Span<const char>(many.data(), many.size()), core::Span<const char>(), small, core::Span<core::TextSegment>());
+    ok = expectTrue(too_many.code == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "too many lines") && ok;
+    const auto no_table = core::diffLines(core::Span<const char>("a\n", 2), core::Span<const char>("b\n", 2), small, core::Span<core::TextSegment>());
+    ok = expectTrue(no_table.code == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED, "small table") && ok;
+    return ok;
+}
+
 bool sameText(core::Span<const char> left, const char* right)
 {
     return left.length() == std::strlen(right) && std::memcmp(left.data(), right, left.length()) == 0;
@@ -433,6 +477,7 @@ int main()
         {"utf8 valid", testUtf8Valid},
         {"utf8 invalid", testUtf8Invalid},
         {"text diff", testTextDiff},
+        {"line diff", testLineDiff},
         {"version table latest", testVersionTableLatest},
         {"version table write", testVersionTableWrite},
         {"version table prune", testVersionTablePrune},

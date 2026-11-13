@@ -665,7 +665,7 @@ bool testSpecLineBoundaries()
     passed = expectLineRejected(openKispLines(root, checkpointLine(description.too_long)), "description max length + 1") && passed;
     passed = expectLineRejected(openKispLines(root, checkpointLine(description.with_nul)), "description nul byte") && passed;
     passed = expectLineRejected(openKispLines(root, checkpointLine(description.broken)), "description invalid utf-8") && passed;
-    const BoundaryInputs value = boundaryInputs(255, 'a');
+    const BoundaryInputs value = boundaryInputs(511, 'a');
     const auto metaLine = [](const std::string& text) { return "meta\tO\tproject.name\t" + text + "\n"; };
     passed = expectTrue(ok(openKispLines(root, metaLine(value.empty))), "meta value empty") && passed;
     passed = expectTrue(ok(openKispLines(root, metaLine(value.longest))), "meta value max length") && passed;

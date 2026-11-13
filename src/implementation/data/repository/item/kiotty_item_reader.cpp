@@ -41,6 +41,14 @@ Result<size_t, KiottySpecStatus> ItemReader::readBody(ItemHandle handle, Span<ch
     return copyBody(_tables.bodies.find(key), buffer);
 }
 
+Span<const char> ItemReader::body(ItemHandle handle) const
+{
+    const auto record = _tables.items.get(handle);
+    if (!record) { return Span<const char>(); }
+    const uint32_t key = readKey(_tables.keys, handle.index);
+    return _tables.bodies.find(key);
+}
+
 Result<ItemHandle, KiottySpecStatus> ItemReader::find(Span<const char> id) const
 {
     IdText key {};

@@ -4,6 +4,8 @@
 #include "implementation/context/kiotty_differ.h"
 #include "implementation/context/kiotty_finder.h"
 #include "implementation/context/kiotty_opened_context.h"
+#include "implementation/context/kiotty_rule_diff_store.h"
+#include "implementation/context/kiotty_rule_differ.h"
 #include "implementation/domain/entity/kiotty_failure.h"
 #include "implementation/core/kiotty_text_buffer.h"
 #include "implementation/data/datasource/kiotty_file_system.h"
@@ -93,6 +95,11 @@ private:
     TextDiffStore _text_diffs;
     Finder _finder;
     Differ _differ;
+    RuleDiffStore _rule_diffs;
+    RemoteState _remote;
+    RuleAcceptor _rule_acceptor;
+    RuleExporter _rule_exporter;
+    RuleDiffer _rule_differ;
     std::optional<OpenedContext> _opened {};
 };
 

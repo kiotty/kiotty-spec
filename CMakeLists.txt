@@ -87,7 +87,8 @@ kiotty_windows_definitions(ks)
 # ---------------------------------------------------------------------------
 # core 단위 테스트: 개발수칙 0.1 에 따라 C++17 로 빌드한다.
 # ---------------------------------------------------------------------------
-add_executable(kiotty_core_test tests/core/core_test.cpp src/implementation/core/kiotty_text_diff.cpp)
+add_executable(kiotty_core_test tests/core/core_test.cpp src/implementation/core/kiotty_text_diff.cpp
+    src/implementation/core/kiotty_line_diff.cpp)
 target_include_directories(kiotty_core_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src/implementation/core)
 set_target_properties(kiotty_core_test PROPERTIES
     CXX_STANDARD 17
@@ -125,6 +126,7 @@ add_executable(kiotty_model_test
     tests/model/model_test.cpp
     src/implementation/domain/entity/kiotty_item_id.cpp
     src/implementation/domain/entity/kiotty_kind.cpp
+    src/implementation/domain/entity/kiotty_remote_record.cpp
     src/implementation/data/repository/model/kiotty_model_catalog.cpp
     src/implementation/data/repository/model/kiotty_model_finder.cpp)
 target_include_directories(kiotty_model_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)

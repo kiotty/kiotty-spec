@@ -1,6 +1,7 @@
 #include "implementation/data/repository/spec_file/kiotty_spec_file.h"
 
 #include "implementation/core/kiotty_text_view.h"
+#include "implementation/data/repository/spec_file/kiotty_rule_spec_writer.h"
 #include "implementation/data/repository/spec_file/kiotty_spec_parser.h"
 #include "implementation/data/repository/spec_file/kiotty_spec_writer.h"
 
@@ -39,6 +40,28 @@ KiottySpecStatus SpecFile::save()
                                      _database.view());
     }
     return writeLines(std::move(opened.value));
+}
+
+KiottySpecStatus SpecFile::exportRules(Span<const char> path, uint32_t checkpoint)
+{
+    KiottySpecStatus status = _temporary_path.assign(path);
+    if (status == KIOTTY_SPEC_STATUS_SUCCESS) {
+        status = _temporary_path.append(literalText(KISP_TEMPORARY_SUFFIX));
+    }
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+    OpenedFileResult opened = OpenedFile::openForWriting(_file_system, _temporary_path.view());
+    if (!opened) {
+        return _tables.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE, path);
+    }
+    const WorkAreas areas = splitWork();
+    KispFileWriter file(_file_system, std::move(opened.value), path, _temporary_path.view());
+    status = RuleSpecWriter(_tables, file, areas.line).write(checkpoint);
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) { return status; }
+    status = file.commit();
+    if (status != KIOTTY_SPEC_STATUS_SUCCESS) {
+        return _tables.failure.raise(KIOTTY_SPEC_STATUS_INPUT_OUTPUT, KIOTTY_SPEC_SUBJECT_FILE, path);
+    }
+    return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 
 OpenedFileResult SpecFile::openTemporaryFile()

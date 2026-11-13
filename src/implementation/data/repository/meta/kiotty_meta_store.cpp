@@ -13,6 +13,14 @@ KiottySpecStatus MetaStore::set(Span<const char> key, Span<const char> value)
     return _entries.insert(name, content);
 }
 
+void MetaStore::erase(Span<const char> key)
+{
+    MetaKey name {};
+    const KiottySpecStatus assigned = name.assign(key);
+    if (assigned != KIOTTY_SPEC_STATUS_SUCCESS) { return; }
+    _entries.erase(name);
+}
+
 Result<MetaValue, KiottySpecStatus> MetaStore::get(Span<const char> key) const
 {
     MetaKey name {};

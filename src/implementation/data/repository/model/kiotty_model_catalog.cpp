@@ -26,6 +26,10 @@ const std::string_view SYSTEM_TEST_REQUIREMENT_RELATION {"검증 요구사항"};
 const std::string_view CODE_INSPECTION_RULE_RELATION {"검사 개발 수칙"};
 const std::string_view CODE_INSPECTION_PRIVATE_RULE_RELATION {"검사 전용 개발 수칙"};
 const std::string_view REPLACED_RULE_RELATION {"대체 개발 수칙"};
+const std::string_view AFFECTED_RULE_RELATION {"영향 개발 수칙"};
+const std::string_view AFFECTED_PRIVATE_RULE_RELATION {"영향 전용 개발 수칙"};
+const std::string_view CHANGE_REQUEST_SOURCE_TAG {"출처"};
+const std::string_view COMMON_RULE_SOURCE_BIT {"공통 수칙"};
 const std::string_view END_TO_END_TEST_INTERFACE_RELATION {"검증 외부 인터페이스"};
 const std::string_view ACCEPTANCE_CRITERIA_KEYWORDS[ACCEPTANCE_CRITERIA_KEYWORD_COUNT] {
     "인수 조건", "인수조건"

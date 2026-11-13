@@ -125,6 +125,24 @@ private:
     impl::OpenedContext& _context;
 };
 
+using RemoteRecordResult = impl::Result<entity::RemoteRecord, KiottySpecStatus>;
+using DraftResult = impl::Result<impl::AcceptDraft, KiottySpecStatus>;
+
+class RemoteParser
+{
+public:
+    explicit RemoteParser(impl::OpenedContext& context) : _context(context) {}
+
+    RemoteRecordResult parseRemote(const KiottySpecRemote* remote) const;
+    DraftResult parseAccept(const KiottySpecAcceptInput* input) const;
+
+private:
+    TextResult parseCommit(KiottySpecText commit) const;
+    KiottySpecStatus raise(KiottySpecStatus code) const;
+
+    impl::OpenedContext& _context;
+};
+
 KindResult parseKindCode(KiottySpecItemKind kind);
 StateResult parseStateCode(KiottySpecCheckpointState state);
 OpenedResult findOpenedContext(KiottySpecContext* context);

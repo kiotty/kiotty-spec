@@ -179,6 +179,24 @@ KIOTTY_SPEC_API KiottySpecStatusResult KiottySpec_fetchTextDiffPage(KiottySpecCo
                                                                     KiottySpecCursor cursor,
                                                                     KiottySpecTextDiffPage *page);
 
+KIOTTY_SPEC_API KiottySpecRemoteResult KiottySpec_readRemote(KiottySpecContext *context);
+KIOTTY_SPEC_API KiottySpecStatusResult KiottySpec_writeRemote(KiottySpecContext *context,
+                                                              const KiottySpecRemote *remote);
+KIOTTY_SPEC_API KiottySpecCursorResult KiottySpec_openRuleDiffCursor(KiottySpecContext *local,
+                                                                     KiottySpecContext *remote);
+KIOTTY_SPEC_API KiottySpecStatusResult KiottySpec_fetchRuleDiffPage(KiottySpecContext *context,
+                                                                    KiottySpecCursor cursor,
+                                                                    KiottySpecRuleDiffPage *page);
+KIOTTY_SPEC_API KiottySpecCursorResult KiottySpec_openRuleBodyDiffCursor(KiottySpecContext *local,
+                                                                         KiottySpecContext *remote,
+                                                                         KiottySpecText id);
+KIOTTY_SPEC_API KiottySpecAcceptResult KiottySpec_acceptRules(KiottySpecContext *local,
+                                                              KiottySpecContext *remote,
+                                                              const KiottySpecAcceptInput *input,
+                                                              KiottySpecActor actor);
+KIOTTY_SPEC_API KiottySpecStatusResult KiottySpec_exportRules(KiottySpecContext *local,
+                                                              KiottySpecText path);
+
 #ifdef __cplusplus
 }
 #endif

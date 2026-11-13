@@ -32,7 +32,10 @@ Context::Context(const Configuration& configuration)
       _cursors(configuration.max_cursors, configuration.max_cursor_rows,
                configuration.cursor_pool_rows),
       _finder(_workspace, _cursors, _checker, configuration.max_items),
-      _text_diffs(configuration.max_cursors), _differ(_workspace, _cursors, _text_diffs)
+      _text_diffs(configuration.max_cursors), _differ(_workspace, _cursors, _text_diffs),
+      _remote(_workspace), _rule_acceptor(_workspace, configuration.max_items),
+      _rule_exporter(_workspace, _file_system, _path_resolver),
+      _rule_differ(_workspace, _cursors, _rule_diffs)
 {
 }
 
@@ -51,8 +54,11 @@ KiottySpecStatus Context::open(Span<const char> database)
     }
     const KiottySpecStatus loaded = loadSpecFile(absolute_path.view());
     if (loaded != KIOTTY_SPEC_STATUS_SUCCESS) { return loaded; }
-    _opened.emplace(_workspace, ContextWriteSide(_editor, _relation_editor, _lifecycle, _checker),
-                    ContextReadSide(_catalog, _finder, _differ, _cursors), _root);
+    const ContextSides sides {
+        ContextWriteSide(_editor, _relation_editor, _lifecycle, _checker),
+        ContextReadSide(_catalog, _finder, _differ, _cursors),
+        RuleSyncSide(_remote, _rule_acceptor, _rule_exporter, _rule_differ)};
+    _opened.emplace(_workspace, sides, _root);
     return KIOTTY_SPEC_STATUS_SUCCESS;
 }
 

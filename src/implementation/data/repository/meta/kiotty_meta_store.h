@@ -11,7 +11,7 @@
 namespace kiotty::spec::implementation {
 
 constexpr size_t MAX_META_KEY_LENGTH = 63;
-constexpr size_t MAX_META_VALUE_LENGTH = 255;
+constexpr size_t MAX_META_VALUE_LENGTH = 511;
 constexpr size_t MAX_META_ENTRIES = 32;
 using MetaKey = FixedString<MAX_META_KEY_LENGTH>;
 using MetaValue = FixedString<MAX_META_VALUE_LENGTH>;
@@ -24,6 +24,7 @@ public:
     void clear() { _entries.clear(); }
     KiottySpecStatus set(Span<const char> key, Span<const char> value);
     Result<MetaValue, KiottySpecStatus> get(Span<const char> key) const;
+    void erase(Span<const char> key);
     const FixedMap<MetaKey, MetaValue>& all() const { return _entries; }
 
 private:

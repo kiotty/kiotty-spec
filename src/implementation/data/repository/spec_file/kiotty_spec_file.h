@@ -31,6 +31,7 @@ public:
     KiottySpecStatus save();
     KiottySpecStatus checkUnchanged();
     uint32_t modelVersion() const { return _model_version; }
+    KiottySpecStatus exportRules(Span<const char> path, uint32_t checkpoint);
 
 private:
     void clear();

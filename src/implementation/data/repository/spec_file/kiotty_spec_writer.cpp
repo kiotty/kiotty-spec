@@ -1,5 +1,7 @@
 #include "implementation/data/repository/spec_file/kiotty_spec_writer.h"
 
+#include "implementation/data/repository/spec_file/kiotty_spec_line.h"
+
 #include "implementation/core/kiotty_decimal.h"
 #include "implementation/core/kiotty_fixed_string.h"
 #include "implementation/core/kiotty_number.h"
@@ -17,37 +19,6 @@ using entity::ItemKind;
 using entity::ItemVersion;
 using entity::RelationVersion;
 using entity::TagVersion;
-
-constexpr std::string_view META_HEADER = "TABLE\tmeta\tO/X\tkey\tvalue\n";
-constexpr std::string_view CHECKPOINT_HEADER =
-    "TABLE\tcheckpoint\tO/X\tsequence\tprevious\tstep\tstate\tcreated_at\tdescription\n";
-constexpr std::string_view ITEM_HEADER = "TABLE\titem\tO/X\tkey\tid\n";
-constexpr std::string_view ITEM_VERSION_HEADER =
-    "TABLE\titem_version\tO/X\tkey\tcheckpoint\tkind\tparent\ttitle\tsummary\tbody\n";
-constexpr std::string_view TAG_HEADER = "TABLE\ttag\tO/X\tkey\ttag\tcheckpoint\tvalue\n";
-constexpr std::string_view RELATION_HEADER =
-    "TABLE\trelation\tO/X\tfrom\tmodel\trelation\tto\tcheckpoint\n";
-constexpr std::string_view DECISION_HEADER = "TABLE\tdecision\tO/X\tkind\tcheckpoint\ttext\n";
-constexpr std::string_view BODY_HEADER = "TABLE\tbody\tO/X\tkey\ttext\n";
-
-constexpr size_t KEY_DIGITS = 8;
-constexpr size_t HASH_DIGITS = 16;
-
-class SpecLine
-{
-public:
-    SpecLine(KispLineEncoder line, std::string_view table, uint32_t removed);
-
-    void add(Span<const char> field) { _line.add(field); }
-    void addDecimal(uint64_t number);
-    void addKey(uint32_t key);
-    void addHash(uint64_t hash);
-    void addTagValue(Span<const entity::TagName> bit_names, uint64_t value);
-    Result<Span<const char>, KiottySpecStatus> finish() { return _line.finish(); }
-
-private:
-    KispLineEncoder _line;
-};
 
 }
 
@@ -226,56 +197,5 @@ KiottySpecStatus SpecWriter::emit(const Result<Span<const char>, KiottySpecStatu
     return _file.write(finished.value);
 }
 
-namespace {
-
-SpecLine::SpecLine(KispLineEncoder line, std::string_view table, uint32_t removed) : _line(line)
-{
-    _line.add(spanOf(table));
-    _line.add(spanOf(removed != 0 ? REMOVED_MARKER : LIVE_MARKER));
-}
-
-void SpecLine::addDecimal(uint64_t number)
-{
-    const DecimalText text = formatDecimal(number);
-    _line.add(text.view());
-}
-
-void SpecLine::addKey(uint32_t key)
-{
-    if (key == entity::NO_KEY) {
-        _line.add(spanOf(NONE_MARKER));
-        return;
-    }
-    const HexText text = formatHex(key, KEY_DIGITS);
-    _line.add(text.view());
-}
-
-void SpecLine::addHash(uint64_t hash)
-{
-    if (hash == 0) {
-        _line.add(spanOf(NONE_MARKER));
-        return;
-    }
-    const HexText text = formatHex(hash, HASH_DIGITS);
-    _line.add(text.view());
-}
-
-void SpecLine::addTagValue(Span<const entity::TagName> bit_names, uint64_t value)
-{
-    if (value == 0) {
-        _line.add(spanOf(NONE_MARKER));
-        return;
-    }
-    _line.add(Span<const char>());
-    bool has_written_bit = false;
-    for (size_t bit = 0; bit < entity::TAG_BIT_COUNT; ++bit) {
-        if ((value & (uint64_t{1} << bit)) == 0) { continue; }
-        if (has_written_bit) { _line.extend(literalText(",")); }
-        _line.extend(bit_names[bit].view());
-        has_written_bit = true;
-    }
-}
-
-}
 
 }

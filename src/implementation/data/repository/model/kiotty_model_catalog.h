@@ -31,6 +31,10 @@ extern const std::string_view SYSTEM_TEST_REQUIREMENT_RELATION;
 extern const std::string_view CODE_INSPECTION_RULE_RELATION;
 extern const std::string_view CODE_INSPECTION_PRIVATE_RULE_RELATION;
 extern const std::string_view REPLACED_RULE_RELATION;
+extern const std::string_view AFFECTED_RULE_RELATION;
+extern const std::string_view AFFECTED_PRIVATE_RULE_RELATION;
+extern const std::string_view CHANGE_REQUEST_SOURCE_TAG;
+extern const std::string_view COMMON_RULE_SOURCE_BIT;
 extern const std::string_view END_TO_END_TEST_INTERFACE_RELATION;
 extern const std::string_view ACCEPTANCE_CRITERIA_KEYWORDS[ACCEPTANCE_CRITERIA_KEYWORD_COUNT];
 

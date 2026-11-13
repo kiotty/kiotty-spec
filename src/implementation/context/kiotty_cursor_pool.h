@@ -24,7 +24,9 @@ enum class CursorKind : uint8_t {
     TEXT_DIFF,
     UNMET_CONDITION,
     TAG_DEFINITION,
-    RELATION_DEFINITION
+    RELATION_DEFINITION,
+    RULE_DIFF,
+    BODY_DIFF
 };
 
 struct CursorRow {

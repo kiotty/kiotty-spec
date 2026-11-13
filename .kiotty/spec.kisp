@@ -1,4 +1,4 @@
-#kisp 2 model 1
+#kisp 2 model 2
 TABLE	meta	O/X	key	value
 meta	O	project.created_at	1794315796
 meta	O	project.name	kiotty-spec
@@ -2117,6 +2117,7 @@ tag	O	e7a80e74	결과	41	PASS
 tag	O	e7fca2bf	출처	42	사용자 피드백
 tag	O	e7fca2bf	상태	42	열림
 tag	O	e7fca2bf	상태	43	반영 중
+tag	O	e7fca2bf	상태	48	반영 중
 tag	O	e7fca2bf	진입 단계	42	Step 2
 tag	O	e82ab3d4	인터페이스 종류	41	C 함수
 tag	O	e8ed8c98	인터페이스 종류	41	C 함수
