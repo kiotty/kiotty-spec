@@ -162,3 +162,20 @@ if(MSVC)
 else()
     target_compile_options(kiotty_e2e_test PRIVATE -Wall -Wextra)
 endif()
+
+# ---------------------------------------------------------------------------
+# 설치: cmake --install build --config Debug
+# install.local 의 INSTALL_PATH=<디렉토리> 로 ks 를 복사한다 (파일이 없으면 CMAKE_INSTALL_PREFIX/bin).
+# ---------------------------------------------------------------------------
+set(KIOTTY_INSTALL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/install.local)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${KIOTTY_INSTALL_FILE})
+set(KIOTTY_INSTALL_DIR bin)
+if(EXISTS ${KIOTTY_INSTALL_FILE})
+    file(STRINGS ${KIOTTY_INSTALL_FILE} KIOTTY_INSTALL_LINE REGEX "^[ \t]*INSTALL_PATH[ \t]*=" LIMIT_COUNT 1)
+    string(REGEX REPLACE "^[ \t]*INSTALL_PATH[ \t]*=[ \t]*" "" KIOTTY_INSTALL_VALUE "${KIOTTY_INSTALL_LINE}")
+    string(STRIP "${KIOTTY_INSTALL_VALUE}" KIOTTY_INSTALL_VALUE)
+    if(KIOTTY_INSTALL_VALUE)
+        file(TO_CMAKE_PATH "${KIOTTY_INSTALL_VALUE}" KIOTTY_INSTALL_DIR)
+    endif()
+endif()
+install(TARGETS ks RUNTIME DESTINATION ${KIOTTY_INSTALL_DIR})

@@ -1,2 +1,3 @@
 build/
 *.kisp.tmp
+install.local

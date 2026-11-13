@@ -25,6 +25,6 @@ ks item body CIR-015                                 # 수칙별 위반 위치
 
 - 정적 검사: `node tools/lint.js` (수칙별 건수), `node tools/lint.js --rule 1.10 --list` (위치).
 - 검사 결과 기록 (Step 10 체크포인트 안에서): `node tools/record_inspection.js <수동 검토 결과 파일> [--dry]`. lint 수칙은 다시 돌려 채우고, 수동 검토 수칙은 파일의 `=== <수칙>` 블록(결과 · 근거 · 판단 · 위반 위치)을, 절 항목은 하위 수칙을 합쳐 채운다. 수동 검토 결과 형식은 지금 CIR 본문을 보면 된다.
-- 빌드: `cmake --build build --config Debug` (경고 0). 테스트: `build/Debug/kiotty_*_test.exe` 7 개 (system 테스트는 다른 테스트와 동시에 돌리지 않는다).
+- 빌드: `cmake --build build --config Debug` (경고 0). 설치: `cmake --install build --config Debug` 가 ks 를 install.local (git 제외) 의 `INSTALL_PATH=<디렉토리>` 로 복사한다. 테스트: `build/Debug/kiotty_*_test.exe` 7 개 (system 테스트는 다른 테스트와 동시에 돌리지 않는다).
 - 개발 수칙: 사양 DB 의 수칙 항목만 원본이다 (문서 없음, CR-012). `ks item list --kind rule` (번호 · 제목 · 전체 문장), `ks item body RULE-065` (본문), `ks decision show rule` (수칙 결정 기록). 고칠 때는 변경 요청 → Step 2 체크포인트로 한다.
 - 편차: `docs/deviations.md`.
