@@ -74,6 +74,12 @@ constexpr FailureSentence FAILURE_SENTENCES[] = {
     { KIOTTY_SPEC_SUBJECT_DIFF_RANGE, Key::DIFF_RANGE_INVALID, Form::MESSAGE },
     { KIOTTY_SPEC_SUBJECT_TEXT_FIELD, Key::TEXT_DIFF_FIELD, Form::MESSAGE },
     { KIOTTY_SPEC_SUBJECT_PROJECT_NAME, Key::FIELD_PROJECT_NAME, Form::FIELD },
+    { KIOTTY_SPEC_SUBJECT_REMOTE, Key::REMOTE_INVALID, Form::MESSAGE },
+    { KIOTTY_SPEC_SUBJECT_REMOTE_RULES, Key::REMOTE_RULES_SAME, Form::MESSAGE, WITHOUT_LINE,
+      KIOTTY_SPEC_STATUS_PRECONDITION },
+    { KIOTTY_SPEC_SUBJECT_REMOTE_RULES, Key::REMOTE_RULES_UNUSABLE, Form::MESSAGE, WITHOUT_LINE,
+      KIOTTY_SPEC_STATUS_INVALID_ARGUMENT },
+    { KIOTTY_SPEC_SUBJECT_REMOTE_RULES, Key::REMOTE_RULES_UNOPENED, Form::MESSAGE },
 };
 
 std::string describeFailure(const Session& session, const KiottySpecError& error);
@@ -103,6 +109,12 @@ int fail(const Session& session, KiottySpecStatus status)
                               last.value.subject != KIOTTY_SPEC_SUBJECT_NONE;
     if (is_described) { std::cerr << ": " << describeFailure(session, last.value); }
     std::cerr << "\n";
+    return 1;
+}
+
+int failMessage(MessageKey key, std::initializer_list<std::string_view> values)
+{
+    std::cerr << "error: " << formatMessage(key, values) << "\n";
     return 1;
 }
 

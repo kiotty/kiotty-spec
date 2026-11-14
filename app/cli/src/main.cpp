@@ -29,6 +29,7 @@ void printCommandHelp(const CommandEntry& command);
 std::optional<CommandMatch> findCommand(const std::vector<std::string>& tokens);
 std::string findActorName(const Arguments& arguments);
 std::string findRoot(const Arguments& arguments);
+std::vector<std::string_view> findExtraFlags(const CommandEntry& command);
 std::string makeDatabasePath(const std::string& root);
 int openAndRun(const CommandEntry& command, const Session& session);
 
@@ -75,9 +76,7 @@ int runTokens(const std::vector<std::string>& tokens)
     }
     const CommandMatch found = *match;
     const CommandEntry& command = commands().at(found.index);
-    const bool is_diff = command.group == "diff";
-    const std::vector<std::string_view> extra_flags =
-        is_diff ? DIFF_FLAGS : std::vector<std::string_view>();
+    const std::vector<std::string_view> extra_flags = findExtraFlags(command);
     const Arguments arguments = parseArguments(tokens, found.consumed, extra_flags);
     const bool has_help_flag = arguments.flag("help");
     if (has_help_flag) {
@@ -95,7 +94,7 @@ int runCommand(const CommandEntry& command, const Arguments& arguments)
     KiottySpecConfiguration configuration {};
     const KiottySpecContextResult created = KiottySpec_createContext(&configuration);
     if (created.code != KIOTTY_SPEC_STATUS_SUCCESS) { return failWithoutContext(created.code); }
-    const Session session {*created.value, *actor, arguments};
+    const Session session {*created.value, *actor, arguments, findRoot(arguments)};
     const int code = openAndRun(command, session);
     KiottySpec_releaseContext(&session.context);
     return code;
@@ -103,7 +102,7 @@ int runCommand(const CommandEntry& command, const Arguments& arguments)
 
 int openAndRun(const CommandEntry& command, const Session& session)
 {
-    const std::string database = makeDatabasePath(findRoot(session.arguments));
+    const std::string database = makeDatabasePath(session.root);
     const KiottySpecStatus opened = KiottySpec_open(&session.context, textOf(database)).code;
     if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, opened); }
     return command.run(session);
@@ -167,6 +166,13 @@ std::string findRoot(const Arguments& arguments)
         probe = parent;
     }
     return pathToUtf8(current);
+}
+
+std::vector<std::string_view> findExtraFlags(const CommandEntry& command)
+{
+    if (command.group == "diff") { return DIFF_FLAGS; }
+    if (command.group == "remote") { return REMOTE_FLAGS; }
+    return std::vector<std::string_view>();
 }
 
 std::string makeDatabasePath(const std::string& root)

@@ -46,6 +46,20 @@ const std::vector<CommandEntry> COMMAND_TABLE = {
       setDecision },
     { "diff", "", Key::DIFF_SYNOPSIS, Key::DIFF_SUMMARY, runDiff },
     { "model", "", Key::MODEL_SYNOPSIS, Key::MODEL_SUMMARY, showModel },
+    { "remote", "open", Key::REMOTE_OPEN_SYNOPSIS, Key::REMOTE_OPEN_SUMMARY, openRemote },
+    { "remote", "close", Key::REMOTE_CLOSE_SYNOPSIS, Key::REMOTE_CLOSE_SUMMARY, closeRemote },
+    { "remote", "push", Key::REMOTE_PUSH_SYNOPSIS, Key::REMOTE_PUSH_SUMMARY, pushRemoteRules },
+    { "remote", "check", Key::REMOTE_CHECK_SYNOPSIS, Key::REMOTE_CHECK_SUMMARY,
+      checkRemoteRules },
+    { "remote", "pull", Key::REMOTE_PULL_SYNOPSIS, Key::REMOTE_PULL_SUMMARY, fetchRemoteRules },
+    { "remote", "list", Key::REMOTE_LIST_SYNOPSIS, Key::REMOTE_LIST_SUMMARY, listRemoteRules },
+    { "remote", "diff", Key::REMOTE_DIFF_SYNOPSIS, Key::REMOTE_DIFF_SUMMARY, diffRemoteRules },
+    { "remote", "body", Key::REMOTE_BODY_SYNOPSIS, Key::REMOTE_BODY_SUMMARY,
+      showRemoteRuleBody },
+    { "remote", "accept", Key::REMOTE_ACCEPT_SYNOPSIS, Key::REMOTE_ACCEPT_SUMMARY,
+      acceptRemoteRules },
+    { "remote", "discard", Key::REMOTE_DISCARD_SYNOPSIS, Key::REMOTE_DISCARD_SUMMARY,
+      dropRemoteRules },
 };
 
 }

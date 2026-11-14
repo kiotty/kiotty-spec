@@ -12,6 +12,7 @@
 namespace kiotty::cli {
 
 int check(const Session& session, KiottySpecStatus status);
+int failMessage(MessageKey key, std::initializer_list<std::string_view> values);
 std::optional<std::string> readPositional(const Session& session, size_t index);
 std::optional<uint32_t> readNumberOption(const Session& session, std::string_view name,
                                          uint32_t fallback);
@@ -68,6 +69,7 @@ int showItem(const Session& session);
 int listItems(const Session& session);
 int listChildren(const Session& session);
 int showBody(const Session& session);
+int printItemBody(const Session& session, const std::string& id);
 int removeItem(const Session& session);
 int showTags(const Session& session);
 int setTag(const Session& session);
@@ -87,5 +89,17 @@ int showDecision(const Session& session);
 int setDecision(const Session& session);
 int showModel(const Session& session);
 int printDiffSummary(const Session& session, const KiottySpecDiffQuery& query);
+
+std::optional<KiottySpecItemKind> parseRemoteKind(std::string_view text);
+int openRemote(const Session& session);
+int closeRemote(const Session& session);
+int pushRemoteRules(const Session& session);
+int checkRemoteRules(const Session& session);
+int fetchRemoteRules(const Session& session);
+int listRemoteRules(const Session& session);
+int diffRemoteRules(const Session& session);
+int showRemoteRuleBody(const Session& session);
+int acceptRemoteRules(const Session& session);
+int dropRemoteRules(const Session& session);
 
 }

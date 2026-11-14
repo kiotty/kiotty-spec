@@ -158,9 +158,14 @@ int showBody(const Session& session)
 {
     const std::optional<std::string> id = readPositional(session, 0);
     if (!id) { return usage(findMessage(MessageKey::ITEM_BODY_USAGE)); }
+    return printItemBody(session, *id);
+}
+
+int printItemBody(const Session& session, const std::string& id)
+{
     std::vector<char> buffer(KIOTTY_SPEC_MAX_BODY_LENGTH + 1);
     const KiottySpecSizeResult read = KiottySpec_readItemBody(
-        &session.context, textOf(*id), KiottySpecBuffer { buffer.data(), buffer.size() });
+        &session.context, textOf(id), KiottySpecBuffer { buffer.data(), buffer.size() });
     if (read.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, read.code); }
     std::fwrite(buffer.data(), 1, read.value, stdout);
     if (read.value > 0 && buffer[read.value - 1] != '\n') { std::fputc('\n', stdout); }

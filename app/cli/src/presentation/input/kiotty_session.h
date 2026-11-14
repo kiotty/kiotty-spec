@@ -29,6 +29,7 @@ struct Session {
     KiottySpecContext& context;
     KiottySpecActor actor {KIOTTY_SPEC_ACTOR_AI};
     Arguments arguments {};
+    std::string root {};
 };
 
 constexpr int USAGE_EXIT_CODE = 2;
@@ -86,5 +87,6 @@ const std::vector<CommandEntry>& commands();
 
 int runDiff(const Session& session);
 extern const std::vector<std::string_view> DIFF_FLAGS;
+extern const std::vector<std::string_view> REMOTE_FLAGS;
 
 }

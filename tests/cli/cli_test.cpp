@@ -209,6 +209,20 @@ bool testParseArgumentsBytes()
     return passed;
 }
 
+// UT-092: ks remote 명령의 Kind 인자는 rule 만 받는다.
+bool testParseRemoteKind()
+{
+    const std::optional<KiottySpecItemKind> rule = parseRemoteKind("rule");
+    bool passed = expectTrue(rule == KIOTTY_SPEC_ITEM_KIND_RULE, "rule is accepted");
+    passed = expectTrue(!parseRemoteKind("private_rule"), "private_rule is rejected") && passed;
+    passed = expectTrue(!parseRemoteKind("전용 개발 수칙"), "private rule model name is rejected") && passed;
+    passed = expectTrue(!parseRemoteKind("requirement"), "other kind is rejected") && passed;
+    passed = expectTrue(!parseRemoteKind("RULE"), "case differs") && passed;
+    passed = expectTrue(!parseRemoteKind(""), "empty text is rejected") && passed;
+    passed = expectTrue(!parseRemoteKind(appendNullByte("rule")), "null byte is rejected") && passed;
+    return passed;
+}
+
 }
 
 int main()
@@ -223,6 +237,7 @@ int main()
         {"parse arguments empty", testParseArgumentsEmpty},
         {"parse arguments length", testParseArgumentsLength},
         {"parse arguments bytes", testParseArgumentsBytes},
+        {"parse remote kind", testParseRemoteKind},
     };
 
     int failed = 0;
