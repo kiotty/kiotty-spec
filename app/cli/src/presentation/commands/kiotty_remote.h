@@ -12,11 +12,8 @@ namespace kiotty::cli {
 
 struct RemotePaths {
     std::filesystem::path kiotty {};
-    std::filesystem::path directory {};
+    std::filesystem::path clone {};
     std::filesystem::path rules {};
-    std::filesystem::path commit {};
-    std::filesystem::path exported {};
-    std::filesystem::path work {};
 };
 
 struct RuleDiffRow {
@@ -62,15 +59,14 @@ using RemoteRulesCommand = int (*)(const Session& local, const Session& remote);
 constexpr std::string_view RULE_FILE_NAME = "rule.kisp";
 
 RemotePaths findRemotePaths(const Session& session);
-bool prepareRemoteDirectory(const RemotePaths& paths);
-bool storePulledRules(const RemotePaths& paths, const std::string& commit);
-std::optional<std::string> readPulledCommit(const RemotePaths& paths);
-void removePulledRules(const RemotePaths& paths);
+bool ensureClone(const RemotePaths& paths, const std::string& url);
+bool moveClone(const RemotePaths& paths, const std::string& commit);
+bool resetClone(const RemotePaths& paths, const std::string& commit);
+std::optional<std::string> readCloneHead(const RemotePaths& paths);
 std::optional<std::string> publishRules(const Session& session, const KiottySpecRemote& remote,
                                         const RemotePaths& paths);
 std::optional<std::string> readRemoteCommit(const std::string& url);
-std::optional<std::string> cloneRemote(const std::string& url, const RemotePaths& paths);
-void removeQuietly(const std::filesystem::path& path);
+bool removeClone(const RemotePaths& paths);
 bool writeText(const std::filesystem::path& path, std::string_view text);
 std::string trimLine(std::string_view text);
 

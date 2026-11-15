@@ -278,6 +278,26 @@ bool hasRelation(KiottySpecContext* context, const char* from, uint32_t relation
     return false;
 }
 
+size_t countOutgoing(KiottySpecContext* context, const char* from)
+{
+    const KiottySpecItemHandleResult from_handle = KiottySpec_findItem(context, textOf(from));
+    const KiottySpecCursorResult cursor = KiottySpec_openRelationCursor(context, textOf(from), KIOTTY_SPEC_DIRECTION_BOTH);
+    KiottySpecRelationPage page {};
+    KiottySpec_fetchRelationPage(context, cursor.value, &page);
+    KiottySpec_closeCursor(context, cursor.value);
+    size_t count = 0;
+    for (size_t index = 0; index < page.length; ++index) {
+        if (page.elements[index].from == from_handle.value) { ++count; }
+    }
+    return count;
+}
+
+std::string summaryOf(KiottySpecContext* context, const char* id)
+{
+    const KiottySpecItemResult item = KiottySpec_readItem(context, textOf(id));
+    return ok(item.code) ? std::string(item.value.summary) : std::string();
+}
+
 std::string titleOf(KiottySpecContext* context, const char* id)
 {
     const KiottySpecItemResult item = KiottySpec_readItem(context, textOf(id));
@@ -311,7 +331,7 @@ bool testRemoteState()
 {
     const Rule rules[] = {{"RULE-001", "R1", "본문\n", 0, nullptr}};
     KiottySpecContext* context = openRules("kiotty_rule_remote", rules, 1);
-    bool passed = expectTrue(ok(KiottySpec_readRemote(context).code) && KiottySpec_readRemote(context).value.url[0] == '\0', "no remote at first");
+    bool passed = expectTrue(ok(KiottySpec_readRemote(context).code) && KiottySpec_readRemote(context).value.url[0] == '\0' && KiottySpec_readRemote(context).value.rule_base[0] == '\0', "no remote at first");
     const KiottySpecRemote remote = remoteOf("https://example.com/rules.git", "abc123");
     passed = expectTrue(ok(KiottySpec_writeRemote(context, &remote).code), "write while done") && passed;
     const KiottySpecRemoteResult read = KiottySpec_readRemote(context);
@@ -375,7 +395,8 @@ bool testRuleDiff()
     passed = expectTrue(rows[2].changed_fields == KIOTTY_SPEC_CHANGED_FIELD_BODY, "body row") && passed;
     passed = expectTrue(rows[3].changed_fields == KIOTTY_SPEC_CHANGED_FIELD_TAGS, "tag row") && passed;
     passed = expectTrue(rows[4].changed_fields == KIOTTY_SPEC_CHANGED_FIELD_PARENT, "parent row") && passed;
-    passed = expectTrue(std::strcmp(rows[5].id, "RULE-007") == 0 && rows[5].change == KIOTTY_SPEC_CHANGE_ADDED, "added row") && passed;
+    passed = expectTrue(std::strcmp(rows[5].id, "RULE-007") == 0 && rows[5].change == KIOTTY_SPEC_CHANGE_ADDED && std::strcmp(rows[5].title, "원격에만") == 0, "added row") && passed;
+    passed = expectTrue(std::strcmp(rows[2].id, "RULE-004") == 0 && std::strcmp(rows[3].id, "RULE-005") == 0 && std::strcmp(rows[4].id, "RULE-006") == 0, "modified row ids") && passed;
     KiottySpec_closeCursor(local, cursor.value);
     remote = openAt(rootOf("kiotty_rule_diff_remote")).value;
     const KiottySpecCursorResult again = KiottySpec_openRuleDiffCursor(local, remote);
@@ -428,6 +449,9 @@ bool testRuleBodyDiff()
     const KiottySpecCursorResult kept = KiottySpec_openRuleBodyDiffCursor(local, remote, textOf("RULE-004"));
     passed = expectTrue(joinPieces(local, kept.value, KIOTTY_SPEC_TEXT_CHANGE_UNCHANGED, &is_aligned) == "a\nc\n", "unchanged lines") && passed;
     KiottySpec_closeCursor(local, kept.value);
+    const KiottySpecCursorResult changed = KiottySpec_openRuleBodyDiffCursor(local, remote, textOf("RULE-004"));
+    passed = expectTrue(joinPieces(local, changed.value, KIOTTY_SPEC_TEXT_CHANGE_ADDED, &is_aligned) == "B\n", "added line") && passed;
+    KiottySpec_closeCursor(local, changed.value);
     const KiottySpecCursorResult added = KiottySpec_openRuleBodyDiffCursor(local, remote, textOf("RULE-007"));
     passed = expectTrue(joinPieces(local, added.value, KIOTTY_SPEC_TEXT_CHANGE_ADDED, &is_aligned) == "새 수칙\n둘째 줄\n", "remote only body") && passed;
     KiottySpec_closeCursor(local, added.value);
@@ -436,6 +460,9 @@ bool testRuleBodyDiff()
     passed = expectTrue(is_aligned, "pieces start on utf-8 boundaries") && passed;
     KiottySpec_closeCursor(local, longer.value);
     passed = expectTrue(KiottySpec_openRuleBodyDiffCursor(local, remote, textOf("RULE-999")).code == KIOTTY_SPEC_STATUS_NOT_FOUND, "missing rule") && passed;
+    KiottySpec_startCheckpoint(local, KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING, textOf("요구"));
+    addItem(local, KIOTTY_SPEC_ITEM_KIND_REQUIREMENT, "REQ-001", "요구");
+    passed = expectTrue(KiottySpec_openRuleBodyDiffCursor(local, remote, textOf("REQ-001")).code == KIOTTY_SPEC_STATUS_NOT_FOUND, "other kind") && passed;
     KiottySpec_closeCursor(local, rules.value);
     closeProject(remote, "kiotty_rule_body_remote");
     closeProject(local, "kiotty_rule_body_local");
@@ -470,6 +497,9 @@ bool testExportRules()
                             checkpoint.value.step == KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING, "one done checkpoint") && passed;
     passed = expectTrue(titleOf(exported, "RULE-002") == "하위" && bodyOf(exported, "RULE-002") == "하위 본문\n", "rule title and body") && passed;
     passed = expectTrue(hasParent(exported, "RULE-002", "RULE-001") && tagOf(exported, "RULE-002", RULE_KIND_TAG) == 4, "rule parent and tag") && passed;
+    passed = expectTrue(titleOf(exported, "RULE-001") == "상위" && bodyOf(exported, "RULE-001") == "상위 본문\n" &&
+                            tagOf(exported, "RULE-001", RULE_KIND_TAG) == 1 && summaryOf(exported, "RULE-001") == summaryOf(local, "RULE-001"),
+                        "parent rule fields") && passed;
     passed = expectTrue(!exists(exported, "PRULE-001") && !exists(exported, "REQ-001"), "only rules") && passed;
     passed = expectTrue(KiottySpec_readRemote(exported).value.url[0] == '\0', "no remote state") && passed;
     char decision[64] {};
@@ -512,6 +542,23 @@ bool testAcceptRules()
     KiottySpecContext* remote = openRules("kiotty_rule_accept_remote", ACCEPTED_RULES, 4);
     const KiottySpecAcceptInput input = acceptInput("abc1234");
     bool passed = expectTrue(KiottySpec_acceptRules(local, remote, &input, KIOTTY_SPEC_ACTOR_AI).code == KIOTTY_SPEC_STATUS_PERMISSION, "ai accept");
+    const std::string long_title(KIOTTY_SPEC_MAX_TITLE_LENGTH + 1, 'x');
+    KiottySpecAcceptInput bad = input;
+    bad.title = textOf(long_title.c_str());
+    passed = expectTrue(KiottySpec_acceptRules(local, remote, &bad, KIOTTY_SPEC_ACTOR_USER).code == KIOTTY_SPEC_STATUS_CAPACITY_EXCEEDED &&
+                            KiottySpec_readLastError(local).value.subject == KIOTTY_SPEC_SUBJECT_TITLE, "long title") && passed;
+    bad = input;
+    bad.title = textOf("");
+    passed = expectTrue(KiottySpec_acceptRules(local, remote, &bad, KIOTTY_SPEC_ACTOR_USER).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT &&
+                            KiottySpec_readLastError(local).value.subject == KIOTTY_SPEC_SUBJECT_TITLE, "empty title") && passed;
+    bad = input;
+    bad.summary = textOf("\xff");
+    passed = expectTrue(KiottySpec_acceptRules(local, remote, &bad, KIOTTY_SPEC_ACTOR_USER).code == KIOTTY_SPEC_STATUS_INVALID_UTF8 &&
+                            KiottySpec_readLastError(local).value.subject == KIOTTY_SPEC_SUBJECT_SUMMARY, "summary not utf-8") && passed;
+    bad = input;
+    bad.rule_base = textOf("ABC");
+    passed = expectTrue(KiottySpec_acceptRules(local, remote, &bad, KIOTTY_SPEC_ACTOR_USER).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT &&
+                            KiottySpec_readLastError(local).value.subject == KIOTTY_SPEC_SUBJECT_REMOTE, "upper case base") && passed;
     KiottySpecContext* same = openInspected("kiotty_rule_accept_same", INSPECTED_RULES, 3);
     const KiottySpecAcceptResult unchanged = KiottySpec_acceptRules(local, same, &input, KIOTTY_SPEC_ACTOR_USER);
     passed = expectTrue(unchanged.code == KIOTTY_SPEC_STATUS_PRECONDITION && KiottySpec_readLastError(local).value.subject == KIOTTY_SPEC_SUBJECT_REMOTE_RULES, "same rules") && passed;
@@ -521,20 +568,25 @@ bool testAcceptRules()
     const std::string remote_text = readAll(remote_path);
     writeAll(remote_path, replaceFirstLine(remote_text, "#kisp 2 model 1"));
     remote = openAt(rootOf("kiotty_rule_accept_remote")).value;
-    passed = expectTrue(KiottySpec_acceptRules(local, remote, &input, KIOTTY_SPEC_ACTOR_USER).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "other model version") && passed;
+    passed = expectTrue(KiottySpec_acceptRules(local, remote, &input, KIOTTY_SPEC_ACTOR_USER).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT &&
+                            KiottySpec_readLastError(local).value.subject == KIOTTY_SPEC_SUBJECT_REMOTE_RULES, "other model version") && passed;
     KiottySpec_releaseContext(remote);
     writeAll(remote_path, remote_text);
     remote = openAt(rootOf("kiotty_rule_accept_remote")).value;
     KiottySpec_startCheckpoint(local, KIOTTY_SPEC_STEP_CODE_INSPECTING, textOf("진행 중"));
-    passed = expectTrue(KiottySpec_acceptRules(local, remote, &input, KIOTTY_SPEC_ACTOR_USER).code == KIOTTY_SPEC_STATUS_PRECONDITION, "running checkpoint") && passed;
+    passed = expectTrue(KiottySpec_acceptRules(local, remote, &input, KIOTTY_SPEC_ACTOR_USER).code == KIOTTY_SPEC_STATUS_PRECONDITION &&
+                            KiottySpec_readLastError(local).value.subject == KIOTTY_SPEC_SUBJECT_CHECKPOINT, "running checkpoint") && passed;
     complete(local);
+    const KiottySpecRemote address = remoteOf("https://example.com/rules.git", "");
+    KiottySpec_writeRemote(local, &address);
     const KiottySpecAcceptResult accepted = KiottySpec_acceptRules(local, remote, &input, KIOTTY_SPEC_ACTOR_USER);
     passed = expectTrue(ok(accepted.code), "accept") && passed;
     const KiottySpecCheckpointResult checkpoint = KiottySpec_readCheckpoint(local, KIOTTY_SPEC_CHECKPOINT_CURRENT);
     passed = expectTrue(accepted.checkpoint == KiottySpec_readPosition(local).value.current && checkpoint.value.step == KIOTTY_SPEC_STEP_CHANGE_REQUEST_REPORTED &&
                             checkpoint.value.state == KIOTTY_SPEC_CHECKPOINT_STATE_RUNNING, "running step 1") && passed;
     const char* request = accepted.change_request;
-    passed = expectTrue(titleOf(local, request) == "공통 개발 수칙 받기" && bodyOf(local, request) == "## 전용 개발 수칙 처리 표\n", "request text") && passed;
+    passed = expectTrue(titleOf(local, request) == "공통 개발 수칙 받기" && bodyOf(local, request) == "## 전용 개발 수칙 처리 표\n" &&
+                            summaryOf(local, request) == "원격 수칙 편입", "request text") && passed;
     passed = expectTrue(tagOf(local, request, SOURCE_TAG) == COMMON_RULE_SOURCE && tagOf(local, request, STATE_TAG) == OPEN_STATE &&
                             tagOf(local, request, ENTRY_STEP_TAG) == ENTRY_STEP_10, "request tags") && passed;
     passed = expectTrue(titleOf(local, "RULE-002") == "새 제목" && !exists(local, "RULE-003") && hasParent(local, "RULE-005", "RULE-004") &&
@@ -543,6 +595,7 @@ bool testAcceptRules()
     passed = expectTrue(hasRelation(local, request, AFFECTED_RULE, "RULE-002") && hasRelation(local, request, AFFECTED_RULE, "RULE-004") &&
                             hasRelation(local, request, AFFECTED_RULE, "RULE-005") && !hasRelation(local, request, AFFECTED_RULE, "RULE-001"), "affected rules") && passed;
     passed = expectTrue(std::strcmp(KiottySpec_readRemote(local).value.rule_base, "abc1234") == 0, "base follows accept") && passed;
+    passed = expectTrue(std::strcmp(KiottySpec_readRemote(local).value.url, address.url) == 0, "url stays") && passed;
     closeProject(remote, "kiotty_rule_accept_remote");
     closeProject(local, "kiotty_rule_accept_local");
     KiottySpecContext* early = openRules("kiotty_rule_accept_early", INSPECTED_RULES, 3);
@@ -573,6 +626,9 @@ bool testAcceptPrivateRules()
     bool passed = expectTrue(ok(accepted.code), "accept with private rules");
     passed = expectTrue(titleOf(local, "PRULE-002") == "P2" && bodyOf(local, "PRULE-002") == "P2 본문\n", "private rule content stays") && passed;
     passed = expectTrue(exists(local, "PRULE-001") && !exists(local, "RULE-003"), "private rule stays when its rule is removed") && passed;
+    passed = expectTrue(titleOf(local, "PRULE-001") == "P1" && bodyOf(local, "PRULE-001").empty() && summaryOf(local, "PRULE-002").empty() &&
+                            tagOf(local, "PRULE-002", RULE_KIND_TAG) == 0, "private rule fields stay") && passed;
+    passed = expectTrue(countOutgoing(local, "PRULE-001") == 0 && countOutgoing(local, "PRULE-002") == 1, "removed rule link cut") && passed;
     passed = expectTrue(hasRelation(local, "PRULE-002", REPLACED_RULE, "RULE-002"), "modified rule link stays") && passed;
     passed = expectTrue(hasRelation(local, accepted.change_request, AFFECTED_PRIVATE_RULE, "PRULE-001") &&
                             hasRelation(local, accepted.change_request, AFFECTED_PRIVATE_RULE, "PRULE-002"), "affected private rules") && passed;

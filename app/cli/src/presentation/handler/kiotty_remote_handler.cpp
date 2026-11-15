@@ -20,6 +20,8 @@ std::optional<KiottySpecItemKind> readRemoteKind(const Session& session, std::st
 std::optional<KiottySpecRemote> readRemoteState(const Session& session);
 std::optional<KiottySpecRemote> requireRemote(const Session& session);
 std::optional<KiottySpecRemote> makeRemote(std::string_view url, std::string_view base);
+int fetchClone(const RemotePaths& paths, const std::string& url);
+int runWithPulledRules(const Session& session, RemoteRulesCommand command);
 int runWithRemoteRules(const Session& session, const RemotePaths& paths,
                        RemoteRulesCommand command);
 int printPullCounts(const Session& local, const Session& remote);
@@ -27,6 +29,7 @@ int listRules(const Session& local, const Session& remote);
 int printRemoteDiff(const Session& local, const Session& remote);
 int printRemoteBody(const Session& local, const Session& remote);
 int acceptPulledRules(const Session& local, const Session& remote);
+int dropPulledCommit(const RemotePaths& paths, const KiottySpecRemote& remote);
 
 }
 
@@ -42,7 +45,10 @@ int openRemote(const Session& session)
     const std::string_view base = is_same_url ? previous.rule_base : "";
     const std::optional<KiottySpecRemote> remote = makeRemote(url, base);
     if (!remote) { return failMessage(MessageKey::REMOTE_INVALID, {}); }
-    return check(session, KiottySpec_writeRemote(&session.context, &remote.value()).code);
+    const KiottySpecStatus written = KiottySpec_writeRemote(&session.context, &remote.value()).code;
+    if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, written); }
+    const bool is_cloned = ensureClone(findRemotePaths(session), url);
+    return is_cloned ? 0 : 1;
 }
 
 int closeRemote(const Session& session)
@@ -50,8 +56,8 @@ int closeRemote(const Session& session)
     const KiottySpecRemote cleared {};
     const KiottySpecStatus written = KiottySpec_writeRemote(&session.context, &cleared).code;
     if (written != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, written); }
-    removeQuietly(findRemotePaths(session).directory);
-    return 0;
+    const bool is_removed = removeClone(findRemotePaths(session));
+    return is_removed ? 0 : 1;
 }
 
 int pushRemoteRules(const Session& session)
@@ -63,11 +69,7 @@ int pushRemoteRules(const Session& session)
     const std::optional<KiottySpecRemote> remote = requireRemote(session);
     if (!remote) { return 1; }
     const RemotePaths paths = findRemotePaths(session);
-    const bool is_prepared = prepareRemoteDirectory(paths);
-    if (!is_prepared) { return 1; }
     const std::optional<std::string> commit = publishRules(session, remote.value(), paths);
-    removeQuietly(paths.exported);
-    removeQuietly(paths.work);
     if (!commit) { return 1; }
     const std::optional<KiottySpecRemote> updated = makeRemote(remote.value().url, commit.value());
     if (!updated) { return failMessage(MessageKey::REMOTE_INVALID, {}); }
@@ -101,30 +103,23 @@ int fetchRemoteRules(const Session& session)
     const std::optional<KiottySpecRemote> remote = requireRemote(session);
     if (!remote) { return 1; }
     const RemotePaths paths = findRemotePaths(session);
-    const bool is_prepared = prepareRemoteDirectory(paths);
-    if (!is_prepared) { return 1; }
-    const std::optional<std::string> commit = cloneRemote(remote.value().url, paths);
-    const bool is_stored = commit.has_value() && storePulledRules(paths, commit.value());
-    removeQuietly(paths.work);
-    if (!is_stored) { return 1; }
-    const int printed = runWithRemoteRules(session, paths, printPullCounts);
-    const bool is_failed = printed != 0;
-    if (is_failed) { removePulledRules(paths); }
-    return printed;
+    const int pulled = fetchClone(paths, remote.value().url);
+    if (pulled != 0) { return pulled; }
+    return runWithRemoteRules(session, paths, printPullCounts);
 }
 
 int listRemoteRules(const Session& session)
 {
     const std::optional<KiottySpecItemKind> kind = readRemoteKind(session, "list");
     if (!kind) { return USAGE_EXIT_CODE; }
-    return runWithRemoteRules(session, findRemotePaths(session), listRules);
+    return runWithPulledRules(session, listRules);
 }
 
 int diffRemoteRules(const Session& session)
 {
     const std::optional<KiottySpecItemKind> kind = readRemoteKind(session, "diff");
     if (!kind) { return USAGE_EXIT_CODE; }
-    return runWithRemoteRules(session, findRemotePaths(session), printRemoteDiff);
+    return runWithPulledRules(session, printRemoteDiff);
 }
 
 int showRemoteRuleBody(const Session& session)
@@ -133,14 +128,14 @@ int showRemoteRuleBody(const Session& session)
     if (!kind) { return USAGE_EXIT_CODE; }
     const std::optional<std::string> id = readPositional(session, ID_POSITION);
     if (!id) { return usage(findMessage(MessageKey::REMOTE_BODY_USAGE)); }
-    return runWithRemoteRules(session, findRemotePaths(session), printRemoteBody);
+    return runWithPulledRules(session, printRemoteBody);
 }
 
 int acceptRemoteRules(const Session& session)
 {
     const std::optional<KiottySpecItemKind> kind = readRemoteKind(session, "accept");
     if (!kind) { return USAGE_EXIT_CODE; }
-    return runWithRemoteRules(session, findRemotePaths(session), acceptPulledRules);
+    return runWithPulledRules(session, acceptPulledRules);
 }
 
 int dropRemoteRules(const Session& session)
@@ -149,8 +144,9 @@ int dropRemoteRules(const Session& session)
     if (!kind) { return USAGE_EXIT_CODE; }
     const bool is_user = session.actor == KIOTTY_SPEC_ACTOR_USER;
     if (!is_user) { return failMessage(MessageKey::USER_ONLY, {}); }
-    removePulledRules(findRemotePaths(session));
-    return 0;
+    const std::optional<KiottySpecRemote> remote = requireRemote(session);
+    if (!remote) { return 1; }
+    return dropPulledCommit(findRemotePaths(session), remote.value());
 }
 
 namespace {
@@ -163,6 +159,44 @@ std::optional<KiottySpecItemKind> readRemoteKind(const Session& session, std::st
     return kind;
 }
 
+std::optional<KiottySpecRemote> makeRemote(std::string_view url, std::string_view base)
+{
+    KiottySpecRemote remote {};
+    const bool is_fit = url.size() < sizeof(remote.url) && base.size() < sizeof(remote.rule_base);
+    if (!is_fit) { return std::nullopt; }
+    url.copy(remote.url, url.size());
+    base.copy(remote.rule_base, base.size());
+    return remote;
+}
+
+int fetchClone(const RemotePaths& paths, const std::string& url)
+{
+    const std::optional<std::string> commit = readRemoteCommit(url);
+    if (!commit) { return 1; }
+    const bool has_commit = commit.value().size() > 0;
+    if (!has_commit) { return failMessage(MessageKey::REMOTE_RULE_FILE_MISSING, {}); }
+    const bool is_cloned = ensureClone(paths, url);
+    const bool is_moved = is_cloned && moveClone(paths, commit.value());
+    if (!is_moved) { return 1; }
+    std::error_code error {};
+    const bool has_rules = fs::is_regular_file(paths.rules, error);
+    if (!has_rules) { return failMessage(MessageKey::REMOTE_RULE_FILE_MISSING, {}); }
+    return 0;
+}
+
+int runWithPulledRules(const Session& session, RemoteRulesCommand command)
+{
+    const std::optional<KiottySpecRemote> remote = requireRemote(session);
+    if (!remote) { return 1; }
+    const RemotePaths paths = findRemotePaths(session);
+    const std::optional<std::string> head = readCloneHead(paths);
+    if (!head) { return 1; }
+    const std::string& commit = head.value();
+    const bool is_pulled = commit.size() > 0 && commit != remote.value().rule_base;
+    if (!is_pulled) { return failMessage(MessageKey::REMOTE_RULES_MISSING, {}); }
+    return runWithRemoteRules(session, paths, command);
+}
+
 std::optional<KiottySpecRemote> requireRemote(const Session& session)
 {
     const std::optional<KiottySpecRemote> remote = readRemoteState(session);
@@ -172,16 +206,6 @@ std::optional<KiottySpecRemote> requireRemote(const Session& session)
         failMessage(MessageKey::REMOTE_NOT_OPENED, {});
         return std::nullopt;
     }
-    return remote;
-}
-
-std::optional<KiottySpecRemote> makeRemote(std::string_view url, std::string_view base)
-{
-    KiottySpecRemote remote {};
-    const bool is_fit = url.size() < sizeof(remote.url) && base.size() < sizeof(remote.rule_base);
-    if (!is_fit) { return std::nullopt; }
-    url.copy(remote.url, url.size());
-    base.copy(remote.rule_base, base.size());
     return remote;
 }
 
@@ -205,7 +229,7 @@ int runWithRemoteRules(const Session& session, const RemotePaths& paths,
 
 int printPullCounts(const Session& local, const Session& remote)
 {
-    const std::optional<std::string> commit = readPulledCommit(findRemotePaths(local));
+    const std::optional<std::string> commit = readCloneHead(findRemotePaths(local));
     const std::optional<std::vector<RuleDiffRow>> rows = readRuleDiffs(local, remote);
     const bool is_read = commit.has_value() && rows.has_value();
     if (!is_read) { return 1; }
@@ -240,9 +264,8 @@ int printRemoteBody(const Session& local, const Session& remote)
 
 int acceptPulledRules(const Session& local, const Session& remote)
 {
-    const RemotePaths paths = findRemotePaths(local);
     const std::optional<KiottySpecRemote> state = readRemoteState(local);
-    const std::optional<std::string> commit = readPulledCommit(paths);
+    const std::optional<std::string> commit = readCloneHead(findRemotePaths(local));
     const std::optional<std::vector<RuleDiffRow>> rows = readRuleDiffs(local, remote);
     const bool is_ready = state.has_value() && commit.has_value() && rows.has_value();
     if (!is_ready) { return 1; }
@@ -257,9 +280,20 @@ int acceptPulledRules(const Session& local, const Session& remote)
     const KiottySpecAcceptResult accepted =
         KiottySpec_acceptRules(&local.context, &remote.context, &input, local.actor);
     if (accepted.code != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(local, accepted.code); }
-    removePulledRules(paths);
     printAcceptResult(accepted, impact);
     return 0;
+}
+
+int dropPulledCommit(const RemotePaths& paths, const KiottySpecRemote& remote)
+{
+    const std::optional<std::string> head = readCloneHead(paths);
+    if (!head) { return 1; }
+    const std::string base(remote.rule_base);
+    const bool is_pulled = head.value().size() > 0 && head.value() != base;
+    if (!is_pulled) { return 0; }
+    const bool has_base = base.size() > 0;
+    const bool is_dropped = has_base ? resetClone(paths, base) : removeClone(paths);
+    return is_dropped ? 0 : 1;
 }
 
 std::optional<KiottySpecRemote> readRemoteState(const Session& session)

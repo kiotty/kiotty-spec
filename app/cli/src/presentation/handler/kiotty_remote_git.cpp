@@ -14,9 +14,8 @@ namespace {
 
 namespace fs = std::filesystem;
 
-constexpr std::string_view COMMIT_FILE_NAME = "rule.commit";
-constexpr std::string_view EXPORT_FILE_NAME = "push.kisp";
-constexpr std::string_view IGNORED_ENTRY = "remote/";
+constexpr std::string_view CLONE_DIRECTORY_NAME = "rule";
+constexpr std::string_view IGNORED_ENTRY = "rule/";
 constexpr std::string_view BRANCH_PREFIX = "refs/heads/";
 constexpr std::string_view LINE_SPACES = " \t\r\n";
 constexpr std::chrono::seconds GIT_LIMIT {300};
@@ -24,8 +23,11 @@ constexpr size_t DIRECTORY_VERB_POSITION = 2;
 
 bool ensureIgnored(const RemotePaths& paths);
 bool hasLine(std::string_view text, std::string_view wanted);
+std::optional<std::string> readCloneOrigin(const RemotePaths& paths);
+bool hasClone(const RemotePaths& paths);
+std::optional<std::string> exportAndPush(const Session& session, const RemotePaths& paths);
 std::optional<std::string> commitAndPush(const Session& session, const RemotePaths& paths);
-bool commitRules(const Session& session, const std::string& work);
+bool commitRules(const Session& session, const std::string& clone);
 std::string findProjectName(const Session& session);
 std::string findHeadCommit(std::string_view listed);
 std::optional<std::string> requireGit(const std::vector<std::string>& arguments);
@@ -38,85 +40,43 @@ RemotePaths findRemotePaths(const Session& session)
 {
     RemotePaths paths {};
     paths.kiotty = pathFromUtf8(session.root) / ".kiotty";
-    paths.directory = paths.kiotty / "remote";
-    paths.rules = paths.directory / RULE_FILE_NAME;
-    paths.commit = paths.directory / COMMIT_FILE_NAME;
-    paths.exported = paths.directory / EXPORT_FILE_NAME;
-    paths.work = paths.directory / "work";
+    paths.clone = paths.kiotty / CLONE_DIRECTORY_NAME;
+    paths.rules = paths.clone / RULE_FILE_NAME;
     return paths;
 }
 
-bool prepareRemoteDirectory(const RemotePaths& paths)
+std::optional<std::string> readCloneHead(const RemotePaths& paths)
 {
-    std::error_code error {};
-    fs::remove_all(paths.work, error);
-    fs::create_directories(paths.directory, error);
-    if (error) {
-        failMessage(MessageKey::REMOTE_FILE_UNWRITABLE, {pathToUtf8(paths.directory)});
-        return false;
-    }
-    return ensureIgnored(paths);
-}
-
-bool storePulledRules(const RemotePaths& paths, const std::string& commit)
-{
-    const fs::path fetched = paths.work / RULE_FILE_NAME;
-    std::error_code error {};
-    const bool has_rules = fs::is_regular_file(fetched, error);
-    if (!has_rules) {
-        failMessage(MessageKey::REMOTE_RULE_FILE_MISSING, {});
-        return false;
-    }
-    fs::copy_file(fetched, paths.rules, fs::copy_options::overwrite_existing, error);
-    const bool is_copied = !error;
-    const bool is_saved = is_copied && writeText(paths.commit, commit + "\n");
-    if (!is_saved) { failMessage(MessageKey::REMOTE_FILE_UNWRITABLE, {pathToUtf8(paths.rules)}); }
-    return is_saved;
-}
-
-std::optional<std::string> readPulledCommit(const RemotePaths& paths)
-{
-    const std::optional<std::string> text = readFileText(pathToUtf8(paths.commit));
-    if (!text) {
-        failMessage(MessageKey::REMOTE_RULES_MISSING, {});
-        return std::nullopt;
-    }
-    return trimLine(text.value());
-}
-
-void removePulledRules(const RemotePaths& paths)
-{
-    removeQuietly(paths.rules);
-    removeQuietly(paths.commit);
-    removeQuietly(paths.work);
+    const bool has_clone = hasClone(paths);
+    if (!has_clone) { return std::string(); }
+    const std::string clone = pathToUtf8(paths.clone);
+    const GitRun head =
+        runGitCommand({"-C", clone, "rev-parse", "--verify", "--quiet", "HEAD"});
+    const bool is_finished = head.outcome == GitOutcome::FINISHED;
+    if (!is_finished) { return std::nullopt; }
+    const bool has_head = head.exit_code == 0;
+    if (!has_head) { return std::string(); }
+    return trimLine(head.output);
 }
 
 std::optional<std::string> publishRules(const Session& session, const KiottySpecRemote& remote,
                                         const RemotePaths& paths)
 {
-    const std::string exported = pathToUtf8(paths.exported);
-    const KiottySpecStatus written =
-        KiottySpec_exportRules(&session.context, textOf(exported)).code;
-    if (written != KIOTTY_SPEC_STATUS_SUCCESS) {
-        fail(session, written);
-        return std::nullopt;
-    }
     const std::optional<std::string> current = readRemoteCommit(remote.url);
     if (!current) { return std::nullopt; }
-    const bool is_moved = !current.value().empty() && current.value() != remote.rule_base;
+    const std::string& head = current.value();
+    const bool has_head = head.size() > 0;
+    const bool is_moved = has_head && head != remote.rule_base;
     if (is_moved) {
-        failMessage(MessageKey::REMOTE_CHANGED, {current.value()});
+        failMessage(MessageKey::REMOTE_CHANGED, {head});
         return std::nullopt;
     }
-    const std::optional<std::string> cloned = cloneRemote(remote.url, paths);
-    if (!cloned) { return std::nullopt; }
-    std::error_code error {};
-    fs::rename(paths.exported, paths.work / RULE_FILE_NAME, error);
-    if (error) {
-        failMessage(MessageKey::REMOTE_FILE_UNWRITABLE, {pathToUtf8(paths.work)});
-        return std::nullopt;
-    }
-    return commitAndPush(session, paths);
+    const bool is_cloned = ensureClone(paths, remote.url);
+    const bool is_ready = is_cloned && (!has_head || moveClone(paths, head));
+    if (!is_ready) { return std::nullopt; }
+    const std::optional<std::string> pushed = exportAndPush(session, paths);
+    if (!pushed) { removeClone(paths); }
+    return pushed;
 }
 
 std::optional<std::string> readRemoteCommit(const std::string& url)
@@ -126,22 +86,45 @@ std::optional<std::string> readRemoteCommit(const std::string& url)
     return findHeadCommit(listed.value());
 }
 
-std::optional<std::string> cloneRemote(const std::string& url, const RemotePaths& paths)
+bool ensureClone(const RemotePaths& paths, const std::string& url)
 {
-    const std::string work = pathToUtf8(paths.work);
-    const std::optional<std::string> cloned = requireGit(
-        {"clone", "--quiet", "--depth", "1", "--config", "core.autocrlf=false", url, work});
-    if (!cloned) { return std::nullopt; }
-    const GitRun head = runGit({"-C", work, "rev-parse", "--verify", "--quiet", "HEAD"}, GIT_LIMIT);
-    const bool has_head = head.outcome == GitOutcome::FINISHED && head.exit_code == 0;
-    if (!has_head) { return std::string(); }
-    return trimLine(head.output);
+    const bool is_ignored = ensureIgnored(paths);
+    if (!is_ignored) { return false; }
+    const std::optional<std::string> origin = readCloneOrigin(paths);
+    const bool is_same = origin.has_value() && origin.value() == url;
+    if (is_same) { return true; }
+    const bool is_removed = removeClone(paths);
+    if (!is_removed) { return false; }
+    const std::string clone = pathToUtf8(paths.clone);
+    const std::optional<std::string> cloned =
+        requireGit({"clone", "--quiet", "--config", "core.autocrlf=false", url, clone});
+    return cloned.has_value();
 }
 
-void removeQuietly(const fs::path& path)
+bool moveClone(const RemotePaths& paths, const std::string& commit)
+{
+    const std::string clone = pathToUtf8(paths.clone);
+    const std::optional<std::string> fetched =
+        requireGit({"-C", clone, "fetch", "--quiet", "origin"});
+    if (!fetched) { return false; }
+    return resetClone(paths, commit);
+}
+
+bool resetClone(const RemotePaths& paths, const std::string& commit)
+{
+    const std::string clone = pathToUtf8(paths.clone);
+    const std::optional<std::string> reset =
+        requireGit({"-C", clone, "reset", "--hard", "--quiet", commit});
+    return reset.has_value();
+}
+
+bool removeClone(const RemotePaths& paths)
 {
     std::error_code error {};
-    fs::remove_all(path, error);
+    fs::remove_all(paths.clone, error);
+    if (error) { failMessage(MessageKey::REMOTE_FILE_UNWRITABLE, {pathToUtf8(paths.clone)}); }
+    const bool is_removed = !error;
+    return is_removed;
 }
 
 namespace {
@@ -173,35 +156,65 @@ bool hasLine(std::string_view text, std::string_view wanted)
     return false;
 }
 
+std::optional<std::string> readCloneOrigin(const RemotePaths& paths)
+{
+    const bool has_clone = hasClone(paths);
+    if (!has_clone) { return std::nullopt; }
+    const std::string clone = pathToUtf8(paths.clone);
+    const GitRun origin = runGit({"-C", clone, "config", "--get", "remote.origin.url"}, GIT_LIMIT);
+    const bool is_read = origin.outcome == GitOutcome::FINISHED && origin.exit_code == 0;
+    if (!is_read) { return std::nullopt; }
+    return trimLine(origin.output);
+}
+
+bool hasClone(const RemotePaths& paths)
+{
+    std::error_code error {};
+    const bool is_directory = fs::is_directory(paths.clone / ".git", error);
+    return is_directory;
+}
+
+std::optional<std::string> exportAndPush(const Session& session, const RemotePaths& paths)
+{
+    const std::string exported = pathToUtf8(paths.rules);
+    const KiottySpecStatus written =
+        KiottySpec_exportRules(&session.context, textOf(exported)).code;
+    if (written != KIOTTY_SPEC_STATUS_SUCCESS) {
+        fail(session, written);
+        return std::nullopt;
+    }
+    return commitAndPush(session, paths);
+}
+
 std::optional<std::string> commitAndPush(const Session& session, const RemotePaths& paths)
 {
-    const std::string work = pathToUtf8(paths.work);
+    const std::string clone = pathToUtf8(paths.clone);
     const std::optional<std::string> added =
-        requireGit({"-C", work, "add", std::string(RULE_FILE_NAME)});
+        requireGit({"-C", clone, "add", std::string(RULE_FILE_NAME)});
     if (!added) { return std::nullopt; }
-    const GitRun staged = runGitCommand({"-C", work, "diff", "--cached", "--quiet"});
+    const GitRun staged = runGitCommand({"-C", clone, "diff", "--cached", "--quiet"});
     const bool is_finished = staged.outcome == GitOutcome::FINISHED;
     if (!is_finished) { return std::nullopt; }
     const bool has_changes = staged.exit_code != 0;
-    const bool is_committed = has_changes && commitRules(session, work);
+    const bool is_committed = has_changes && commitRules(session, clone);
     const bool is_failed = has_changes && !is_committed;
     if (is_failed) { return std::nullopt; }
-    const std::optional<std::string> head = requireGit({"-C", work, "rev-parse", "HEAD"});
+    const std::optional<std::string> head = requireGit({"-C", clone, "rev-parse", "HEAD"});
     if (!head) { return std::nullopt; }
     return trimLine(head.value());
 }
 
-bool commitRules(const Session& session, const std::string& work)
+bool commitRules(const Session& session, const std::string& clone)
 {
     const KiottySpecCheckpointResult latest =
         KiottySpec_readCheckpoint(&session.context, KIOTTY_SPEC_CHECKPOINT_CURRENT);
     const std::string message = formatMessage(
         MessageKey::PUSH_MESSAGE, {findProjectName(session), checkpointName(latest.handle)});
     const std::optional<std::string> committed =
-        requireGit({"-C", work, "commit", "--quiet", "-m", message});
+        requireGit({"-C", clone, "commit", "--quiet", "-m", message});
     if (!committed) { return false; }
     const std::optional<std::string> pushed =
-        requireGit({"-C", work, "push", "--quiet", "origin", "HEAD"});
+        requireGit({"-C", clone, "push", "--quiet", "origin", "HEAD"});
     return pushed.has_value();
 }
 

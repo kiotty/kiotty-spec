@@ -28,6 +28,7 @@ static_assert(sizeof(RuleStep) == 160, "unexpected padding");
 bool hasMoreRules(RulePair pair, RuleOrder walk);
 RuleStep compareStep(RulePair pair, RuleOrder walk);
 RuleDiffRecord makeRecord(RuleSide side, KiottySpecChange change, uint32_t fields);
+HandleResult findRule(const Workspace& workspace, Span<const char> id);
 Span<const char> bodyOf(const Workspace& workspace, const HandleResult& rule);
 size_t findPieceEnd(Span<const char> text, size_t start, size_t end);
 CursorRow packPiece(TextSegment segment);
@@ -65,8 +66,8 @@ CursorIdResult RuleDiffer::openBody(const Workspace& remote, Span<const char> id
 {
     const KiottySpecStatus free = checkFree(_store.active().body, CursorKind::BODY_DIFF);
     if (free != KIOTTY_SPEC_STATUS_SUCCESS) { return CursorIdResult::failure(free); }
-    const HandleResult local_rule = _local.items.reader().find(id);
-    const HandleResult remote_rule = remote.items.reader().find(id);
+    const HandleResult local_rule = findRule(_local, id);
+    const HandleResult remote_rule = findRule(remote, id);
     const bool has_any = local_rule || remote_rule;
     if (!has_any) {
         return CursorIdResult::failure(
@@ -235,6 +236,17 @@ RuleDiffRecord makeRecord(RuleSide side, KiottySpecChange change, uint32_t field
     record.change = static_cast<uint32_t>(change);
     record.changed_fields = fields;
     return record;
+}
+
+HandleResult findRule(const Workspace& workspace, Span<const char> id)
+{
+    const HandleResult found = workspace.items.reader().find(id);
+    if (!found) { return found; }
+    const Result<const entity::ItemState&, KiottySpecStatus> state =
+        workspace.items.reader().get(found.value);
+    const bool is_rule = state && (*state.value).kind == entity::ItemKind::RULE;
+    if (!is_rule) { return HandleResult::failure(KIOTTY_SPEC_STATUS_NOT_FOUND); }
+    return found;
 }
 
 Span<const char> bodyOf(const Workspace& workspace, const HandleResult& rule)

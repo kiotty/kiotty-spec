@@ -157,16 +157,20 @@ DraftResult RemoteParser::parseAccept(const KiottySpecAcceptInput* input) const
     }
     const Boundary boundary(_context);
     const TextResult description = boundary.parse(input->description, Field::DESCRIPTION);
+    if (!description) { return DraftResult::failure(description.code); }
     const TextResult title = boundary.parse(input->title, Field::TITLE);
-    const TextResult summary = boundary.parse(input->summary, Field::SUMMARY);
-    const TextResult body = boundary.parse(input->body, Field::BODY);
-    const TextResult base = parseCommit(input->rule_base);
-    const bool is_parsed = description && title && summary && body && base;
-    if (!is_parsed) { return DraftResult::failure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
+    if (!title) { return DraftResult::failure(title.code); }
     const bool is_untitled = title.value.length() == 0;
     if (is_untitled) {
-        return DraftResult::failure(raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT));
+        return DraftResult::failure(_context.failure().raise(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT,
+                                                             KIOTTY_SPEC_SUBJECT_TITLE));
     }
+    const TextResult summary = boundary.parse(input->summary, Field::SUMMARY);
+    if (!summary) { return DraftResult::failure(summary.code); }
+    const TextResult body = boundary.parse(input->body, Field::BODY);
+    if (!body) { return DraftResult::failure(body.code); }
+    const TextResult base = parseCommit(input->rule_base);
+    if (!base) { return DraftResult::failure(base.code); }
     impl::AcceptDraft draft {};
     draft.description = description.value;
     draft.title = title.value;

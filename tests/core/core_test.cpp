@@ -300,6 +300,27 @@ std::string lineDiff(const char* before, const char* after, core::TextChange cha
     return joined;
 }
 
+std::string rebuildSide(const char* before, const char* after, core::TextChange side)
+{
+    static std::vector<uint8_t> moves(core::LINE_MOVE_CELLS);
+    static std::vector<uint16_t> lengths(core::LINE_LENGTH_CELLS);
+    static std::vector<uint16_t> starts(core::LINE_START_CELLS);
+    static std::vector<core::TextSegment> segments(core::MAX_LINE_SEGMENTS);
+    const core::LineWork work {core::Span<uint8_t>(moves.data(), moves.size()), core::Span<uint16_t>(lengths.data(), lengths.size()),
+                               core::Span<uint16_t>(starts.data(), starts.size())};
+    const auto result = core::diffLines(core::Span<const char>(before, std::strlen(before)), core::Span<const char>(after, std::strlen(after)),
+                                        work, core::Span<core::TextSegment>(segments.data(), segments.size()));
+    const size_t count = result ? result.value : 0;
+    std::string joined;
+    for (size_t index = 0; index < count; ++index) {
+        const core::TextSegment segment = segments[index];
+        const char* text = segment.source == core::TextSource::BEFORE ? before : after;
+        const bool is_side = segment.change == core::TextChange::UNCHANGED || segment.change == side;
+        if (is_side) { joined.append(text + segment.offset, segment.length); }
+    }
+    return joined;
+}
+
 bool testLineDiff()
 {
     using core::TextChange;
@@ -310,6 +331,11 @@ bool testLineDiff()
     ok = expectTrue(lineDiff("a\n", "a\nb\n", TextChange::ADDED, &count) == "b\n" && count == 2, "line added at end") && ok;
     ok = expectTrue(lineDiff("", "x\ny\n", TextChange::ADDED, &count) == "x\ny\n" && count == 1, "empty before") && ok;
     ok = expectTrue(lineDiff("a\nlast", "a\nlast!", TextChange::REMOVED, &count) == "last", "last line without new line") && ok;
+    const char* before = "a\nb\nc\nd\n";
+    const char* after = "a\nB\nc\nd\ne\n";
+    const std::string kept = lineDiff(before, after, TextChange::UNCHANGED, &count);
+    ok = expectTrue(rebuildSide(before, after, TextChange::REMOVED) == before && rebuildSide(before, after, TextChange::ADDED) == after && kept == "a\nc\nd\n",
+                    "segments rebuild both texts") && ok;
     std::string many;
     for (size_t index = 0; index <= core::MAX_DIFF_LINES; ++index) { many += "x\n"; }
     std::vector<uint16_t> starts(core::LINE_START_CELLS);
