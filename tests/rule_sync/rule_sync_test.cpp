@@ -347,6 +347,10 @@ bool testRemoteState()
     KiottySpecRemote unended = remoteOf("", "");
     std::memset(unended.url, 'a', sizeof(unended.url));
     passed = expectTrue(KiottySpec_writeRemote(context, &unended).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "url without nul") && passed;
+    KiottySpecRemote longest = remoteOf("", "");
+    std::memset(longest.url, 'a', sizeof(longest.url) - 1);
+    passed = expectTrue(ok(KiottySpec_writeRemote(context, &longest).code), "url of max length") && passed;
+    KiottySpec_writeRemote(context, &remote);
     const KiottySpecRemote broken = remoteOf("\xff", "");
     passed = expectTrue(KiottySpec_writeRemote(context, &broken).code == KIOTTY_SPEC_STATUS_INVALID_UTF8, "url not utf-8") && passed;
     passed = expectTrue(std::strcmp(KiottySpec_readRemote(context).value.rule_base, "abc123") == 0, "failed writes keep value") && passed;
@@ -562,6 +566,16 @@ bool testAcceptRules()
     KiottySpecContext* same = openInspected("kiotty_rule_accept_same", INSPECTED_RULES, 3);
     const KiottySpecAcceptResult unchanged = KiottySpec_acceptRules(local, same, &input, KIOTTY_SPEC_ACTOR_USER);
     passed = expectTrue(unchanged.code == KIOTTY_SPEC_STATUS_PRECONDITION && KiottySpec_readLastError(local).value.subject == KIOTTY_SPEC_SUBJECT_REMOTE_RULES, "same rules") && passed;
+    const std::string max_title(KIOTTY_SPEC_MAX_TITLE_LENGTH, 'x');
+    bad = input;
+    bad.title = textOf(max_title.c_str());
+    passed = expectTrue(KiottySpec_acceptRules(local, same, &bad, KIOTTY_SPEC_ACTOR_USER).code == KIOTTY_SPEC_STATUS_PRECONDITION &&
+                            KiottySpec_readLastError(local).value.subject == KIOTTY_SPEC_SUBJECT_REMOTE_RULES, "title of max length passes parse") && passed;
+    const char null_title[] = {'a', '\0', 'b'};
+    bad = input;
+    bad.title = KiottySpecText{null_title, sizeof(null_title)};
+    passed = expectTrue(KiottySpec_acceptRules(local, same, &bad, KIOTTY_SPEC_ACTOR_USER).code != KIOTTY_SPEC_STATUS_SUCCESS &&
+                            KiottySpec_readLastError(local).value.subject == KIOTTY_SPEC_SUBJECT_TITLE, "title with null byte") && passed;
     closeProject(same, "kiotty_rule_accept_same");
     const std::string remote_path = databaseOf(rootOf("kiotty_rule_accept_remote"));
     KiottySpec_releaseContext(remote);

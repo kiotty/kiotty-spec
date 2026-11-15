@@ -34,3 +34,6 @@ jobs:
             "$bin/kiotty_${test}_test$ext"
             echo "::endgroup::"
           done
+          echo "::group::kiotty_ks_scenario_test"
+          "$bin/kiotty_ks_scenario_test$ext" "$bin/ks$ext"
+          echo "::endgroup::"

@@ -139,6 +139,13 @@ kiotty_warnings(kiotty_cli_test)
 kiotty_no_exceptions(kiotty_cli_test)
 kiotty_windows_definitions(kiotty_cli_test)
 
+# 시스템 테스트: 빌드한 ks 를 실행한다 (ST-032 ~ ST-044, CR-015 · CR-016). 인자로 ks 경로를 받는다.
+add_executable(kiotty_ks_scenario_test tests/cli/ks_scenario_test.cpp)
+target_link_libraries(kiotty_ks_scenario_test PRIVATE kiotty_cli)
+kiotty_warnings(kiotty_ks_scenario_test)
+kiotty_no_exceptions(kiotty_ks_scenario_test)
+kiotty_windows_definitions(kiotty_ks_scenario_test)
+
 add_executable(kiotty_api_test tests/api/api_test.cpp)
 target_link_libraries(kiotty_api_test PRIVATE kiotty_spec)
 kiotty_warnings(kiotty_api_test)

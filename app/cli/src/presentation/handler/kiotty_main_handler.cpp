@@ -1,4 +1,4 @@
-#include "presentation/commands/kiotty_commands.h"
+#include "presentation/commands/kiotty_guide.h"
 
 namespace kiotty::cli {
 
@@ -7,6 +7,10 @@ namespace {
 using Key = MessageKey;
 
 const std::vector<CommandEntry> COMMAND_TABLE = {
+    { "guide", "", Key::GUIDE_SYNOPSIS, Key::GUIDE_SUMMARY, showGuide,
+      DatabaseUse::DEFERRED },
+    { "next", "", Key::NEXT_SYNOPSIS, Key::NEXT_SUMMARY, showNext,
+      DatabaseUse::DEFERRED },
     { "init", "", Key::INIT_SYNOPSIS, Key::INIT_SUMMARY, initializeProject },
     { "item", "add", Key::ITEM_ADD_SYNOPSIS, Key::ITEM_ADD_SUMMARY, addItem },
     { "item", "rename", Key::ITEM_RENAME_SYNOPSIS, Key::ITEM_RENAME_SUMMARY, renameItem },

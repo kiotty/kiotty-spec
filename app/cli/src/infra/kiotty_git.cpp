@@ -79,8 +79,8 @@ struct KillingJob {
     }
 };
 
-std::wstring buildCommandLine(const std::vector<std::string>& arguments);
-STARTUPINFOW describeStartup(HANDLE output);
+std::wstring buildCommandLine(std::string_view program, const std::vector<std::string>& arguments);
+STARTUPINFOW describeStartup(HANDLE output, ErrorStream error_stream);
 GitRun describeStartFailure(DWORD error);
 GitRun waitForGit(HANDLE process, HANDLE job, HANDLE reader, std::chrono::milliseconds limit);
 std::wstring quoteArgument(const std::wstring& argument);
@@ -91,7 +91,8 @@ constexpr size_t READ_END = 0;
 constexpr size_t WRITE_END = 1;
 constexpr std::chrono::milliseconds WAIT_INTERVAL {10};
 
-std::vector<std::string> buildArgumentWords(const std::vector<std::string>& arguments);
+std::vector<std::string> buildArgumentWords(std::string_view program,
+                                            const std::vector<std::string>& arguments);
 GitRun describeSpawnFailure(int error);
 GitRun waitForGit(pid_t child, int reader, std::chrono::milliseconds limit);
 PipeRead readUntilClosed(int reader, Clock::time_point deadline);
@@ -101,15 +102,19 @@ int measureTimeLeft(Clock::time_point deadline);
 
 }
 
-#ifdef _WIN32
 GitRun runGit(const std::vector<std::string>& arguments, std::chrono::milliseconds limit)
+{ return runProgram("git", arguments, limit, ErrorStream::INHERITED); }
+
+#ifdef _WIN32
+GitRun runProgram(std::string_view program, const std::vector<std::string>& arguments,
+                  std::chrono::milliseconds limit, ErrorStream error_stream)
 {
     OutputPipe pipe {};
     const KillingJob job {};
     const bool is_ready = pipe.is_open && job.handle.value != nullptr;
     if (!is_ready) { return GitRun{}; }
-    std::wstring command_line = buildCommandLine(arguments);
-    STARTUPINFOW startup = describeStartup(pipe.writer.value);
+    std::wstring command_line = buildCommandLine(program, arguments);
+    STARTUPINFOW startup = describeStartup(pipe.writer.value, error_stream);
     PROCESS_INFORMATION process {};
     const BOOL started =
         CreateProcessW(nullptr, command_line.data(), nullptr, nullptr, TRUE, CREATE_SUSPENDED,
@@ -123,7 +128,8 @@ GitRun runGit(const std::vector<std::string>& arguments, std::chrono::millisecon
     return waitForGit(process.hProcess, job.handle.value, pipe.reader.value, limit);
 }
 #else
-GitRun runGit(const std::vector<std::string>& arguments, std::chrono::milliseconds limit)
+GitRun runProgram(std::string_view program, const std::vector<std::string>& arguments,
+                  std::chrono::milliseconds limit, ErrorStream error_stream)
 {
     std::array<int, PIPE_ENDS> ends {-1, -1};
     const int piped = pipe(ends.data());
@@ -131,15 +137,19 @@ GitRun runGit(const std::vector<std::string>& arguments, std::chrono::millisecon
     posix_spawn_file_actions_t actions {};
     posix_spawn_file_actions_init(&actions);
     posix_spawn_file_actions_adddup2(&actions, ends.at(WRITE_END), STDOUT_FILENO);
+    const bool is_captured = error_stream == ErrorStream::CAPTURED;
+    const int error_target = is_captured ? ends.at(WRITE_END) : STDERR_FILENO;
+    posix_spawn_file_actions_adddup2(&actions, error_target, STDERR_FILENO);
     posix_spawn_file_actions_addclose(&actions, ends.at(READ_END));
     posix_spawn_file_actions_addclose(&actions, ends.at(WRITE_END));
-    std::vector<std::string> words = buildArgumentWords(arguments);
+    std::vector<std::string> words = buildArgumentWords(program, arguments);
     std::vector<char*> argv {};
     const size_t count = words.size();
     for (size_t index = 0; index < count; ++index) { argv.push_back(words.at(index).data()); }
     argv.push_back(nullptr);
     pid_t child = 0;
-    const int spawned = posix_spawnp(&child, "git", &actions, nullptr, argv.data(), environ);
+    const int spawned =
+        posix_spawnp(&child, words.front().c_str(), &actions, nullptr, argv.data(), environ);
     posix_spawn_file_actions_destroy(&actions);
     close(ends.at(WRITE_END));
     if (spawned != 0) {
@@ -155,9 +165,9 @@ GitRun runGit(const std::vector<std::string>& arguments, std::chrono::millisecon
 namespace {
 
 #ifdef _WIN32
-std::wstring buildCommandLine(const std::vector<std::string>& arguments)
+std::wstring buildCommandLine(std::string_view program, const std::vector<std::string>& arguments)
 {
-    std::wstring line = L"git";
+    std::wstring line = quoteArgument(pathFromUtf8(program).wstring());
     for (const std::string& argument : arguments) {
         line += L' ';
         line += quoteArgument(pathFromUtf8(argument).wstring());
@@ -165,14 +175,15 @@ std::wstring buildCommandLine(const std::vector<std::string>& arguments)
     return line;
 }
 
-STARTUPINFOW describeStartup(HANDLE output)
+STARTUPINFOW describeStartup(HANDLE output, ErrorStream error_stream)
 {
+    const bool is_captured = error_stream == ErrorStream::CAPTURED;
     STARTUPINFOW startup {};
     startup.cb = sizeof(startup);
     startup.dwFlags = STARTF_USESTDHANDLES;
     startup.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
     startup.hStdOutput = output;
-    startup.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    startup.hStdError = is_captured ? output : GetStdHandle(STD_ERROR_HANDLE);
     return startup;
 }
 
@@ -248,9 +259,10 @@ PipeRead readPipe(HANDLE reader)
     }
 }
 #else
-std::vector<std::string> buildArgumentWords(const std::vector<std::string>& arguments)
+std::vector<std::string> buildArgumentWords(std::string_view program,
+                                            const std::vector<std::string>& arguments)
 {
-    std::vector<std::string> words = {"git"};
+    std::vector<std::string> words = {std::string(program)};
     words.insert(words.end(), arguments.begin(), arguments.end());
     return words;
 }

@@ -34,6 +34,7 @@ std::vector<std::string> split(std::string_view text, char separator);
 std::string listNames(const std::string& names);
 uint64_t findBits(const KiottySpecTagDefinition& definition, std::string_view name);
 std::string listKnownBitNames(const KiottySpecTagDefinition& definition);
+std::filesystem::path findDatabasePath(const std::string& root);
 
 }
 
@@ -142,6 +143,19 @@ std::optional<uint32_t> findRelation(const Session& session, KiottySpecItemKind 
                                {kindName(kind), name, listNames(names)})
               << "\n";
     return std::nullopt;
+}
+
+KiottySpecStatus openDatabase(const Session& session)
+{
+    const std::string database = pathToUtf8(findDatabasePath(session.root));
+    return KiottySpec_open(&session.context, textOf(database)).code;
+}
+
+bool hasDatabase(const Session& session)
+{
+    std::error_code error {};
+    const bool is_file = std::filesystem::is_regular_file(findDatabasePath(session.root), error);
+    return is_file;
 }
 
 KiottySpecText textOf(std::string_view text) { return KiottySpecText{text.data(), text.size()}; }
@@ -362,6 +376,9 @@ std::vector<std::string> split(std::string_view text, char separator)
     }
     return parts;
 }
+
+std::filesystem::path findDatabasePath(const std::string& root)
+{ return pathFromUtf8(root) / ".kiotty" / "spec.kisp"; }
 
 }
 

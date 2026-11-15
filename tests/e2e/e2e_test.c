@@ -1,5 +1,6 @@
 /* E2E 테스트: 빌드된 라이브러리를 C 프로그램이 include/ 의 헤더만으로 구동한다.
  * E2E-001 ~ E2E-019 가 외부 인터페이스 묶음 UI-001 ~ UI-019 를 하나씩 검증한다 (CR-013).
+ * E2E-020 은 개발 수칙 공유 묶음 UI-154 를 검증한다 (CR-015).
  * C 로 컴파일하므로 C 호출자가 보는 상수 · 열거형 · 구조체 배치도 함께 검증한다. */
 
 #include "kiotty_spec.h"
@@ -833,6 +834,122 @@ static int e2e019(void)
     return passed;
 }
 
+/* ------------------------------------------------------------------ E2E-020 개발 수칙 공유 */
+
+static KiottySpecRuleDiffPage g_rule_page;
+static KiottySpecTextDiffPage g_text_page;
+
+static int hasRuleDiff(KiottySpecContext* local, KiottySpecContext* remote, const char* id, KiottySpecChange change)
+{
+    int found = 0;
+    const KiottySpecCursorResult cursor = KiottySpec_openRuleDiffCursor(local, remote);
+    if (cursor.code != OK) { return 0; }
+    while (KiottySpec_fetchRuleDiffPage(local, cursor.value, &g_rule_page).code == OK && g_rule_page.length > 0) {
+        for (size_t index = 0; index < g_rule_page.length; ++index) {
+            const KiottySpecRuleDiff* diff = &g_rule_page.elements[index];
+            if (strcmp(diff->id, id) == 0 && diff->change == change) { found = 1; }
+        }
+    }
+    KiottySpec_closeCursor(local, cursor.value);
+    return found;
+}
+
+static int hasBodyPiece(KiottySpecContext* local, KiottySpecContext* remote, const char* id, KiottySpecTextChange change,
+                        const char* piece)
+{
+    int found = 0;
+    const KiottySpecCursorResult cursor = KiottySpec_openRuleBodyDiffCursor(local, remote, text(id));
+    if (cursor.code != OK) { return 0; }
+    while (KiottySpec_fetchTextDiffPage(local, cursor.value, &g_text_page).code == OK && g_text_page.length > 0) {
+        for (size_t index = 0; index < g_text_page.length; ++index) {
+            const KiottySpecTextDiff* diff = &g_text_page.elements[index];
+            if (diff->change == change && strstr(diff->text, piece) != NULL) { found = 1; }
+        }
+    }
+    KiottySpec_closeCursor(local, cursor.value);
+    return found;
+}
+
+static int fileHas(const char* path, const char* needle)
+{
+    static char content[65536];
+    FILE* file = fopen(path, "rb");
+    if (file == NULL) { return 0; }
+    const size_t read = fread(content, 1, sizeof(content) - 1, file);
+    fclose(file);
+    content[read] = '\0';
+    return strstr(content, needle) != NULL;
+}
+
+static int e2e020(void)
+{
+    int passed = 1;
+    char exported[PATH_CAPACITY];
+    KiottySpecContext* local = openSpec("e2e020_local");
+    if (!check(local != NULL, "열기")) { return 0; }
+    start(local, KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING);
+    add(local, KIOTTY_SPEC_ITEM_KIND_RULE, "RULE-001", "첫 수칙");
+    add(local, KIOTTY_SPEC_ITEM_KIND_RULE, "RULE-002", "둘째 수칙");
+    add(local, KIOTTY_SPEC_ITEM_KIND_PRIVATE_RULE, "PRULE-001", "전용 수칙");
+    KiottySpec_writeItemBody(local, text("RULE-001"), text("a\nb\nc\n"));
+    complete(local);
+
+    const KiottySpecRemoteResult empty = KiottySpec_readRemote(local);
+    KiottySpecRemote remote_state;
+    memset(&remote_state, 0, sizeof(remote_state));
+    strcpy(remote_state.url, "https://example.com/rules.git");
+    const KiottySpecStatus written = KiottySpec_writeRemote(local, &remote_state).code;
+    const KiottySpecRemoteResult read = KiottySpec_readRemote(local);
+    passed &= check(empty.code == OK && empty.value.url[0] == '\0' && written == OK && read.code == OK &&
+                        strcmp(read.value.url, remote_state.url) == 0 && read.value.rule_base[0] == '\0',
+                    "1 원격 주소를 쓰고 읽는다");
+
+    makePath(exported, "e2e020_local", "rule.kisp");
+    const KiottySpecStatus export_code = KiottySpec_exportRules(local, text(exported)).code;
+    passed &= check(export_code == OK && fileHas(exported, "RULE-001") && !fileHas(exported, "PRULE"),
+                    "2 내보낸 파일에 개발 수칙만 있다");
+
+    KiottySpecConfiguration configuration;
+    memset(&configuration, 0, sizeof(configuration));
+    KiottySpecContext* remote = KiottySpec_createContext(&configuration).value;
+    if (remote != NULL && KiottySpec_open(remote, text(exported)).code != OK) {
+        KiottySpec_releaseContext(remote);
+        remote = NULL;
+    }
+    if (!check(remote != NULL, "내보낸 파일 열기")) { KiottySpec_releaseContext(local); return 0; }
+    start(remote, KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING);
+    KiottySpec_writeItemBody(remote, text("RULE-001"), text("a\nB\nc\n"));
+    add(remote, KIOTTY_SPEC_ITEM_KIND_RULE, "RULE-004", "넷째 수칙");
+    complete(remote);
+    passed &= check(hasRuleDiff(local, remote, "RULE-001", KIOTTY_SPEC_CHANGE_MODIFIED) &&
+                        hasRuleDiff(local, remote, "RULE-004", KIOTTY_SPEC_CHANGE_ADDED) &&
+                        !hasRuleDiff(local, remote, "RULE-002", KIOTTY_SPEC_CHANGE_MODIFIED),
+                    "3 수칙 차이: RULE-001 변경, RULE-004 추가, RULE-002 같음");
+    passed &= check(hasBodyPiece(local, remote, "RULE-001", KIOTTY_SPEC_TEXT_CHANGE_REMOVED, "b") &&
+                        hasBodyPiece(local, remote, "RULE-001", KIOTTY_SPEC_TEXT_CHANGE_ADDED, "B"),
+                    "4 본문 차이: b 삭제, B 추가");
+
+    KiottySpecAcceptInput input;
+    memset(&input, 0, sizeof(input));
+    input.description = text("공통 개발 수칙");
+    input.title = text("공통 개발 수칙 받기");
+    input.summary = text("원격 수칙 편입");
+    input.body = text("## 처리 표\n");
+    input.rule_base = text("abc1234");
+    const KiottySpecAcceptResult by_ai = KiottySpec_acceptRules(local, remote, &input, KIOTTY_SPEC_ACTOR_AI);
+    const KiottySpecAcceptResult accepted = KiottySpec_acceptRules(local, remote, &input, KIOTTY_SPEC_ACTOR_USER);
+    passed &= check(by_ai.code == KIOTTY_SPEC_STATUS_PERMISSION, "5 AI 의 편입은 PERMISSION");
+    passed &= check(accepted.code == OK && accepted.checkpoint == KiottySpec_readPosition(local).value.current &&
+                        accepted.change_request[0] != '\0',
+                    "5 편입은 새 체크포인트와 변경 요청을 돌려준다");
+    passed &= check(find(local, "RULE-004") != KIOTTY_SPEC_INVALID_ITEM_HANDLE && find(local, "PRULE-001") != KIOTTY_SPEC_INVALID_ITEM_HANDLE &&
+                        strcmp(KiottySpec_readRemote(local).value.rule_base, "abc1234") == 0,
+                    "5 수칙이 원격을 따르고 전용 수칙과 기준 버전이 남는다");
+    KiottySpec_releaseContext(remote);
+    KiottySpec_releaseContext(local);
+    return passed;
+}
+
 /* ------------------------------------------------------------------ main */
 
 typedef struct Scenario {
@@ -851,7 +968,7 @@ static const Scenario SCENARIOS[] = {
     {"E2E-013", "글자 차이", e2e013},           {"E2E-014", "상태 코드와 열거형", e2e014},
     {"E2E-015", "핸들과 입력 값", e2e015},      {"E2E-016", "레코드", e2e016},
     {"E2E-017", "페이지", e2e017},              {"E2E-018", "결과 구조체", e2e018},
-    {"E2E-019", "용량 상수", e2e019},
+    {"E2E-019", "용량 상수", e2e019},             {"E2E-020", "개발 수칙 공유", e2e020},
 };
 
 int main(void)

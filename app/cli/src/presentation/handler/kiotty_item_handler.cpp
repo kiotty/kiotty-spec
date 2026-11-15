@@ -25,7 +25,12 @@ int applyRelationChange(const Session& session, RelationEdit edit);
 int initializeProject(const Session& session)
 {
     const std::string name = session.arguments.option("name").value_or("");
-    return check(session, KiottySpec_initializeProject(&session.context, textOf(name)).code);
+    const KiottySpecStatus status =
+        KiottySpec_initializeProject(&session.context, textOf(name)).code;
+    const int code = check(session, status);
+    const bool is_initialized = code == 0;
+    if (is_initialized) { std::cout << findMessage(MessageKey::GUIDE_HINT); }
+    return code;
 }
 
 int addItem(const Session& session)

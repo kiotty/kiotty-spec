@@ -30,7 +30,6 @@ std::optional<CommandMatch> findCommand(const std::vector<std::string>& tokens);
 std::string findActorName(const Arguments& arguments);
 std::string findRoot(const Arguments& arguments);
 std::vector<std::string_view> findExtraFlags(const CommandEntry& command);
-std::string makeDatabasePath(const std::string& root);
 int openAndRun(const CommandEntry& command, const Session& session);
 
 }
@@ -102,15 +101,16 @@ int runCommand(const CommandEntry& command, const Arguments& arguments)
 
 int openAndRun(const CommandEntry& command, const Session& session)
 {
-    const std::string database = makeDatabasePath(session.root);
-    const KiottySpecStatus opened = KiottySpec_open(&session.context, textOf(database)).code;
+    const bool is_deferred = command.database == DatabaseUse::DEFERRED;
+    if (is_deferred) { return command.run(session); }
+    const KiottySpecStatus opened = openDatabase(session);
     if (opened != KIOTTY_SPEC_STATUS_SUCCESS) { return fail(session, opened); }
     return command.run(session);
 }
 
 void printHelp()
 {
-    std::cout << findMessage(MessageKey::HELP_TEXT);
+    std::cout << findMessage(MessageKey::GUIDE_HINT) << findMessage(MessageKey::HELP_TEXT);
     for (const CommandEntry& command : commands()) {
         std::cout << "  ks " << command.group << (command.verb.empty() ? "" : " ")
                   << command.verb << " " << findMessage(command.usage) << "\n      "
@@ -174,8 +174,5 @@ std::vector<std::string_view> findExtraFlags(const CommandEntry& command)
     if (command.group == "remote") { return REMOTE_FLAGS; }
     return std::vector<std::string_view>();
 }
-
-std::string makeDatabasePath(const std::string& root)
-{ return pathToUtf8(std::filesystem::u8path(root) / ".kiotty" / "spec.kisp"); }
 
 }

@@ -956,6 +956,66 @@ void st031(const fs::path& root)
     }
 }
 
+KiottySpecAcceptInput acceptInput()
+{
+    static const std::string description = "공통 개발 수칙";
+    static const std::string title = "공통 개발 수칙 받기";
+    static const std::string summary = "원격 수칙 편입";
+    static const std::string body = "## 전용 개발 수칙 처리 표\n";
+    static const std::string base = "abc1234";
+    KiottySpecAcceptInput input {};
+    input.description = textOf(description);
+    input.title = textOf(title);
+    input.summary = textOf(summary);
+    input.body = textOf(body);
+    input.rule_base = textOf(base);
+    return input;
+}
+
+void writeRules(const fs::path& root, size_t count)
+{
+    Spec spec(root);
+    spec.start(KIOTTY_SPEC_STEP_REQUIREMENT_DISCUSSING);
+    for (size_t index = 0; index < count; ++index) { spec.add(KIOTTY_SPEC_ITEM_KIND_RULE, "RULE-" + std::to_string(101 + index)); }
+    spec.complete();
+}
+
+// ST-042 의 (C) 경우 3 · 6. 나머지 경우는 tests/cli/ks_scenario_test.cpp 가 ks 로 실행한다.
+void st042(const fs::path& root)
+{
+    const KiottySpecAcceptInput input = acceptInput();
+    {
+        writeRules(root / "local", 3);
+        writeRules(root / "remote", 4);
+        const fs::path remote_file = root / "remote" / ".kiotty" / "spec.kisp";
+        std::string text = readAll(remote_file);
+        const size_t line_end = text.find('\n');
+        text = "#kisp 2 model 1" + text.substr(line_end);
+        writeAll(remote_file, text);
+        Spec local(root / "local");
+        Spec remote(root / "remote");
+        const KiottySpecCheckpointHandle before = local.position().current;
+        const KiottySpecStatus status = KiottySpec_acceptRules(local.context, remote.context, &input, KIOTTY_SPEC_ACTOR_USER).code;
+        check(status == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT && local.lastError().subject == KIOTTY_SPEC_SUBJECT_REMOTE_RULES,
+              "3 모델 버전이 다른 받아 둔 파일은 거부 (" + local.error() + ")");
+        check(local.position().current == before, "3 체크포인트가 그대로");
+    }
+    {
+        writeRules(root / "small", 3);
+        writeRules(root / "many", 17);
+        const std::string before = readAll(root / "small" / ".kiotty" / "spec.kisp");
+        KiottySpecConfiguration small {};
+        small.max_items = 16;
+        Spec local(root / "small", small);
+        Spec remote(root / "many");
+        const KiottySpecStatus status = KiottySpec_acceptRules(local.context, remote.context, &input, KIOTTY_SPEC_ACTOR_USER).code;
+        check(status == KIOTTY_SPEC_STATUS_POOL_IS_FULL, "6 편입 도중 항목이 모자라 실패");
+        check(KiottySpec_readRemote(local.context).value.rule_base[0] == '\0', "6 기준 버전이 그대로");
+        check(KiottySpec_findItem(local.context, textOf(std::string("RULE-104"))).code == KIOTTY_SPEC_STATUS_NOT_FOUND, "6 수칙이 그대로");
+        check(readAll(root / "small" / ".kiotty" / "spec.kisp") == before, "6 사양 파일이 편입 전과 같다");
+    }
+}
+
 struct SystemTest {
     const char* id;
     const char* title;
@@ -994,6 +1054,7 @@ const SystemTest TESTS[] = {
     {"ST-029", "제목과 요약의 글자 차이를 본다", st029},
     {"ST-030", "왜 그렇게 정했는지 남긴다 (결정 기록)", st030},
     {"ST-031", "변경 요청으로 흐름을 다시 시작한다", st031},
+    {"ST-042", "받아 둔 수칙을 편입한다 (C 인터페이스 경우)", st042},
 };
 
 }

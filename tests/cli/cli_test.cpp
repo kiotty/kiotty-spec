@@ -1,4 +1,5 @@
-#include "presentation/commands/kiotty_commands.h"
+#include "i18n/kiotty_guide_text.h"
+#include "presentation/commands/kiotty_guide.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -220,6 +221,217 @@ bool testParseRemoteKind()
     passed = expectTrue(!parseRemoteKind("RULE"), "case differs") && passed;
     passed = expectTrue(!parseRemoteKind(""), "empty text is rejected") && passed;
     passed = expectTrue(!parseRemoteKind(appendNullByte("rule")), "null byte is rejected") && passed;
+    passed = expectTrue(!parseRemoteKind("rules"), "longer than rule is rejected") && passed;
+    passed = expectTrue(!parseRemoteKind("rule" + INVALID_UTF8_SUFFIX), "bad UTF-8 is rejected") && passed;
+    return passed;
+}
+
+// UT-093: ks guide 의 주제 인자를 parse 한다.
+bool testParseGuideTopic()
+{
+    const std::optional<GuideTopic> overview = parseGuideTopic({});
+    const std::optional<GuideTopic> first = parseGuideTopic({"step", "1"});
+    const std::optional<GuideTopic> last = parseGuideTopic({"step", "12"});
+    const std::optional<GuideTopic> kind = parseGuideTopic({"kind", "전용 개발 수칙"});
+    const std::optional<GuideTopic> remote = parseGuideTopic({"remote"});
+    bool passed = expectTrue(overview && overview->subject == GuideSubject::OVERVIEW, "no topic");
+    passed = expectTrue(first && first->subject == GuideSubject::STEP && first->step == 1,
+                        "step 1") && passed;
+    passed = expectTrue(last && last->step == KIOTTY_SPEC_STEP_COUNT, "step 12") && passed;
+    passed = expectTrue(kind && kind->subject == GuideSubject::KIND &&
+                            kind->kind == "전용 개발 수칙", "kind name is passed on") && passed;
+    passed = expectTrue(remote && remote->subject == GuideSubject::REMOTE, "remote") && passed;
+    passed = expectTrue(!parseGuideTopic({"step", "0"}), "step 0 is rejected") && passed;
+    passed = expectTrue(!parseGuideTopic({"step", "13"}), "step 13 is rejected") && passed;
+    passed = expectTrue(!parseGuideTopic({"step", "two"}), "step text is rejected") && passed;
+    passed = expectTrue(!parseGuideTopic({"step"}), "step without number") && passed;
+    passed = expectTrue(!parseGuideTopic({"kind", ""}), "empty kind is rejected") && passed;
+    passed = expectTrue(!parseGuideTopic({"kind", appendNullByte("rule")}), "kind null byte") &&
+             passed;
+    passed = expectTrue(!parseGuideTopic({"other"}), "unknown topic is rejected") && passed;
+    passed = expectTrue(!parseGuideTopic({""}), "empty topic is rejected") && passed;
+    passed = expectTrue(!parseGuideTopic({"remote", "rule"}), "remote takes nothing") && passed;
+    passed = expectTrue(!parseGuideTopic({"step", "120"}), "step longer than 12 is rejected") && passed;
+    passed = expectTrue(!parseGuideTopic({"step", "1" + INVALID_UTF8_SUFFIX}), "step bad UTF-8") && passed;
+    passed = expectTrue(!parseGuideTopic({"remote" + INVALID_UTF8_SUFFIX}), "topic bad UTF-8") && passed;
+    const std::optional<GuideTopic> bad_kind = parseGuideTopic({"kind", "rule" + INVALID_UTF8_SUFFIX});
+    passed = expectTrue(bad_kind && bad_kind->kind == "rule" + INVALID_UTF8_SUFFIX,
+                        "kind bad UTF-8 is left to kindArgument") && passed;
+    return passed;
+}
+
+// UT-094: 12 단계와 Kind 마다 안내 문장이 있고, 사용자 몫 명령에 [user] 가 붙는다.
+bool testGuideStepCoverage()
+{
+    bool passed = true;
+    for (uint32_t step = 1; step <= KIOTTY_SPEC_STEP_COUNT; ++step) {
+        const std::optional<StepGuide> guide = findStepGuide(step);
+        const bool is_filled = guide && !guide->role.empty() && !guide->reading.empty() &&
+                               !guide->linking.empty() && !guide->condition.empty() &&
+                               !findShortStepName(step).empty();
+        passed = expectTrue(is_filled, ("step " + std::to_string(step)).c_str()) && passed;
+    }
+    passed = expectTrue(!findStepGuide(0) && !findStepGuide(13), "steps out of range") && passed;
+    for (uint32_t value = 1; value <= KIOTTY_SPEC_ITEM_KIND_COUNT; ++value) {
+        const std::optional<KindGuide> guide =
+            findKindGuide(static_cast<KiottySpecItemKind>(value));
+        const bool is_filled = guide && !guide->purpose.empty() && !guide->body.empty();
+        passed = expectTrue(is_filled, ("kind " + std::to_string(value)).c_str()) && passed;
+    }
+    const std::string_view overview = findGuideOverview();
+    const bool has_rules = overview.find("REQ, RULE, PRULE") != std::string_view::npos;
+    passed = expectTrue(has_rules, "step 2 names the development rules") && passed;
+    const std::string_view remote = findGuideRemote();
+    for (const char* verb : {"remote accept", "remote discard", "remote push"}) {
+        const size_t found = remote.find(verb);
+        const bool is_user = found != std::string_view::npos && found >= 10 &&
+                             remote.substr(found - 10, 7) == "[user] ";
+        passed = expectTrue(is_user, verb) && passed;
+    }
+    return passed;
+}
+
+// UT-095: 진행 줄은 12 단계 이름을 잇고 지금 단계에만 (V) 를 붙인다.
+bool testFormatStepProgress()
+{
+    const auto count_marks = [](const std::string& line) {
+        size_t count = 0;
+        for (size_t at = line.find("(V)"); at != std::string::npos; at = line.find("(V)", at + 1)) {
+            ++count;
+        }
+        return count;
+    };
+    const std::string first = formatStepProgress(1);
+    const std::string sixth = formatStepProgress(6);
+    const std::string last = formatStepProgress(KIOTTY_SPEC_STEP_COUNT);
+    const std::string none = formatStepProgress(0);
+    bool passed = expectTrue(first.rfind("변경 요청 (V) → 요구사항", 0) == 0, "step 1 mark");
+    passed = expectTrue(sixth.find("개발 계획 (V) → 구현") != std::string::npos, "step 6 mark") &&
+             passed;
+    const std::string last_mark = "E2E 실행 (V)";
+    const bool is_last_marked = last.size() >= last_mark.size() &&
+                                last.compare(last.size() - last_mark.size(), last_mark.size(),
+                                             last_mark) == 0;
+    passed = expectTrue(is_last_marked, "step 12 mark at end") && passed;
+    passed = expectTrue(count_marks(first) == 1 && count_marks(sixth) == 1 &&
+                            count_marks(last) == 1, "one mark") && passed;
+    passed = expectTrue(count_marks(none) == 0, "no mark out of range") && passed;
+    size_t arrows = 0;
+    for (size_t at = none.find("→"); at != std::string::npos; at = none.find("→", at + 1)) {
+        ++arrows;
+    }
+    passed = expectTrue(arrows == KIOTTY_SPEC_STEP_COUNT - 1, "eleven arrows") && passed;
+    passed = expectTrue(none.rfind("변경 요청 → ", 0) == 0 &&
+                            none.find("E2E 계획 → E2E 실행") != std::string::npos,
+                        "names in order") && passed;
+    return passed;
+}
+
+// UT-096: 확정 조건마다 reason · action · command 가 있고 ID 가 채워진다.
+bool testDescribeUnmetCondition()
+{
+    bool passed = true;
+    for (uint32_t value = KIOTTY_SPEC_CONDITION_ENTRY_STEP;
+         value <= KIOTTY_SPEC_CONDITION_CLOSED_CHANGE_REQUEST; ++value) {
+        const std::optional<ConditionAdvice> advice =
+            findConditionAdvice(static_cast<KiottySpecCondition>(value), "X-001");
+        bool is_filled = advice && !advice->reason.empty() && !advice->actions.empty();
+        bool has_id = false;
+        if (advice) {
+            for (const NextAction& action : advice->actions) {
+                is_filled = is_filled && !action.action.empty() && !action.command.empty();
+                is_filled = is_filled && action.command.find('{') == std::string::npos;
+                has_id = has_id || action.command.find("X-001") != std::string::npos;
+            }
+        }
+        const std::string label = "condition " + std::to_string(value);
+        passed = expectTrue(is_filled && has_id, label.c_str()) && passed;
+    }
+    const std::optional<ConditionAdvice> rule =
+        findConditionAdvice(KIOTTY_SPEC_CONDITION_CODE_INSPECTION_PAIR, "RULE-001");
+    const std::optional<ConditionAdvice> private_rule =
+        findConditionAdvice(KIOTTY_SPEC_CONDITION_CODE_INSPECTION_PAIR, "PRULE-001");
+    passed = expectTrue(rule && rule->actions.back().command.find("\"검사 개발 수칙\" RULE-001") !=
+                                    std::string::npos, "rule relation") && passed;
+    passed = expectTrue(private_rule && private_rule->actions.back().command.find(
+                            "\"검사 전용 개발 수칙\" PRULE-001") != std::string::npos,
+                        "private rule relation") && passed;
+    passed = expectTrue(!findConditionAdvice(static_cast<KiottySpecCondition>(0), "X-001"),
+                        "unknown condition fails") && passed;
+    passed = expectTrue(!findConditionAdvice(static_cast<KiottySpecCondition>(KIOTTY_SPEC_CONDITION_CLOSED_CHANGE_REQUEST + 1), "X-001"),
+                        "condition past the last fails") && passed;
+    return passed;
+}
+
+NextState makeNextState(uint32_t step, KiottySpecCheckpointState state,
+                        std::vector<KiottySpecUnmetCondition> unmet)
+{
+    NextState next {};
+    next.has_database = true;
+    next.position.current = step == 0 ? 0 : 1;
+    next.position.step = static_cast<KiottySpecStep>(step);
+    next.position.state = state;
+    next.unmet = std::move(unmet);
+    return next;
+}
+
+KiottySpecUnmetCondition makeUnmet(KiottySpecCondition condition, const char* id)
+{
+    KiottySpecUnmetCondition unmet {};
+    std::snprintf(unmet.id, sizeof(unmet.id), "%s", id);
+    unmet.condition = condition;
+    return unmet;
+}
+
+bool expectCommands(const std::vector<NextAction>& actions,
+                    const std::vector<std::string>& commands, const char* label)
+{
+    bool is_same = actions.size() == commands.size();
+    for (size_t index = 0; is_same && index < commands.size(); ++index) {
+        is_same = actions[index].command == commands[index];
+    }
+    if (!is_same) {
+        for (const NextAction& action : actions) { std::printf("    got: %s\n", action.command.c_str()); }
+    }
+    return expectTrue(is_same, label);
+}
+
+// UT-097: 위치와 어긋난 확정 조건으로 할 행동을 고른다.
+bool testChooseNextActions()
+{
+    constexpr KiottySpecCheckpointState RUNNING = KIOTTY_SPEC_CHECKPOINT_STATE_RUNNING;
+    constexpr KiottySpecCheckpointState DONE = KIOTTY_SPEC_CHECKPOINT_STATE_DONE;
+    const std::string start = "ks checkpoint start ";
+    const std::string described = " --description \"...\"";
+    bool passed = expectCommands(chooseNextActions(NextState {}), {"ks init --name \"...\""},
+                                 "no database");
+    passed = expectCommands(chooseNextActions(makeNextState(0, RUNNING, {})),
+                            {start + "1" + described, "ks guide step 1"}, "no checkpoint") &&
+             passed;
+    const KiottySpecCondition pair = KIOTTY_SPEC_CONDITION_SYSTEM_TEST_PAIR;
+    passed = expectCommands(
+                 chooseNextActions(makeNextState(8, RUNNING,
+                                                 {makeUnmet(pair, "REQ-003"), makeUnmet(pair, "REQ-004"),
+                                                  makeUnmet(pair, "REQ-005")})),
+                 {"ks item add system_test_plan --title \"...\"",
+                  "ks relation add ST-xxx \"검증 요구사항\" REQ-003"},
+                 "one condition, three items") && passed;
+    passed = expectCommands(
+                 chooseNextActions(makeNextState(
+                     12, RUNNING,
+                     {makeUnmet(KIOTTY_SPEC_CONDITION_PASSING_RESULT, "E2ER-001"),
+                      makeUnmet(KIOTTY_SPEC_CONDITION_CLOSED_CHANGE_REQUEST, "CR-016")})),
+                 {"ks tag set E2ER-001 결과 PASS", "ks tag set CR-016 상태 완료"},
+                 "two conditions in order") && passed;
+    passed = expectCommands(chooseNextActions(makeNextState(3, RUNNING, {})),
+                            {"[user] ks checkpoint complete --actor user"}, "all met") && passed;
+    passed = expectCommands(chooseNextActions(makeNextState(6, DONE, {})),
+                            {start + "7" + described, "ks guide step 7"}, "step 6 done") && passed;
+    NextState idle = makeNextState(12, DONE, {});
+    passed = expectCommands(chooseNextActions(idle), {"-"}, "nothing to do") && passed;
+    idle.position.open_change_requests = 1;
+    passed = expectCommands(chooseNextActions(idle), {start + "1" + described, "ks guide step 1"},
+                            "open change request after step 12") && passed;
     return passed;
 }
 
@@ -238,6 +450,11 @@ int main()
         {"parse arguments length", testParseArgumentsLength},
         {"parse arguments bytes", testParseArgumentsBytes},
         {"parse remote kind", testParseRemoteKind},
+        {"parse guide topic", testParseGuideTopic},
+        {"guide step coverage", testGuideStepCoverage},
+        {"format step progress", testFormatStepProgress},
+        {"describe unmet condition", testDescribeUnmetCondition},
+        {"choose next actions", testChooseNextActions},
     };
 
     int failed = 0;

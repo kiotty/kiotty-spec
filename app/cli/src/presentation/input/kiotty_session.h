@@ -75,13 +75,19 @@ bool detectColorTerminal();
 
 using Command = int (*)(const Session&);
 
+enum class DatabaseUse { OPENED, DEFERRED };
+
 struct CommandEntry {
     std::string_view group {};
     std::string_view verb {};
     MessageKey usage {};
     MessageKey summary {};
     Command run {};
+    DatabaseUse database {DatabaseUse::OPENED};
 };
+
+KiottySpecStatus openDatabase(const Session& session);
+bool hasDatabase(const Session& session);
 
 const std::vector<CommandEntry>& commands();
 
