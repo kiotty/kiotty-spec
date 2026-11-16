@@ -27,11 +27,12 @@ constexpr ItemKind RESULT_KINDS[] = { ItemKind::SYSTEM_TEST_RESULT,
 
 uint32_t findLowestStep(uint64_t value);
 bool isResultKind(ItemKind kind);
-size_t appendCondition(Span<UnmetCondition> rows, size_t length, const UnmetCondition& row);
+size_t appendCondition(Span<entity::UnmetCondition> rows, size_t length,
+                       const entity::UnmetCondition& row);
 
 }
 
-Span<const UnmetCondition> Checker::collect(entity::Step step)
+Span<const entity::UnmetCondition> Checker::collect(entity::Step step)
 {
     _length = 0;
     switch (step) {
@@ -290,8 +291,8 @@ void Checker::add(KiottySpecCondition condition, size_t index)
     const ItemHandle handle = _workspace.items.slots().handleAt(index);
     const auto label = _workspace.items.reader().label(handle);
     if (!label) { return; }
-    const Span<UnmetCondition> rows = viewVector(_rows);
-    _length = appendCondition(rows, _length, UnmetCondition{(*label.value).id, condition});
+    const Span<entity::UnmetCondition> rows = viewVector(_rows);
+    _length = appendCondition(rows, _length, entity::UnmetCondition{(*label.value).id, condition});
 }
 
 namespace {
@@ -313,7 +314,8 @@ bool isResultKind(ItemKind kind)
     return false;
 }
 
-size_t appendCondition(Span<UnmetCondition> rows, size_t length, const UnmetCondition& row)
+size_t appendCondition(Span<entity::UnmetCondition> rows, size_t length,
+                       const entity::UnmetCondition& row)
 {
     const auto slot = rows.at(length);
     if (!slot) { return length; }

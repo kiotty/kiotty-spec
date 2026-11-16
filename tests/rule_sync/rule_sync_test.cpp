@@ -485,8 +485,11 @@ bool testExportRules()
     const std::string target = rootOf("kiotty_rule_export") + "/out/rule.kisp";
     std::error_code error;
     std::filesystem::create_directories(rootOf("kiotty_rule_export") + "/out", error);
+    const std::string folder = rootOf("kiotty_rule_export") + "/out";
     bool passed = expectTrue(KiottySpec_exportRules(local, textOf(target.c_str())).code == KIOTTY_SPEC_STATUS_PRECONDITION, "running checkpoint");
+    passed = expectTrue(KiottySpec_exportRules(local, textOf(folder.c_str())).code == KIOTTY_SPEC_STATUS_PRECONDITION, "running checkpoint before folder") && passed;
     complete(local);
+    passed = expectTrue(KiottySpec_exportRules(local, textOf(folder.c_str())).code == KIOTTY_SPEC_STATUS_INVALID_ARGUMENT, "folder path") && passed;
     const KiottySpecRemote remote = remoteOf("https://example.com/r.git", "abc");
     KiottySpec_writeRemote(local, &remote);
     const std::string before = readAll(databaseOf(rootOf("kiotty_rule_export")));

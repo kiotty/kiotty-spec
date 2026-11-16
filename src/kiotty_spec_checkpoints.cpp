@@ -1,6 +1,6 @@
 
 #include "kiotty_spec_adapter.h"
-#include "implementation/context/kiotty_cursor_rows.h"
+#include "implementation/domain/usecases/cursor/kiotty_cursor_rows.h"
 
 namespace impl = kiotty::spec::implementation;
 namespace entity = kiotty::spec::implementation::entity;
@@ -61,7 +61,7 @@ KiottySpecCursorResult KiottySpec_openUnmetConditionCursor(KiottySpecContext* co
 {
     const OpenedResult spec = findOpenedContext(context);
     if (!spec) { return cursorFailure(spec.code); }
-    return Boundary(*spec.value).wrap(spec.value->readSide().finder().history().unmetConditions());
+    return Boundary(*spec.value).wrap(spec.value->readSide().unmetConditions());
 }
 
 KiottySpecStatusResult KiottySpec_fetchUnmetConditionPage(KiottySpecContext* context,
@@ -202,7 +202,7 @@ KiottySpecPositionResult KiottySpec_readPosition(KiottySpecContext* context)
         result.code = spec.code;
         return result;
     }
-    const auto position = spec.value->readSide().finder().history().position();
+    const auto position = spec.value->readSide().position();
     result.code = position.code;
     if (!position) { return result; }
     result.value.current = position.value.current;

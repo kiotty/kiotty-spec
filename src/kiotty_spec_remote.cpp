@@ -12,7 +12,7 @@ using AcceptResult = impl::Result<impl::AcceptOutcome, KiottySpecStatus>;
 
 WorkspaceResult findRemote(KiottySpecContext* local, KiottySpecContext* remote);
 KiottySpecRemote toRemote(const entity::RemoteRecord& record);
-KiottySpecRuleDiff toRuleDiff(const impl::RuleDiffRecord& record);
+KiottySpecRuleDiff toRuleDiff(const impl::entity::RuleDiffRecord& record);
 entity::Step pickEntryStep(const impl::OpenedContext& context);
 KiottySpecAcceptResult acceptFailure(KiottySpecStatus code);
 
@@ -63,7 +63,8 @@ KiottySpecStatusResult KiottySpec_fetchRuleDiffPage(KiottySpecContext* context,
     impl::RuleDiffer& differ = spec.value->ruleSync().differ();
     const impl::Span<KiottySpecRuleDiff> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (KiottySpecRuleDiff& element : elements) {
-        const impl::Result<impl::RuleDiffRecord, KiottySpecStatus> row = differ.next(cursor);
+        const impl::Result<impl::entity::RuleDiffRecord, KiottySpecStatus> row =
+            differ.next(cursor);
         if (!row) { return status(row.code); }
         const bool is_end = row.value.id.empty();
         if (is_end) { break; }
@@ -119,7 +120,7 @@ KiottySpecStatusResult KiottySpec_exportRules(KiottySpecContext* local, KiottySp
     if (!spec) { return status(spec.code); }
     const TextResult parsed = Boundary(*spec.value).parse(path, Field::PATH);
     if (!parsed) { return status(parsed.code); }
-    return status(spec.value->ruleSync().exporter().exportTo(parsed.value));
+    return status(spec.value->exportRules(parsed.value));
 }
 
 }
@@ -224,7 +225,7 @@ KiottySpecRemote toRemote(const entity::RemoteRecord& record)
     return remote;
 }
 
-KiottySpecRuleDiff toRuleDiff(const impl::RuleDiffRecord& record)
+KiottySpecRuleDiff toRuleDiff(const impl::entity::RuleDiffRecord& record)
 {
     KiottySpecRuleDiff diff {};
     copyTerminated(impl::Span<char>(diff.id, sizeof(diff.id)), record.id.view());
@@ -236,7 +237,7 @@ KiottySpecRuleDiff toRuleDiff(const impl::RuleDiffRecord& record)
 
 entity::Step pickEntryStep(const impl::OpenedContext& context)
 {
-    const auto position = context.readSide().finder().history().position();
+    const auto position = context.readSide().position();
     const uint32_t inspecting = static_cast<uint32_t>(entity::Step::CODE_INSPECTING);
     const uint32_t next = position ? position.value.next_step : inspecting;
     const bool is_earlier = entity::isValidStep(next) && next < inspecting;

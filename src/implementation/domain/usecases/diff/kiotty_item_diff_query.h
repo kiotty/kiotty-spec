@@ -1,0 +1,42 @@
+#pragma once
+
+#include "kiotty_spec.h"
+#include "implementation/domain/entity/kiotty_diff_records.h"
+#include "implementation/core/kiotty_result.h"
+#include "implementation/core/kiotty_span.h"
+#include "implementation/data/repository/item/kiotty_item_store.h"
+#include "implementation/domain/entity/kiotty_item_records.h"
+
+#include <cstddef>
+#include <cstdint>
+
+namespace kiotty::spec::implementation {
+
+class ItemDiffQuery
+{
+public:
+    ItemDiffQuery(ItemStore& items, entity::DiffRange range, uint32_t kind_mask,
+                  uint32_t field_mask)
+        : _items(items), _range(range), _kind_mask(kind_mask), _field_mask(field_mask),
+          _keys(items.history().keysByIdentity())
+    {
+    }
+
+    Result<bool, KiottySpecStatus> next();
+    const entity::ItemDiffRow& current() const { return _current; }
+
+private:
+    bool decode(uint32_t key);
+    uint32_t changedFields(uint32_t key, const entity::ItemVersion& before,
+                           const entity::ItemVersion& after) const;
+
+    ItemStore& _items;
+    entity::DiffRange _range;
+    uint32_t _kind_mask;
+    uint32_t _field_mask;
+    const Span<const uint32_t> _keys;
+    size_t _position {0};
+    entity::ItemDiffRow _current {};
+};
+
+}

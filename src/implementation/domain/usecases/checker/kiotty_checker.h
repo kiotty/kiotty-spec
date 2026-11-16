@@ -1,5 +1,6 @@
 #pragma once
 
+#include "implementation/domain/entity/kiotty_query_records.h"
 #include "kiotty_spec.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
@@ -13,13 +14,6 @@
 #include <vector>
 
 namespace kiotty::spec::implementation {
-
-struct UnmetCondition {
-    entity::IdText id {};
-    KiottySpecCondition condition {KIOTTY_SPEC_CONDITION_ENTRY_STEP};
-};
-
-static_assert(sizeof(UnmetCondition) == 20, "unexpected padding");
 
 struct TagBit {
     static constexpr uint32_t MISSING = 0xFFFFFFFFu;
@@ -55,7 +49,7 @@ public:
           _second_relation_counts(max_items, 0)
     {}
 
-    Span<const UnmetCondition> collect(entity::Step step);
+    Span<const entity::UnmetCondition> collect(entity::Step step);
 
     size_t openChangeRequestCount();
     uint32_t earliestEntryStep();
@@ -90,7 +84,7 @@ private:
 
     Workspace& _workspace;
     std::vector<char> _body;
-    std::vector<UnmetCondition> _rows;
+    std::vector<entity::UnmetCondition> _rows;
     std::vector<uint64_t> _state_values;
     std::vector<uint64_t> _tag_values;
     std::vector<uint32_t> _relation_counts;

@@ -24,14 +24,14 @@ struct LinePair {
     const Lines& after;
 };
 
-struct Position {
+struct LinePosition {
     size_t before {0};
     size_t after {0};
 };
 
 static_assert(sizeof(Lines) == 40, "unexpected padding");
 static_assert(sizeof(LinePair) == 16, "unexpected padding");
-static_assert(sizeof(Position) == 16, "unexpected padding");
+static_assert(sizeof(LinePosition) == 16, "unexpected padding");
 
 using LinesResult = Result<Lines, KiottySpecStatus>;
 
@@ -43,11 +43,11 @@ bool isSameLine(LinePair pair, size_t before, size_t after);
 Span<const char> lineOf(const Lines& lines, size_t index);
 LineMove pickMove(uint16_t down, uint16_t right);
 CountResult walkMoves(LinePair pair, Span<const uint8_t> moves, Span<TextSegment> out);
-LineMove readMove(LinePair pair, Span<const uint8_t> moves, Position position);
-TextSegment makeSegment(LinePair pair, Position position, LineMove move);
+LineMove readMove(LinePair pair, Span<const uint8_t> moves, LinePosition position);
+TextSegment makeSegment(LinePair pair, LinePosition position, LineMove move);
 TextChange changeOf(LineMove move);
 CountResult appendSegment(Span<TextSegment> out, size_t count, TextSegment segment);
-Position advance(Position position, LineMove move);
+LinePosition advance(LinePosition position, LineMove move);
 
 }
 
@@ -165,7 +165,7 @@ LineMove pickMove(uint16_t down, uint16_t right)
 CountResult walkMoves(LinePair pair, Span<const uint8_t> moves, Span<TextSegment> out)
 {
     size_t count = 0;
-    Position position {};
+    LinePosition position {};
     const size_t total = pair.before.count + pair.after.count;
     for (size_t step = 0; step < total; ++step) {
         const bool is_done =
@@ -180,7 +180,7 @@ CountResult walkMoves(LinePair pair, Span<const uint8_t> moves, Span<TextSegment
     return CountResult::success(count);
 }
 
-LineMove readMove(LinePair pair, Span<const uint8_t> moves, Position position)
+LineMove readMove(LinePair pair, Span<const uint8_t> moves, LinePosition position)
 {
     const bool is_before_done = position.before == pair.before.count;
     if (is_before_done) { return LineMove::ADD; }
@@ -190,7 +190,7 @@ LineMove readMove(LinePair pair, Span<const uint8_t> moves, Position position)
     return static_cast<LineMove>(moves[row_start + position.after]);
 }
 
-TextSegment makeSegment(LinePair pair, Position position, LineMove move)
+TextSegment makeSegment(LinePair pair, LinePosition position, LineMove move)
 {
     const bool is_after = move == LineMove::ADD;
     const Lines& lines = is_after ? pair.after : pair.before;
@@ -229,9 +229,9 @@ CountResult appendSegment(Span<TextSegment> out, size_t count, TextSegment segme
     return CountResult::success(count + 1);
 }
 
-Position advance(Position position, LineMove move)
+LinePosition advance(LinePosition position, LineMove move)
 {
-    Position next = position;
+    LinePosition next = position;
     next.before += move == LineMove::ADD ? 0 : 1;
     next.after += move == LineMove::REMOVE ? 0 : 1;
     return next;

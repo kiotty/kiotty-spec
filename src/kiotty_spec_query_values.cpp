@@ -45,7 +45,7 @@ TagQueryResult QueryParser::parseTagQuery(KiottySpecTagQuery query) const
     if (query.tag_index >= tag_count) {
         return TagQueryResult::failure(raise(KIOTTY_SPEC_SUBJECT_TAG));
     }
-    return TagQueryResult::success(impl::TagQuery {query.mask, kind, query.tag_index});
+    return TagQueryResult::success(impl::entity::TagQuery {query.mask, kind, query.tag_index});
 }
 
 FilterResult QueryParser::parseRelationIndex(entity::ItemKind kind, uint32_t relation) const

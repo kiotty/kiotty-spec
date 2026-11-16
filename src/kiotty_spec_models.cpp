@@ -1,5 +1,5 @@
 #include "kiotty_spec_adapter.h"
-#include "implementation/context/kiotty_model_definition_finder.h"
+#include "implementation/domain/usecases/query/kiotty_model_definition_finder.h"
 
 namespace impl = kiotty::spec::implementation;
 namespace entity = kiotty::spec::implementation::entity;

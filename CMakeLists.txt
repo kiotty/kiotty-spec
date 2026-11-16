@@ -115,12 +115,13 @@ kiotty_warnings(kiotty_datasource_test)
 kiotty_no_exceptions(kiotty_datasource_test)
 kiotty_windows_definitions(kiotty_datasource_test)
 
-add_executable(kiotty_context_test
-    tests/context/context_test.cpp
-    src/implementation/context/kiotty_cursor_pool.cpp)
-target_include_directories(kiotty_context_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
-kiotty_warnings(kiotty_context_test)
-kiotty_no_exceptions(kiotty_context_test)
+add_executable(kiotty_cursor_pool_test
+    tests/datasource/cursor_pool_test.cpp
+    src/implementation/data/datasource/cursor/kiotty_cursor_pool.cpp
+    src/implementation/domain/entity/kiotty_public_handle.cpp)
+target_include_directories(kiotty_cursor_pool_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
+kiotty_warnings(kiotty_cursor_pool_test)
+kiotty_no_exceptions(kiotty_cursor_pool_test)
 
 add_executable(kiotty_model_test
     tests/model/model_test.cpp
@@ -152,6 +153,12 @@ kiotty_warnings(kiotty_api_test)
 kiotty_no_exceptions(kiotty_api_test)
 
 # CR-015 테스트: 모델 2, 전용 개발 수칙, 원격 수칙 공유를 C 인터페이스로 부른다.
+add_executable(kiotty_query_test tests/query/query_test.cpp)
+target_link_libraries(kiotty_query_test PRIVATE kiotty_spec)
+target_include_directories(kiotty_query_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
+kiotty_warnings(kiotty_query_test)
+kiotty_no_exceptions(kiotty_query_test)
+
 add_executable(kiotty_rule_sync_test tests/rule_sync/rule_sync_test.cpp)
 target_link_libraries(kiotty_rule_sync_test PRIVATE kiotty_spec)
 kiotty_warnings(kiotty_rule_sync_test)

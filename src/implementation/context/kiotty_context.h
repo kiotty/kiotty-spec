@@ -1,11 +1,11 @@
 #pragma once
 
-#include "implementation/context/kiotty_cursor_pool.h"
-#include "implementation/context/kiotty_differ.h"
-#include "implementation/context/kiotty_finder.h"
+#include "implementation/data/datasource/cursor/kiotty_cursor_pool.h"
+#include "implementation/domain/usecases/diff/kiotty_differ.h"
+#include "implementation/domain/usecases/query/kiotty_finder.h"
 #include "implementation/context/kiotty_opened_context.h"
-#include "implementation/context/kiotty_rule_diff_store.h"
-#include "implementation/context/kiotty_rule_differ.h"
+#include "implementation/data/datasource/diff/kiotty_rule_diff_store.h"
+#include "implementation/domain/usecases/rule_sync/kiotty_rule_differ.h"
 #include "implementation/domain/entity/kiotty_failure.h"
 #include "implementation/core/kiotty_text_buffer.h"
 #include "implementation/data/datasource/kiotty_file_system.h"

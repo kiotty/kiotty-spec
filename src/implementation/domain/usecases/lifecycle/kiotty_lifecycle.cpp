@@ -46,7 +46,7 @@ Result<const CheckpointRecord&, KiottySpecStatus> Lifecycle::openCompletion(enti
     return RecordResult::success(*found.value);
 }
 
-KiottySpecStatus Lifecycle::complete(Span<const UnmetCondition> unmet)
+KiottySpecStatus Lifecycle::complete(Span<const entity::UnmetCondition> unmet)
 {
     const size_t unmet_count = unmet.length();
     if (unmet_count > 0) {

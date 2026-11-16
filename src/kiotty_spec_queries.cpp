@@ -103,14 +103,14 @@ KiottySpecCursorResult KiottySpec_openItemCursor(KiottySpecContext* context,
     const bool has_tag_queries = count == 0 || tag_queries != nullptr;
     const bool has_valid_count = count <= KIOTTY_SPEC_MAX_TAG_QUERIES && has_tag_queries;
     if (!has_valid_count) { return cursorFailure(KIOTTY_SPEC_STATUS_INVALID_ARGUMENT); }
-    impl::TagQuery queries[KIOTTY_SPEC_MAX_TAG_QUERIES] {};
+    impl::entity::TagQuery queries[KIOTTY_SPEC_MAX_TAG_QUERIES] {};
     for (size_t index = 0; index < count; ++index) {
         const TagQueryResult query = parser.parseTagQuery(tag_queries[index]);
         if (!query) { return cursorFailure(query.code); }
         queries[index] = query.value;
     }
     const impl::CursorIdResult opened = spec.value->readSide().finder().items(
-        parsed_kind.value, impl::Span<const impl::TagQuery>(queries, count));
+        parsed_kind.value, impl::Span<const impl::entity::TagQuery>(queries, count));
     return Boundary(*spec.value).wrap(opened);
 }
 

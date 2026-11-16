@@ -7,7 +7,7 @@ using namespace kiotty::spec::adapter;
 
 namespace {
 
-KiottySpecKindDiff convertKindDiff(const impl::KindCounts& count);
+KiottySpecKindDiff convertKindDiff(const impl::entity::KindCounts& count);
 impl::Result<impl::TextPiece, KiottySpecStatus> fetchPiece(const impl::OpenedContext& context,
                                                          KiottySpecCursor cursor);
 KiottySpecItemHandle findCurrentHandle(impl::ItemReader reader, impl::Span<const char> id);
@@ -29,7 +29,7 @@ KiottySpecDiffSummaryResult KiottySpec_summarizeDiff(KiottySpecContext* context,
         result.code = range.code;
         return result;
     }
-    impl::KindCounts counts[entity::ITEM_KIND_COUNT] {};
+    impl::entity::KindCounts counts[entity::ITEM_KIND_COUNT] {};
     result.code = differ.summarize(range.value, query->kind_mask, query->field_mask, counts);
     result.from = range.value.from;
     result.to = range.value.to;
@@ -65,7 +65,7 @@ KiottySpecStatusResult KiottySpec_fetchItemDiffPage(KiottySpecContext* context,
     const impl::Span<KiottySpecItemDiff> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     const impl::ItemReader reader = spec.value->workspace().items.reader();
     for (const impl::CursorRow& row : rows.value) {
-        const impl::ItemDiffRow diff = impl::unpackItemDiff(row);
+        const impl::entity::ItemDiffRow diff = impl::unpackItemDiff(row);
         const auto slot = elements.at(page->length);
         if (!slot) { return status(slot.code); }
         KiottySpecItemDiff& element = *slot.value;
@@ -107,7 +107,7 @@ KiottySpecStatusResult KiottySpec_fetchRelationDiffPage(KiottySpecContext* conte
     if (!rows) { return status(rows.code); }
     const impl::Span<KiottySpecRelationDiff> elements(page->elements, KIOTTY_SPEC_PAGE_CAPACITY);
     for (const impl::CursorRow& row : rows.value) {
-        const impl::RelationDiffRow diff = impl::unpackRelationDiff(row);
+        const impl::entity::RelationDiffRow diff = impl::unpackRelationDiff(row);
         const auto slot = elements.at(page->length);
         if (!slot) { return status(slot.code); }
         KiottySpecRelationDiff& element = *slot.value;
@@ -272,7 +272,7 @@ impl::Result<impl::TextPiece, KiottySpecStatus> fetchPiece(const impl::OpenedCon
     return context.readSide().differ().text().next(cursor);
 }
 
-KiottySpecKindDiff convertKindDiff(const impl::KindCounts& count)
+KiottySpecKindDiff convertKindDiff(const impl::entity::KindCounts& count)
 {
     KiottySpecKindDiff kind {};
     kind.added = count.added;

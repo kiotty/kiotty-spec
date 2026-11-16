@@ -105,7 +105,10 @@ ConfigurationResult parseConfiguration(const KiottySpecConfiguration& input)
     return deriveCapacities(counts.value);
 }
 
-entity::ItemHandle fromHandle(KiottySpecItemHandle handle) { return impl::unpackHandle(handle); }
+entity::ItemHandle fromHandle(KiottySpecItemHandle handle)
+{
+    return impl::entity::unpackHandle(handle);
+}
 
 KiottySpecItem toItem(const entity::ItemState& state, const entity::ItemLabel& label)
 {
@@ -123,7 +126,7 @@ KiottySpecItemHandle toHandle(entity::ItemHandle handle)
 {
     const bool is_valid = handle.isValid();
     if (!is_valid) { return KIOTTY_SPEC_INVALID_ITEM_HANDLE; }
-    return impl::packHandle(handle);
+    return impl::entity::packHandle(handle);
 }
 
 KiottySpecCheckpoint toCheckpointRecord(const entity::CheckpointRecord& record,

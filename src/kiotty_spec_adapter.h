@@ -2,8 +2,8 @@
 
 #include "kiotty_spec.h"
 #include "implementation/context/kiotty_context.h"
-#include "implementation/context/kiotty_diff_range.h"
-#include "implementation/context/kiotty_finder.h"
+#include "implementation/domain/entity/kiotty_diff_records.h"
+#include "implementation/domain/usecases/query/kiotty_finder.h"
 #include "implementation/core/kiotty_fixed_string.h"
 #include "implementation/core/kiotty_text_view.h"
 
@@ -42,8 +42,8 @@ using RelationResult = impl::Result<entity::RelationRecord, KiottySpecStatus>;
 using StateResult = impl::Result<entity::CheckpointState, KiottySpecStatus>;
 using FilterResult = impl::Result<uint32_t, KiottySpecStatus>;
 using DirectionResult = impl::Result<KiottySpecDirection, KiottySpecStatus>;
-using TagQueryResult = impl::Result<impl::TagQuery, KiottySpecStatus>;
-using RangeResult = impl::Result<impl::DiffRange, KiottySpecStatus>;
+using TagQueryResult = impl::Result<impl::entity::TagQuery, KiottySpecStatus>;
+using RangeResult = impl::Result<impl::entity::DiffRange, KiottySpecStatus>;
 
 enum class Field : uint8_t { ID, TITLE, SUMMARY, BODY, DECISION, DESCRIPTION, PATH, PROJECT_NAME };
 
