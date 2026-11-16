@@ -37,7 +37,7 @@ checkpoint	O	69	68	8	done	1794816374	CR-018 시스템 테스트 계획 변경 �
 checkpoint	O	70	69	9	done	1794816727	CR-018 시스템 테스트 회귀
 checkpoint	O	71	70	10	done	1794817459	CR-018 코드 검사
 checkpoint	O	72	71	11	done	1794817974	CR-018 E2E 계획 변경 없음
-checkpoint	O	73	72	12	running	1794818066	CR-018 E2E 실행과 닫기
+checkpoint	O	73	72	12	done	1794818066	CR-018 E2E 실행과 닫기
 TABLE	item	O/X	key	id
 item	O	00593058	CIR-020
 item	O	00ab1435	DSN-078
