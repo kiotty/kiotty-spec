@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>브라우저 뷰어 외부 인터페이스</title>
+<!-- 생성 파일: node tools/ui_doc.js 가 ks 의 GUI 뷰 항목에서 만든다. 직접 고치지 않는다. -->
+<style>
+:root { --fg:#1d232b; --muted:#5b6673; --line:#d6dbe1; --bg:#f6f7f9; --accent:#2f6fde; --accent-bg:#e7efff; --warn:#b3261e; --warn-bg:#fdecea; }
+* { box-sizing: border-box; }
+body { margin:0; font:15px/1.6 -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; color:var(--fg); background:#fff; display:flex; }
+nav { position:sticky; top:0; height:100vh; overflow:auto; width:250px; flex:none; padding:20px 16px; background:var(--bg); border-right:1px solid var(--line); font-size:14px; }
+nav h1 { font-size:16px; margin:0 0 4px; } nav .meta { color:var(--muted); font-size:12px; margin-bottom:14px; }
+nav ul { list-style:none; margin:0; padding:0; } nav li { margin:3px 0; } nav li.sub { padding-left:14px; }
+nav a { color:var(--fg); text-decoration:none; } nav a:hover { color:var(--accent); }
+main { flex:1; min-width:0; padding:24px 40px 80px; max-width:1100px; }
+section { border-top:1px solid var(--line); padding-top:18px; margin-top:28px; }
+.ihead { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.ihead h2 { margin:0; font-size:22px; } .id { font:600 13px ui-monospace, Consolas, monospace; color:var(--accent); background:var(--accent-bg); padding:2px 6px; border-radius:4px; }
+.parent, .summary { color:var(--muted); } .summary { margin:6px 0; }
+.reqs { font-size:13px; } .req { display:inline-block; border:1px solid var(--line); border-radius:12px; padding:1px 9px; margin:2px 2px; background:#fff; }
+h3 { font-size:16px; margin:22px 0 6px; } h4 { font-size:15px; }
+code, pre { font-family: ui-monospace, Consolas, "D2Coding", monospace; font-size:13px; } code { background:var(--bg); padding:1px 4px; border-radius:3px; }
+pre { background:var(--bg); border:1px solid var(--line); padding:10px 12px; overflow:auto; }
+table.md { border-collapse:collapse; margin:8px 0; font-size:14px; } table.md th, table.md td { border:1px solid var(--line); padding:4px 10px; text-align:left; vertical-align:top; } table.md th { background:var(--bg); }
+.wf { margin:10px 0 6px; }
+.win { border:1px solid #b9c1cb; border-radius:8px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.07); font-size:13px; }
+.bar { display:flex; align-items:center; gap:6px; background:#e9ecf0; padding:7px 10px; border-bottom:1px solid #c9d0d8; }
+.bar i { width:10px; height:10px; border-radius:50%; background:#c4cad2; display:inline-block; }
+.addr { margin-left:8px; flex:1; background:#fff; border:1px solid #cfd5dc; border-radius:12px; padding:1px 10px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:ui-monospace, Consolas, monospace; font-size:12px; }
+.page { padding:12px; display:flex; flex-direction:column; gap:8px; background:#fff; }
+.row { display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; } .row > .col { flex:1; min-width:180px; } .cap { width:100%; color:var(--muted); font-size:12px; }
+.col { border:1px dashed #b9c1cb; border-radius:6px; margin:0; padding:6px 10px 10px; display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
+.col legend { font-weight:600; font-size:12px; color:var(--muted); padding:0 4px; }
+.brand { font-weight:700; }
+.tabs { display:flex; gap:2px; border-bottom:2px solid var(--line); width:100%; } .tabs span { padding:4px 12px; color:var(--muted); } .tabs span.on { color:var(--accent); border-bottom:2px solid var(--accent); margin-bottom:-2px; font-weight:600; }
+.steps { display:flex; flex-wrap:wrap; gap:4px; } .steps span { border:1px solid var(--line); border-radius:10px; padding:0 8px; font-size:12px; color:var(--muted); } .steps span.on { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+table.wft { border-collapse:collapse; width:100%; } table.wft th, table.wft td { border-bottom:1px solid var(--line); padding:3px 8px; text-align:left; } table.wft th { background:var(--bg); font-weight:600; }
+.input, .select { display:inline-block; min-width:180px; border:1px solid #b9c1cb; border-radius:4px; padding:3px 8px; color:#8a94a0; background:#fff; }
+.button { display:inline-block; border-radius:4px; padding:3px 14px; background:var(--accent); color:#fff; font-weight:600; }
+.link { color:var(--accent); text-decoration:underline; } .link.on { font-weight:700; text-decoration:none; background:var(--accent-bg); padding:0 4px; border-radius:3px; }
+.badge { display:inline-block; border-radius:10px; padding:0 8px; background:var(--bg); border:1px solid var(--line); font-size:12px; }
+.title { font-size:15px; } .text { color:var(--fg); }
+.drop { width:100%; border:2px dashed #9fb4d8; border-radius:8px; padding:22px; text-align:center; color:var(--muted); background:#f8faff; }
+.alert { width:100%; border-left:4px solid var(--warn); background:var(--warn-bg); color:var(--warn); padding:6px 10px; border-radius:4px; }
+.preview { width:100%; background:var(--bg); border-left:3px solid var(--line); padding:6px 10px; color:var(--muted); }
+@media (max-width: 800px) { body { display:block; } nav { position:static; width:auto; height:auto; } main { padding:16px; } }
+</style>
+</head>
+<body>
+<nav>
+  <h1>브라우저 뷰어 외부 인터페이스</h1>
+  <div class="meta">ks 의 GUI 뷰 항목에서 생성 · CP-0088 · 3 외부 인터페이스 · running</div>
+  <ul><li class=""><a href="#UI-168">UI-168 브라우저 뷰어</a></li><li class="sub"><a href="#UI-169">UI-169 뷰어 링크</a></li><li class="sub"><a href="#UI-170">UI-170 열기 화면</a></li><li class="sub"><a href="#UI-171">UI-171 개요 화면</a></li><li class="sub"><a href="#UI-172">UI-172 진행 화면</a></li><li class="sub"><a href="#UI-173">UI-173 항목 표 화면</a></li><li class="sub"><a href="#UI-174">UI-174 항목 상세 화면</a></li><li class="sub"><a href="#UI-175">UI-175 변경 요청 화면</a></li></ul>
+</nav>
+<main>
+<p class="summary">이 페이지는 <code>node tools/ui_doc.js</code> 가 ks 의 외부 인터페이스 항목(인터페이스 종류 = GUI 뷰) 8 개에서 만든다. 고칠 때는 ks 로 항목을 고치고 다시 만든다. 화면 그림은 항목 본문의 <code>wireframe</code> 블록이다.</p>
+
+<section id="UI-168">
+  <div class="ihead"><span class="id">UI-168</span><h2>브라우저 뷰어</h2></div>
+  <p class="summary">GitHub Pages 정적 뷰어. 링크나 로컬 파일로 .kisp 를 열어 개요 · 진행 · 항목 · 변경 요청을 보인다. 보기 전용</p>
+  <p class="reqs">관련 요구사항 <span class="req" title="정적 웹 뷰어가 공개 저장소 링크나 로컬 파일로 사양 파일을 열어 개요 · 진행 · 항목 · 추적 관계 · 변경 요청을 보인다. 보기 전용">REQ-052 설치 없이 브라우저에서 사양 기록을 본다</span> <span class="req" title="">REQ-059 뷰어 실행 환경</span></p>
+  <h3>목적</h3>
+<p>설치 없이 브라우저에서 사양 파일(.kisp)을 보는 정적 웹 뷰어. 보기 전용이며 사양 파일 해석은 wasm32 로 빌드한 라이브러리가 한다.</p>
+<h3>포함</h3>
+<ul><li><a href="#UI-169">UI-169</a> 뷰어 링크</li><li><a href="#UI-170">UI-170</a> 열기 화면</li><li><a href="#UI-171">UI-171</a> 개요 화면</li><li><a href="#UI-172">UI-172</a> 진행 화면</li><li><a href="#UI-173">UI-173</a> 항목 표 화면</li><li><a href="#UI-174">UI-174</a> 항목 상세 화면</li><li><a href="#UI-175">UI-175</a> 변경 요청 화면</li></ul>
+<h3>화면</h3>
+<div class="wf"><div class="win"><div class="bar"><i></i><i></i><i></i><span class="addr">https://OWNER.github.io/kiotty-spec/?repo=bn3monkey/kiotty-spec&amp;ref=v1.4#/progress</span></div><div class="page"><div class="row"><span class="brand">kiotty-spec 뷰어</span><span class="badge">bn3monkey/kiotty-spec @ v1.4</span><span class="link">다른 파일 열기</span></div><div class="tabs"><span>개요</span><span class="on">진행</span><span>항목</span><span>변경 요청</span></div><fieldset class="col"><legend>선택한 화면</legend><div class="text">UI-171 ~ UI-175 중 하나</div></fieldset></div></div></div>
+<h3>공통 구성</h3>
+<ul><li>머리 줄: 뷰어 이름, 연 원천(저장소 @ 버전 또는 로컬 파일 이름), &quot;다른 파일 열기&quot; (<a href="#UI-170">UI-170</a> 으로)</li><li>탭: 개요 · 진행 · 항목 · 변경 요청. 항목 상세(<a href="#UI-174">UI-174</a>) 는 탭이 아니라 링크로 연다</li><li>화면 상태는 주소의 # 뒤에 둔다 (<a href="#UI-169">UI-169</a>). 브라우저 뒤로 가기 · 앞으로 가기 · 새로 고침이 그대로 동작한다</li><li>쓰기 단추 · 입력이 없다. 사양 파일을 바꾸는 방법은 화면에 없다</li></ul>
+<h3>사전조건</h3>
+<ul><li>지원 브라우저: Windows · macOS 의 크롬 · 엣지 · 사파리 최신 두 주 버전 (REQ-059)</li><li>JavaScript 와 WebAssembly 가 켜져 있다</li></ul>
+<h3>사후조건</h3>
+<ul><li>뷰어는 저장소 · 로컬 파일에 아무것도 쓰지 않는다</li><li>사양 파일은 브라우저 메모리에서만 연다. 탭을 닫으면 사라진다</li></ul>
+<h3>오류 표시</h3>
+<ul><li>불러오는 중: 머리 줄 아래 진행 표시</li><li>브라우저가 WebAssembly 를 지원하지 않음: &quot;이 브라우저에서는 열 수 없습니다&quot; 와 지원 브라우저 목록</li><li>열기 실패: <a href="#UI-170">UI-170</a> 열기 화면에 이유를 보인다</li></ul>
+</section>
+
+<section id="UI-169">
+  <div class="ihead"><span class="id">UI-169</span><h2>뷰어 링크</h2><span class="parent">상위 <a href="#UI-168">UI-168</a></span></div>
+  <p class="summary">?repo=OWNER/NAME&amp;ref=REF&amp;path=PATH 로 원천을, # 뒤로 화면을 정한다</p>
+  <p class="reqs">관련 요구사항 <span class="req" title="">REQ-053 공개 저장소의 사양 파일을 링크로 연다</span> <span class="req" title="">REQ-057 항목 하나의 추적 관계를 따라간다</span></p>
+  <h3>시그니처</h3>
+<pre>https://&lt;뷰어 주소&gt;/?repo=OWNER/NAME[&amp;ref=REF][&amp;path=PATH][#/&lt;화면&gt;]
+
+#/overview                          개요 (UI-171)
+#/progress                          진행 (UI-172, 기본)
+#/items/&lt;KIND&gt;[?tag=이름:값&amp;q=글자]  항목 표 (UI-173)
+#/item/&lt;ID&gt;                         항목 상세 (UI-174)
+#/changes                           변경 요청 (UI-175)</pre>
+<h3>매개변수</h3>
+<table class="md"><thead><tr><th>이름</th><th>필수</th><th>기본값</th><th>뜻</th></tr></thead><tbody><tr><td>repo</td><td>예 (없으면 <a href="#UI-170">UI-170</a>)</td><td>—</td><td>공개 GitHub 저장소 OWNER/NAME</td></tr><tr><td>ref</td><td>아니오</td><td>저장소 기본 브랜치</td><td>태그 · 브랜치 · commit</td></tr><tr><td>path</td><td>아니오</td><td>.kiotty/spec.kisp</td><td>저장소 안 사양 파일 위치</td></tr><tr><td>KIND</td><td>—</td><td>—</td><td>ks 의 Kind 이름 (requirement, design 등)</td></tr><tr><td>tag</td><td>아니오</td><td>—</td><td>태그 거르기. 여러 번 쓸 수 있다</td></tr><tr><td>q</td><td>아니오</td><td>—</td><td>제목 · 요약 글자 찾기</td></tr></tbody></table>
+<p>모든 값은 URL 인코딩한다 (한글 태그 이름 포함).</p>
+<h3>사전조건</h3>
+<ul><li>저장소가 공개이고, 그 ref 에 path 파일이 있다</li></ul>
+<h3>사후조건</h3>
+<ul><li><code>https://raw.githubusercontent.com/OWNER/NAME/REF/PATH</code> 를 받아 연다</li><li>같은 링크는 누가 열어도 같은 내용을 보인다 (ref 가 태그 · commit 일 때)</li><li># 뒤만 바뀌면 파일을 다시 받지 않는다</li></ul>
+<h3>오류 표시</h3>
+<p>열 수 없으면 <a href="#UI-170">UI-170</a> 열기 화면에 아래 문구와 입력한 값을 채워 보인다.</p>
+<ul><li>저장소를 찾지 못함: &quot;저장소 OWNER/NAME 을 찾지 못했습니다 (없거나 비공개)&quot;</li><li>버전을 찾지 못함: &quot;버전 REF 를 찾지 못했습니다&quot;</li><li>파일을 찾지 못함: &quot;REF 에 PATH 가 없습니다&quot;</li><li>형식이 다름: &quot;사양 파일 형식이 아닙니다 (N 번째 줄)&quot; 또는 &quot;이 뷰어가 모르는 모델 버전입니다&quot;</li><li>너무 큼: &quot;기록이 뷰어 용량보다 큽니다&quot;</li><li>네트워크 실패: &quot;파일을 받지 못했습니다&quot; 와 다시 시도</li><li>없는 KIND: 항목 화면에 &quot;없는 종류: KIND&quot;. 없는 ID: <a href="#UI-174">UI-174</a> 의 없는 항목 표시</li><li>비공개 저장소 · 찾지 못함 문구에는 로컬 파일 열기 안내를 붙인다 (REQ-054)</li></ul>
+</section>
+
+<section id="UI-170">
+  <div class="ihead"><span class="id">UI-170</span><h2>열기 화면</h2><span class="parent">상위 <a href="#UI-168">UI-168</a></span></div>
+  <p class="summary">공개 저장소 입력과 로컬 파일 끌어 놓기 · 고르기, 열기 실패 이유</p>
+  <p class="reqs">관련 요구사항 <span class="req" title="">REQ-053 공개 저장소의 사양 파일을 링크로 연다</span> <span class="req" title="">REQ-054 내 PC 의 사양 파일을 끌어 놓아 연다</span></p>
+  <h3>목적</h3>
+<p>링크에 저장소가 없거나 열기에 실패했을 때, 또는 &quot;다른 파일 열기&quot; 를 눌렀을 때 원천을 고른다.</p>
+<h3>화면</h3>
+<div class="wf"><div class="win"><div class="bar"><i></i><i></i><i></i><span class="addr">https://OWNER.github.io/kiotty-spec/</span></div><div class="page"><div class="row"><span class="brand">kiotty-spec 뷰어</span></div><div class="alert">버전 v9.9 를 찾지 못했습니다. 비공개 저장소라면 아래에서 로컬 파일로 여세요</div><fieldset class="col"><legend>공개 저장소에서 열기</legend><div class="row"><span class="input">OWNER/NAME</span><span class="input">버전 (태그 · 브랜치 · commit, 비우면 기본 브랜치)</span></div><span class="input">파일 위치 (.kiotty/spec.kisp)</span><span class="button">열기</span></fieldset><fieldset class="col"><legend>내 PC 의 파일 열기</legend><div class="drop">.kisp 파일을 여기에 끌어 놓으세요</div><span class="button">파일 고르기</span></fieldset></div></div></div>
+<h3>구성</h3>
+<ul><li>공개 저장소 입력: 저장소(OWNER/NAME), 버전, 파일 위치. 앞서 실패한 링크의 값을 채워 둔다</li><li>열기: 입력값으로 <a href="#UI-169">UI-169</a> 링크를 만들어 그 주소로 간다 (링크를 복사해 보낼 수 있다)</li><li>끌어 놓기 상자 · 파일 고르기: 로컬 .kisp 를 연다</li><li>오류 알림: <a href="#UI-169">UI-169</a> 의 문구</li></ul>
+<h3>사전조건</h3>
+<ul><li>없음</li></ul>
+<h3>사후조건</h3>
+<ul><li>로컬 파일은 브라우저 안에서만 읽고 어디에도 보내지 않는다. 주소에 repo 를 넣지 않는다 (새로 고침하면 열기 화면으로 돌아온다)</li><li>로컬 파일을 열면 머리 줄에 파일 이름을 보이고 진행 화면(<a href="#UI-172">UI-172</a>) 으로 간다</li><li>파일이 열린 뒤에도 뷰어 어디에든 끌어 놓으면 새 파일을 연다</li></ul>
+<h3>오류 표시</h3>
+<ul><li>저장소 입력이 OWNER/NAME 꼴이 아님: 열기 단추 아래 &quot;OWNER/NAME 꼴로 입력하세요&quot;, 이동하지 않는다</li><li>로컬 파일 형식이 다름: &quot;사양 파일 형식이 아닙니다 (N 번째 줄)&quot;. 앞서 연 파일이 있으면 그대로 둔다</li><li>여러 파일을 끌어 놓음: 첫 파일만 열고 &quot;파일 하나만 엽니다&quot; 를 알린다</li></ul>
+</section>
+
+<section id="UI-171">
+  <div class="ihead"><span class="id">UI-171</span><h2>개요 화면</h2><span class="parent">상위 <a href="#UI-168">UI-168</a></span></div>
+  <p class="summary">#/overview. ks guide 의 목적 · 역할 · 12 단계와 프로젝트 이름 · 종류별 항목 수</p>
+  <p class="reqs">관련 요구사항 <span class="req" title="">REQ-055 목적 · 단계와 지금 진행 상황을 본다</span></p>
+  <h3>목적</h3>
+<p>이 기록이 무엇인지 처음 보는 사람에게 알린다. 내용은 ks guide 와 같다.</p>
+<h3>화면</h3>
+<div class="wf"><div class="win"><div class="bar"><i></i><i></i><i></i><span class="addr">...#/overview</span></div><div class="page"><div class="tabs"><span class="on">개요</span><span>진행</span><span>항목</span><span>변경 요청</span></div><fieldset class="col"><legend>kiotty-spec</legend><div class="text">만든 시각 2026-11-10 · 항목 812 개</div></fieldset><fieldset class="col"><legend>목적</legend><div class="text">라이프사이클을 로컬 git 저장소 안에서 관리한다 ...</div></fieldset><fieldset class="col"><legend>역할</legend><div class="text">AI: 체크포인트 시작, 항목 작성, 구현, 테스트 · 검사</div><div class="text">사용자: 체크포인트 확정</div></fieldset><fieldset class="col"><legend>12 단계</legend><table class="wft"><thead><tr><th>단계</th><th>이름</th><th>하는 일</th><th>항목</th></tr></thead><tbody><tr><td>1</td><td>변경 요청 접수</td><td>무엇을 왜 바꿀지 받는다</td><td>CR</td></tr><tr><td>2</td><td>요구사항</td><td>해야 할 일과 지킬 개발 수칙을 정한다</td><td>REQ, RULE, PRULE</td></tr><tr><td>...</td><td>...</td><td>...</td><td>...</td></tr></tbody></table></fieldset><fieldset class="col"><legend>항목 수</legend><table class="wft"><thead><tr><th>종류</th><th>개수</th></tr></thead><tbody><tr><td>requirement</td><td>59</td></tr></tbody></table></fieldset></div></div></div>
+<h3>구성</h3>
+<ul><li>프로젝트 이름 · 만든 시각</li><li>목적 · 역할 · 12 단계: ks guide 의 [목적] · [역할] · [12 단계] 와 같은 글</li><li>종류별 항목 수. 누르면 그 종류의 항목 표(<a href="#UI-173">UI-173</a>)</li></ul>
+<h3>사전조건</h3>
+<ul><li>사양 파일이 열려 있다</li></ul>
+<h3>사후조건</h3>
+<ul><li>사양 파일이 바뀌어도 목적 · 역할 · 12 단계 글은 뷰어 버전을 따른다</li></ul>
+<h3>오류 표시</h3>
+<ul><li>프로젝트 이름이 없음: 이름 대신 원천(저장소 또는 파일 이름)</li></ul>
+</section>
+
+<section id="UI-172">
+  <div class="ihead"><span class="id">UI-172</span><h2>진행 화면</h2><span class="parent">상위 <a href="#UI-168">UI-168</a></span></div>
+  <p class="summary">#/progress (기본). ks next 의 현재 체크포인트 · 진행 줄 · 작업할 항목 · 할 행동과 체크포인트 목록</p>
+  <p class="reqs">관련 요구사항 <span class="req" title="">REQ-055 목적 · 단계와 지금 진행 상황을 본다</span></p>
+  <h3>목적</h3>
+<p>지금 어디까지 왔는지 보인다. 파일을 열면 처음 보이는 화면이다. 내용은 ks next 와 ks checkpoint list 와 같다.</p>
+<h3>화면</h3>
+<div class="wf"><div class="win"><div class="bar"><i></i><i></i><i></i><span class="addr">...#/progress</span></div><div class="page"><div class="tabs"><span>개요</span><span class="on">진행</span><span>항목</span><span>변경 요청</span></div><div class="text">처음이면 개요 탭에서 이 기록이 무엇인지 보세요</div><fieldset class="col"><legend>현재 체크포인트</legend><div class="row"><strong class="title">CP-0088</strong><span class="badge">3 외부 인터페이스</span><span class="badge">진행 중</span></div><div class="text">CR-019 브라우저 뷰어 화면과 링크</div><div class="steps"><span>변경 요청</span><span>요구사항</span><span class="on">외부 인터페이스</span><span>설계</span><span>유닛 테스트</span><span>개발 계획</span><span>구현</span><span>시스템 테스트 계획</span><span>시스템 테스트</span><span>코드 검사</span><span>E2E 계획</span><span>E2E 실행</span></div></fieldset><fieldset class="col"><legend>작업할 항목</legend><table class="wft"><thead><tr><th>ID</th><th>종류</th><th>이유</th></tr></thead><tbody><tr><td>REQ-060</td><td>requirement</td><td>인수 조건이 없음</td></tr></tbody></table></fieldset><fieldset class="col"><legend>할 행동</legend><div class="text">사용자에게 확정을 요청한다 — ks checkpoint complete --actor user (사용자)</div></fieldset><fieldset class="col"><legend>체크포인트</legend><table class="wft"><thead><tr><th>CP</th><th>단계</th><th>상태</th><th>설명</th><th>시각</th></tr></thead><tbody><tr><td>CP-0088</td><td>3 외부 인터페이스</td><td>진행 중</td><td>CR-019 브라우저 뷰어 화면과 링크</td><td>2026-11-17 18:10</td></tr><tr><td>CP-0087</td><td>2 요구사항</td><td>확정</td><td>CR-019 브라우저 뷰어 요구사항</td><td>2026-11-17 17:40</td></tr></tbody></table></fieldset></div></div></div>
+<h3>구성</h3>
+<ul><li>현재 체크포인트: CP, 단계, 상태, 설명과 12 단계 진행 줄 (지금 단계 강조)</li><li>작업할 항목: ID(<a href="#UI-174">UI-174</a> 링크), 종류, 이유. 없으면 이 부분을 숨긴다</li><li>할 행동: ks next 의 행동 글과 명령. 명령은 복사만 할 수 있다</li><li>체크포인트 목록: 최근 것부터, 단계 필터</li></ul>
+<h3>사전조건</h3>
+<ul><li>사양 파일이 열려 있다</li></ul>
+<h3>사후조건</h3>
+<ul><li>체크포인트 · 단계 · 상태 · 작업할 항목은 같은 파일에서 ks next 가 찍는 것과 같다</li></ul>
+<h3>오류 표시</h3>
+<ul><li>체크포인트가 없음: &quot;진행 기록이 없습니다&quot; 만 보이고 다른 탭은 열린다</li></ul>
+</section>
+
+<section id="UI-173">
+  <div class="ihead"><span class="id">UI-173</span><h2>항목 표 화면</h2><span class="parent">상위 <a href="#UI-168">UI-168</a></span></div>
+  <p class="summary">#/items/KIND. 종류 목록, 찾기 · 태그 거르기, ID 순 표와 펼친 본문</p>
+  <p class="reqs">관련 요구사항 <span class="req" title="">REQ-056 항목을 종류별 표로 보고 걸러 찾는다</span></p>
+  <h3>목적</h3>
+<p>항목을 종류별 표로 보고 태그 · 글자로 걸러 찾는다.</p>
+<h3>화면</h3>
+<div class="wf"><div class="win"><div class="bar"><i></i><i></i><i></i><span class="addr">...#/items/requirement?tag=요구사항 종류:환경 요구사항</span></div><div class="page"><div class="tabs"><span>개요</span><span>진행</span><span class="on">항목</span><span>변경 요청</span></div><div class="row"><fieldset class="col"><legend>종류</legend><span class="link">change_request (19)</span><span class="link on">requirement (59)</span><span class="link">rule (75)</span><span class="link">design (110)</span><span class="link">...</span></fieldset><fieldset class="col"><legend>requirement</legend><div class="row"><span class="input">제목 · 요약에서 찾기</span><span class="select">요구사항 종류: 환경 요구사항 ▾</span><span class="badge">3 / 59</span></div><table class="wft"><thead><tr><th>ID</th><th>제목</th><th>요약</th><th>요구사항 종류</th><th>체크포인트</th></tr></thead><tbody><tr><td>▸ REQ-037</td><td>빌드 환경</td><td>-</td><td>환경 요구사항</td><td>CP-0087</td></tr><tr><td>▾ REQ-059</td><td>뷰어 실행 환경</td><td>-</td><td>환경 요구사항</td><td>CP-0087</td></tr></tbody></table><div class="preview">## 진술 / 뷰어는 Windows 와 macOS 의 ... (펼친 본문)  [상세 보기 →]</div></fieldset></div></div></div></div>
+<h3>구성</h3>
+<ul><li>종류 목록: ks 의 Kind 순서, 이름과 항목 수. 항목이 없는 종류도 보인다</li><li>찾기 입력: 제목 · 요약에 그 글자가 있는 항목만 (대소문자 무시)</li><li>태그 고르기: 그 종류 모델의 태그마다 하나 (ks model KIND). 값 여럿을 고르면 그중 하나라도 맞는 항목</li><li>표 열: ID, 제목, 요약, 모델의 태그들, 체크포인트. ID 순서. 하위 항목은 상위 바로 아래에 들여 쓴다 (거르기로 상위가 빠지면 하위는 그대로 보인다)</li><li>줄을 누르면 본문을 펼친다. &quot;상세 보기&quot; 는 <a href="#UI-174">UI-174</a></li><li>결과 수: 거른 수 / 전체 수</li><li>찾기 · 거르기 값은 주소에 남는다 (<a href="#UI-169">UI-169</a> 의 tag · q)</li></ul>
+<h3>사전조건</h3>
+<ul><li>사양 파일이 열려 있다</li></ul>
+<h3>사후조건</h3>
+<ul><li>거르지 않은 표의 항목은 같은 파일에서 ks item list --kind KIND 와 같다</li><li>본문은 Markdown 으로 보이고 HTML 태그 · 스크립트는 글자 그대로 보인다 (실행하지 않는다)</li></ul>
+<h3>오류 표시</h3>
+<ul><li>항목이 없는 종류: &quot;이 종류의 항목이 없습니다&quot;</li><li>거른 결과가 없음: &quot;맞는 항목이 없습니다&quot; 와 거르기 지우기</li><li>본문이 없음: &quot;본문 없음&quot;</li></ul>
+</section>
+
+<section id="UI-174">
+  <div class="ihead"><span class="id">UI-174</span><h2>항목 상세 화면</h2><span class="parent">상위 <a href="#UI-168">UI-168</a></span></div>
+  <p class="summary">#/item/ID. 머리 · 태그 · 본문, 관계 이름별 나가는 · 들어오는 관계, 영향 항목, 하위 항목</p>
+  <p class="reqs">관련 요구사항 <span class="req" title="">REQ-057 항목 하나의 추적 관계를 따라간다</span> <span class="req" title="">REQ-058 변경 요청과 영향 항목을 본다</span></p>
+  <h3>목적</h3>
+<p>항목 하나의 내용과 추적 관계를 보고 따라간다.</p>
+<h3>화면</h3>
+<div class="wf"><div class="win"><div class="bar"><i></i><i></i><i></i><span class="addr">...#/item/REQ-053</span></div><div class="page"><div class="tabs"><span>개요</span><span>진행</span><span>항목</span><span>변경 요청</span></div><div class="row"><strong class="title">REQ-053 공개 저장소의 사양 파일을 링크로 연다</strong><span class="badge">requirement</span><span class="badge">CP-0087</span></div><div class="text">상위: REQ-052 설치 없이 브라우저에서 사양 기록을 본다</div><table class="wft"><thead><tr><th>태그</th><th>값</th></tr></thead><tbody><tr><td>요구사항 종류</td><td>기능 요구사항</td></tr></tbody></table><div class="preview">## 진술 / 협업자는 공개 git 저장소와 그 버전을 담은 링크 하나로 ...</div><div class="row"><fieldset class="col"><legend>이 항목이 가리키는 것</legend><div class="text">(없음)</div></fieldset><fieldset class="col"><legend>이 항목을 가리키는 것</legend><div class="text">영향 요구사항</div><span class="link">CR-019 GitHub Pages 정적 뷰어로 .kisp 열람</span><div class="text">관련 요구사항</div><span class="link">UI-169 뷰어 링크</span></fieldset></div><fieldset class="col"><legend>영향 항목 (ks impact)</legend><span class="link">CR-019 · UI-169 · UI-170</span></fieldset><fieldset class="col"><legend>하위 항목</legend><div class="text">(없음)</div></fieldset></div></div></div>
+<h3>구성</h3>
+<ul><li>머리: ID, 제목, 종류, 체크포인트, 요약, 상위 항목 링크</li><li>태그 표: 그 종류 모델의 태그와 값 (ks item show --tags)</li><li>본문: Markdown (<a href="#UI-173">UI-173</a> 과 같은 규칙)</li><li>관계: 나가는 관계 · 들어오는 관계를 관계 이름별로. 상대는 ID 와 제목 링크 (ks relation list)</li><li>영향 항목: 이 항목을 가리키는 하류 항목 (ks impact, 깊이 기본값). ID 링크</li><li>하위 항목: ID 와 제목 링크 (ks item children)</li><li>변경 요청이면 나가는 관계(영향 요구사항 · 영향 개발 수칙 · 영향 외부 인터페이스 · 영향 설계 사항 · 관련 마일스톤 · 영향 전용 개발 수칙) 가 영향 항목 묶음이 된다 (REQ-058)</li></ul>
+<h3>사전조건</h3>
+<ul><li>사양 파일이 열려 있다</li></ul>
+<h3>사후조건</h3>
+<ul><li>링크를 누르면 #/item/&lt;ID&gt; 로 가고 뒤로 가기로 돌아온다</li><li>관계 · 영향 항목은 같은 파일에서 ks relation list · ks impact 와 같다</li></ul>
+<h3>오류 표시</h3>
+<ul><li>없는 ID: &quot;없는 항목: ID&quot; 와 항목 표로 가는 링크</li></ul>
+</section>
+
+<section id="UI-175">
+  <div class="ihead"><span class="id">UI-175</span><h2>변경 요청 화면</h2><span class="parent">상위 <a href="#UI-168">UI-168</a></span></div>
+  <p class="summary">#/changes. 상태별 묶음(열림 · 반영 중 먼저), 줄을 누르면 항목 상세</p>
+  <p class="reqs">관련 요구사항 <span class="req" title="">REQ-058 변경 요청과 영향 항목을 본다</span></p>
+  <h3>목적</h3>
+<p>변경 요청을 상태별로 보고 각 변경이 건드리는 항목으로 간다.</p>
+<h3>화면</h3>
+<div class="wf"><div class="win"><div class="bar"><i></i><i></i><i></i><span class="addr">...#/changes</span></div><div class="page"><div class="tabs"><span>개요</span><span>진행</span><span>항목</span><span class="on">변경 요청</span></div><fieldset class="col"><legend>열림 · 반영 중 (1)</legend><table class="wft"><thead><tr><th>ID</th><th>제목</th><th>출처</th><th>진입 단계</th><th>영향 항목</th></tr></thead><tbody><tr><td>CR-019</td><td>GitHub Pages 정적 뷰어로 .kisp 열람</td><td>사용자 피드백</td><td>Step 2</td><td>20</td></tr></tbody></table></fieldset><fieldset class="col"><legend>백로그 (0)</legend><div class="text">(없음)</div></fieldset><fieldset class="col"><legend>완료 (17)</legend><table class="wft"><thead><tr><th>ID</th><th>제목</th><th>출처</th><th>진입 단계</th><th>영향 항목</th></tr></thead><tbody><tr><td>CR-018</td><td>context/ 를 C 인터페이스의 Context 정의만으로</td><td>사용자 피드백</td><td>Step 2</td><td>46</td></tr><tr><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td></tr></tbody></table></fieldset><fieldset class="col"><legend>거부 (1)</legend><div class="text">▸ 펼치기</div></fieldset></div></div></div>
+<h3>구성</h3>
+<ul><li>상태 묶음 순서: 열림 · 반영 중, 백로그, 완료, 거부. 묶음마다 개수. 완료 · 거부는 접혀서 시작한다</li><li>줄: ID, 제목, 요약(마우스를 올리면), 출처, 진입 단계, 영향 항목 수 (변경 요청에서 나가는 관계 수)</li><li>줄을 누르면 <a href="#UI-174">UI-174</a> 항목 상세로 간다. 거기서 본문과 영향 항목을 관계 이름별로 본다</li><li>묶음 안은 ID 내림차순 (새 변경 요청이 위)</li></ul>
+<h3>사전조건</h3>
+<ul><li>사양 파일이 열려 있다</li></ul>
+<h3>사후조건</h3>
+<ul><li>묶음의 변경 요청은 같은 파일에서 ks item list --kind change_request --tag 상태=값 과 같다</li></ul>
+<h3>오류 표시</h3>
+<ul><li>변경 요청이 없음: &quot;변경 요청이 없습니다&quot;</li><li>상태 태그가 없는 변경 요청: &quot;상태 없음&quot; 묶음을 맨 끝에 둔다</li></ul>
+</section>
+</main>
+</body>
+</html>
