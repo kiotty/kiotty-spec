@@ -52,7 +52,7 @@ checkpoint	O	84	83	11	done	1794896036	CR-017 E2E 계획 변경 없음
 checkpoint	O	85	84	12	done	1794896045	CR-017 E2E 실행과 닫기
 checkpoint	O	86	85	1	done	1794903264	CR-019 GitHub Pages 정적 뷰어 (wasm32) 접수
 checkpoint	O	87	86	2	done	1794926665	CR-019 브라우저 뷰어 요구사항 (wasm32)
-checkpoint	O	88	87	3	running	1794927103	CR-019 브라우저 뷰어 화면과 링크
+checkpoint	O	88	87	3	done	1794927103	CR-019 브라우저 뷰어 화면과 링크
 TABLE	item	O/X	key	id
 item	O	00593058	CIR-020
 item	O	00ab1435	DSN-078
