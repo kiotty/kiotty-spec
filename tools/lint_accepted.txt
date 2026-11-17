@@ -1,4 +1,4 @@
-# 받아들인 편차 (docs/deviations.md). 한 줄에 "<수칙> <파일> <이름>". tools/lint.js 는 이 위반을 세지 않는다.
+# 전용 개발 수칙(4.17 의 PRULE, ks item list --kind private_rule)이 받아들인 이름. 한 줄에 "<수칙> <파일> <이름>". tools/lint.js 는 이 위반을 세지 않는다.
 # 4.17: CP-0022 코드 검사 때 있던, 동사로 시작하지 않는 이름 (CR-014, 사용자 결정 2026-11-13). 새 이름은 4.17 을 지킨다.
 4.17 app/cli/src/infra/kiotty_path_utf8.h pathFromUtf8
 4.17 app/cli/src/infra/kiotty_path_utf8.h pathToUtf8

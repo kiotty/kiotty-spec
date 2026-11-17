@@ -4,7 +4,7 @@
 // usage: node tools/lint.js [--rule 4.1] [--list] [--json]
 // With no option it prints one line per rule: "<rule> <count>".
 // --list prints every violation as "<rule> <file>:<line> <message>".
-// Findings listed in tools/lint_accepted.txt (accepted deviations, docs/deviations.md) are not counted.
+// Findings listed in tools/lint_accepted.txt (accepted by the private rule PRULE for 4.17) are not counted.
 
 const fs = require('fs');
 const path = require('path');
@@ -17,7 +17,7 @@ const listing = args.includes('--list') || onlyRule !== null;
 const asJson = args.includes('--json');
 
 const violations = [];
-// Accepted deviations: one "<rule> <file> <name>" per line. A finding whose message quotes that
+// Accepted names (private rule for 4.17): one "<rule> <file> <name>" per line. A finding whose message quotes that
 // name in that file is kept apart and not counted.
 const ACCEPTED_FILE = path.join(ROOT, 'tools', 'lint_accepted.txt');
 const ACCEPTED = new Set(fs.existsSync(ACCEPTED_FILE)
@@ -60,8 +60,8 @@ const isCliInfra = (f) => f.startsWith('app/cli/src/infra/');
 const isCliI18n = (f) => f.startsWith('app/cli/src/i18n/');
 const isLibrary = (f) => f.startsWith('src/');
 const pointerExempt = (f) => isCore(f) || isBackend(f) || isAdapter(f) || isPublicHeader(f) || isCliInfra(f);
-// docs/deviations.md: the CLI may allocate (1.1) with standard containers (1.6) whose sizes are not fixed (3.4);
-// raw pointers are allowed where the CLI crosses the C ABI (1.10).
+// Private rules (ks item list --kind private_rule): the CLI may allocate (1.1) with standard containers (1.6)
+// whose sizes are not fixed (3.4); raw pointers are allowed where the CLI crosses the C ABI (1.10).
 const allocationExempt = (f) => isCli(f);
 const C_ABI_LINE = /\bKiottySpec(?:_\w+|[A-Z]\w*)|\b(?:std::)?(?:fwrite|fread|fputs|fflush|fopen|fclose|strtoul|strtoull|strtol)\s*\(|\b(?:_dupenv_s|_wdupenv_s|free|MultiByteToWideChar|WideCharToMultiByte|GetCommandLineW|CommandLineToArgvW|LocalFree|SetConsoleOutputCP|GetStdHandle|GetConsoleMode|SetConsoleMode)\s*\(/;
 const cAbiBoundary = (f, line) => isCli(f) && C_ABI_LINE.test(line);
@@ -420,7 +420,7 @@ const VERBS = new Set(('acquire release open close fetch append parse read write
 // 4.17 exceptions (CR-007): property lookup (method without arguments), type conversion (to + Type), indexing (...Of), cursor next()
 const isNamingException = (name, isMethod, params) =>
   name === 'next' || /^to[A-Z]/.test(name) || /[a-z]Of$/.test(name) || (isMethod && params.every((p) => p.trim() === ''));
-// docs/deviations.md: rule 3.4 does not pin structs whose size depends on template arguments, the standard library or the build
+// Private rule for 3.4: it does not pin structs whose size depends on template arguments, the standard library or the build
 const UNFIXED_SIZE_STRUCTS = new Set(['Result', 'ItemTables', 'KiottySpecContext']);
 const CORE_ACCESSORS = new Set(['length', 'capacity', 'data', 'view', 'size', 'begin', 'end', 'empty', 'value', 'code', 'scratch', 'at', 'count']);
 
@@ -887,7 +887,7 @@ const ALLOWED = {
   'cli/infra': ['cli/core', 'cli/infra', 'interface'],
   'cli/domain': ['cli/core', 'cli/domain'],
   'cli/datalayer': ['cli/core', 'cli/domain', 'cli/datalayer', 'cli/infra', 'interface'],
-  // The library C interface is the CLI domain (docs/deviations.md, CR-005).
+  // The library C interface is the CLI domain (private rule for 7.2 · 7.3, CR-005).
   'cli/presentation': ['cli/core', 'cli/domain', 'cli/i18n', 'cli/infra', 'cli/presentation', 'interface'],
   'cli/di': ['cli/core', 'cli/di', 'cli/domain', 'cli/datalayer', 'cli/i18n', 'cli/infra', 'cli/presentation', 'interface'],
   'cli/main': ['cli/core', 'cli/di', 'cli/domain', 'cli/datalayer', 'cli/i18n', 'cli/infra', 'cli/presentation', 'interface'],
@@ -922,11 +922,15 @@ for (const f of files) {
   });
 }
 
-// 0 deviations, 0.1 language standard, 2.9 build options
+// 0 deviations (private rules in the spec DB), 0.1 language standard, 2.9 build options
 {
-  const deviations = fs.existsSync(path.join(ROOT, 'docs/deviations.md')) ? fs.readFileSync(path.join(ROOT, 'docs/deviations.md'), 'utf8') : '';
-  if (!/완화책/.test(deviations)) report('0', 'docs/deviations.md', 1, 'no 완화책 column');
-  if (!/21\.6\.1/.test(deviations)) report('0', 'docs/deviations.md', 1, 'no MISRA 21.6.1 deviation');
+  const specPath = path.join(ROOT, '.kiotty/spec.kisp');
+  const spec = fs.existsSync(specPath) ? fs.readFileSync(specPath, 'utf8').split('\n') : [];
+  const privateKeys = new Set(spec.filter((l) => l.startsWith('item_version\tO\t') && l.split('\t')[4] === 'private_rule')
+    .map((l) => l.split('\t')[2]));
+  const misra = spec.some((l) => l.startsWith('body\tO\t') && privateKeys.has(l.split('\t')[2]) && l.includes('21.6.1'));
+  if (privateKeys.size === 0) report('0', '.kiotty/spec.kisp', 1, 'no private rules');
+  if (!misra) report('0', '.kiotty/spec.kisp', 1, 'no private rule for MISRA 21.6.1');
   const cmake = fs.readFileSync(path.join(ROOT, 'CMakeLists.txt'), 'utf8');
   if (!/CMAKE_CXX_STANDARD\s+17/.test(cmake) || !/CMAKE_CXX_STANDARD_REQUIRED\s+ON/.test(cmake) || !/CMAKE_CXX_EXTENSIONS\s+OFF/.test(cmake)) report('0.1', 'CMakeLists.txt', 1, 'C++17 settings');
   for (const flag of ['-Wall', '-Wextra', '-Werror', '-Wconversion', '-Wsign-compare', '-Wshadow', '-Wswitch', '-fno-exceptions', '-fno-rtti', '-fstack-protector-strong', '_FORTIFY_SOURCE=2', '/WX', 'sanitize=address', 'sanitize=undefined']) {

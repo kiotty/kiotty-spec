@@ -139,4 +139,4 @@ KiottySpecSizeResult KiottySpec_readLastError(KiottySpecContext *context, char *
 ## 5. 남은 위험
 
 - jsonl 가져오기의 파싱 실패 메시지는 예외 없이 파싱하므로 nlohmann 의 상세 원인을 싣지 않는다.
-- 편차와 해소 계획은 `docs/deviations.md` 에 적는다.
+- 편차와 해소 계획은 전용 개발 수칙(`ks item list --kind private_rule`)에 적는다 (CR-017).
