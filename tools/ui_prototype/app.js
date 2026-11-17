@@ -10,18 +10,19 @@
   const GUI = Object.fromEntries(SPEC.gui.map((g) => [g.id, g]));
   const SCREEN_UI = { open: 'UI-170', overview: 'UI-171', progress: 'UI-172', items: 'UI-173', item: 'UI-174', changes: 'UI-175' };
   const CP_STATE = { running: '진행 중', started: '시작', done: '확정' };
-  const CR_GROUPS = [
-    { title: '열림 · 반영 중', values: ['열림', '반영 중'], open: true },
-    { title: '백로그', values: ['백로그'], open: true },
-    { title: '완료', values: ['완료'], open: false },
-    { title: '거부', values: ['거부'], open: false },
+  const CR_COLUMNS = [
+    { key: 'backlog', title: '백로그', values: ['백로그'] },
+    { key: 'active', title: '열림 · 반영 중', values: ['열림', '반영 중'], showState: true },
+    { key: 'done', title: '완료', values: ['완료'] },
+    { key: 'rejected', title: '거부', values: ['거부'] },
   ];
+  const CARD_LIMIT = 5;
 
   const app = document.getElementById('app');
   const S = {
     data: null, source: null, loading: false, error: null, notice: null,
     openForm: { repo: '', ref: '', path: '' },
-    expanded: new Set(), specOpen: false, specTab: null, cpStep: '', demo: 'normal',
+    expanded: new Set(), moreCols: new Set(), specOpen: false, specTab: null, cpStep: '', demo: 'normal',
   };
   let byId = new Map();
 
@@ -397,18 +398,32 @@
   function screenChanges() {
     const crs = S.data.items.filter((x) => x.kind === 'change_request').sort((a, b) => byIdOrder(b, a));
     if (!crs.length) return '<main class="page"><section class="card empty"><h2>변경 요청이 없습니다</h2></section></main>';
-    const groups = CR_GROUPS.map((g) => ({ ...g, list: crs.filter((c) => tagsOf(c, '상태').some((v) => g.values.includes(v))) }));
-    const known = CR_GROUPS.flatMap((g) => g.values);
+    const cols = CR_COLUMNS.map((g) => ({ ...g, list: crs.filter((c) => tagsOf(c, '상태').some((v) => g.values.includes(v))) }));
+    const known = CR_COLUMNS.flatMap((g) => g.values);
     const none = crs.filter((c) => !tagsOf(c, '상태').some((v) => known.includes(v)));
-    if (none.length) groups.push({ title: '상태 없음', list: none, open: true });
+    if (none.length) cols.push({ key: 'none', title: '상태 없음', list: none, showState: true });
     const outCount = (id) => S.data.relations.filter((r) => r[0] === id).length;
-    return `<main class="page">${groups.map((g) => `
-  <details class="card group" ${g.open ? 'open' : ''}><summary><h2>${esc(g.title)} <span class="count-badge">${g.list.length}</span></h2></summary>
-    ${g.list.length ? `<table class="rt"><thead><tr><th>ID</th><th>제목</th><th>상태</th><th>출처</th><th>진입 단계</th><th>영향 항목</th></tr></thead><tbody>
-    ${g.list.map((c) => `<tr class="row" data-go="#/item/${encodeURIComponent(c.id)}" title="${esc(dash(c.summary))}"><td data-l="ID">${itemLink(c.id)}</td><td data-l="제목" class="ttl">${esc(c.title)}${dash(c.summary) ? `<div class="muted sm">${esc(c.summary)}</div>` : ''}</td>
-      <td data-l="상태">${tagsOf(c, '상태').map((v) => `<span class="tag">${esc(v)}</span>`).join('')}</td><td data-l="출처">${esc(tagsOf(c, '출처').join(', '))}</td><td data-l="진입 단계">${esc(tagsOf(c, '진입 단계').join(''))}</td><td data-l="영향 항목">${outCount(c.id)}</td></tr>`).join('')}
-    </tbody></table>` : '<p class="muted">(없음)</p>'}
-  </details>`).join('')}</main>`;
+    const card = (c, showState) => {
+      const meta = [...(showState ? tagsOf(c, '상태').map((v) => `<span class="tag st">${esc(v)}</span>`) : []),
+        ...tagsOf(c, '출처').map((v) => `<span class="pill">${esc(v)}</span>`),
+        ...tagsOf(c, '진입 단계').map((v) => `<span class="pill">${esc(v)}</span>`),
+        `<span class="impactn" title="영향 항목">↳ ${outCount(c.id)}</span>`];
+      return `<a class="kcard" href="#/item/${encodeURIComponent(c.id)}">
+        <span class="iid">${esc(c.id)}</span><b class="ktitle">${esc(c.title)}</b>
+        ${dash(c.summary) ? `<span class="ksum">${esc(c.summary)}</span>` : ''}
+        <span class="kmeta">${meta.join('')}</span></a>`;
+    };
+    return `<main class="page wide"><div class="board">${cols.map((g) => {
+      const all = S.moreCols.has(g.key);
+      const shown = all ? g.list : g.list.slice(0, CARD_LIMIT);
+      const rest = g.list.length - shown.length;
+      return `<section class="kcol kcol-${g.key}">
+        <header><h2>${esc(g.title)}</h2><span class="count-badge">${g.list.length}</span></header>
+        <div class="kcards">${shown.map((c) => card(c, g.showState)).join('') || '<p class="muted kempty">(없음)</p>'}
+        ${rest > 0 ? `<button class="btn ghost more-cards" data-more="${g.key}">${rest} 개 더 보기</button>` : ''}
+        ${all && g.list.length > CARD_LIMIT ? `<button class="btn ghost more-cards" data-more="${g.key}">접기</button>` : ''}</div>
+      </section>`;
+    }).join('')}</div></main>`;
   }
 
   // ---------- render ----------
@@ -450,6 +465,8 @@
     if (act) { S.specOpen = !S.specOpen; S.specTab = null; render(); return; }
     const copy = t.closest('[data-copy]');
     if (copy) { (navigator.clipboard ? navigator.clipboard.writeText(copy.dataset.copy) : Promise.reject()).then(() => toast('복사했습니다'), () => toast('복사하지 못했습니다', true)); return; }
+    const more = t.closest('[data-more]');
+    if (more) { const k = more.dataset.more; S.moreCols.has(k) ? S.moreCols.delete(k) : S.moreCols.add(k); render(); return; }
     if (t.closest('a')) return;
     const tog = t.closest('[data-toggle]');
     if (tog) { const id = tog.dataset.toggle; S.expanded.has(id) ? S.expanded.delete(id) : S.expanded.add(id); renderItemTable(); return; }

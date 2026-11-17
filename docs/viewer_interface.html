@@ -51,7 +51,7 @@ table.wft { border-collapse:collapse; width:100%; } table.wft th, table.wft td {
 <nav>
   <h1>브라우저 뷰어 외부 인터페이스</h1>
   <div class="meta">ks 의 GUI 뷰 항목에서 생성 · CP-0088 · 3 외부 인터페이스 · running<br><a href="viewer_prototype.html">눌러 보는 프로토타입 (더미 데이터) →</a></div>
-  <ul><li class=""><a href="#UI-168">UI-168 브라우저 뷰어</a></li><li class="sub"><a href="#UI-169">UI-169 뷰어 링크</a></li><li class="sub"><a href="#UI-170">UI-170 열기 화면</a></li><li class="sub"><a href="#UI-171">UI-171 개요 화면</a></li><li class="sub"><a href="#UI-172">UI-172 진행 화면</a></li><li class="sub"><a href="#UI-173">UI-173 항목 표 화면</a></li><li class="sub"><a href="#UI-174">UI-174 항목 상세 화면</a></li><li class="sub"><a href="#UI-175">UI-175 변경 요청 화면</a></li></ul>
+  <ul><li class=""><a href="#UI-168">UI-168 브라우저 뷰어</a></li><li class="sub"><a href="#UI-169">UI-169 뷰어 링크</a></li><li class="sub"><a href="#UI-170">UI-170 열기 화면</a></li><li class="sub"><a href="#UI-171">UI-171 개요 화면</a></li><li class="sub"><a href="#UI-172">UI-172 진행 화면</a></li><li class="sub"><a href="#UI-173">UI-173 항목 표 화면</a></li><li class="sub"><a href="#UI-174">UI-174 항목 상세 화면</a></li><li class="sub"><a href="#UI-175">UI-175 변경 요청 보드</a></li></ul>
 </nav>
 <main>
 <p class="summary">이 페이지는 <code>node tools/ui_doc.js</code> 가 ks 의 외부 인터페이스 항목(인터페이스 종류 = GUI 뷰) 8 개에서 만든다. 고칠 때는 ks 로 항목을 고치고 다시 만든다. 화면 그림은 항목 본문의 <code>wireframe</code> 블록이다.</p>
@@ -63,7 +63,7 @@ table.wft { border-collapse:collapse; width:100%; } table.wft th, table.wft td {
   <h3>목적</h3>
 <p>설치 없이 브라우저에서 사양 파일(.kisp)을 보는 정적 웹 뷰어. 보기 전용이며 사양 파일 해석은 wasm32 로 빌드한 라이브러리가 한다.</p>
 <h3>포함</h3>
-<ul><li><a href="#UI-169">UI-169</a> 뷰어 링크</li><li><a href="#UI-170">UI-170</a> 열기 화면</li><li><a href="#UI-171">UI-171</a> 개요 화면</li><li><a href="#UI-172">UI-172</a> 진행 화면</li><li><a href="#UI-173">UI-173</a> 항목 표 화면</li><li><a href="#UI-174">UI-174</a> 항목 상세 화면</li><li><a href="#UI-175">UI-175</a> 변경 요청 화면</li></ul>
+<ul><li><a href="#UI-169">UI-169</a> 뷰어 링크</li><li><a href="#UI-170">UI-170</a> 열기 화면</li><li><a href="#UI-171">UI-171</a> 개요 화면</li><li><a href="#UI-172">UI-172</a> 진행 화면</li><li><a href="#UI-173">UI-173</a> 항목 표 화면</li><li><a href="#UI-174">UI-174</a> 항목 상세 화면</li><li><a href="#UI-175">UI-175</a> 변경 요청 보드</li></ul>
 <h3>화면</h3>
 <div class="wf"><div class="win"><div class="bar"><i></i><i></i><i></i><span class="addr">https://OWNER.github.io/kiotty-spec/?repo=bn3monkey/kiotty-spec&amp;ref=v1.4#/progress</span></div><div class="page"><div class="row"><span class="brand">kiotty-spec 뷰어</span><span class="badge">bn3monkey/kiotty-spec @ v1.4</span><span class="link">다른 파일 열기</span></div><div class="tabs"><span>개요</span><span class="on">진행</span><span>항목</span><span>변경 요청</span></div><fieldset class="col"><legend>선택한 화면</legend><div class="text">UI-171 ~ UI-175 중 하나</div></fieldset></div></div></div>
 <h3>공통 구성</h3>
@@ -191,21 +191,21 @@ table.wft { border-collapse:collapse; width:100%; } table.wft th, table.wft td {
 </section>
 
 <section id="UI-175">
-  <div class="ihead"><span class="id">UI-175</span><h2>변경 요청 화면</h2><span class="parent">상위 <a href="#UI-168">UI-168</a></span></div>
-  <p class="summary">#/changes. 상태별 묶음(열림 · 반영 중 먼저), 줄을 누르면 항목 상세</p>
+  <div class="ihead"><span class="id">UI-175</span><h2>변경 요청 보드</h2><span class="parent">상위 <a href="#UI-168">UI-168</a></span></div>
+  <p class="summary">#/changes. 백로그 → 열림 · 반영 중 → 완료 → 거부 칸반 보드 (보기 전용), 카드를 누르면 항목 상세</p>
   <p class="reqs">관련 요구사항 <span class="req" title="">REQ-058 변경 요청과 영향 항목을 본다</span></p>
   <h3>목적</h3>
-<p>변경 요청을 상태별로 보고 각 변경이 건드리는 항목으로 간다.</p>
+<p>변경 요청을 상태별 칸반 보드로 보고 각 변경이 건드리는 항목으로 간다. 보기 전용이라 카드를 옮길 수 없다.</p>
 <h3>화면</h3>
-<div class="wf"><div class="win"><div class="bar"><i></i><i></i><i></i><span class="addr">...#/changes</span></div><div class="page"><div class="tabs"><span>개요</span><span>진행</span><span>항목</span><span class="on">변경 요청</span></div><fieldset class="col"><legend>열림 · 반영 중 (1)</legend><table class="wft"><thead><tr><th>ID</th><th>제목</th><th>출처</th><th>진입 단계</th><th>영향 항목</th></tr></thead><tbody><tr><td>CR-019</td><td>GitHub Pages 정적 뷰어로 .kisp 열람</td><td>사용자 피드백</td><td>Step 2</td><td>20</td></tr></tbody></table></fieldset><fieldset class="col"><legend>백로그 (0)</legend><div class="text">(없음)</div></fieldset><fieldset class="col"><legend>완료 (17)</legend><table class="wft"><thead><tr><th>ID</th><th>제목</th><th>출처</th><th>진입 단계</th><th>영향 항목</th></tr></thead><tbody><tr><td>CR-018</td><td>context/ 를 C 인터페이스의 Context 정의만으로</td><td>사용자 피드백</td><td>Step 2</td><td>46</td></tr><tr><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td></tr></tbody></table></fieldset><fieldset class="col"><legend>거부 (1)</legend><div class="text">▸ 펼치기</div></fieldset></div></div></div>
+<div class="wf"><div class="win"><div class="bar"><i></i><i></i><i></i><span class="addr">...#/changes</span></div><div class="page"><div class="tabs"><span>개요</span><span>진행</span><span>항목</span><span class="on">변경 요청</span></div><div class="row"><fieldset class="col"><legend>백로그 (1)</legend><strong class="title">CR-003 다크 모드</strong><span class="badge">사용자 피드백 · Step 3 · 영향 2</span></fieldset><fieldset class="col"><legend>열림 · 반영 중 (1)</legend><strong class="title">CR-019 GitHub Pages 정적 뷰어로 .kisp 열람</strong><div class="text">라이브러리를 32 비트 WebAssembly 로 빌드해 ...</div><span class="badge">반영 중 · 사용자 피드백 · Step 2 · 영향 20</span></fieldset><fieldset class="col"><legend>완료 (17)</legend><strong class="title">CR-018 context/ 를 C 인터페이스의 Context 정의만으로</strong><span class="badge">사용자 피드백 · Step 2 · 영향 46</span><strong class="title">CR-017 docs/deviations.md 의 편차를 전용 개발 수칙으로</strong><span class="button">12 개 더 보기</span></fieldset><fieldset class="col"><legend>거부 (1)</legend><strong class="title">CR-004 메모 종단 간 암호화</strong><span class="badge">이슈 · Step 2 · 영향 1</span></fieldset></div></div></div></div>
 <h3>구성</h3>
-<ul><li>상태 묶음 순서: 열림 · 반영 중, 백로그, 완료, 거부. 묶음마다 개수. 완료 · 거부는 접혀서 시작한다</li><li>줄: ID, 제목, 요약(마우스를 올리면), 출처, 진입 단계, 영향 항목 수 (변경 요청에서 나가는 관계 수)</li><li>줄을 누르면 <a href="#UI-174">UI-174</a> 항목 상세로 간다. 거기서 본문과 영향 항목을 관계 이름별로 본다</li><li>묶음 안은 ID 내림차순 (새 변경 요청이 위)</li></ul>
+<ul><li>열 순서: 백로그 → 열림 · 반영 중 → 완료 → 거부. 열 머리에 이름과 카드 수</li><li>카드: ID, 제목, 요약 (두 줄까지), 상태 (열림 · 반영 중 열에서만), 출처, 진입 단계, 영향 항목 수 (변경 요청에서 나가는 관계 수)</li><li>열 안은 ID 내림차순 (새 변경 요청이 위). 카드가 5 개를 넘으면 5 개만 보이고 &quot;N 개 더 보기&quot; 로 펼친다</li><li>카드를 누르면 <a href="#UI-174">UI-174</a> 항목 상세로 간다. 거기서 본문과 영향 항목을 관계 이름별로 본다</li><li>넓은 화면은 네 열을 나란히 둔다. 좁은 화면은 열을 가로로 넘겨 보고 한 화면에 한 열이 보인다</li></ul>
 <h3>사전조건</h3>
 <ul><li>사양 파일이 열려 있다</li></ul>
 <h3>사후조건</h3>
-<ul><li>묶음의 변경 요청은 같은 파일에서 ks item list --kind change_request --tag 상태=값 과 같다</li></ul>
+<ul><li>열의 카드는 같은 파일에서 ks item list --kind change_request --tag 상태=값 과 같다</li><li>카드를 끌어 옮기는 기능이 없다 (상태는 ks tag set 으로 바꾼다)</li></ul>
 <h3>오류 표시</h3>
-<ul><li>변경 요청이 없음: &quot;변경 요청이 없습니다&quot;</li><li>상태 태그가 없는 변경 요청: &quot;상태 없음&quot; 묶음을 맨 끝에 둔다</li></ul>
+<ul><li>변경 요청이 없음: 보드 대신 &quot;변경 요청이 없습니다&quot;</li><li>카드가 없는 열: 열 안에 &quot;(없음)&quot;</li><li>상태 태그가 없거나 모르는 값인 변경 요청: &quot;상태 없음&quot; 열을 맨 끝에 더한다</li></ul>
 </section>
 </main>
 </body>

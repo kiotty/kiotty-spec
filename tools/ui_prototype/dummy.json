@@ -1,106 +1,1086 @@
 {
-  "project": { "name": "memo-sync", "createdAt": 1793500000 },
-  "source": { "repo": "acme/memo-sync", "ref": "v0.3.0", "path": ".kiotty/spec.kisp" },
-  "checkpoints": [
-    { "id": "CP-0001", "step": 1, "state": "done", "description": "CR-001 메모 동기화 MVP 접수", "createdAt": 1793500100 },
-    { "id": "CP-0002", "step": 2, "state": "done", "description": "CR-001 요구사항", "createdAt": 1793586500 },
-    { "id": "CP-0003", "step": 3, "state": "done", "description": "CR-001 메모 화면과 동기화 함수", "createdAt": 1793672900 },
-    { "id": "CP-0004", "step": 4, "state": "done", "description": "CR-001 동기화 · 저장소 설계", "createdAt": 1793759300 },
-    { "id": "CP-0005", "step": 5, "state": "done", "description": "CR-001 유닛 테스트 계획", "createdAt": 1793845700 },
-    { "id": "CP-0006", "step": 6, "state": "done", "description": "CR-001 MVP 마일스톤", "createdAt": 1793932100 },
-    { "id": "CP-0007", "step": 7, "state": "done", "description": "CR-001 구현", "createdAt": 1794018500 },
-    { "id": "CP-0008", "step": 8, "state": "done", "description": "CR-001 시스템 테스트 계획", "createdAt": 1794104900 },
-    { "id": "CP-0009", "step": 9, "state": "done", "description": "CR-001 시스템 테스트 실행 (재실행 1 회)", "createdAt": 1794191300 },
-    { "id": "CP-0010", "step": 10, "state": "done", "description": "CR-001 코드 검사", "createdAt": 1794277700 },
-    { "id": "CP-0011", "step": 11, "state": "done", "description": "CR-001 E2E 계획", "createdAt": 1794364100 },
-    { "id": "CP-0012", "step": 12, "state": "done", "description": "CR-001 E2E 실행과 닫기", "createdAt": 1794450500 },
-    { "id": "CP-0013", "step": 1, "state": "done", "description": "CR-002 오프라인 편집 접수", "createdAt": 1794796100 },
-    { "id": "CP-0014", "step": 2, "state": "running", "description": "CR-002 오프라인 편집 요구사항", "createdAt": 1794882500 }
-  ],
-  "next": {
-    "work": [ { "id": "REQ-005", "reason": "인수 조건 없음" } ],
-    "actions": [
-      { "text": "본문에 ## 인수 조건 목록을 쓴다", "command": "ks item set REQ-005 --body-file F", "user": false },
-      { "text": "사용자에게 확정을 요청한다", "command": "ks checkpoint complete --actor user", "user": true }
-    ]
+ "project": {
+  "name": "memo-sync",
+  "createdAt": 1793500000
+ },
+ "source": {
+  "repo": "acme/memo-sync",
+  "ref": "v0.3.0",
+  "path": ".kiotty/spec.kisp"
+ },
+ "checkpoints": [
+  {
+   "id": "CP-0001",
+   "step": 1,
+   "state": "done",
+   "description": "CR-001 메모 동기화 MVP 접수",
+   "createdAt": 1793500100
   },
-  "items": [
-    { "id": "CR-001", "kind": "change_request", "title": "메모 동기화 MVP", "summary": "휴대폰 · PC 사이에 메모를 동기화하는 첫 판", "checkpoint": "CP-0001", "tags": { "출처": ["초기 요구"], "상태": ["완료"], "진입 단계": ["Step 1"] },
-      "body": "## 목적\n휴대폰과 PC 에서 같은 메모를 본다.\n\n## 범위\n- 메모 만들기 · 고치기\n- 다른 기기의 변경 받기\n- Android · Windows\n\n범위 밖: 오프라인 편집, 공유" },
-    { "id": "CR-002", "kind": "change_request", "title": "오프라인 편집과 충돌 처리", "summary": "연결이 끊겨도 고치고, 다시 연결되면 보낸다. 같은 메모를 두 곳에서 고치면 두 판을 남긴다", "checkpoint": "CP-0013", "tags": { "출처": ["사용자 피드백"], "상태": ["반영 중"], "진입 단계": ["Step 2"] },
-      "body": "## 목적\n지하철에서 고친 메모가 사라진다는 피드백 (설문 23 건).\n\n## 결정\n| 번호 | 결정 | 다른 안 |\n| --- | --- | --- |\n| D1 | 충돌하면 두 판을 남기고 사용자가 고른다 | 마지막 쓰기 우선 (잃는 글이 생김) |\n| D2 | 보내기 큐는 기기에 저장한다 | 메모리 큐 (앱을 끄면 사라짐) |\n\n## 단계 계획\n1. Step 2: REQ-004 · REQ-005\n2. Step 4: 보내기 큐 설계 (DSN-003)" },
-    { "id": "CR-003", "kind": "change_request", "title": "다크 모드", "summary": "-", "checkpoint": "CP-0013", "tags": { "출처": ["사용자 피드백"], "상태": ["백로그"], "진입 단계": ["Step 3"] },
-      "body": "밤에 눈이 부시다는 요청. 디자인 시스템 정리 뒤에 다시 본다." },
-    { "id": "CR-004", "kind": "change_request", "title": "메모 종단 간 암호화", "summary": "서버가 메모 내용을 읽지 못하게 한다", "checkpoint": "CP-0013", "tags": { "출처": ["이슈"], "상태": ["거부"], "진입 단계": ["Step 2"] },
-      "body": "## 거부 이유\n키 분실 시 복구 방법이 없고, 이번 분기 범위를 넘는다. 2027 년 상반기에 다시 검토." },
-
-    { "id": "REQ-001", "kind": "requirement", "title": "메모를 기기 사이에 동기화한다", "summary": "한 기기에서 고친 메모를 다른 기기에서 본다", "checkpoint": "CP-0002", "tags": { "요구사항 종류": ["기능 요구사항"] },
-      "body": "## 진술\n사용자는 휴대폰과 PC 에서 같은 메모 목록을 본다.\n\n## 근거 시나리오\n출근길에 휴대폰으로 적은 메모를 회사 PC 에서 이어 쓴다.\n\n## 인수 조건\n- 전제 조건: 두 기기에 같은 계정 / 행동: 휴대폰에서 메모를 만든다 / 기대 결과: PC 목록에 나타난다" },
-    { "id": "REQ-002", "kind": "requirement", "title": "메모를 만들고 고친다", "summary": "-", "checkpoint": "CP-0002", "parent": "REQ-001", "tags": { "요구사항 종류": ["기능 요구사항"] },
-      "body": "## 진술\n사용자는 제목과 본문으로 메모를 만들고 고친다. 본문은 64 KB 까지.\n\n## 인수 조건\n- 전제 조건: 빈 목록 / 행동: 메모를 만든다 / 기대 결과: 목록 맨 위에 보인다\n- 전제 조건: 64 KB 를 넘는 본문 / 행동: 저장한다 / 기대 결과: 거부하고 이유를 보인다" },
-    { "id": "REQ-003", "kind": "requirement", "title": "다른 기기의 변경을 받는다", "summary": "앱이 열려 있으면 자동으로, 아니면 열 때 받는다", "checkpoint": "CP-0002", "parent": "REQ-001", "tags": { "요구사항 종류": ["기능 요구사항"] },
-      "body": "## 진술\n앱이 열려 있으면 다른 기기의 변경을 자동으로 받는다.\n\n## 인수 조건\n- 전제 조건: 두 기기에서 앱이 열려 있다 / 행동: 한 쪽에서 고친다 / 기대 결과: 다른 쪽이 5 초 안에 바뀐다" },
-    { "id": "REQ-004", "kind": "requirement", "title": "오프라인에서 고치고 연결되면 보낸다", "summary": "-", "checkpoint": "CP-0014", "parent": "REQ-001", "tags": { "요구사항 종류": ["기능 요구사항"] },
-      "body": "## 진술\n연결이 없어도 메모를 고칠 수 있고, 다시 연결되면 순서대로 보낸다.\n\n## 인수 조건\n- 전제 조건: 비행기 모드 / 행동: 메모 3 개를 고친다 / 기대 결과: 목록에 '보내기 대기 3' 이 보인다\n- 전제 조건: 대기 3 / 행동: 연결한다 / 기대 결과: 30 초 안에 대기 0" },
-    { "id": "REQ-005", "kind": "requirement", "title": "같은 메모를 두 곳에서 고치면 두 판을 남긴다", "summary": "<script>alert('본문 안의 스크립트는 실행되지 않는다')</script> 충돌 시 사용자가 고른다", "checkpoint": "CP-0014", "parent": "REQ-001", "tags": { "요구사항 종류": ["기능 요구사항"] },
-      "body": "## 진술\n두 기기가 같은 메모를 오프라인에서 고치면 두 판을 모두 남기고 사용자가 고른다.\n\n<script>alert('실행되면 안 됨')</script>\n\n(인수 조건은 아직 쓰지 않음 — 진행 화면의 작업할 항목)" },
-    { "id": "REQ-006", "kind": "requirement", "title": "동기화가 5 초 안에 끝난다", "summary": "LTE 기준 메모 100 개", "checkpoint": "CP-0002", "tags": { "요구사항 종류": ["품질 요구사항"] },
-      "body": "## 진술\nLTE 에서 메모 100 개의 첫 동기화가 5 초 안에 끝난다." },
-    { "id": "REQ-007", "kind": "requirement", "title": "지원 플랫폼", "summary": "-", "checkpoint": "CP-0002", "tags": { "요구사항 종류": ["환경 요구사항"] },
-      "body": "## 진술\nAndroid 12 이상, Windows 10 이상." },
-
-    { "id": "RULE-001", "kind": "rule", "title": "1.1 예외를 던지지 않는다", "summary": "실패는 Result 로 돌려준다", "checkpoint": "CP-0002", "tags": { "수칙 종류": ["코딩 제약"] },
-      "body": "## 이유\n예외는 호출 경로에서 보이지 않는다.\n\n```cpp\nResult<Memo> load(MemoId id);   // 지키는 예\nMemo load(MemoId id);           // 어기는 예 (throw)\n```" },
-    { "id": "RULE-002", "kind": "rule", "title": "2.1 UI 는 domain 을 거쳐 저장소를 쓴다", "summary": "-", "checkpoint": "CP-0002", "tags": { "수칙 종류": ["아키텍처", "의존성"] }, "body": "UI 코드는 repository 를 직접 import 하지 않는다." },
-    { "id": "RULE-003", "kind": "rule", "title": "5.1 테스트는 네트워크 없이 돈다", "summary": "-", "checkpoint": "CP-0002", "tags": { "수칙 종류": ["테스트"] }, "body": "서버는 가짜 전송 계층으로 바꾼다." },
-    { "id": "PRULE-001", "kind": "private_rule", "title": "1.1 예외를 던지지 않는다 (플랫폼 SDK 경계는 잡는다)", "summary": "공통 수칙 1.1 의 프로젝트 판", "checkpoint": "CP-0002", "tags": { "수칙 종류": ["코딩 제약"] }, "body": "## 범위\nAndroid SDK 호출 줄은 예외를 잡아 Result 로 바꾼다." },
-
-    { "id": "UI-001", "kind": "external_interface", "title": "메모 목록 화면", "summary": "-", "checkpoint": "CP-0003", "tags": { "인터페이스 종류": ["GUI 뷰"] }, "body": "## 화면\n최근 고친 순 목록, 위에 동기화 상태 줄." },
-    { "id": "UI-002", "kind": "external_interface", "title": "메모 편집 화면", "summary": "-", "checkpoint": "CP-0003", "tags": { "인터페이스 종류": ["GUI 뷰"] }, "body": "제목 한 줄, 본문 여러 줄. 자동 저장." },
-    { "id": "UI-003", "kind": "external_interface", "title": "sync_push", "summary": "보내기 큐의 변경을 서버로 보낸다", "checkpoint": "CP-0003", "tags": { "인터페이스 종류": ["C 함수"] },
-      "body": "## 시그니처\n```c\nSyncStatus sync_push(SyncContext *context, uint32_t max_count);\n```\n\n## 에러 코드\n- OFFLINE: 연결 없음\n- CONFLICT: 서버 판이 더 새로움" },
-
-    { "id": "DSN-001", "kind": "design", "title": "동기화 모듈", "summary": "변경을 서버와 주고받는다", "checkpoint": "CP-0004", "tags": { "설계 종류": ["모듈"], "구현 상태": ["구현 완료"] }, "body": "sync/ 폴더. 받기는 서버 푸시, 보내기는 sync_push." },
-    { "id": "DSN-002", "kind": "design", "title": "메모 저장소", "summary": "기기 안 SQLite", "checkpoint": "CP-0004", "tags": { "설계 종류": ["모듈"], "구현 상태": ["구현 완료"] }, "body": "memo/ 폴더. 메모 하나가 한 줄." },
-    { "id": "DSN-003", "kind": "design", "title": "보내기 큐", "summary": "오프라인 변경을 기기에 쌓았다가 순서대로 보낸다", "checkpoint": "CP-0014", "tags": { "설계 종류": ["동작 흐름", "메모리 정책"], "구현 상태": ["미구현"] }, "body": "## 흐름\n1. 저장 → 큐에 넣기\n2. 연결 이벤트 → sync_push\n3. CONFLICT → 두 판 남기기" },
-
-    { "id": "UT-001", "kind": "unit_test_plan", "title": "동기화 왕복", "summary": "-", "checkpoint": "CP-0005", "tags": { "구현 상태": ["구현 완료"] }, "body": "가짜 서버로 보내고 받기." },
-    { "id": "UT-002", "kind": "unit_test_plan", "title": "메모 저장 · 읽기", "summary": "-", "checkpoint": "CP-0005", "tags": { "구현 상태": ["구현 완료"] }, "body": "64 KB 경계 포함." },
-    { "id": "MS-001", "kind": "milestone", "title": "MVP 동기화", "summary": "저장소 → 동기화 순서", "checkpoint": "CP-0006", "tags": {}, "body": "1. DSN-002 + UT-002\n2. DSN-001 + UT-001" },
-    { "id": "UTR-001", "kind": "unit_test_result", "title": "동기화 왕복 결과", "summary": "-", "checkpoint": "CP-0007", "tags": { "결과": ["PASS"] }, "body": "ctest -R sync: 12 통과" },
-    { "id": "UTR-002", "kind": "unit_test_result", "title": "메모 저장 · 읽기 결과", "summary": "-", "checkpoint": "CP-0007", "tags": { "결과": ["PASS"] }, "body": "ctest -R memo: 8 통과" },
-    { "id": "ST-001", "kind": "system_test_plan", "title": "두 기기 동기화", "summary": "-", "checkpoint": "CP-0008", "tags": {}, "body": "## 준비\n에뮬레이터 + Windows PC\n\n## 절차\n1. 휴대폰에서 고친다\n2. PC 를 본다\n\n## 기대 결과\n5 초 안에 바뀐다" },
-    { "id": "ST-002", "kind": "system_test_plan", "title": "메모 만들기 · 64 KB 경계", "summary": "-", "checkpoint": "CP-0008", "tags": {}, "body": "64 KB 와 64 KB + 1 바이트 본문." },
-    { "id": "STR-001", "kind": "system_test_result", "title": "두 기기 동기화 결과", "summary": "평균 1.8 초", "checkpoint": "CP-0009", "tags": { "결과": ["PASS"] }, "body": "10 회 평균 1.8 초, 최대 3.1 초." },
-    { "id": "STR-002", "kind": "system_test_result", "title": "64 KB 경계 결과 (1 차)", "summary": "65536 바이트를 거부함", "checkpoint": "CP-0009", "tags": { "결과": ["FAIL"] }, "body": "경계 비교가 < 가 아니라 <= 였다. 고친 뒤 STR-003." },
-    { "id": "STR-003", "kind": "system_test_result", "title": "64 KB 경계 결과 (2 차)", "summary": "-", "checkpoint": "CP-0009", "tags": { "결과": ["PASS"] }, "body": "통과." },
-    { "id": "CIR-001", "kind": "code_inspection_result", "title": "1.1 예외 검사", "summary": "-", "checkpoint": "CP-0010", "tags": { "결과": ["PASS"] }, "body": "throw 0 곳 (SDK 경계는 PRULE-001)." },
-    { "id": "CIR-002", "kind": "code_inspection_result", "title": "2.1 UI 의존 검사", "summary": "-", "checkpoint": "CP-0010", "tags": { "결과": ["PASS"] }, "body": "ui/ 에서 repository import 0." },
-    { "id": "CIR-003", "kind": "code_inspection_result", "title": "5.1 테스트 네트워크 검사", "summary": "-", "checkpoint": "CP-0010", "tags": { "결과": ["PASS"] }, "body": "소켓 호출 0." },
-    { "id": "CIR-004", "kind": "code_inspection_result", "title": "PRULE-001 SDK 경계 검사", "summary": "-", "checkpoint": "CP-0010", "tags": { "결과": ["PASS"] }, "body": "SDK 호출 14 곳 모두 try/catch." },
-    { "id": "E2E-001", "kind": "e2e_test_plan", "title": "목록 화면에서 동기화 확인", "summary": "-", "checkpoint": "CP-0011", "tags": {}, "body": "앱 설치 → 로그인 → 메모 만들기 → 다른 기기 목록." },
-    { "id": "E2ER-001", "kind": "e2e_test_result", "title": "목록 화면 E2E 결과", "summary": "-", "checkpoint": "CP-0012", "tags": { "결과": ["PASS"] }, "body": "Pixel 7 · Windows 11 통과." }
+  {
+   "id": "CP-0002",
+   "step": 2,
+   "state": "done",
+   "description": "CR-001 요구사항",
+   "createdAt": 1793586500
+  },
+  {
+   "id": "CP-0003",
+   "step": 3,
+   "state": "done",
+   "description": "CR-001 메모 화면과 동기화 함수",
+   "createdAt": 1793672900
+  },
+  {
+   "id": "CP-0004",
+   "step": 4,
+   "state": "done",
+   "description": "CR-001 동기화 · 저장소 설계",
+   "createdAt": 1793759300
+  },
+  {
+   "id": "CP-0005",
+   "step": 5,
+   "state": "done",
+   "description": "CR-001 유닛 테스트 계획",
+   "createdAt": 1793845700
+  },
+  {
+   "id": "CP-0006",
+   "step": 6,
+   "state": "done",
+   "description": "CR-001 MVP 마일스톤",
+   "createdAt": 1793932100
+  },
+  {
+   "id": "CP-0007",
+   "step": 7,
+   "state": "done",
+   "description": "CR-001 구현",
+   "createdAt": 1794018500
+  },
+  {
+   "id": "CP-0008",
+   "step": 8,
+   "state": "done",
+   "description": "CR-001 시스템 테스트 계획",
+   "createdAt": 1794104900
+  },
+  {
+   "id": "CP-0009",
+   "step": 9,
+   "state": "done",
+   "description": "CR-001 시스템 테스트 실행 (재실행 1 회)",
+   "createdAt": 1794191300
+  },
+  {
+   "id": "CP-0010",
+   "step": 10,
+   "state": "done",
+   "description": "CR-001 코드 검사",
+   "createdAt": 1794277700
+  },
+  {
+   "id": "CP-0011",
+   "step": 11,
+   "state": "done",
+   "description": "CR-001 E2E 계획",
+   "createdAt": 1794364100
+  },
+  {
+   "id": "CP-0012",
+   "step": 12,
+   "state": "done",
+   "description": "CR-001 E2E 실행과 닫기",
+   "createdAt": 1794450500
+  },
+  {
+   "id": "CP-0013",
+   "step": 1,
+   "state": "done",
+   "description": "CR-002 오프라인 편집 접수",
+   "createdAt": 1794796100
+  },
+  {
+   "id": "CP-0014",
+   "step": 2,
+   "state": "running",
+   "description": "CR-002 오프라인 편집 요구사항",
+   "createdAt": 1794882500
+  }
+ ],
+ "next": {
+  "work": [
+   {
+    "id": "REQ-005",
+    "reason": "인수 조건 없음"
+   }
   ],
-  "relations": [
-    ["CR-001", "영향 요구사항", "REQ-001"], ["CR-001", "영향 요구사항", "REQ-002"], ["CR-001", "영향 요구사항", "REQ-003"], ["CR-001", "영향 요구사항", "REQ-006"], ["CR-001", "영향 요구사항", "REQ-007"],
-    ["CR-001", "영향 개발 수칙", "RULE-001"], ["CR-001", "영향 개발 수칙", "RULE-002"], ["CR-001", "영향 개발 수칙", "RULE-003"],
-    ["CR-001", "영향 외부 인터페이스", "UI-001"], ["CR-001", "영향 외부 인터페이스", "UI-002"], ["CR-001", "영향 외부 인터페이스", "UI-003"],
-    ["CR-001", "영향 설계 사항", "DSN-001"], ["CR-001", "영향 설계 사항", "DSN-002"], ["CR-001", "관련 마일스톤", "MS-001"], ["CR-001", "영향 전용 개발 수칙", "PRULE-001"],
-    ["CR-002", "영향 요구사항", "REQ-003"], ["CR-002", "영향 요구사항", "REQ-004"], ["CR-002", "영향 요구사항", "REQ-005"], ["CR-002", "영향 설계 사항", "DSN-003"],
-    ["CR-003", "영향 외부 인터페이스", "UI-001"], ["CR-003", "영향 외부 인터페이스", "UI-002"],
-    ["CR-004", "영향 요구사항", "REQ-002"],
-    ["REQ-006", "관련 요구사항", "REQ-003"],
-    ["PRULE-001", "대체 개발 수칙", "RULE-001"],
-    ["UI-001", "관련 요구사항", "REQ-002"], ["UI-001", "관련 요구사항", "REQ-003"], ["UI-002", "관련 요구사항", "REQ-002"], ["UI-003", "관련 요구사항", "REQ-003"],
-    ["DSN-001", "관련 요구사항", "REQ-001"], ["DSN-001", "관련 요구사항", "REQ-003"], ["DSN-001", "관련 외부 인터페이스", "UI-003"],
-    ["DSN-002", "관련 요구사항", "REQ-002"], ["DSN-002", "관련 외부 인터페이스", "UI-001"], ["DSN-002", "관련 외부 인터페이스", "UI-002"],
-    ["DSN-003", "관련 요구사항", "REQ-004"], ["DSN-003", "의존 설계 사항", "DSN-001"],
-    ["UT-001", "검증 설계 사항", "DSN-001"], ["UT-002", "검증 설계 사항", "DSN-002"],
-    ["MS-001", "포함 설계 사항", "DSN-001"], ["MS-001", "포함 설계 사항", "DSN-002"], ["MS-001", "포함 유닛 테스트", "UT-001"], ["MS-001", "포함 유닛 테스트", "UT-002"],
-    ["UTR-001", "대상 유닛 테스트", "UT-001"], ["UTR-002", "대상 유닛 테스트", "UT-002"],
-    ["ST-001", "검증 요구사항", "REQ-003"], ["ST-002", "검증 요구사항", "REQ-002"],
-    ["STR-001", "대상 시스템 테스트", "ST-001"], ["STR-002", "대상 시스템 테스트", "ST-002"], ["STR-003", "대상 시스템 테스트", "ST-002"],
-    ["CIR-001", "검사 개발 수칙", "RULE-001"], ["CIR-002", "검사 개발 수칙", "RULE-002"], ["CIR-003", "검사 개발 수칙", "RULE-003"], ["CIR-004", "검사 전용 개발 수칙", "PRULE-001"],
-    ["E2E-001", "검증 외부 인터페이스", "UI-001"], ["E2ER-001", "대상 E2E 테스트", "E2E-001"]
+  "actions": [
+   {
+    "text": "본문에 ## 인수 조건 목록을 쓴다",
+    "command": "ks item set REQ-005 --body-file F",
+    "user": false
+   },
+   {
+    "text": "사용자에게 확정을 요청한다",
+    "command": "ks checkpoint complete --actor user",
+    "user": true
+   }
   ]
+ },
+ "items": [
+  {
+   "id": "CR-001",
+   "kind": "change_request",
+   "title": "메모 동기화 MVP",
+   "summary": "휴대폰 · PC 사이에 메모를 동기화하는 첫 판",
+   "checkpoint": "CP-0001",
+   "tags": {
+    "출처": [
+     "초기 요구"
+    ],
+    "상태": [
+     "완료"
+    ],
+    "진입 단계": [
+     "Step 1"
+    ]
+   },
+   "body": "## 목적\n휴대폰과 PC 에서 같은 메모를 본다.\n\n## 범위\n- 메모 만들기 · 고치기\n- 다른 기기의 변경 받기\n- Android · Windows\n\n범위 밖: 오프라인 편집, 공유"
+  },
+  {
+   "id": "CR-002",
+   "kind": "change_request",
+   "title": "오프라인 편집과 충돌 처리",
+   "summary": "연결이 끊겨도 고치고, 다시 연결되면 보낸다. 같은 메모를 두 곳에서 고치면 두 판을 남긴다",
+   "checkpoint": "CP-0013",
+   "tags": {
+    "출처": [
+     "사용자 피드백"
+    ],
+    "상태": [
+     "반영 중"
+    ],
+    "진입 단계": [
+     "Step 2"
+    ]
+   },
+   "body": "## 목적\n지하철에서 고친 메모가 사라진다는 피드백 (설문 23 건).\n\n## 결정\n| 번호 | 결정 | 다른 안 |\n| --- | --- | --- |\n| D1 | 충돌하면 두 판을 남기고 사용자가 고른다 | 마지막 쓰기 우선 (잃는 글이 생김) |\n| D2 | 보내기 큐는 기기에 저장한다 | 메모리 큐 (앱을 끄면 사라짐) |\n\n## 단계 계획\n1. Step 2: REQ-004 · REQ-005\n2. Step 4: 보내기 큐 설계 (DSN-003)"
+  },
+  {
+   "id": "CR-003",
+   "kind": "change_request",
+   "title": "다크 모드",
+   "summary": "-",
+   "checkpoint": "CP-0013",
+   "tags": {
+    "출처": [
+     "사용자 피드백"
+    ],
+    "상태": [
+     "백로그"
+    ],
+    "진입 단계": [
+     "Step 3"
+    ]
+   },
+   "body": "밤에 눈이 부시다는 요청. 디자인 시스템 정리 뒤에 다시 본다."
+  },
+  {
+   "id": "CR-004",
+   "kind": "change_request",
+   "title": "메모 종단 간 암호화",
+   "summary": "서버가 메모 내용을 읽지 못하게 한다",
+   "checkpoint": "CP-0013",
+   "tags": {
+    "출처": [
+     "이슈"
+    ],
+    "상태": [
+     "거부"
+    ],
+    "진입 단계": [
+     "Step 2"
+    ]
+   },
+   "body": "## 거부 이유\n키 분실 시 복구 방법이 없고, 이번 분기 범위를 넘는다. 2027 년 상반기에 다시 검토."
+  },
+  {
+   "id": "CR-005",
+   "kind": "change_request",
+   "title": "메모 공유 링크",
+   "summary": "읽기 전용 링크로 메모 하나를 보낸다",
+   "checkpoint": "CP-0012",
+   "tags": {
+    "출처": [
+     "사용자 피드백"
+    ],
+    "상태": [
+     "열림"
+    ],
+    "진입 단계": [
+     "Step 1"
+    ]
+   },
+   "body": "(더미 변경 요청)"
+  },
+  {
+   "id": "CR-006",
+   "kind": "change_request",
+   "title": "로그인 화면 문구 정리",
+   "summary": "-",
+   "checkpoint": "CP-0012",
+   "tags": {
+    "출처": [
+     "이슈"
+    ],
+    "상태": [
+     "완료"
+    ],
+    "진입 단계": [
+     "Step 3"
+    ]
+   },
+   "body": "(더미 변경 요청)"
+  },
+  {
+   "id": "CR-007",
+   "kind": "change_request",
+   "title": "동기화 실패 시 다시 시도",
+   "summary": "지수 백오프로 세 번까지",
+   "checkpoint": "CP-0012",
+   "tags": {
+    "출처": [
+     "이슈"
+    ],
+    "상태": [
+     "완료"
+    ],
+    "진입 단계": [
+     "Step 4"
+    ]
+   },
+   "body": "(더미 변경 요청)"
+  },
+  {
+   "id": "CR-008",
+   "kind": "change_request",
+   "title": "메모 목록 정렬 옵션",
+   "summary": "최근 고친 순 · 만든 순 · 제목 순",
+   "checkpoint": "CP-0012",
+   "tags": {
+    "출처": [
+     "사용자 피드백"
+    ],
+    "상태": [
+     "완료"
+    ],
+    "진입 단계": [
+     "Step 3"
+    ]
+   },
+   "body": "(더미 변경 요청)"
+  },
+  {
+   "id": "CR-009",
+   "kind": "change_request",
+   "title": "SQLite 3.45 로 올리기",
+   "summary": "-",
+   "checkpoint": "CP-0012",
+   "tags": {
+    "출처": [
+     "공통 수칙"
+    ],
+    "상태": [
+     "완료"
+    ],
+    "진입 단계": [
+     "Step 4"
+    ]
+   },
+   "body": "(더미 변경 요청)"
+  },
+  {
+   "id": "CR-010",
+   "kind": "change_request",
+   "title": "첨부 이미지 미리보기",
+   "summary": "-",
+   "checkpoint": "CP-0012",
+   "tags": {
+    "출처": [
+     "사용자 피드백"
+    ],
+    "상태": [
+     "백로그"
+    ],
+    "진입 단계": [
+     "Step 2"
+    ]
+   },
+   "body": "(더미 변경 요청)"
+  },
+  {
+   "id": "CR-011",
+   "kind": "change_request",
+   "title": "Windows 설치 파일 서명",
+   "summary": "SmartScreen 경고를 없앤다",
+   "checkpoint": "CP-0012",
+   "tags": {
+    "출처": [
+     "이슈"
+    ],
+    "상태": [
+     "완료"
+    ],
+    "진입 단계": [
+     "Step 7"
+    ]
+   },
+   "body": "(더미 변경 요청)"
+  },
+  {
+   "id": "CR-012",
+   "kind": "change_request",
+   "title": "테스트 서버 주소 분리",
+   "summary": "-",
+   "checkpoint": "CP-0012",
+   "tags": {
+    "출처": [
+     "공통 수칙"
+    ],
+    "상태": [
+     "완료"
+    ],
+    "진입 단계": [
+     "Step 4"
+    ]
+   },
+   "body": "(더미 변경 요청)"
+  },
+  {
+   "id": "REQ-001",
+   "kind": "requirement",
+   "title": "메모를 기기 사이에 동기화한다",
+   "summary": "한 기기에서 고친 메모를 다른 기기에서 본다",
+   "checkpoint": "CP-0002",
+   "tags": {
+    "요구사항 종류": [
+     "기능 요구사항"
+    ]
+   },
+   "body": "## 진술\n사용자는 휴대폰과 PC 에서 같은 메모 목록을 본다.\n\n## 근거 시나리오\n출근길에 휴대폰으로 적은 메모를 회사 PC 에서 이어 쓴다.\n\n## 인수 조건\n- 전제 조건: 두 기기에 같은 계정 / 행동: 휴대폰에서 메모를 만든다 / 기대 결과: PC 목록에 나타난다"
+  },
+  {
+   "id": "REQ-002",
+   "kind": "requirement",
+   "title": "메모를 만들고 고친다",
+   "summary": "-",
+   "checkpoint": "CP-0002",
+   "parent": "REQ-001",
+   "tags": {
+    "요구사항 종류": [
+     "기능 요구사항"
+    ]
+   },
+   "body": "## 진술\n사용자는 제목과 본문으로 메모를 만들고 고친다. 본문은 64 KB 까지.\n\n## 인수 조건\n- 전제 조건: 빈 목록 / 행동: 메모를 만든다 / 기대 결과: 목록 맨 위에 보인다\n- 전제 조건: 64 KB 를 넘는 본문 / 행동: 저장한다 / 기대 결과: 거부하고 이유를 보인다"
+  },
+  {
+   "id": "REQ-003",
+   "kind": "requirement",
+   "title": "다른 기기의 변경을 받는다",
+   "summary": "앱이 열려 있으면 자동으로, 아니면 열 때 받는다",
+   "checkpoint": "CP-0002",
+   "parent": "REQ-001",
+   "tags": {
+    "요구사항 종류": [
+     "기능 요구사항"
+    ]
+   },
+   "body": "## 진술\n앱이 열려 있으면 다른 기기의 변경을 자동으로 받는다.\n\n## 인수 조건\n- 전제 조건: 두 기기에서 앱이 열려 있다 / 행동: 한 쪽에서 고친다 / 기대 결과: 다른 쪽이 5 초 안에 바뀐다"
+  },
+  {
+   "id": "REQ-004",
+   "kind": "requirement",
+   "title": "오프라인에서 고치고 연결되면 보낸다",
+   "summary": "-",
+   "checkpoint": "CP-0014",
+   "parent": "REQ-001",
+   "tags": {
+    "요구사항 종류": [
+     "기능 요구사항"
+    ]
+   },
+   "body": "## 진술\n연결이 없어도 메모를 고칠 수 있고, 다시 연결되면 순서대로 보낸다.\n\n## 인수 조건\n- 전제 조건: 비행기 모드 / 행동: 메모 3 개를 고친다 / 기대 결과: 목록에 '보내기 대기 3' 이 보인다\n- 전제 조건: 대기 3 / 행동: 연결한다 / 기대 결과: 30 초 안에 대기 0"
+  },
+  {
+   "id": "REQ-005",
+   "kind": "requirement",
+   "title": "같은 메모를 두 곳에서 고치면 두 판을 남긴다",
+   "summary": "<script>alert('본문 안의 스크립트는 실행되지 않는다')</script> 충돌 시 사용자가 고른다",
+   "checkpoint": "CP-0014",
+   "parent": "REQ-001",
+   "tags": {
+    "요구사항 종류": [
+     "기능 요구사항"
+    ]
+   },
+   "body": "## 진술\n두 기기가 같은 메모를 오프라인에서 고치면 두 판을 모두 남기고 사용자가 고른다.\n\n<script>alert('실행되면 안 됨')</script>\n\n(인수 조건은 아직 쓰지 않음 — 진행 화면의 작업할 항목)"
+  },
+  {
+   "id": "REQ-006",
+   "kind": "requirement",
+   "title": "동기화가 5 초 안에 끝난다",
+   "summary": "LTE 기준 메모 100 개",
+   "checkpoint": "CP-0002",
+   "tags": {
+    "요구사항 종류": [
+     "품질 요구사항"
+    ]
+   },
+   "body": "## 진술\nLTE 에서 메모 100 개의 첫 동기화가 5 초 안에 끝난다."
+  },
+  {
+   "id": "REQ-007",
+   "kind": "requirement",
+   "title": "지원 플랫폼",
+   "summary": "-",
+   "checkpoint": "CP-0002",
+   "tags": {
+    "요구사항 종류": [
+     "환경 요구사항"
+    ]
+   },
+   "body": "## 진술\nAndroid 12 이상, Windows 10 이상."
+  },
+  {
+   "id": "RULE-001",
+   "kind": "rule",
+   "title": "1.1 예외를 던지지 않는다",
+   "summary": "실패는 Result 로 돌려준다",
+   "checkpoint": "CP-0002",
+   "tags": {
+    "수칙 종류": [
+     "코딩 제약"
+    ]
+   },
+   "body": "## 이유\n예외는 호출 경로에서 보이지 않는다.\n\n```cpp\nResult<Memo> load(MemoId id);   // 지키는 예\nMemo load(MemoId id);           // 어기는 예 (throw)\n```"
+  },
+  {
+   "id": "RULE-002",
+   "kind": "rule",
+   "title": "2.1 UI 는 domain 을 거쳐 저장소를 쓴다",
+   "summary": "-",
+   "checkpoint": "CP-0002",
+   "tags": {
+    "수칙 종류": [
+     "아키텍처",
+     "의존성"
+    ]
+   },
+   "body": "UI 코드는 repository 를 직접 import 하지 않는다."
+  },
+  {
+   "id": "RULE-003",
+   "kind": "rule",
+   "title": "5.1 테스트는 네트워크 없이 돈다",
+   "summary": "-",
+   "checkpoint": "CP-0002",
+   "tags": {
+    "수칙 종류": [
+     "테스트"
+    ]
+   },
+   "body": "서버는 가짜 전송 계층으로 바꾼다."
+  },
+  {
+   "id": "PRULE-001",
+   "kind": "private_rule",
+   "title": "1.1 예외를 던지지 않는다 (플랫폼 SDK 경계는 잡는다)",
+   "summary": "공통 수칙 1.1 의 프로젝트 판",
+   "checkpoint": "CP-0002",
+   "tags": {
+    "수칙 종류": [
+     "코딩 제약"
+    ]
+   },
+   "body": "## 범위\nAndroid SDK 호출 줄은 예외를 잡아 Result 로 바꾼다."
+  },
+  {
+   "id": "UI-001",
+   "kind": "external_interface",
+   "title": "메모 목록 화면",
+   "summary": "-",
+   "checkpoint": "CP-0003",
+   "tags": {
+    "인터페이스 종류": [
+     "GUI 뷰"
+    ]
+   },
+   "body": "## 화면\n최근 고친 순 목록, 위에 동기화 상태 줄."
+  },
+  {
+   "id": "UI-002",
+   "kind": "external_interface",
+   "title": "메모 편집 화면",
+   "summary": "-",
+   "checkpoint": "CP-0003",
+   "tags": {
+    "인터페이스 종류": [
+     "GUI 뷰"
+    ]
+   },
+   "body": "제목 한 줄, 본문 여러 줄. 자동 저장."
+  },
+  {
+   "id": "UI-003",
+   "kind": "external_interface",
+   "title": "sync_push",
+   "summary": "보내기 큐의 변경을 서버로 보낸다",
+   "checkpoint": "CP-0003",
+   "tags": {
+    "인터페이스 종류": [
+     "C 함수"
+    ]
+   },
+   "body": "## 시그니처\n```c\nSyncStatus sync_push(SyncContext *context, uint32_t max_count);\n```\n\n## 에러 코드\n- OFFLINE: 연결 없음\n- CONFLICT: 서버 판이 더 새로움"
+  },
+  {
+   "id": "DSN-001",
+   "kind": "design",
+   "title": "동기화 모듈",
+   "summary": "변경을 서버와 주고받는다",
+   "checkpoint": "CP-0004",
+   "tags": {
+    "설계 종류": [
+     "모듈"
+    ],
+    "구현 상태": [
+     "구현 완료"
+    ]
+   },
+   "body": "sync/ 폴더. 받기는 서버 푸시, 보내기는 sync_push."
+  },
+  {
+   "id": "DSN-002",
+   "kind": "design",
+   "title": "메모 저장소",
+   "summary": "기기 안 SQLite",
+   "checkpoint": "CP-0004",
+   "tags": {
+    "설계 종류": [
+     "모듈"
+    ],
+    "구현 상태": [
+     "구현 완료"
+    ]
+   },
+   "body": "memo/ 폴더. 메모 하나가 한 줄."
+  },
+  {
+   "id": "DSN-003",
+   "kind": "design",
+   "title": "보내기 큐",
+   "summary": "오프라인 변경을 기기에 쌓았다가 순서대로 보낸다",
+   "checkpoint": "CP-0014",
+   "tags": {
+    "설계 종류": [
+     "동작 흐름",
+     "메모리 정책"
+    ],
+    "구현 상태": [
+     "미구현"
+    ]
+   },
+   "body": "## 흐름\n1. 저장 → 큐에 넣기\n2. 연결 이벤트 → sync_push\n3. CONFLICT → 두 판 남기기"
+  },
+  {
+   "id": "UT-001",
+   "kind": "unit_test_plan",
+   "title": "동기화 왕복",
+   "summary": "-",
+   "checkpoint": "CP-0005",
+   "tags": {
+    "구현 상태": [
+     "구현 완료"
+    ]
+   },
+   "body": "가짜 서버로 보내고 받기."
+  },
+  {
+   "id": "UT-002",
+   "kind": "unit_test_plan",
+   "title": "메모 저장 · 읽기",
+   "summary": "-",
+   "checkpoint": "CP-0005",
+   "tags": {
+    "구현 상태": [
+     "구현 완료"
+    ]
+   },
+   "body": "64 KB 경계 포함."
+  },
+  {
+   "id": "MS-001",
+   "kind": "milestone",
+   "title": "MVP 동기화",
+   "summary": "저장소 → 동기화 순서",
+   "checkpoint": "CP-0006",
+   "tags": {},
+   "body": "1. DSN-002 + UT-002\n2. DSN-001 + UT-001"
+  },
+  {
+   "id": "UTR-001",
+   "kind": "unit_test_result",
+   "title": "동기화 왕복 결과",
+   "summary": "-",
+   "checkpoint": "CP-0007",
+   "tags": {
+    "결과": [
+     "PASS"
+    ]
+   },
+   "body": "ctest -R sync: 12 통과"
+  },
+  {
+   "id": "UTR-002",
+   "kind": "unit_test_result",
+   "title": "메모 저장 · 읽기 결과",
+   "summary": "-",
+   "checkpoint": "CP-0007",
+   "tags": {
+    "결과": [
+     "PASS"
+    ]
+   },
+   "body": "ctest -R memo: 8 통과"
+  },
+  {
+   "id": "ST-001",
+   "kind": "system_test_plan",
+   "title": "두 기기 동기화",
+   "summary": "-",
+   "checkpoint": "CP-0008",
+   "tags": {},
+   "body": "## 준비\n에뮬레이터 + Windows PC\n\n## 절차\n1. 휴대폰에서 고친다\n2. PC 를 본다\n\n## 기대 결과\n5 초 안에 바뀐다"
+  },
+  {
+   "id": "ST-002",
+   "kind": "system_test_plan",
+   "title": "메모 만들기 · 64 KB 경계",
+   "summary": "-",
+   "checkpoint": "CP-0008",
+   "tags": {},
+   "body": "64 KB 와 64 KB + 1 바이트 본문."
+  },
+  {
+   "id": "STR-001",
+   "kind": "system_test_result",
+   "title": "두 기기 동기화 결과",
+   "summary": "평균 1.8 초",
+   "checkpoint": "CP-0009",
+   "tags": {
+    "결과": [
+     "PASS"
+    ]
+   },
+   "body": "10 회 평균 1.8 초, 최대 3.1 초."
+  },
+  {
+   "id": "STR-002",
+   "kind": "system_test_result",
+   "title": "64 KB 경계 결과 (1 차)",
+   "summary": "65536 바이트를 거부함",
+   "checkpoint": "CP-0009",
+   "tags": {
+    "결과": [
+     "FAIL"
+    ]
+   },
+   "body": "경계 비교가 < 가 아니라 <= 였다. 고친 뒤 STR-003."
+  },
+  {
+   "id": "STR-003",
+   "kind": "system_test_result",
+   "title": "64 KB 경계 결과 (2 차)",
+   "summary": "-",
+   "checkpoint": "CP-0009",
+   "tags": {
+    "결과": [
+     "PASS"
+    ]
+   },
+   "body": "통과."
+  },
+  {
+   "id": "CIR-001",
+   "kind": "code_inspection_result",
+   "title": "1.1 예외 검사",
+   "summary": "-",
+   "checkpoint": "CP-0010",
+   "tags": {
+    "결과": [
+     "PASS"
+    ]
+   },
+   "body": "throw 0 곳 (SDK 경계는 PRULE-001)."
+  },
+  {
+   "id": "CIR-002",
+   "kind": "code_inspection_result",
+   "title": "2.1 UI 의존 검사",
+   "summary": "-",
+   "checkpoint": "CP-0010",
+   "tags": {
+    "결과": [
+     "PASS"
+    ]
+   },
+   "body": "ui/ 에서 repository import 0."
+  },
+  {
+   "id": "CIR-003",
+   "kind": "code_inspection_result",
+   "title": "5.1 테스트 네트워크 검사",
+   "summary": "-",
+   "checkpoint": "CP-0010",
+   "tags": {
+    "결과": [
+     "PASS"
+    ]
+   },
+   "body": "소켓 호출 0."
+  },
+  {
+   "id": "CIR-004",
+   "kind": "code_inspection_result",
+   "title": "PRULE-001 SDK 경계 검사",
+   "summary": "-",
+   "checkpoint": "CP-0010",
+   "tags": {
+    "결과": [
+     "PASS"
+    ]
+   },
+   "body": "SDK 호출 14 곳 모두 try/catch."
+  },
+  {
+   "id": "E2E-001",
+   "kind": "e2e_test_plan",
+   "title": "목록 화면에서 동기화 확인",
+   "summary": "-",
+   "checkpoint": "CP-0011",
+   "tags": {},
+   "body": "앱 설치 → 로그인 → 메모 만들기 → 다른 기기 목록."
+  },
+  {
+   "id": "E2ER-001",
+   "kind": "e2e_test_result",
+   "title": "목록 화면 E2E 결과",
+   "summary": "-",
+   "checkpoint": "CP-0012",
+   "tags": {
+    "결과": [
+     "PASS"
+    ]
+   },
+   "body": "Pixel 7 · Windows 11 통과."
+  }
+ ],
+ "relations": [
+  [
+   "CR-001",
+   "영향 요구사항",
+   "REQ-001"
+  ],
+  [
+   "CR-001",
+   "영향 요구사항",
+   "REQ-002"
+  ],
+  [
+   "CR-001",
+   "영향 요구사항",
+   "REQ-003"
+  ],
+  [
+   "CR-001",
+   "영향 요구사항",
+   "REQ-006"
+  ],
+  [
+   "CR-001",
+   "영향 요구사항",
+   "REQ-007"
+  ],
+  [
+   "CR-001",
+   "영향 개발 수칙",
+   "RULE-001"
+  ],
+  [
+   "CR-001",
+   "영향 개발 수칙",
+   "RULE-002"
+  ],
+  [
+   "CR-001",
+   "영향 개발 수칙",
+   "RULE-003"
+  ],
+  [
+   "CR-001",
+   "영향 외부 인터페이스",
+   "UI-001"
+  ],
+  [
+   "CR-001",
+   "영향 외부 인터페이스",
+   "UI-002"
+  ],
+  [
+   "CR-001",
+   "영향 외부 인터페이스",
+   "UI-003"
+  ],
+  [
+   "CR-001",
+   "영향 설계 사항",
+   "DSN-001"
+  ],
+  [
+   "CR-001",
+   "영향 설계 사항",
+   "DSN-002"
+  ],
+  [
+   "CR-001",
+   "관련 마일스톤",
+   "MS-001"
+  ],
+  [
+   "CR-001",
+   "영향 전용 개발 수칙",
+   "PRULE-001"
+  ],
+  [
+   "CR-002",
+   "영향 요구사항",
+   "REQ-003"
+  ],
+  [
+   "CR-002",
+   "영향 요구사항",
+   "REQ-004"
+  ],
+  [
+   "CR-002",
+   "영향 요구사항",
+   "REQ-005"
+  ],
+  [
+   "CR-002",
+   "영향 설계 사항",
+   "DSN-003"
+  ],
+  [
+   "CR-003",
+   "영향 외부 인터페이스",
+   "UI-001"
+  ],
+  [
+   "CR-003",
+   "영향 외부 인터페이스",
+   "UI-002"
+  ],
+  [
+   "CR-004",
+   "영향 요구사항",
+   "REQ-002"
+  ],
+  [
+   "REQ-006",
+   "관련 요구사항",
+   "REQ-003"
+  ],
+  [
+   "PRULE-001",
+   "대체 개발 수칙",
+   "RULE-001"
+  ],
+  [
+   "UI-001",
+   "관련 요구사항",
+   "REQ-002"
+  ],
+  [
+   "UI-001",
+   "관련 요구사항",
+   "REQ-003"
+  ],
+  [
+   "UI-002",
+   "관련 요구사항",
+   "REQ-002"
+  ],
+  [
+   "UI-003",
+   "관련 요구사항",
+   "REQ-003"
+  ],
+  [
+   "DSN-001",
+   "관련 요구사항",
+   "REQ-001"
+  ],
+  [
+   "DSN-001",
+   "관련 요구사항",
+   "REQ-003"
+  ],
+  [
+   "DSN-001",
+   "관련 외부 인터페이스",
+   "UI-003"
+  ],
+  [
+   "DSN-002",
+   "관련 요구사항",
+   "REQ-002"
+  ],
+  [
+   "DSN-002",
+   "관련 외부 인터페이스",
+   "UI-001"
+  ],
+  [
+   "DSN-002",
+   "관련 외부 인터페이스",
+   "UI-002"
+  ],
+  [
+   "DSN-003",
+   "관련 요구사항",
+   "REQ-004"
+  ],
+  [
+   "DSN-003",
+   "의존 설계 사항",
+   "DSN-001"
+  ],
+  [
+   "UT-001",
+   "검증 설계 사항",
+   "DSN-001"
+  ],
+  [
+   "UT-002",
+   "검증 설계 사항",
+   "DSN-002"
+  ],
+  [
+   "MS-001",
+   "포함 설계 사항",
+   "DSN-001"
+  ],
+  [
+   "MS-001",
+   "포함 설계 사항",
+   "DSN-002"
+  ],
+  [
+   "MS-001",
+   "포함 유닛 테스트",
+   "UT-001"
+  ],
+  [
+   "MS-001",
+   "포함 유닛 테스트",
+   "UT-002"
+  ],
+  [
+   "UTR-001",
+   "대상 유닛 테스트",
+   "UT-001"
+  ],
+  [
+   "UTR-002",
+   "대상 유닛 테스트",
+   "UT-002"
+  ],
+  [
+   "ST-001",
+   "검증 요구사항",
+   "REQ-003"
+  ],
+  [
+   "ST-002",
+   "검증 요구사항",
+   "REQ-002"
+  ],
+  [
+   "STR-001",
+   "대상 시스템 테스트",
+   "ST-001"
+  ],
+  [
+   "STR-002",
+   "대상 시스템 테스트",
+   "ST-002"
+  ],
+  [
+   "STR-003",
+   "대상 시스템 테스트",
+   "ST-002"
+  ],
+  [
+   "CIR-001",
+   "검사 개발 수칙",
+   "RULE-001"
+  ],
+  [
+   "CIR-002",
+   "검사 개발 수칙",
+   "RULE-002"
+  ],
+  [
+   "CIR-003",
+   "검사 개발 수칙",
+   "RULE-003"
+  ],
+  [
+   "CIR-004",
+   "검사 전용 개발 수칙",
+   "PRULE-001"
+  ],
+  [
+   "E2E-001",
+   "검증 외부 인터페이스",
+   "UI-001"
+  ],
+  [
+   "E2ER-001",
+   "대상 E2E 테스트",
+   "E2E-001"
+  ],
+  [
+   "CR-005",
+   "영향 요구사항",
+   "REQ-002"
+  ],
+  [
+   "CR-007",
+   "영향 설계 사항",
+   "DSN-001"
+  ],
+  [
+   "CR-008",
+   "영향 외부 인터페이스",
+   "UI-001"
+  ],
+  [
+   "CR-011",
+   "영향 요구사항",
+   "REQ-007"
+  ]
+ ]
 }
