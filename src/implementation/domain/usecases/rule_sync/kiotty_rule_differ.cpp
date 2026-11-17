@@ -58,7 +58,7 @@ Result<entity::RuleDiffRecord, KiottySpecStatus> RuleDiffer::next(CursorId curso
     const Result<const CursorRow&, KiottySpecStatus> row = rows.value.at(0);
     if (!row) { return RecordResult::success(entity::RuleDiffRecord {}); }
     const Result<entity::RuleDiffRecord&, KiottySpecStatus> record =
-        _store.rows().at((*row.value).first);
+        _store.rows().at(static_cast<size_t>((*row.value).first));
     if (!record) { return RecordResult::failure(record.code); }
     return RecordResult::success(*record.value);
 }

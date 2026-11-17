@@ -5,6 +5,7 @@
 #include "implementation/core/kiotty_span.h"
 #include "implementation/domain/entity/kiotty_failure.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
+#include "implementation/core/kiotty_layout.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -18,7 +19,7 @@ struct CheckpointColumns {
     std::vector<uint8_t>& exists;
 };
 
-static_assert(sizeof(CheckpointColumns) == 24, "unexpected padding");
+static_assert(sizeof(CheckpointColumns) == layoutSize(24, 12), "unexpected padding");
 
 class CheckpointWriter
 {

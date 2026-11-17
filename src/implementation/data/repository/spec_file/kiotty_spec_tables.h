@@ -7,6 +7,7 @@
 #include "implementation/data/repository/meta/kiotty_meta_store.h"
 #include "implementation/data/repository/relation/kiotty_relation_store.h"
 #include "implementation/data/repository/model/kiotty_model_catalog.h"
+#include "implementation/core/kiotty_layout.h"
 
 #include <string_view>
 
@@ -40,6 +41,6 @@ struct SpecTables {
     DecisionStore& decisions;
 };
 
-static_assert(sizeof(SpecTables) == 56, "unexpected padding");
+static_assert(sizeof(SpecTables) == layoutSize(56, 28), "unexpected padding");
 
 }

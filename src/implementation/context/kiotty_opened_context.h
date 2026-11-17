@@ -18,6 +18,7 @@
 #include "implementation/domain/usecases/rule_sync/kiotty_rule_acceptor.h"
 #include "implementation/domain/usecases/rule_sync/kiotty_rule_exporter.h"
 #include "implementation/domain/usecases/workspace/kiotty_workspace.h"
+#include "implementation/core/kiotty_layout.h"
 
 namespace kiotty::spec::implementation {
 
@@ -48,7 +49,7 @@ struct ReadParts {
     CursorPool& cursors;
 };
 
-static_assert(sizeof(ReadParts) == 24, "unexpected padding");
+static_assert(sizeof(ReadParts) == layoutSize(24, 12), "unexpected padding");
 
 class ContextReadSide
 {
@@ -101,7 +102,7 @@ struct ContextSides {
     RuleSyncSide rule_sync;
 };
 
-static_assert(sizeof(ContextSides) == 104, "unexpected padding");
+static_assert(sizeof(ContextSides) == layoutSize(104, 52), "unexpected padding");
 
 struct ContextPaths {
     const SystemPath& root;
@@ -109,7 +110,7 @@ struct ContextPaths {
     const FileSystem& files;
 };
 
-static_assert(sizeof(ContextPaths) == 24, "unexpected padding");
+static_assert(sizeof(ContextPaths) == layoutSize(24, 12), "unexpected padding");
 
 class OpenedContext
 {

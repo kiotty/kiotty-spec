@@ -4,6 +4,7 @@
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
 #include "implementation/core/kiotty_span_text.h"
+#include "implementation/core/kiotty_layout.h"
 
 #include <cstddef>
 
@@ -17,7 +18,7 @@ struct KispFields
     size_t count {0};
 };
 
-static_assert(sizeof(KispFields) == 168, "unexpected padding");
+static_assert(sizeof(KispFields) == layoutSize(168, 84), "unexpected padding");
 
 class KispLineDecoder
 {

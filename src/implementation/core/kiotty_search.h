@@ -3,6 +3,7 @@
 #include "kiotty_spec.h"
 #include "kiotty_result.h"
 #include "kiotty_span.h"
+#include "kiotty_layout.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -14,7 +15,7 @@ struct IndexRange {
     size_t length {0};
 };
 
-static_assert(sizeof(IndexRange) == 16, "unexpected padding");
+static_assert(sizeof(IndexRange) == layoutSize(16, 8), "unexpected padding");
 
 template <typename Element, typename Match>
 Result<IndexRange, KiottySpecStatus> contiguousRange(Span<const Element> elements, Match match)

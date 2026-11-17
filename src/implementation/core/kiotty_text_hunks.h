@@ -3,6 +3,7 @@
 #include "kiotty_span.h"
 #include "kiotty_text_diff.h"
 #include "kiotty_utf8.h"
+#include "kiotty_layout.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -43,11 +44,11 @@ struct HunkCursor {
     size_t count {};
 };
 
-static_assert(sizeof(Points) == 520, "unexpected padding");
-static_assert(sizeof(SplitText) == 536, "unexpected padding");
-static_assert(sizeof(DiffTexts) == 16, "unexpected padding");
+static_assert(sizeof(Points) == layoutSize(520, 516), "unexpected padding");
+static_assert(sizeof(SplitText) == layoutSize(536, 524), "unexpected padding");
+static_assert(sizeof(DiffTexts) == layoutSize(16, 8), "unexpected padding");
 static_assert(sizeof(Hunk) == 10, "unexpected padding");
-static_assert(sizeof(HunkCursor) == 16, "unexpected padding");
+static_assert(sizeof(HunkCursor) == layoutSize(16, 8), "unexpected padding");
 
 inline size_t appendHunk(Span<Hunk> hunks, size_t count, Hunk hunk);
 inline size_t mergeShortEqualities(Span<Hunk> hunks, size_t count);

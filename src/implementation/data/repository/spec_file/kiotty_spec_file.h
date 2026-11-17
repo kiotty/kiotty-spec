@@ -6,6 +6,7 @@
 #include "implementation/data/datasource/kiotty_file_system.h"
 #include "implementation/data/datasource/kiotty_kisp_file.h"
 #include "implementation/data/repository/spec_file/kiotty_spec_tables.h"
+#include "implementation/core/kiotty_layout.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -17,7 +18,7 @@ struct WorkAreas {
     Span<char> line {};
 };
 
-static_assert(sizeof(WorkAreas) == 32, "unexpected padding");
+static_assert(sizeof(WorkAreas) == layoutSize(32, 16), "unexpected padding");
 
 class SpecFile
 {

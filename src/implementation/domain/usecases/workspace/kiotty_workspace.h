@@ -10,6 +10,7 @@
 #include "implementation/data/repository/relation/kiotty_relation_store.h"
 #include "implementation/data/repository/model/kiotty_model_catalog.h"
 #include "implementation/data/repository/spec_file/kiotty_spec_file.h"
+#include "implementation/core/kiotty_layout.h"
 
 namespace kiotty::spec::implementation {
 
@@ -52,6 +53,6 @@ struct Workspace {
     }
 };
 
-static_assert(sizeof(Workspace) == 64, "unexpected padding");
+static_assert(sizeof(Workspace) == layoutSize(64, 32), "unexpected padding");
 
 }

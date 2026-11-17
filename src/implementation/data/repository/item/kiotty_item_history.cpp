@@ -4,6 +4,7 @@
 #include "implementation/core/kiotty_fixed_string.h"
 #include "implementation/core/kiotty_number.h"
 #include "implementation/core/kiotty_text_view.h"
+#include "implementation/core/kiotty_layout.h"
 
 #include <algorithm>
 
@@ -23,7 +24,7 @@ struct IdParts {
     uint32_t number {0};
 };
 
-static_assert(sizeof(IdParts) == 24, "unexpected padding");
+static_assert(sizeof(IdParts) == layoutSize(24, 12), "unexpected padding");
 
 IdParts splitId(Span<const char> id);
 size_t collectKeys(Span<uint32_t> order, Span<const ItemVersion> versions);

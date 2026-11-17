@@ -352,7 +352,7 @@ files.forEach(parseFile);
 // ---------------------------------------------------------------- size table (from static_assert(sizeof))
 const sizes = new Map();
 for (const f of files) {
-  for (const m of f.lex.body.matchAll(/static_assert\s*\(\s*sizeof\s*\(\s*([\w:<>, ]+?)\s*\)\s*(==|<=)\s*(\d+)/g)) {
+  for (const m of f.lex.body.matchAll(/static_assert\s*\(\s*sizeof\s*\(\s*([\w:<>, ]+?)\s*\)\s*(==|<=)\s*(?:layoutSize\s*\(\s*)?(\d+)/g)) {
     sizes.set(m[1].replace(/\s+/g, '').split('::').pop(), Number(m[3]));
   }
 }

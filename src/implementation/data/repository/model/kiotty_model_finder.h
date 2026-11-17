@@ -4,6 +4,7 @@
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
 #include "implementation/domain/entity/kiotty_model.h"
+#include "implementation/core/kiotty_layout.h"
 
 #include <cstdint>
 
@@ -16,7 +17,7 @@ struct ModelTables {
     Span<const entity::TagName> bit_names {};
 };
 
-static_assert(sizeof(ModelTables) == 64, "unexpected padding");
+static_assert(sizeof(ModelTables) == layoutSize(64, 32), "unexpected padding");
 
 const entity::Model& pickModel(Span<const entity::Model> models, entity::ItemKind kind);
 

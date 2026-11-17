@@ -7,6 +7,7 @@
 #include "implementation/data/repository/relation/kiotty_relation_store.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 #include "implementation/domain/usecases/workspace/kiotty_workspace.h"
+#include "implementation/core/kiotty_layout.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -38,7 +39,7 @@ struct PairRule {
     TargetFilter filter {TargetFilter::ALL_TARGETS};
 };
 
-static_assert(sizeof(PairRule) == 32, "unexpected padding");
+static_assert(sizeof(PairRule) == layoutSize(32, 24), "unexpected padding");
 
 class Checker
 {

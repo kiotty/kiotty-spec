@@ -2,3 +2,4 @@ build/
 *.kisp.tmp
 install.local
 script/build.sh
+build-wasm*/

@@ -3,6 +3,7 @@
 #include "kiotty_checked.h"
 #include "kiotty_text_hunks.h"
 #include "kiotty_utf8.h"
+#include "kiotty_layout.h"
 
 namespace kiotty::spec::implementation {
 
@@ -20,7 +21,7 @@ struct CommonTable {
     size_t width {};
 };
 
-static_assert(sizeof(CommonTable) == 24, "unexpected padding");
+static_assert(sizeof(CommonTable) == layoutSize(24, 12), "unexpected padding");
 
 enum class TraceStep : uint8_t { BOTH, BEFORE, AFTER };
 

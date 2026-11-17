@@ -31,8 +31,9 @@ Context::Context(const Configuration& configuration)
       _editor(_workspace), _relation_editor(_workspace),
       _cursors(configuration.max_cursors, configuration.max_cursor_rows,
                configuration.cursor_pool_rows),
+      _text_diffs(configuration.max_cursors),
       _finder(_workspace, _cursors, configuration.max_items),
-      _text_diffs(configuration.max_cursors), _differ(_workspace, _cursors, _text_diffs),
+      _differ(_workspace, _cursors, _text_diffs),
       _remote(_workspace), _rule_acceptor(_workspace, configuration.max_items),
       _rule_exporter(_workspace),
       _rule_differ(_workspace, _cursors, _rule_diffs)

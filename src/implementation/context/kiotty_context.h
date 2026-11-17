@@ -21,6 +21,7 @@
 #include "implementation/domain/usecases/editor/kiotty_relation_editor.h"
 #include "implementation/data/repository/spec_file/kiotty_spec_file.h"
 #include "implementation/domain/usecases/workspace/kiotty_workspace.h"
+#include "implementation/core/kiotty_layout.h"
 
 #include <cstddef>
 #include <optional>
@@ -54,7 +55,7 @@ struct Configuration {
     size_t cursor_pool_rows {DEFAULT_MAX_CURSORS * DEFAULT_MAX_CURSOR_ROWS};
 };
 
-static_assert(sizeof(Configuration) == 104, "unexpected padding");
+static_assert(sizeof(Configuration) == layoutSize(104, 52), "unexpected padding");
 
 class Context {
 public:

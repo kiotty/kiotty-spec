@@ -4,6 +4,7 @@
 #include "kiotty_result.h"
 #include "kiotty_span.h"
 #include "kiotty_text_diff.h"
+#include "kiotty_layout.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -23,7 +24,7 @@ struct LineWork {
     Span<uint16_t> starts {};
 };
 
-static_assert(sizeof(LineWork) == 48, "unexpected padding");
+static_assert(sizeof(LineWork) == layoutSize(48, 24), "unexpected padding");
 
 Result<size_t, KiottySpecStatus> diffLines(Span<const char> before, Span<const char> after,
                                            const LineWork& work, Span<TextSegment> out);

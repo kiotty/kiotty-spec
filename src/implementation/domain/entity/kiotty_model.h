@@ -4,6 +4,7 @@
 #include "kiotty_kind.h"
 #include "implementation/core/kiotty_fixed_string.h"
 #include "implementation/core/kiotty_search.h"
+#include "implementation/core/kiotty_layout.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -48,6 +49,6 @@ struct Model
     Step created_in {};
 };
 
-static_assert(sizeof(Model) == 88, "unexpected padding");
+static_assert(sizeof(Model) == layoutSize(88, 72), "unexpected padding");
 
 }

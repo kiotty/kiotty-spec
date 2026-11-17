@@ -1,6 +1,7 @@
 #include "implementation/data/datasource/kiotty_kisp_line.h"
 
 #include "implementation/core/kiotty_text_view.h"
+#include "implementation/core/kiotty_layout.h"
 
 namespace kiotty::spec::implementation {
 
@@ -22,7 +23,7 @@ struct FieldCursor {
     KiottySpecStatus status {KIOTTY_SPEC_STATUS_SUCCESS};
 };
 
-static_assert(sizeof(FieldCursor) == 24, "unexpected padding");
+static_assert(sizeof(FieldCursor) == layoutSize(24, 12), "unexpected padding");
 
 constexpr EscapePair ESCAPE_PAIRS[] = {{'\t', 't'}, {'\n', 'n'}, {'\r', 'r'}, {'\\', '\\'}};
 

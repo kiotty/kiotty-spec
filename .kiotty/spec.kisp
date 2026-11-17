@@ -50,6 +50,7 @@ checkpoint	O	82	81	9	done	1794894607	CR-017 시스템 테스트 회귀
 checkpoint	O	83	82	10	done	1794894736	CR-017 코드 검사: PRULE 별 결과
 checkpoint	O	84	83	11	done	1794896036	CR-017 E2E 계획 변경 없음
 checkpoint	O	85	84	12	done	1794896045	CR-017 E2E 실행과 닫기
+checkpoint	O	86	85	1	running	1794903264	CR-019 GitHub Pages 정적 뷰어 (wasm32) 접수
 TABLE	item	O/X	key	id
 item	O	00593058	CIR-020
 item	O	00ab1435	DSN-078
@@ -637,6 +638,7 @@ item	O	bf3c411b	UT-094
 item	O	bfb0369d	UI-037
 item	O	bfd5a4b9	CIR-064
 item	O	bfe01f9d	REQ-027
+item	O	c0fc975e	CR-019
 item	O	c16dce92	DSN-037
 item	O	c20f6110	ST-027
 item	O	c2414f71	STR-038
@@ -1653,6 +1655,7 @@ item_version	O	bfb0369d	41	external_interface	b7bb9da8	KiottySpec_writeItemBody	
 item_version	O	bfd5a4b9	41	code_inspection_result	-	6.5 같은 층위의 흐름은 서로 호출하지 않는다.	PASS	e847e5f609d7e510
 item_version	O	bfd5a4b9	71	code_inspection_result	-	6.5 같은 층위의 흐름은 서로 호출하지 않는다.	PASS	1e3bd6cb70467249
 item_version	O	bfe01f9d	41	requirement	2deab145	바뀐 항목과 관계를 목록으로 본다		b2c5779e805b37a6
+item_version	O	c0fc975e	86	change_request	-	GitHub Pages 정적 뷰어로 .kisp 열람 (wasm32)	라이브러리를 32 비트 WebAssembly 로 빌드해 설치 없이 브라우저(크롬 · 엣지 · 사파리)에서 요구사항 · 설계 · 진행 상황을 본다. 보기 전용	864df2df78e6f856
 item_version	O	c16dce92	41	design	-	utf8 (core/kiotty_utf8.h)	UTF-8 검사와 글자 경계에서 자르기.	85711c0ec1ff11f5
 item_version	O	c20f6110	41	system_test_plan	9641e961	바뀐 항목과 관계를 목록으로 본다	REQ-027 의 인수 조건 2 개	1baa8077b298af1c
 item_version	O	c2414f71	57	system_test_result	-	원격 주소를 기억하고 잊는다 (open · close)	kiotty_ks_scenario_test, 80f6924 + 작업 트리, Windows Debug · Linux Release	-
@@ -2762,6 +2765,9 @@ tag	O	bf3c411b	구현 상태	55	구현 완료
 tag	O	bfb0369d	인터페이스 종류	41	C 함수
 tag	O	bfd5a4b9	결과	41	PASS
 tag	O	bfe01f9d	요구사항 종류	41	기능 요구사항
+tag	O	c0fc975e	출처	86	사용자 피드백
+tag	O	c0fc975e	상태	86	열림
+tag	O	c0fc975e	진입 단계	86	Step 2
 tag	O	c16dce92	설계 종류	41	모듈
 tag	O	c16dce92	구현 상태	41	구현 완료
 tag	O	c2414f71	결과	57	PASS
@@ -4381,6 +4387,8 @@ relation	O	bee32956	unit_test_plan	검증 설계 사항	74827f62	41
 relation	O	bee32956	unit_test_plan	검증 설계 사항	a61edc40	41
 relation	O	bf3c411b	unit_test_plan	검증 설계 사항	07e965d1	53
 relation	O	bfd5a4b9	code_inspection_result	검사 개발 수칙	e972389a	41
+relation	O	c0fc975e	change_request	영향 요구사항	3d2b2666	86
+relation	O	c0fc975e	change_request	영향 개발 수칙	44733d8a	86
 relation	O	c16dce92	design	관련 요구사항	39921859	41
 relation	O	c16dce92	design	관련 요구사항	63fa3db0	41
 relation	O	c16dce92	design	의존 설계 사항	9ea5c49d	41
@@ -5401,6 +5409,7 @@ body	O	bf3c411b	## 대상\ntests/cli/cli_test.cpp 의 testGuideStepCoverage\n\n#
 body	O	bfb0369d	## 시그니처\n```c\nKiottySpecStatusResult KiottySpec_writeItemBody(KiottySpecContext *context, KiottySpecText id, KiottySpecText text);\n```\n\n## 사전조건\ncontext 는 KiottySpec_createContext 로 만들고 KiottySpec_open 으로 사양 파일을 연 것. 가장 최근 체크포인트가 DONE 이 아님\n\n## 사후조건\n본문이 바뀌고 본문 해시가 새 버전에 기록된다. 빈 text 는 본문을 지운다\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- NOT_FOUND: 그 ID 의 항목이 없음\n- INVALID_ARGUMENT: ID 형식이 잘못됨 (영문자 · 숫자로 시작, 영문자 · 숫자 · - · _ 만, 15 바이트 이하)\n- INVALID_UTF8 · CAPACITY_EXCEEDED: UTF-8 이 아니거나 KIOTTY_SPEC_MAX_BODY_LENGTH 를 넘음 · 본문 영역(max_body_bytes) 이 모자람\n- PRECONDITION: 체크포인트가 없음\n- CONFIRMED: 가장 최근 체크포인트가 DONE\n- CONFLICT: 연 뒤에 사양 파일이 밖에서 바뀜 (다시 읽은 뒤 거부)\n- INPUT_OUTPUT: 사양 파일을 바꿀 수 없음 (다른 프로그램이 열고 있음 등)\n- POOL_IS_FULL · CAPACITY_EXCEEDED: 풀이나 버전 표의 용량을 넘음\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\n입력 KiottySpecText 는 호출 동안만 읽고 복사한다. null 종료를 가정하지 않으며 data 가 NULL 이면 빈 글이다.\n
 body	O	bfd5a4b9	결과: PASS\n근거: 수동 검토 (include/ src/ app/ tests/)\n판단: 이 프로젝트에서는 전용 개발 수칙 PRULE-002 가 이 수칙을 대체한다 (사용자 결정 2026-11-16). 검사는 P6.5 에 기록한다. PRULE-002 의 범위 밖 흐름은 서로 호출하지 않는다.\n
 body	O	bfe01f9d	## 진술\n두 체크포인트 사이에 바뀐 항목마다 추가 · 수정 · 삭제와, 수정이면 바뀐 필드(제목, 요약, 상위 항목, 태그, 본문)를 본다. 종류와 바뀐 필드로 거를 수 있고, 목록은 종류 순, 그다음 ID 순이다. 추가 · 삭제된 관계도 목록으로 본다.\n\n## 근거 시나리오\n사용자가 설계 사항 중 본문만 바뀐 것을 골라 검토한다.\n\n## 인수 조건\n- 전제 조건: 설계 사항 하나는 본문만, 하나는 제목만 바뀜 / 행동: 설계 사항 중 본문이 바뀐 것만 본다 / 기대 결과: 본문만 바뀐 하나\n- 전제 조건: 관계 하나를 끊었다 / 행동: 관계 목록을 본다 / 기대 결과: 그 관계가 삭제로 보인다\n
+body	O	c0fc975e	## 목적\n\nkiotty-spec 맥락이 없는 협업자가 git 저장소에 있는 요구사항 · 설계 · 진행 상황을 GUI 로 보게 한다. 설치 없이 링크 하나로 열려야 하고, Windows · macOS 의 크롬 · 엣지 · 사파리에서 열려야 한다.\n\n- 뷰어는 GitHub Pages 의 정적 웹 페이지다. 서버가 없다.\n- `.kisp` 해석은 라이브러리 kiotty_spec 을 WebAssembly 로 빌드해 브라우저에서 한다. 해석 코드를 한 벌로 유지한다.\n- 보기 전용이다. 쓰기는 지금처럼 ks 로 한다.\n\n## 결정\n\n| 번호 | 결정 | 내용 | 다른 안 |\n| --- | --- | --- | --- |\n| D1 | 제공 방식 | **확정 (사용자 2026-11-17)**: GitHub Pages 정적 뷰어. `?repo=OWNER/NAME&ref=TAG` 링크 하나로 연다 | VS Code 플러그인 (VS Code · clone 이 필요), 별도 GUI 프로그램 (설치 · 서명 유지 비용), `ks serve` 데몬 + 브라우저 (ks 설치가 필요, 쓰기가 필요해질 때 다시 본다) |\n| D2 | `.kisp` 해석 | **확정**: 라이브러리를 emscripten 으로 WebAssembly 빌드 | TypeScript 파서 새로 작성 (해석 코드가 두 벌), `ks export json` + Actions 가 JSON 게시 (로컬 `.kisp` 를 바로 못 열고 임의 ref 를 못 봄) |\n| D3 | WebAssembly 종류 | **확정 (사용자 2026-11-17)**: 32 비트 (wasm32). 사파리 지원 | 64 비트 (MEMORY64): 코드 변경 없이 빌드되나 사파리 · macOS WKWebView 미지원 |\n| D4 | 32 비트 크기 고정 | 권장: RULE-029 의 `static_assert(sizeof)` 를 `layoutSize(64 비트 크기, 32 비트 크기)` 로 두 값 모두 고정 (`src/implementation/core/kiotty_layout.h`). lint 크기 표는 64 비트 값을 읽는다 | 32 비트에서 검사 끄기 (32 비트 배치가 고정되지 않음) |\n| D5 | 파일 접근 | 권장: 브라우저가 `.kisp` 텍스트를 받아 emscripten 메모리 파일 시스템에 쓰고 `KiottySpec_open` 으로 연다. 원천은 raw.githubusercontent.com (공개 저장소) 과 로컬 파일 끌어 놓기 | 라이브러리에 메모리 버퍼로 여는 C API 추가 (C 인터페이스 변경) |\n| D6 | JavaScript 경계 | 미정 (Step 4): C API 를 직접 부르는 얇은 JS 래퍼, 또는 조회 결과를 JSON 으로 돌려주는 C 래퍼 | — |\n| D7 | 비공개 저장소 | 백로그: 인증이 필요하므로 이번 범위에서 뺀다. 로컬 파일 끌어 놓기로 대신한다 | GitHub 토큰 입력 |\n\n## 프로토타입 결과 (브랜치 proto/wasm, 2026-11-17)\n\n- emsdk (emscripten) 로 kiotty_spec 과 ks 를 wasm32 로 빌드: 경고 0. `ks.wasm` 약 690KB + `ks.js` 약 80KB.\n- 처음 막힌 곳: RULE-029 의 크기 검사 137 개 중 38 개 (26 파일) 가 64 비트 포인터 크기를 전제로 해 실패. D4 대로 고쳤다.\n- 32 비트에서만 나던 경고 1 (`kiotty_rule_differ.cpp` uint64_t → size_t) 와 clang 의 생성자 초기화 순서 경고 1 (`kiotty_context.cpp`) 을 고쳤다.\n- Node.js 로 ks.wasm 을 돌려 실제 `.kiotty/spec.kisp` 조회 11 개 (`next`, `guide`, `model`, `item list` 769 줄, 태그 · 관계 목록, `item body`, 없는 ID) 가 네이티브 ks 와 같은 출력 (줄 끝만 다름). 사양 파일은 바뀌지 않음.\n- 단위 · 시스템 · E2E 테스트 10 종을 wasm32 로 빌드해 WSL 의 Node.js 에서 실행: 모두 통과. Windows 의 Node.js 에서는 임시 폴더 경로 (`/tmp`) 가 이어지지 않아 3 종이 실패한다 (실행 환경 문제).\n- 네이티브 빌드 경고 0, 테스트 10 종 + ks 시나리오 통과, lint 위반 7 → 6.\n\n## 범위\n\n1. 빌드: emscripten 툴체인으로 kiotty_spec 을 wasm32 로 빌드하는 CMake 설정. 기존 세 운영체제 빌드는 그대로.\n2. CI: wasm32 빌드와 단위 테스트를 Linux 의 Node.js 로 돌리는 잡. 태그 푸시 때 뷰어를 GitHub Pages 에 배포하는 잡.\n3. 뷰어 (예: `app/viewer/`): 정적 웹 앱. 화면은 아래 순서로 만든다.\n   - 개요: 목적 · 역할 · 12 단계 (ks guide 와 같은 내용)\n   - 진행 상황: 체크포인트 진행 줄과 막힌 항목 (ks next 와 같은 내용)\n   - 요구사항 · 설계 표: Kind 별 탭, 태그 필터, 본문은 펼쳐 본다\n   - 추적성: 항목 하나의 관계 (요구 → 설계 → 테스트)\n   - 변경 요청: 열린 것 · 닫힌 것과 영향 항목\n4. REQ-037 (빌드 환경) 에 WebAssembly (wasm32) 빌드를 더한다.\n\n범위 밖: 뷰어에서 쓰기, 비공개 저장소 (D7), Claude Viewer (Tauri) 플러그인 (같은 화면을 나중에 옮긴다).\n\n## 단계 계획\n\n| 단계 | 할 일 |\n| --- | --- |\n| Step 2 요구사항 | REQ-037 에 wasm32 빌드 추가. 새 요구사항: 브라우저에서 `.kisp` 열람 (원천 · 화면 · 지원 브라우저). RULE-029 적용 방식 (D4) 확인 |\n| Step 3 외부 인터페이스 | 뷰어 URL 매개변수 (`repo`, `ref`, 파일 경로), 지원 브라우저 |\n| Step 4 설계 | wasm 빌드 타깃, JS 경계 (D6), 뷰어 화면 구성 |\n| Step 5 ~ 7 | 유닛 테스트 계획, 마일스톤 (빌드 · CI → 표 화면 → 추적성 · CR 화면), 구현 |\n| Step 8 ~ 12 | 시스템 테스트 (wasm32 에서 네이티브와 같은 조회 결과), 코드 검사, E2E (브라우저에서 저장소 링크로 열기) |\n
 body	O	c16dce92	## 책임\nUTF-8 검사와 글자 경계에서 자르기.\n\n## 모듈 인터페이스\n```cpp\n// 함수\nconstexpr unsigned char UTF8_SINGLE_BYTE_LIMIT = 0x80;\nconstexpr unsigned char UTF8_TWO_BYTE_LEAD_FIRST = 0xC2;\nconstexpr unsigned char UTF8_TWO_BYTE_LEAD_LAST = 0xDF;\nconstexpr unsigned char UTF8_THREE_BYTE_LEAD_FIRST = 0xE0;\nconstexpr unsigned char UTF8_THREE_BYTE_LEAD_LAST = 0xEF;\nconstexpr unsigned char UTF8_FOUR_BYTE_LEAD_FIRST = 0xF0;\nconstexpr unsigned char UTF8_FOUR_BYTE_LEAD_LAST = 0xF4;\nconstexpr size_t UTF8_TWO_BYTE_LENGTH = 2;\nconstexpr size_t UTF8_THREE_BYTE_LENGTH = 3;\nconstexpr size_t UTF8_FOUR_BYTE_LENGTH = 4;\nconstexpr uint32_t UTF8_CONTINUATION_MASK = 0xC0u;\nconstexpr uint32_t UTF8_CONTINUATION_TAG = 0x80u;\nconstexpr uint32_t UTF8_LEAD_PAYLOAD_MASK = 0xFFu;\nconstexpr uint32_t UTF8_CONTINUATION_PAYLOAD_BITS = 6;\nconstexpr uint32_t UTF8_CONTINUATION_PAYLOAD_MASK = 0x3Fu;\nconstexpr uint32_t UTF8_THREE_BYTE_MIN_POINT = 0x800;\nconstexpr uint32_t UTF8_SURROGATE_FIRST = 0xD800;\nconstexpr uint32_t UTF8_SURROGATE_LAST = 0xDFFF;\nconstexpr uint32_t UTF8_FOUR_BYTE_MIN_POINT = 0x10000;\nconstexpr uint32_t UTF8_MAX_POINT = 0x10FFFF;\nsize_t utf8SequenceLength(unsigned char lead);\nbool isUtf8SequenceValid(Span<const char> text, size_t index, size_t length);\nbool isUtf8Continuation(char byte);\nuint32_t utf8CodePointAt(Span<const char> text, size_t index, size_t length);\nbool isValidUtf8(Span<const char> text);\nsize_t utf8SequenceLength(unsigned char lead);\nbool isUtf8SequenceValid(Span<const char> text, size_t index, size_t length);\nbool isUtf8Continuation(char byte);\nuint32_t utf8CodePointAt(Span<const char> text, size_t index, size_t length);\n```\n\n## 멤버 변수\n없음\n\n## 의존 모듈\n- DSN-032 Span\n
 body	O	c20f6110	## 대상\nREQ-027 바뀐 항목과 관계를 목록으로 본다\n\n## 전제 조건\n빌드한 라이브러리를 C 인터페이스로만 쓴다. 시험마다 새 임시 폴더에 사양 파일을 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | 설계 사항 하나는 본문만, 하나는 제목만 바뀜 | 설계 사항 중 본문이 바뀐 것만 본다 | 본문만 바뀐 하나 |\n| 2 | 관계 하나를 끊었다 | 관계 목록을 본다 | 그 관계가 삭제로 보인다 |\n
 body	O	c2414f71	## 실행 명령\n`cmake --build build --config Debug` 뒤 `build/Debug/kiotty_ks_scenario_test.exe build/Debug/ks.exe`\n\n## 실패 내용\n없음. ST-038 PASS, 마지막 줄 "0 failed" (2026-11-17, CP-0082, CR-017 회귀).\n

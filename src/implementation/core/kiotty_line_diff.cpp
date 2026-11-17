@@ -1,6 +1,7 @@
 #include "kiotty_line_diff.h"
 
 #include "kiotty_checked.h"
+#include "kiotty_layout.h"
 
 namespace kiotty::spec::implementation {
 
@@ -29,9 +30,9 @@ struct LinePosition {
     size_t after {0};
 };
 
-static_assert(sizeof(Lines) == 40, "unexpected padding");
-static_assert(sizeof(LinePair) == 16, "unexpected padding");
-static_assert(sizeof(LinePosition) == 16, "unexpected padding");
+static_assert(sizeof(Lines) == layoutSize(40, 20), "unexpected padding");
+static_assert(sizeof(LinePair) == layoutSize(16, 8), "unexpected padding");
+static_assert(sizeof(LinePosition) == layoutSize(16, 8), "unexpected padding");
 
 using LinesResult = Result<Lines, KiottySpecStatus>;
 

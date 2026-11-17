@@ -3,6 +3,7 @@
 #include "kiotty_spec.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 #include "implementation/domain/usecases/workspace/kiotty_workspace.h"
+#include "implementation/core/kiotty_layout.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -25,9 +26,9 @@ struct RuleOrder {
     size_t remote {0};
 };
 
-static_assert(sizeof(RuleSide) == 16, "unexpected padding");
-static_assert(sizeof(RulePair) == 16, "unexpected padding");
-static_assert(sizeof(RuleOrder) == 16, "unexpected padding");
+static_assert(sizeof(RuleSide) == layoutSize(16, 12), "unexpected padding");
+static_assert(sizeof(RulePair) == layoutSize(16, 8), "unexpected padding");
+static_assert(sizeof(RuleOrder) == layoutSize(16, 8), "unexpected padding");
 
 int compareOrder(RuleSide local, RuleSide remote, RuleOrder order);
 RuleOrder advanceOrder(RulePair pair, RuleOrder order, int compared);

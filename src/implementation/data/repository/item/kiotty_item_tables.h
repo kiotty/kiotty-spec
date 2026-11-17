@@ -7,6 +7,7 @@
 #include "implementation/data/repository/item/kiotty_body_store.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 #include "implementation/domain/entity/kiotty_version_records.h"
+#include "implementation/core/kiotty_layout.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -24,7 +25,7 @@ struct ItemCapacity {
     size_t body_bytes {};
 };
 
-static_assert(sizeof(ItemCapacity) == 40, "unexpected padding");
+static_assert(sizeof(ItemCapacity) == layoutSize(40, 20), "unexpected padding");
 
 struct ItemTables {
     explicit ItemTables(const ItemCapacity& capacity)

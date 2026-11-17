@@ -8,6 +8,7 @@
 #include "implementation/data/repository/item/kiotty_item_store.h"
 #include "implementation/domain/entity/kiotty_item_records.h"
 #include "implementation/domain/entity/kiotty_version_records.h"
+#include "implementation/core/kiotty_layout.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -33,7 +34,7 @@ struct RelationDependencies {
     ItemStore& items;
 };
 
-static_assert(sizeof(RelationDependencies) == 16, "unexpected padding");
+static_assert(sizeof(RelationDependencies) == layoutSize(16, 8), "unexpected padding");
 
 class RelationWriter
 {

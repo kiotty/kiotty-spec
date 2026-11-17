@@ -4,6 +4,7 @@
 #include "implementation/core/kiotty_fixed_map.h"
 #include "implementation/core/kiotty_result.h"
 #include "implementation/core/kiotty_span.h"
+#include "implementation/core/kiotty_layout.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -16,7 +17,7 @@ struct BodySlice {
     size_t length {};
 };
 
-static_assert(sizeof(BodySlice) == 16, "unexpected padding");
+static_assert(sizeof(BodySlice) == layoutSize(16, 8), "unexpected padding");
 
 class BodyStore
 {

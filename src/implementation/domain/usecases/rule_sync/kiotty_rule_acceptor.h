@@ -7,6 +7,7 @@
 #include "implementation/domain/entity/kiotty_kind.h"
 #include "implementation/domain/usecases/rule_sync/kiotty_rule_compare.h"
 #include "implementation/domain/usecases/workspace/kiotty_workspace.h"
+#include "implementation/core/kiotty_layout.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -36,7 +37,7 @@ struct RuleChange {
     uint32_t fields {0};
 };
 
-static_assert(sizeof(AcceptDraft) == 88, "unexpected padding");
+static_assert(sizeof(AcceptDraft) == layoutSize(88, 44), "unexpected padding");
 static_assert(sizeof(AcceptOutcome) == 20, "unexpected padding");
 static_assert(sizeof(RuleChange) == 24, "unexpected padding");
 
