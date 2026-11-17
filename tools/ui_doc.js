@@ -215,7 +215,7 @@ table.wft { border-collapse:collapse; width:100%; } table.wft th, table.wft td {
 <body>
 <nav>
   <h1>브라우저 뷰어 외부 인터페이스</h1>
-  <div class="meta">ks 의 GUI 뷰 항목에서 생성 · ${esc(cpLine)}</div>
+  <div class="meta">ks 의 GUI 뷰 항목에서 생성 · ${esc(cpLine)}<br><a href="viewer_prototype.html">눌러 보는 프로토타입 (더미 데이터) →</a></div>
   <ul>${nav}</ul>
 </nav>
 <main>
