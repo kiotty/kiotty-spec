@@ -51,6 +51,7 @@ checkpoint	O	83	82	10	done	1794894736	CR-017 코드 검사: PRULE 별 결과
 checkpoint	O	84	83	11	done	1794896036	CR-017 E2E 계획 변경 없음
 checkpoint	O	85	84	12	done	1794896045	CR-017 E2E 실행과 닫기
 checkpoint	O	86	85	1	done	1794903264	CR-019 GitHub Pages 정적 뷰어 (wasm32) 접수
+checkpoint	O	87	86	2	running	1794926665	CR-019 브라우저 뷰어 요구사항 (wasm32)
 TABLE	item	O/X	key	id
 item	O	00593058	CIR-020
 item	O	00ab1435	DSN-078
@@ -68,6 +69,7 @@ item	O	0456552c	CIR-063
 item	O	0479b5f6	UT-048
 item	O	04c783ea	RULE-073
 item	O	04e60bf1	UT-002
+item	O	05b855e3	REQ-058
 item	O	0648ffe1	UT-028
 item	O	065fa99a	ST-004
 item	O	0673118d	DSN-059
@@ -229,6 +231,7 @@ item	O	39ea3ebc	RULE-018
 item	O	3afb63d7	UT-087
 item	O	3b0f2144	E2E-018
 item	O	3b4ade38	REQ-018
+item	O	3b6d4f18	REQ-055
 item	O	3b80fe67	UI-104
 item	O	3b8fb824	UI-116
 item	O	3bbfb856	UT-016
@@ -398,6 +401,7 @@ item	O	6cc7ae64	CIR-078
 item	O	6cd627db	CR-002
 item	O	6cfa52ce	ST-008
 item	O	6d2eb6d0	STR-011
+item	O	6d8b54f7	REQ-056
 item	O	6d95d4a9	UI-082
 item	O	6dddb862	UI-115
 item	O	6e87b3fd	CIR-089
@@ -436,6 +440,7 @@ item	O	7bf57868	UI-022
 item	O	7c54b750	DSN-079
 item	O	7c7a3278	DSN-021
 item	O	7c8253c6	PRULE-003
+item	O	7d2db3ad	REQ-054
 item	O	7e66c64a	UI-047
 item	O	7e68584c	REQ-029
 item	O	7ea7218f	UT-052
@@ -443,6 +448,7 @@ item	O	7ee22562	DSN-052
 item	O	7f3ed4cf	DSN-103
 item	O	7f44dc49	DSN-042
 item	O	7f82e1fc	UI-125
+item	O	8043b4d1	REQ-059
 item	O	80568adc	UI-121
 item	O	8068262f	STR-043
 item	O	80a19937	CIR-002
@@ -666,9 +672,12 @@ item	O	c7511506	ST-007
 item	O	c7ebd6c1	DSN-035
 item	O	c8646551	E2E-017
 item	O	c889a548	UT-051
+item	O	c95cb14b	REQ-052
 item	O	ca04e31c	UI-108
 item	O	cbb5a614	RULE-014
+item	O	cbccab4b	REQ-057
 item	O	cc4f8228	CIR-060
+item	O	cc7c0007	REQ-053
 item	O	cd23d5c3	UT-040
 item	O	cd2da8cb	REQ-006
 item	O	cd2e6aa6	UT-003
@@ -849,6 +858,7 @@ item_version	O	0479b5f6	41	unit_test_plan	cd23d5c3	failed write rolls back (test
 item_version	O	04c783ea	41	rule	-	8. i18n		20b5b32ae2c2bd41
 item_version	O	04c783ea	63	rule	-	8. i18n		9cd6ecb10f15a021
 item_version	O	04e60bf1	41	unit_test_plan	def6c251	result (testResult)		a9d731245f8c2c4b
+item_version	O	05b855e3	87	requirement	c95cb14b	변경 요청과 영향 항목을 본다		2e8cbe6b15b34ee1
 item_version	O	0648ffe1	41	unit_test_plan	c6c00c78	line decoder inputs (testLineDecoderInputs)	개발수칙 2.10: 빈 입력, 최대 길이, 최대 길이 + 1, 중간 null 바이트, 잘못된 UTF-8	52ad1c6c87f3876c
 item_version	O	065fa99a	41	system_test_plan	39a38e52	기록을 git 으로 보관하고 병합한다	REQ-004 의 인수 조건 4 개	d0a1ccae38aef91b
 item_version	O	0673118d	41	design	-	kind (domain/entity/kiotty_kind.h)	Kind · 단계 · 체크포인트 상태의 값과 영문 이름 표 (설계서 v1 3.1).	25ffa5bcfc4dc998
@@ -1068,6 +1078,7 @@ item_version	O	3afb63d7	46	unit_test_plan	cd23d5c3	accept private rules (testAcc
 item_version	O	3afb63d7	48	unit_test_plan	cd23d5c3	accept private rules (testAcceptPrivateRules)	acceptRules 를 부른다	3f58614850c4cc4d
 item_version	O	3b0f2144	41	e2e_test_plan	-	결과 구조체	UI-018 결과 구조체 묶음을 C 프로그램으로 구동해 검증	b53f381f3125fcca
 item_version	O	3b4ade38	41	requirement	29885efc	변경의 영향을 따라간다		78c199583a9b8966
+item_version	O	3b6d4f18	87	requirement	c95cb14b	목적 · 단계와 지금 진행 상황을 본다		87234bd1edeca9b9
 item_version	O	3b80fe67	41	external_interface	48a9ab3c	KiottySpecStepRun	같은 단계가 이어진 체크포인트 구간	1c593c5c7d813da1
 item_version	O	3b8fb824	41	external_interface	f0dc6547	KiottySpecCheckpointPage	체크포인트 페이지 (핸들과 레코드)	87cc92274c19e30a
 item_version	O	3bbfb856	41	unit_test_plan	def6c251	utf8 invalid (testUtf8Invalid)		0f899ff73380ce74
@@ -1076,6 +1087,7 @@ item_version	O	3c97df25	73	e2e_test_result	-	결정 기록	kiotty_e2e_test, c6d5
 item_version	O	3c97df25	85	e2e_test_result	-	결정 기록	kiotty_e2e_test, ffcd270 + 작업 트리 (CR-017), Windows Debug	fe24a091675b1cb3
 item_version	O	3d2b2666	41	requirement	-	빌드 환경		1283000dfd39a488
 item_version	O	3d2b2666	43	requirement	-	빌드 환경		c2b2494f69531b99
+item_version	O	3d2b2666	87	requirement	-	빌드 환경		6ce6597d1b9168d1
 item_version	O	3d8786dd	41	code_inspection_result	-	4.3 한 줄에 한 동작이다.	PASS	1c350894ef4d48a8
 item_version	O	3dd02f08	41	external_interface	-	체크포인트	체크포인트를 시작 · 이어 하기 · 확정 · 정리하고 읽는다	32c949e250d68d1a
 item_version	O	3e12d3ef	41	requirement	29885efc	정해진 관계로만 연결한다		17dbfb6822e18bb4
@@ -1145,6 +1157,7 @@ item_version	O	49a5e527	41	e2e_test_plan	-	컨텍스트와 사양 파일	UI-001 
 item_version	O	4a0c9ac5	41	rule	17e806a6	3.2 포인터로 연결된 자료구조는 쓰지 않는다.	3.2 포인터로 연결된 자료구조는 쓰지 않는다. 배열 + index 로 만든다.	74393a711ace59f2
 item_version	O	4a212847	41	external_interface	2665e8cd	KiottySpec_openChildCursor	하위 항목 커서를 연다	a431e4c21cf3274e
 item_version	O	4b4a58db	75	private_rule	-	3.4 멤버 크기 내림차순 · static_assert (빌드마다 크기가 다른 struct 는 예외)	공통 수칙 3.4 의 프로젝트 판. CLI struct · Result · ItemTables · KiottySpecContext 는 크기를 고정하지 않는다	a9a529cef57faaa2
+item_version	O	4b4a58db	87	private_rule	-	3.4 멤버 크기 내림차순 · static_assert (포인터 폭마다 두 크기)	공통 수칙 3.4 의 프로젝트 판. 64 비트 · wasm32 에서 크기가 다른 struct 는 layoutSize 로 두 값을 고정. CLI struct · Result · ItemTables · KiottySpecContext 는 크기를 고정하지 않는다	060c5a52219ee4db
 item_version	O	4b8c3bef	45	design	-	RemoteState (domain/usecases/remote/kiotty_remote_state.h)	원격 상태를 meta 의 remote.url · remote.rule_base 로 읽고 쓴다. 체크포인트와 무관	a4141c4bc3a3165b
 item_version	O	4b8c3bef	48	design	-	RemoteState (domain/usecases/remote/kiotty_remote_state.h)	원격 상태를 meta 의 remote.url · remote.rule_base 로 읽고 쓴다. 체크포인트와 무관	e65a08e69ed381fe
 item_version	O	4b931850	41	rule	969657b8	4.6 auto 는 우변에 타입이 보일 때(생성자 호출, Result 반환)만 쓴다.	4.6 auto 는 우변에 타입이 보일 때(생성자 호출, Result 반환)만 쓴다. 숫자·bool 은 타입을 적는다.	221040699431c056
@@ -1314,6 +1327,7 @@ item_version	O	6cfa52ce	41	system_test_plan	c7511506	항목을 만들고 ID 를 
 item_version	O	6d2eb6d0	41	system_test_result	-	항목을 지운다	kiotty_system_test, 965b26d Debug	-
 item_version	O	6d2eb6d0	70	system_test_result	-	항목을 지운다	kiotty_system_test, c6d5d85 + 작업 트리 (CR-018), Windows Debug	f4755d0852faa3e3
 item_version	O	6d2eb6d0	82	system_test_result	-	항목을 지운다	kiotty_system_test, ffcd270 + 작업 트리 (CR-017), Windows Debug	4479f6ed491f972e
+item_version	O	6d8b54f7	87	requirement	c95cb14b	항목을 종류별 표로 보고 걸러 찾는다		241605b4f2f25c07
 item_version	O	6d95d4a9	41	external_interface	fcda3877	KiottySpecActor	호출한 쪽. 확정 · 정리는 USER 만	54c09ac4df4dacb0
 item_version	O	6dddb862	41	external_interface	f0dc6547	KiottySpecRelationPage	관계 페이지	d0b94c875f95c4c3
 item_version	O	6e87b3fd	83	code_inspection_result	-	P7.2 · 7.3 presentation 은 domain 을 거쳐 datalayer 를 쓴다 (CLI 는 라이브러리 C interface 를 바로 부름)	PASS	fa2e7a7e59e235cd
@@ -1362,6 +1376,7 @@ item_version	O	7c54b750	65	design	-	Finder (context/kiotty_finder.h)	목록 질�
 item_version	O	7c54b750	68	design	-	Finder (domain/usecases/query/kiotty_finder.h)	목록 질의 (설계서 v1 8).	bdc033ab90d93b43
 item_version	O	7c7a3278	41	design	-	decimal (core/kiotty_decimal.h)	number 를 10진수로 text 뒤에 붙인다.	040976fd44271ad5
 item_version	O	7c8253c6	75	private_rule	-	1.1 힙 할당은 초기화 함수 안에서만 한다 (CLI 는 실행 중 할당, MISRA 21.6.1 편차)	공통 수칙 1.1 의 프로젝트 판. 라이브러리는 초기화 때만 할당, CLI 는 실행 중 할당을 허용	cb02b0e6109f0f97
+item_version	O	7d2db3ad	87	requirement	c95cb14b	내 PC 의 사양 파일을 끌어 놓아 연다		e95cf6c635a5be31
 item_version	O	7e66c64a	41	external_interface	4d02ef15	KiottySpec_fetchRelationPage	관계 커서의 다음 페이지	254a00cd908759c2
 item_version	O	7e68584c	41	requirement	2deab145	제목과 요약의 글자 차이를 본다		a9dff14128f0cd3c
 item_version	O	7ea7218f	41	unit_test_plan	cd23d5c3	실패 이유와 상태 이름	실패한 호출의 이유 문장과 상태 코드 이름을 읽는다	515a3804e34560fb
@@ -1372,6 +1387,7 @@ item_version	O	7f3ed4cf	65	design	-	RuleExporter (context/kiotty_rule_exporter.h
 item_version	O	7f3ed4cf	68	design	-	RuleExporter (domain/usecases/rule_sync/kiotty_rule_exporter.h)	가장 최근 체크포인트가 DONE 일 때만 개발 수칙 파일을 내보낸다	bcc66fe7d12825a8
 item_version	O	7f44dc49	41	design	-	FileWriter (data/datasource/kiotty_file_writer.h)	파일을 새로 만들어 조각마다 이어 쓴다.	2669f3480624c6f2
 item_version	O	7f82e1fc	41	external_interface	a5336127	KiottySpecItemHandleResult	상태와 항목 핸들	1a02f7abfe4f304a
+item_version	O	8043b4d1	87	requirement	-	뷰어 실행 환경		684219b6a8a26883
 item_version	O	80568adc	41	external_interface	a5336127	KiottySpecStatusResult	상태만	dd78083d77093a8d
 item_version	O	8068262f	57	system_test_result	-	받아 둔 수칙을 버린다 (discard)	kiotty_ks_scenario_test, 80f6924 + 작업 트리, Windows Debug · Linux Release	-
 item_version	O	8068262f	70	system_test_result	-	받아 둔 수칙을 버린다 (discard)	kiotty_ks_scenario_test, c6d5d85 + 작업 트리 (CR-018), Windows Debug	6358e1d78581b071
@@ -1701,10 +1717,13 @@ item_version	O	c7511506	41	system_test_plan	-	단계 산출물을 항목으로 �
 item_version	O	c7ebd6c1	41	design	-	text_view (core/kiotty_text_view.h)	C 문자열 · string_view 와 Span<const char> 사이를 바꾼다.	f255bb8f5da2d71f
 item_version	O	c8646551	41	e2e_test_plan	-	페이지	UI-017 페이지 묶음을 C 프로그램으로 구동해 검증	2011461d23617963
 item_version	O	c889a548	41	unit_test_plan	cd23d5c3	프로젝트 초기화	프로젝트 이름과 만든 시각을 쓰고 다시 열어 읽는다	e449be498d12253f
+item_version	O	c95cb14b	87	requirement	-	설치 없이 브라우저에서 사양 기록을 본다	정적 웹 뷰어가 공개 저장소 링크나 로컬 파일로 사양 파일을 열어 개요 · 진행 · 항목 · 추적 관계 · 변경 요청을 보인다. 보기 전용	bde87ef8042c5b18
 item_version	O	ca04e31c	41	external_interface	48a9ab3c	KiottySpecPosition	현재 위치	be71976f0577a87a
 item_version	O	cbb5a614	41	rule	-	2. 보안		665ba3d3a77c7ef4
+item_version	O	cbccab4b	87	requirement	c95cb14b	항목 하나의 추적 관계를 따라간다		617c3a1611da9262
 item_version	O	cc4f8228	41	code_inspection_result	-	6.1 작업 순서는 타입으로 강제한다.	PASS	fdbaf4a54db4ee01
 item_version	O	cc4f8228	83	code_inspection_result	-	6.1 작업 순서는 타입으로 강제한다.	PASS	503e9cfa9bde6381
+item_version	O	cc7c0007	87	requirement	c95cb14b	공개 저장소의 사양 파일을 링크로 연다		9a2c0e6d57b3b3d2
 item_version	O	cd23d5c3	41	unit_test_plan	-	C 인터페이스 테스트 (kiotty_api_test)		2e10030b25e3dc07
 item_version	O	cd2da8cb	41	requirement	26e7649a	형식이 다른 파일은 열지 않는다		64ee563e6ca564f7
 item_version	O	cd2da8cb	43	requirement	26e7649a	형식이 다른 파일은 열지 않는다		83ccf229f7a2e43e
@@ -1943,6 +1962,7 @@ tag	O	0456552c	결과	83	PASS
 tag	O	0479b5f6	구현 상태	41	구현 완료
 tag	O	04c783ea	수칙 종류	41	컨벤션
 tag	O	04e60bf1	구현 상태	41	구현 완료
+tag	O	05b855e3	요구사항 종류	87	기능 요구사항
 tag	O	0648ffe1	구현 상태	41	구현 완료
 tag	O	0673118d	설계 종류	41	모듈
 tag	O	0673118d	구현 상태	41	구현 완료
@@ -2167,6 +2187,7 @@ tag	O	39ea3ebc	수칙 종류	41	코딩 제약
 tag	O	3afb63d7	구현 상태	46	미구현
 tag	O	3afb63d7	구현 상태	48	구현 완료
 tag	O	3b4ade38	요구사항 종류	41	기능 요구사항
+tag	O	3b6d4f18	요구사항 종류	87	기능 요구사항
 tag	O	3b80fe67	인터페이스 종류	41	C 타입
 tag	O	3b8fb824	인터페이스 종류	41	C 타입
 tag	O	3bbfb856	구현 상태	41	구현 완료
@@ -2401,6 +2422,7 @@ tag	O	6cd627db	진입 단계	41	Step 4
 tag	O	6d2eb6d0	결과	41	PASS
 tag	O	6d2eb6d0	결과	70	PASS
 tag	O	6d2eb6d0	결과	82	PASS
+tag	O	6d8b54f7	요구사항 종류	87	기능 요구사항
 tag	O	6d95d4a9	인터페이스 종류	41	C 타입
 tag	O	6dddb862	인터페이스 종류	41	C 타입
 tag	O	6e87b3fd	결과	83	PASS
@@ -2456,6 +2478,7 @@ tag	O	7c54b750	구현 상태	68	구현 완료
 tag	O	7c7a3278	설계 종류	41	모듈
 tag	O	7c7a3278	구현 상태	41	구현 완료
 tag	O	7c8253c6	수칙 종류	75	코딩 제약
+tag	O	7d2db3ad	요구사항 종류	87	기능 요구사항
 tag	O	7e66c64a	인터페이스 종류	41	C 함수
 tag	O	7e68584c	요구사항 종류	41	기능 요구사항
 tag	O	7ea7218f	구현 상태	41	미구현
@@ -2469,6 +2492,7 @@ tag	O	7f3ed4cf	구현 상태	68	구현 완료
 tag	O	7f44dc49	설계 종류	41	모듈
 tag	O	7f44dc49	구현 상태	41	구현 완료
 tag	O	7f82e1fc	인터페이스 종류	41	C 타입
+tag	O	8043b4d1	요구사항 종류	87	환경 요구사항
 tag	O	80568adc	인터페이스 종류	41	C 타입
 tag	O	8068262f	결과	57	PASS
 tag	O	8068262f	결과	70	PASS
@@ -2767,6 +2791,7 @@ tag	O	bfd5a4b9	결과	41	PASS
 tag	O	bfe01f9d	요구사항 종류	41	기능 요구사항
 tag	O	c0fc975e	출처	86	사용자 피드백
 tag	O	c0fc975e	상태	86	열림
+tag	O	c0fc975e	상태	87	반영 중
 tag	O	c0fc975e	진입 단계	86	Step 2
 tag	O	c16dce92	설계 종류	41	모듈
 tag	O	c16dce92	구현 상태	41	구현 완료
@@ -2813,10 +2838,13 @@ tag	O	c6c00c78	구현 상태	41	구현 완료
 tag	O	c7ebd6c1	설계 종류	41	모듈
 tag	O	c7ebd6c1	구현 상태	41	구현 완료
 tag	O	c889a548	구현 상태	41	미구현
+tag	O	c95cb14b	요구사항 종류	87	기능 요구사항
 tag	O	ca04e31c	인터페이스 종류	41	C 타입
 tag	O	cbb5a614	수칙 종류	41	코딩 제약
+tag	O	cbccab4b	요구사항 종류	87	기능 요구사항
 tag	O	cc4f8228	결과	41	PASS
 tag	O	cc4f8228	결과	83	PASS
+tag	O	cc7c0007	요구사항 종류	87	기능 요구사항
 tag	O	cd23d5c3	구현 상태	41	구현 완료
 tag	O	cd2da8cb	요구사항 종류	41	기능 요구사항
 tag	O	cd2e6aa6	구현 상태	41	구현 완료
@@ -3848,6 +3876,8 @@ relation	O	7f3ed4cf	design	의존 설계 사항	b98dfee9	68
 relation	O	7f44dc49	design	관련 요구사항	6b981e43	41
 relation	O	7f44dc49	design	의존 설계 사항	9ea5c49d	41
 relation	O	7f44dc49	design	의존 설계 사항	b8f97e35	41
+relation	O	8043b4d1	requirement	관련 요구사항	3d2b2666	87
+relation	O	8043b4d1	requirement	관련 요구사항	c95cb14b	87
 relation	O	8068262f	system_test_result	대상 시스템 테스트	57c05e7a	57
 relation	O	80a19937	code_inspection_result	검사 개발 수칙	ff150583	41
 relation	O	81354d90	design	관련 요구사항	53bb7345	41
@@ -4387,8 +4417,17 @@ relation	O	bee32956	unit_test_plan	검증 설계 사항	74827f62	41
 relation	O	bee32956	unit_test_plan	검증 설계 사항	a61edc40	41
 relation	O	bf3c411b	unit_test_plan	검증 설계 사항	07e965d1	53
 relation	O	bfd5a4b9	code_inspection_result	검사 개발 수칙	e972389a	41
+relation	O	c0fc975e	change_request	영향 요구사항	05b855e3	87
+relation	O	c0fc975e	change_request	영향 요구사항	3b6d4f18	87
 relation	O	c0fc975e	change_request	영향 요구사항	3d2b2666	86
+relation	O	c0fc975e	change_request	영향 요구사항	6d8b54f7	87
+relation	O	c0fc975e	change_request	영향 요구사항	7d2db3ad	87
+relation	O	c0fc975e	change_request	영향 요구사항	8043b4d1	87
+relation	O	c0fc975e	change_request	영향 요구사항	c95cb14b	87
+relation	O	c0fc975e	change_request	영향 요구사항	cbccab4b	87
+relation	O	c0fc975e	change_request	영향 요구사항	cc7c0007	87
 relation	O	c0fc975e	change_request	영향 개발 수칙	44733d8a	86
+relation	O	c0fc975e	change_request	영향 전용 개발 수칙	4b4a58db	87
 relation	O	c16dce92	design	관련 요구사항	39921859	41
 relation	O	c16dce92	design	관련 요구사항	63fa3db0	41
 relation	O	c16dce92	design	의존 설계 사항	9ea5c49d	41
@@ -4813,6 +4852,7 @@ relation	O	ff68f73e	system_test_plan	검증 요구사항	87374f9d	41
 TABLE	decision	O/X	kind	checkpoint	text
 decision	O	requirement	41	- REQ-001 · 출처 : 기존 요구사항을 모두 지우고 공개 C 헤더 kiotty_spec.h 와 그 구현에서 거꾸로 뽑음 (2026-11-10) [기각: 옛 37 개 고치기 — SQLite · jsonl · 10 단계 기준이라 대부분 다시 써야 함]\n- REQ-001 · 구조 : 상위 기능 7 개(사양 파일, 항목, 모델, 체크포인트, 비교, 결정 기록, 변경 요청) + 하위, 품질 5, 환경 2\n- REQ-001 · 문체 : 관찰 가능한 동작으로 쓰고 함수 · 상태 코드 이름은 쓰지 않음 (Step 3 몫)\n- REQ-001 · 범위 : 구현에 없는 기능(단계 입력 묶음, 직접 질의, 문서 뽑기 · 가져오기, 파일 추적, RELEASE, 마일스톤 진행률)은 넣지 않음. ks 명령줄은 Step 3 에서 다룸\n- REQ-012 · ID 바꾸기 : 체크포인트에 묶이지 않고 지난 시점도 새 ID 로 보임 (구현 기준)\n- REQ-021 · 확정 조건 : Step 1 · 2 · 6 · 8 · 10 · 11 · 12 에만 조건 (구현 기준)\n- REQ-028 · 지난 본문 : 지금과 같을 때만 읽힘, 다르면 git 이력 [기각: 본문 버전 보관 — 사양 파일이 커짐]\n- REQ-035 · 목표값 : 쓰기 100 ms 이하 (300 KB 에서 측정 54 ms)\n
 decision	O	requirement	43	- REQ-001 · 출처 : 기존 요구사항을 모두 지우고 공개 C 헤더 kiotty_spec.h 와 그 구현에서 거꾸로 뽑음 (2026-11-10) [기각: 옛 37 개 고치기 — SQLite · jsonl · 10 단계 기준이라 대부분 다시 써야 함]\r\n- REQ-001 · 구조 : 상위 기능 7 개(사양 파일, 항목, 모델, 체크포인트, 비교, 결정 기록, 변경 요청) + 하위, 품질 5, 환경 2\r\n- REQ-001 · 문체 : 관찰 가능한 동작으로 쓰고 함수 · 상태 코드 이름은 쓰지 않음 (Step 3 몫)\r\n- REQ-001 · 범위 : 구현에 없는 기능(단계 입력 묶음, 직접 질의, 문서 뽑기 · 가져오기, 파일 추적, RELEASE, 마일스톤 진행률)은 넣지 않음. ks 명령줄은 Step 3 에서 다룸\r\n- REQ-012 · ID 바꾸기 : 체크포인트에 묶이지 않고 지난 시점도 새 ID 로 보임 (구현 기준)\r\n- REQ-021 · 확정 조건 : Step 1 · 2 · 6 · 8 · 10 · 11 · 12 에만 조건 (구현 기준)\r\n- REQ-028 · 지난 본문 : 지금과 같을 때만 읽힘, 다르면 git 이력 [기각: 본문 버전 보관 — 사양 파일이 커짐]\r\n- REQ-035 · 목표값 : 쓰기 100 ms 이하 (300 KB 에서 측정 54 ms)\r\n- REQ-039 · 범위 : 개발 수칙만 원격 git 저장소로 나누고 받는 시점은 사용자가 정함. 프로젝트 전용 수칙은 전용 개발 수칙(REQ-046), 편차도 여기에 (사용자 결정 2026-11-13)\n- REQ-043 · 본문 비교 : 편입 전에 지금 수칙과 받아 둔 수칙의 본문만 비교, REQ-028 의 본문 버전 미보관은 유지 [기각: 바뀐 본문 보관 — 편입 전 비교로 충분]\n
+decision	O	requirement	87	- REQ-001 · 출처 : 기존 요구사항을 모두 지우고 공개 C 헤더 kiotty_spec.h 와 그 구현에서 거꾸로 뽑음 (2026-11-10) [기각: 옛 37 개 고치기 — SQLite · jsonl · 10 단계 기준이라 대부분 다시 써야 함]\r\r\n- REQ-001 · 구조 : 상위 기능 7 개(사양 파일, 항목, 모델, 체크포인트, 비교, 결정 기록, 변경 요청) + 하위, 품질 5, 환경 2\r\r\n- REQ-001 · 문체 : 관찰 가능한 동작으로 쓰고 함수 · 상태 코드 이름은 쓰지 않음 (Step 3 몫)\r\r\n- REQ-001 · 범위 : 구현에 없는 기능(단계 입력 묶음, 직접 질의, 문서 뽑기 · 가져오기, 파일 추적, RELEASE, 마일스톤 진행률)은 넣지 않음. ks 명령줄은 Step 3 에서 다룸\r\r\n- REQ-012 · ID 바꾸기 : 체크포인트에 묶이지 않고 지난 시점도 새 ID 로 보임 (구현 기준)\r\r\n- REQ-021 · 확정 조건 : Step 1 · 2 · 6 · 8 · 10 · 11 · 12 에만 조건 (구현 기준)\r\r\n- REQ-028 · 지난 본문 : 지금과 같을 때만 읽힘, 다르면 git 이력 [기각: 본문 버전 보관 — 사양 파일이 커짐]\r\r\n- REQ-035 · 목표값 : 쓰기 100 ms 이하 (300 KB 에서 측정 54 ms)\r\r\n- REQ-039 · 범위 : 개발 수칙만 원격 git 저장소로 나누고 받는 시점은 사용자가 정함. 프로젝트 전용 수칙은 전용 개발 수칙(REQ-046), 편차도 여기에 (사용자 결정 2026-11-13)\r\n- REQ-043 · 본문 비교 : 편입 전에 지금 수칙과 받아 둔 수칙의 본문만 비교, REQ-028 의 본문 버전 미보관은 유지 [기각: 바뀐 본문 보관 — 편입 전 비교로 충분]\n- REQ-052 · 범위 : 보기 전용, 공개 저장소 링크 + 로컬 파일 (CR-019 D1 · D7) [기각: 비공개 저장소 토큰 입력 — 백로그]
 decision	O	rule	41	- RULE-001 · 출처 : 개발 수칙 v2 권장안 문서를 옮김 (2026-11-10). 지금은 이 DB 의 RULE-* 만 원본이고 문서는 지움 (CR-012, 2026-11-12)\n- RULE-001 · ID : 문서 순서대로 발급하고 지운 ID 는 다시 쓰지 않음. 문서 번호(1.1, 4.18 …) 는 제목 앞에 둠 [기각: ID 에 문서 번호 — ID 에 '.' 을 쓸 수 없음]\n- RULE-001 · 제목 : 수칙 문장이 길면 첫 문장만 제목, 전체 문장은 요약\n- RULE-001 · 수칙 종류 : 0 ~ 3 절 코딩 제약, 4 · 8 절 컨벤션, 5 ~ 7 절 아키텍처, 9 절 테스트. 2.9 · 7.3 은 의존성, 2.10 은 테스트, 5.2 · 5.6 은 컨벤션\n- RULE-001 · 기록 시점 : 요구사항(CP-0001) 다음, 외부 인터페이스 전에 Step 2 체크포인트 CP-0002 로 따로 둠 (사용자 결정 2026-11-10)\n- RULE-032 · 4.3 삭제 : 옛 4.3 (early return, 에러 검사는 한 줄 블록) 을 지우고 4.4 ~ 4.19 를 4.3 ~ 4.18 로 당김. 사용자가 넣은 수칙이 아니고 한 줄 블록은 사용자 의도와 반대 (사용자 결정 2026-11-11) [기각: 4.1 의 100 자 한계에 예외를 둠 — 수칙 자체가 잘못 들어옴]\n- RULE-075 · 5.7 추가 : C interface 출력 메모리는 union 없이 순차, bool 대신 KiottySpecBool (사용자 추가 2026-11-11)\n- RULE-050 · 4.17 예외 : 속성 조회 · 타입 변환(to+타입) · 색인(...Of) · 커서 next() 는 동사가 아니어도 됨. core/ 자료구조만 접근 method 를 쓰던 예외를 넓힘 (CR-007, 사용자 결정 2026-11-12)\n- RULE-029 · RULE-027 편차 : 3.4 는 Result · ItemTables · KiottySpecContext 의 크기 고정을, 3.2 는 CLI 의 std::map 을 편차로 둠. 크기가 템플릿 인자 · 표준 라이브러리 · 빌드에 따라 달라 고정할 수 없고, CLI 는 1.1 · 1.6 예외와 같은 이유 (CR-011, 사용자 결정 2026-11-12)\n- RULE-065 · 6.6 범위 : 커서는 C interface 로 내보내는 조회만. 안은 index 임의 접근 (CR-012, 사용자 결정 2026-11-12)\n
 decision	O	external_interface	41	- UI-001 · 출처 : 공개 헤더 include/kiotty_spec.h 의 함수 61 개와 타입 55 개를 그대로 옮김. 시그니처 · 타입 정의는 헤더에서 뽑아 본문에 둠 (2026-11-10)\n- UI-001 · 구조 : 헤더 절을 따라 함수 그룹 13 개(UI-001 ~ 013), 타입 그룹 5 개(UI-014 ~ 018), 용량 상수 하나(UI-019). 함수 · 타입은 그 아래 하위 항목 (UI-020 ~ 135) [기각: 함수마다 최상위 — 목록이 길어 묶음이 안 보임]\n- UI-001 · 관계 : 관련 요구사항은 그룹에만 건다. 하위 함수는 상위 그룹으로 따라감 [기각: 함수마다 관계 — 같은 관계가 수십 번 반복]\n- UI-001 · 에러 코드 : 쓰기 공통 실패(체크포인트 없음 · DONE · 밖에서 바뀜 · 파일 교체 실패 · 용량)는 쓰기 함수마다 같은 문구로 적음\n- UI-020 · ks 명령줄 : 이번 단계에 넣지 않음. 인터페이스 종류에 명령줄이 없어 모델을 정할 때 함께 다룸\n- REQ-035 · 연결 없음 : 쓰기 시간(REQ-035) 과 빌드 환경(REQ-037) 은 인터페이스가 아니라서 연결하지 않음\n
 decision	O	external_interface	44	- UI-001 · 출처 : 공개 헤더 include/kiotty_spec.h 의 함수 61 개와 타입 55 개를 그대로 옮김. 시그니처 · 타입 정의는 헤더에서 뽑아 본문에 둠 (2026-11-10)\r\n- UI-001 · 구조 : 헤더 절을 따라 함수 그룹 13 개(UI-001 ~ 013), 타입 그룹 5 개(UI-014 ~ 018), 용량 상수 하나(UI-019). 함수 · 타입은 그 아래 하위 항목 (UI-020 ~ 135) [기각: 함수마다 최상위 — 목록이 길어 묶음이 안 보임]\r\n- UI-001 · 관계 : 관련 요구사항은 그룹에만 건다. 하위 함수는 상위 그룹으로 따라감 [기각: 함수마다 관계 — 같은 관계가 수십 번 반복]\r\n- UI-001 · 에러 코드 : 쓰기 공통 실패(체크포인트 없음 · DONE · 밖에서 바뀜 · 파일 교체 실패 · 용량)는 쓰기 함수마다 같은 문구로 적음\r\n- UI-020 · ks 명령줄 : 이번 단계에 넣지 않음. 인터페이스 종류에 명령줄이 없어 모델을 정할 때 함께 다룸\r\n- REQ-035 · 연결 없음 : 쓰기 시간(REQ-035) 과 빌드 환경(REQ-037) 은 인터페이스가 아니라서 연결하지 않음\r\n- UI-154 · 원격 상태 : 원격 주소와 기준 버전만 readRemote · writeRemote 로 다룸. 체크포인트와 무관하게 사양 파일에 바로 씀 [기각: 범용 meta 키-값 — 쓸 값이 둘뿐이고 키 규칙을 설명해야 함] (사용자 결정 2026-11-13)\n- UI-154 · 편입 결과 : acceptRules 는 체크포인트와 변경 요청 ID 만 돌려줌. 나머지는 비교 · 관계 · 영향 커서로 다시 읽음. 변경 요청 본문(처리 표 포함)은 호출자가 씀 (사용자 결정 2026-11-13)\n- UI-154 · git : git 실행 · 내려받기는 명령줄 도구 몫이라 C 함수에 없음. 받아 둔 파일은 두 번째 컨텍스트로 넘김\n
@@ -4839,6 +4879,7 @@ body	O	0456552c	결과: PASS\n근거: 수동 검토 (include/ src/ app/ tests/)\
 body	O	0479b5f6	## 대상\ntests/api/api_test.cpp 의 testFailedWriteRollsBack\n\n쓰기가 중간에 실패하면 그 쓰기 안에서 바뀐 것(ID 카운터)이 모두 되돌려진다.\n\n## 전제 조건\n라이브러리 전체를 링크하고 임시 폴더의 .kiotty/spec.kisp 를 C 함수로만 연다. 앞 테스트의 기록 위에 다음 테스트가 이어진다\n\n## 행동\ntestFailedWriteRollsBack 를 실행한다\n\n## 기대 결과\n- create small context\n- start\n- third item does not fit\n- remove second\n- failed write gave its id back\n
 body	O	04c783ea	- 보이는 모든 문장은 Key 를 가진다. Key → 언어별 Value 는 `i18n/` 에 둔다.\n- 문장 조립은 View·ViewModel 에서만 한다. domain·datalayer 는 문장을 만들지 않는다.\n- 치환은 `core/format` 의 `{0}` 자리표시자로 한다. `printf` 포맷 문자열을 번역 데이터로 쓰지 않는다.\n\n```cpp\nvoid SomeViewModel::setLabel(StringView parameter)\n{\n    StringView format = _locale.get(Key::WARNING_MESSAGE_1, currentLanguage());\n    formatInto(_label, format, parameter);  // FixedString<256> _label\n}\n```\n
 body	O	04e60bf1	## 대상\ntests/core/core_test.cpp 의 testResult\n\n## 전제 조건\ncore/ 헤더와 kiotty_text_diff.cpp 만 링크한 실행 파일. 파일 · 사양 파일을 쓰지 않는다\n\n## 행동\ntestResult 를 실행한다\n\n## 기대 결과\n- success is truthy\n- failure is falsy\n- success keeps value\n- failure value is default\n
+body	O	05b855e3	## 진술\n협업자는 변경 요청을 상태(열림 · 반영 중 · 완료 · 거부 · 백로그)별로 보고, 변경 요청 하나에서 영향을 받는 요구사항 · 개발 수칙 · 외부 인터페이스 · 설계 · 마일스톤을 본다.\n\n## 근거 시나리오\n기획자가 이번 릴리스 태그를 열어 열린 변경 요청과 각 변경이 건드리는 요구사항을 확인한다.\n\n## 인수 조건\n- 전제 조건: 열린 변경 요청 하나와 완료된 변경 요청 여럿 / 행동: 변경 요청 화면을 연다 / 기대 결과: 열린 것이 먼저 보이고 상태별로 나뉜다\n- 전제 조건: 영향 요구사항 · 설계를 잇는 변경 요청 / 행동: 연다 / 기대 결과: 본문과 영향 항목이 관계 이름별로 보이고, 누르면 그 항목이 열린다
 body	O	0648ffe1	## 대상\ntests/datasource/datasource_test.cpp 의 testLineDecoderInputs\n\n개발수칙 2.10: 빈 입력, 최대 길이, 최대 길이 + 1, 중간 null 바이트, 잘못된 UTF-8\n\n## 전제 조건\ndatasource 소스만 링크한 실행 파일. 작업 폴더에 임시 파일을 만들고 지운다\n\n## 행동\ntestLineDecoderInputs 를 실행한다\n\n## 기대 결과\n- empty line is one empty field\n- longest line fits\n- one byte more\n- null byte passes to the parser\n- parser rejects null byte\n- utf-8 is checked by the parser\n- parser rejects invalid utf-8\n- unknown escape\n- dangling escape\n- too many fields\n
 body	O	065fa99a	## 대상\nREQ-004 기록을 git 으로 보관하고 병합한다\n\n## 전제 조건\n빌드한 라이브러리를 C 인터페이스로만 쓴다. 시험마다 새 임시 폴더에 사양 파일을 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | 같은 체크포인트에서 갈라진 두 브랜치가 서로 다른 항목을 추가 · 수정 | git 으로 병합한 뒤 연다 | 충돌 없이 두 브랜치의 변경이 모두 보인다 |\n| 2 | 병합 충돌 표시가 남은 사양 파일 | 연다 | 충돌 표시가 남아 있다는 이유와 줄 번호로 거부 |\n| 3 | 병합으로 같은 레코드 버전이 두 줄이 되거나 같은 ID 가 두 항목에 붙은 파일 | 연다 | 어느 줄인지와 함께 거부 |\n| 4 | 기록을 열고 아무것도 바꾸지 않음 | 쓰기를 한 번 한다 | 파일이 바이트까지 같다 |\n
 body	O	0673118d	## 책임\r\nKind · 단계 · 체크포인트 상태의 값과 영문 이름 표 (설계서 v1 3.1).\r\n\r\n## 모듈 인터페이스\r\n```cpp\r\n// 함수\r\nconstexpr size_t ITEM_KIND_COUNT = 14;\r\nconstexpr size_t STEP_COUNT = 12;\r\nconstexpr size_t ACTOR_COUNT = 2;\r\nbool isValidKind(uint32_t value);\r\nbool isValidStep(uint32_t value);\r\nbool isValidActor(uint32_t value);\r\nsize_t kindIndex(ItemKind kind);\r\nstd::string_view kindName(ItemKind kind);\r\nuint32_t parseKind(std::string_view name);\r\nstd::string_view stateName(CheckpointState state);\r\nuint32_t parseState(std::string_view name);\r\nbool hasDecision(ItemKind kind);\r\n```\r\n\r\n## 멤버 변수\r\n없음\r\n\r\n## 의존 모듈\r\n없음\r\n\nItemKind 의 마지막은 PRIVATE_RULE (14, 이름 private_rule).\n
@@ -5000,11 +5041,12 @@ body	O	39ea3ebc	- 크기·길이·오프셋은 `size_t`.\n- 외부에서 온 정
 body	O	3afb63d7	## 대상\ntests/rule_sync/rule_sync_test.cpp 의 testAcceptPrivateRules\n\n## 전제 조건\nlocal 에 전용 개발 수칙 P1 이 R1 을, P2 가 R2 를, P3 이 R3 을 대체한다. remote 에서 R1 은 지워지고 R2 는 바뀌었고 R3 은 그대로다\n\n## 행동\nacceptRules 를 부른다\n\n## 기대 결과\n- P1 · P2 의 제목 · 요약 · 본문 · 태그가 그대로\n- R1 이 지워져도 P1 은 남는다\n- P1 의 대체 개발 수칙 관계가 없다\n- P2 의 대체 개발 수칙 관계가 R2 로 남는다\n- 변경 요청에 P1 · P2 로 영향 전용 개발 수칙 관계\n- 다른 전용 개발 수칙에는 관계가 없다\n
 body	O	3b0f2144	## 대상\nUI-018 결과 구조체\n\n## 전제 조건\n빌드한 라이브러리를 C 프로그램(tests/e2e/e2e_test.c, C11)이 include/ 의 헤더만으로 링크해 구동한다. 시나리오마다 새 임시 폴더의 .kiotty/spec.kisp 를 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | - | 성공한 호출의 결과 구조체를 읽는다 | code SUCCESS 와 값 |\n| 2 | - | 실패한 호출의 결과 구조체를 읽는다 | code 가 실패 코드, 값 필드는 0 이거나 빈 글 |\n
 body	O	3b4ade38	## 진술\nAI 는 항목 하나를 관계로 가리키는 하류 항목을 정한 깊이까지 따라가 영향 항목 목록을 받는다.\n\n## 근거 시나리오\n요구사항 하나를 고치면 그것을 가리키는 외부 인터페이스, 설계 사항, 테스트를 영향 항목으로 받아 그것만 다시 본다.\n\n## 인수 조건\n- 전제 조건: 요구사항 ← 설계 사항 ← 유닛 테스트 / 행동: 요구사항의 영향을 깊이 1 로 본다 / 기대 결과: 설계 사항\n- 전제 조건: 같은 연결 / 행동: 깊이 2 로 본다 / 기대 결과: 설계 사항과 유닛 테스트\n
+body	O	3b6d4f18	## 진술\n협업자는 사양 파일을 열면 먼저 이 기록이 무엇인지(목적, 역할, 12 단계)와 지금 진행 상황을 본다. 진행 상황은 명령줄 도구의 지금 할 일과 같은 내용이다. 현재 체크포인트 · 단계 · 상태, 12 단계 중 지금 단계 표시, 확정 조건 때문에 손봐야 할 항목과 그 이유, 체크포인트 목록이다.\n\n## 근거 시나리오\n협업자가 "지금 어디까지 왔나" 를 물을 때 개발자 대신 뷰어 첫 화면이 답한다.\n\n## 인수 조건\n- 전제 조건: Step 2 진행 중이고 인수 조건이 없는 기능 요구사항이 하나 있다 / 행동: 파일을 연다 / 기대 결과: 지금 단계가 요구사항으로 표시되고, 그 요구사항과 이유가 보인다\n- 전제 조건: 임의의 사양 파일 / 행동: 진행 상황을 본다 / 기대 결과: 명령줄 도구로 같은 파일의 지금 할 일을 본 결과와 체크포인트 · 단계 · 상태 · 작업할 항목이 같다\n- 전제 조건: 체크포인트가 없는 사양 파일 / 행동: 연다 / 기대 결과: 진행 기록이 없다고 보이고 다른 화면은 열린다\n- 전제 조건: 임의의 사양 파일 / 행동: 개요를 본다 / 기대 결과: 목적 · 역할 · 12 단계가 명령줄 도구의 안내와 같은 내용으로 보인다
 body	O	3b80fe67	## 정의\n```c\ntypedef struct KiottySpecStepRun {\n    KiottySpecCheckpointHandle first;\n    KiottySpecCheckpointHandle last;\n    uint64_t                   count;\n    KiottySpecStep             step;\n    KiottySpecCheckpointState  state;\n} KiottySpecStepRun;\n```\n\n## 의미\n같은 단계가 이어진 체크포인트 구간\n
 body	O	3b8fb824	## 정의\n```c\ntypedef struct KiottySpecCheckpointPage {\n    KiottySpecCheckpoint       elements[KIOTTY_SPEC_PAGE_CAPACITY];\n    KiottySpecCheckpointHandle handles[KIOTTY_SPEC_PAGE_CAPACITY];\n    size_t                     length;\n} KiottySpecCheckpointPage;\n```\n\n## 의미\n체크포인트 페이지 (핸들과 레코드)\n
 body	O	3bbfb856	## 대상\ntests/core/core_test.cpp 의 testUtf8Invalid\n\n## 전제 조건\ncore/ 헤더와 kiotty_text_diff.cpp 만 링크한 실행 파일. 파일 · 사양 파일을 쓰지 않는다\n\n## 행동\ntestUtf8Invalid 를 실행한다\n\n## 기대 결과\n- overlong two byte rejected\n- overlong three byte rejected\n- surrogate rejected\n- above U+10FFFF rejected\n- truncated sequence rejected\n- stray continuation rejected\n
 body	O	3c97df25	## 실행 명령\n`cmake --build build --config Debug` 뒤 `build/Debug/kiotty_e2e_test.exe`\n\n## 실패 내용\n없음. E2E-008 PASS, 마지막 줄 "0 failed" (2026-11-17, CP-0085, CR-017 회귀).\n
-body	O	3d2b2666	## 진술\n라이브러리는 C++17 과 CMake 3.24 이상으로 Windows(MSVC), Linux(GCC), macOS(Clang) 에서 빌드되며 외부 라이브러리에 의존하지 않는다. 공개 인터페이스는 C 헤더 하나다. 명령줄 도구의 원격 수칙 작업(올리기 · 확인 · 받기)은 사용자 PC 에 설치된 git 을 실행해서 하므로 git 이 있어야 하며, git 이 없으면 그 이유로 거부한다. 원격 인증은 git 이 맡고 사양 파일과 명령줄 도구는 인증 정보를 보관하지 않는다. 라이브러리는 git 을 쓰지 않는다.\n\n## 근거\nCMakeLists.txt (CXX_STANDARD 17, 예외 끔), include/kiotty_spec.h. 정적 라이브러리 kiotty_spec 과 명령줄 도구 ks 두 타깃. 세 운영체제 빌드는 CI 가 확인한다. git 라이브러리를 링크하면 인증 정보를 도구가 보관해야 하고 암호 라이브러리까지 빌드해야 하므로 git 실행을 택한다.\n
+body	O	3d2b2666	## 진술\n라이브러리는 C++17 과 CMake 3.24 이상으로 Windows(MSVC), Linux(GCC), macOS(Clang) 에서 빌드되며 외부 라이브러리에 의존하지 않는다. 같은 소스가 emscripten 으로 32 비트 WebAssembly(wasm32) 로도 경고 없이 빌드되고, 그 빌드의 테스트가 Node.js 에서 통과한다. 공개 인터페이스는 C 헤더 하나다. 명령줄 도구의 원격 수칙 작업(올리기 · 확인 · 받기)은 사용자 PC 에 설치된 git 을 실행해서 하므로 git 이 있어야 하며, git 이 없으면 그 이유로 거부한다. 원격 인증은 git 이 맡고 사양 파일과 명령줄 도구는 인증 정보를 보관하지 않는다. 라이브러리는 git 을 쓰지 않는다.\n\n## 근거\nCMakeLists.txt (CXX_STANDARD 17, 예외 끔), include/kiotty_spec.h. 정적 라이브러리 kiotty_spec 과 명령줄 도구 ks 두 타깃. 세 운영체제 빌드와 wasm32 빌드는 CI 가 확인한다. git 라이브러리를 링크하면 인증 정보를 도구가 보관해야 하고 암호 라이브러리까지 빌드해야 하므로 git 실행을 택한다. wasm32 는 브라우저 뷰어(REQ-052)가 라이브러리를 그대로 쓰기 위한 것이다. 64 비트 WebAssembly 는 사파리가 지원하지 않아 32 비트를 택한다 (CR-019 D3, 사용자 결정 2026-11-17). 32 비트에서 struct 크기가 달라지는 곳은 두 크기를 모두 고정한다 (PRULE-013).
 body	O	3d8786dd	결과: PASS\r\n근거: node tools/lint.js --rule 4.3\r\n
 body	O	3dd02f08	## 목적\n체크포인트를 시작 · 이어 하기 · 확정 · 정리하고 읽는다\n\n## 포함\n- KiottySpec_startCheckpoint\n- KiottySpec_resumeCheckpoint\n- KiottySpec_completeCheckpoint\n- KiottySpec_readCheckpoint\n- KiottySpec_openCheckpointCursor\n- KiottySpec_fetchCheckpointPage\n- KiottySpec_pruneCheckpoints\n- KiottySpec_openUnmetConditionCursor\n- KiottySpec_fetchUnmetConditionPage\n
 body	O	3e12d3ef	## 진술\nAI 는 모델의 관계 정의(주어 종류, 관계 이름, 목적어 종류)에 맞는 관계만 만들고 끊는다. 관계는 아래 단계의 항목이 위 단계의 항목을 가리킨다. 한 항목의 관계를 위(가리키는 쪽) · 아래(가리켜지는 쪽) · 양쪽으로 보고, 관계 종류 하나의 모든 연결도 볼 수 있다.\n\n## 근거 시나리오\nStep 5 에서 유닛 테스트를 "검증 설계 사항" 으로 설계 사항에 연결한다. 실수로 요구사항에 연결하면 바로 거부된다. 리뷰 때는 "포함 설계 사항" 관계 전체를 뽑아 빠진 것을 찾는다.\n\n## 인수 조건\n- 전제 조건: 유닛 테스트와 설계 사항 / 행동: 검증 설계 사항으로 연결한다 / 기대 결과: 연결되고 설계 사항의 아래 관계에 그 테스트가 보인다\n- 전제 조건: 유닛 테스트와 요구사항 / 행동: 검증 설계 사항으로 연결한다 / 기대 결과: 모델에 없는 관계라는 이유로 거부\n- 전제 조건: 이미 있는 관계 / 행동: 같은 관계를 다시 만든다 / 기대 결과: 이미 있다는 이유로 거부\n- 전제 조건: 없는 관계 / 행동: 끊는다 / 기대 결과: 없다는 상태\n- 전제 조건: 마일스톤 둘이 각각 설계 사항을 포함 / 행동: 포함 설계 사항 관계 전체를 본다 / 기대 결과: 두 관계\n
@@ -5051,7 +5093,7 @@ body	O	4996c5f2	## 정의\n```c\ntypedef struct KiottySpecName {\n    char value
 body	O	49a5e527	## 대상\nUI-001 컨텍스트와 사양 파일\n\n## 전제 조건\n빌드한 라이브러리를 C 프로그램(tests/e2e/e2e_test.c, C11)이 include/ 의 헤더만으로 링크해 구동한다. 시나리오마다 새 임시 폴더의 .kiotty/spec.kisp 를 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | 기본 설정(모든 값 0) | 컨텍스트를 만든다 | 성공하고 컨텍스트가 있다 |\n| 2 | - | 설정 NULL 로 컨텍스트를 만든다 | INVALID_ARGUMENT |\n| 3 | 연 적 없는 컨텍스트 | 프로젝트를 초기화한다 | 실패하고, 마지막 실패 이유의 status 가 그 코드와 같다 |\n| 4 | 없는 폴더 아래 경로 | 사양 파일을 연다 | 성공하고 사양 파일이 만들어진다 |\n| 5 | 연 컨텍스트 | 프로젝트 이름 "e2e" 로 초기화한다 | 성공 |\n| 6 | 없는 ID 로 항목을 읽어 실패시킨다 | 마지막 실패 이유를 읽는다 | status NOT_FOUND, 문장에 그 ID 가 있고 null 로 끝난다 |\n| 7 | - | SUCCESS 상태 이름을 읽는다 | "SUCCESS" |\n| 8 | 연 컨텍스트 | 컨텍스트를 해제한다 | 끝까지 실행된다 (NULL 해제도 안전) |\n
 body	O	4a0c9ac5	- 연결 리스트, 포인터 트리, 노드 할당 map 금지. 트리는 `parent_index`, `first_child_index` 배열로 표현한다.\n
 body	O	4a212847	## 시그니처\n```c\nKiottySpecCursorResult KiottySpec_openChildCursor(KiottySpecContext *context, KiottySpecText id);\n```\n\n## 사전조건\ncontext 는 KiottySpec_createContext 로 만들고 KiottySpec_open 으로 사양 파일을 연 것\n\n## 사후조건\nid 를 상위로 둔 항목\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- NOT_FOUND: 그 ID 의 항목이 없음\n- INVALID_ARGUMENT: ID 형식이 잘못됨 (영문자 · 숫자로 시작, 영문자 · 숫자 · - · _ 만, 15 바이트 이하)\n- POOL_IS_FULL: 열린 커서가 max_cursors 개\n- CAPACITY_EXCEEDED: 결과 행이 max_cursor_rows 를 넘음\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\n입력 KiottySpecText 는 호출 동안만 읽고 복사한다. null 종료를 가정하지 않으며 data 가 NULL 이면 빈 글이다. 커서는 컨텍스트의 커서 풀 슬롯이다. 다 쓰면 KiottySpec_closeCursor 로 닫는다. KiottySpec_releaseContext 가 남은 커서를 모두 정리한다.\n
-body	O	4b4a58db	## 수칙\n멤버는 크기 내림차순으로 배치하고 `static_assert(sizeof)` 로 패딩을 고정한다. 다만 크기가 템플릿 인자 · 표준 라이브러리 · 빌드에 따라 달라지는 struct 는 크기를 고정하지 않는다. 공통 수칙 3.4 (RULE-029) 를 대체한다.\n\n## 범위\n- `app/` (CLI) 의 struct.\n- `Result` (core/kiotty_result.h), `ItemTables` (data/repository/item/kiotty_item_tables.h), `KiottySpecContext` (src/kiotty_spec_adapter.h).\n\n## 공통 수칙과 다른 이유\n- 표준 컨테이너를 담은 CLI struct 는 표준 라이브러리 구현마다 크기가 달라 고정할 수 없다.\n- `Result` 는 템플릿이라 크기가 인자마다 다르고, `ItemTables` 는 `std::vector` 를, `KiottySpecContext` 는 그것을 담은 `impl::Context` 를 가져 표준 라이브러리 구현과 Debug · Release 빌드마다 크기가 다르다 (CR-011).\n\n## 지키는 법\n- 멤버는 그대로 크기 내림차순으로 둔다. 이 struct 들은 파일에 바이트 그대로 쓰지 않는다.\n- 라이브러리(`src/`)의 다른 struct 와 `include/` 는 크기를 고정한다.\n- `tools/lint.js` 는 `app/` 과 위 셋만 크기 고정 검사에서 뺀다.\n
+body	O	4b4a58db	## 수칙\n멤버는 크기 내림차순으로 배치하고 `static_assert(sizeof)` 로 패딩을 고정한다. 크기가 포인터 폭(64 비트 · 32 비트)에 따라 달라지는 struct 는 `layoutSize(64 비트 크기, 32 비트 크기)` (core/kiotty_layout.h) 로 두 크기를 모두 고정한다. 다만 크기가 템플릿 인자 · 표준 라이브러리 · 빌드에 따라 달라지는 struct 는 크기를 고정하지 않는다. 공통 수칙 3.4 (RULE-029) 를 대체한다.\n\n## 범위\n- 크기를 고정하지 않는 곳: `app/` (CLI) 의 struct. `Result` (core/kiotty_result.h), `ItemTables` (data/repository/item/kiotty_item_tables.h), `KiottySpecContext` (src/kiotty_spec_adapter.h).\n- 두 크기를 고정하는 곳: 포인터 · `size_t` 를 멤버로 가져 wasm32 빌드(REQ-037)에서 크기가 달라지는 라이브러리 struct (CR-019 에서 26 파일 38 개).\n\n## 공통 수칙과 다른 이유\n- 표준 컨테이너를 담은 CLI struct 는 표준 라이브러리 구현마다 크기가 달라 고정할 수 없다.\n- `Result` 는 템플릿이라 크기가 인자마다 다르고, `ItemTables` 는 `std::vector` 를, `KiottySpecContext` 는 그것을 담은 `impl::Context` 를 가져 표준 라이브러리 구현과 Debug · Release 빌드마다 크기가 다르다 (CR-011).\n- 라이브러리는 64 비트 운영체제와 32 비트 WebAssembly 로 빌드된다. 한 값만 고정하면 다른 쪽 빌드가 실패하고, 32 비트에서 검사를 끄면 32 비트 배치가 고정되지 않는다 (CR-019 D4).\n\n## 지키는 법\n- 멤버는 그대로 크기 내림차순으로 둔다. 크기를 고정하지 않는 struct 는 파일에 바이트 그대로 쓰지 않는다.\n- 라이브러리(`src/`)의 다른 struct 와 `include/` 는 크기를 고정한다. 포인터 폭과 무관한 struct 는 숫자 하나로 쓴다.\n- `layoutSize` 는 빌드의 포인터 폭에 맞는 값을 고른다. 64 비트 빌드와 wasm32 빌드가 모두 통과해야 한다.\n- `tools/lint.js` 는 `app/` 과 위 셋만 크기 고정 검사에서 빼고, `layoutSize` 는 64 비트 값을 읽어 크기 표와 비교한다.
 body	O	4b8c3bef	## 책임\n원격 상태를 사양 파일의 meta 두 키(remote.url, remote.rule_base)로 읽고 쓴다. 쓰기는 WriteScope 를 쓰지 않는다: checkRemote → refresh → 키마다 값을 쓰거나 빈 값이면 키를 지움 → Workspace::finish. 그래서 가장 최근 체크포인트가 DONE 이어도 쓰고 체크포인트 이력에 남지 않는다 (OpenedContext::initialize 와 같은 방식). 실패하면 finish 가 파일을 다시 읽어 되돌린다. read 는 refresh 뒤 없는 키를 빈 글로 돌려준다. writeBase 는 기준 버전 키만 메모리에서 바꾸고 저장은 부르는 쪽(RuleAcceptor)의 finish 에 맡긴다. 값이 틀리면 SUBJECT_REMOTE 로 남긴다.\n\n타입: RemoteState\n\n## 모듈 인터페이스\n```cpp\n// class RemoteState\nexplicit RemoteState(Workspace& workspace);\nResult<entity::RemoteRecord, KiottySpecStatus> read() const;\nKiottySpecStatus write(const entity::RemoteRecord& remote);\nKiottySpecStatus writeBase(Span<const char> rule_base);\n```\n\n## 멤버 변수\n```cpp\n// RemoteState\nWorkspace& _workspace;\n```\n\n## 의존 모듈\n- DSN-096 remote_record\n- DSN-055 MetaStore\n- DSN-072 Workspace\n- DSN-029 Result\n- DSN-032 Span\n
 body	O	4b931850	## 수칙\r\r\n4.6 `auto` 는 우변에 타입이 보일 때(생성자 호출, `Result` 반환)만 쓴다. 숫자·bool 은 타입을 적는다.\r\r\n
 body	O	4c0a532a	## 대상\ntests/cli/cli_test.cpp 의 testParseArgumentsBytes\n\n## 전제 조건\nkiotty_cli 라이브러리를 링크하고 사양 파일 없이 CLI 의 parse 함수를 직접 부른다\n\n## 행동\ntestParseArgumentsBytes 를 실행한다\n\n## 기대 결과\n- null byte in an option value is kept\n- bad UTF-8 positional is left to the library\n- known flag takes no value\n
@@ -5169,6 +5211,7 @@ body	O	6cc7ae64	결과: PASS\n근거: 수동 검토와 node tools/lint.js --rule
 body	O	6cd627db	## 요구\n"열고 나서 쓴다" 같은 작업 순서를 런타임 플래그가 아니라 타입으로 강제한다 (개발 수칙 6.1).\n\n## 근거 (CP-0008 코드 검사)\n- CIR-060 (6.1): Context 가 bool _opened 로 열림 여부를 관리하고, Context::init 이 열리지 않은 Context 에서도 실행된다.\n- FileReader · FileWriter · KispFileReader · KispFileWriter · ItemDiffQuery · RelationDiffQuery 가 "생성 후 open()" 2단계 초기화라, open 없이 next() 를 불러도 컴파일된다.\n위반 위치는 CIR-060 본문에 있다.\n\n## 방향 (설계에서 정한다)\n- open 이 열린 상태 타입(예: OpenedReader)을 돌려주고 next() 는 그 타입에만 둔다. 생성자가 곧 open 이 되게 하거나 Result<Opened, Code> 를 돌려준다.\n- Context 는 open 성공 시에만 Workspace 를 가진 상태가 되게 나눈다.\n- C interface 는 Context 핸들 하나를 그대로 두고, 열리지 않은 Context 로 부르면 지금처럼 상태 코드로 거절한다.\n
 body	O	6cfa52ce	## 대상\nREQ-008 항목을 만들고 ID 를 받는다\n\n## 전제 조건\n빌드한 라이브러리를 C 인터페이스로만 쓴다. 시험마다 새 임시 폴더에 사양 파일을 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | DSN-001 ~ DSN-006 이 있고 DSN-006 은 지웠다 | ID 없이 설계 사항을 만든다 | DSN-007 |\n| 2 | DSN-006 을 지웠다 | DSN-006 으로 만든다 | 이미 쓰인 ID 라는 이유로 거부 |\n| 3 | 없음 | 공백이나 16 자 이상의 ID 로 만든다 | ID 형식이 잘못되었다는 이유로 거부 |\n| 4 | 없음 | 빈 제목으로 만든다 | 거부 |\n
 body	O	6d2eb6d0	## 실행 명령\n`cmake --build build --config Debug` 뒤 `build/Debug/kiotty_system_test.exe`\n\n## 실패 내용\n없음. ST-011 PASS, 마지막 줄 "0 failed" (2026-11-17, CP-0082, CR-017 회귀).\n
+body	O	6d8b54f7	## 진술\n협업자는 항목을 종류(요구사항, 설계, 테스트 계획 등)별 표로 본다. 표는 ID, 제목, 요약, 태그를 보이고, 태그 값으로 거르고, 제목 · 요약의 글자로 찾는다. 항목을 펼치면 본문을 서식(Markdown)대로 본다. 상위 · 하위 항목은 묶어 보인다.\n\n## 근거 시나리오\n설계 검토자가 설계 표를 열어 "반영 중" 이 아닌 항목만 거르고, 궁금한 항목의 본문을 펼쳐 읽는다.\n\n## 인수 조건\n- 전제 조건: 요구사항이 여럿 있는 사양 파일 / 행동: 요구사항 표를 연다 / 기대 결과: 명령줄 도구의 요구사항 목록과 같은 항목이 ID 순서로 보이고 각 줄에 제목 · 요약 · 태그가 있다\n- 전제 조건: 요구사항 표 / 행동: 요구사항 종류를 환경 요구사항으로 거른다 / 기대 결과: 그 태그 값을 가진 항목만 보인다\n- 전제 조건: 표 / 행동: 제목에 있는 글자로 찾는다 / 기대 결과: 그 글자가 제목이나 요약에 있는 항목만 보인다\n- 전제 조건: 본문에 표 · 목록 · 코드 블록이 있는 항목 / 행동: 펼친다 / 기대 결과: 서식대로 보이고 본문 안의 스크립트는 실행되지 않는다\n- 전제 조건: 항목이 없는 종류 / 행동: 그 표를 연다 / 기대 결과: 항목이 없다고 보인다
 body	O	6d95d4a9	## 정의\n```c\ntypedef enum KiottySpecActor {\n    KIOTTY_SPEC_ACTOR_USER = 1,\n    KIOTTY_SPEC_ACTOR_AI\n} KiottySpecActor;\n```\n\n## 의미\n호출한 쪽. 확정 · 정리는 USER 만\n
 body	O	6dddb862	## 정의\n```c\ntypedef struct KiottySpecRelationPage {\n    KiottySpecRelation elements[KIOTTY_SPEC_PAGE_CAPACITY];\n    size_t             length;\n} KiottySpecRelationPage;\n```\n\n## 의미\n관계 페이지\n
 body	O	6e87b3fd	결과: PASS\n근거: 수동 검토와 node tools/lint.js --rule 7.2 · 7.3\n판단: lint 7.2 · 7.3 은 0 건이다. app/cli/src/presentation 이 C interface(include/) 를 쓰는 것은 PRULE-006 의 범위라 허용한다. context/ 를 include 하는 것은 src/ 어댑터와 tests 뿐이고, usecases/ 는 data/infra/ 를 include 하지 않는다 (CR-018 수동 확인)\n
@@ -5207,6 +5250,7 @@ body	O	7bf57868	## 시그니처\n```c\nKiottySpecStatusResult KiottySpec_open(Ki
 body	O	7c54b750	## 책임\n목록 질의 (설계서 v1 8). 결과 행의 키를 커서 풀에 담는다. 레코드는 페이지를 받을 때 다시 읽는다.\n\n## 모듈 인터페이스\n```cpp\n// class Finder\nFinder(Workspace& workspace, CursorPool& cursors, size_t max_items);\nCursorIdResult items(uint32_t kind, Span<const entity::TagQuery> queries);\nCursorIdResult children(entity::ItemHandle parent);\nCursorIdResult impact(entity::ItemHandle item, uint32_t depth);\nCursorIdResult relations(entity::ItemHandle item, KiottySpecDirection direction);\nCursorIdResult relationsByModel(entity::ItemKind kind, uint32_t relation);\nCursorIdResult tags(entity::ItemHandle item);\nHistoryFinder history();\n```\n\n## 멤버 변수\n```cpp\n// Finder\nWorkspace& _workspace;\nCursorPool& _cursors;\nstd::vector<uint64_t> _tag_values;\nstd::vector<uint8_t> _marks;\n```\n\n## 의존 모듈\n- DSN-109 public_handle\n- DSN-108 query_records\n- DSN-075 CursorPool\n- DSN-076 cursor_rows\n- DSN-080 HistoryFinder\n- DSN-029 Result\n- DSN-032 Span\n- DSN-058 item_records\n- DSN-072 Workspace\n- DSN-035 text_view\n
 body	O	7c7a3278	## 책임\nnumber 를 10진수로 text 뒤에 붙인다. 자릿수가 min_digits 보다 적으면 앞을 0 으로 채운다. Text 는 append(Span<const char>) 를 가진 FixedString · TextBuffer 다.\n\n## 모듈 인터페이스\n```cpp\n// 함수\nconstexpr size_t MAX_DECIMAL_DIGITS = 20;\nDecimalText formatDecimal(uint64_t number, size_t min_digits = 1);\n```\n\n## 멤버 변수\n없음\n\n## 의존 모듈\n- DSN-024 FixedString\n- DSN-032 Span\n
 body	O	7c8253c6	## 수칙\n힙 할당은 초기화 함수 안에서만 한다. 다만 CLI(`app/`)는 명령 실행 중에도 할당한다. 공통 수칙 1.1 (RULE-004) 을 대체한다. 초기화 때의 할당은 MISRA C++:2023 21.6.1 (동적 메모리 금지) 의 편차로 여기 기록한다.\n\n## 범위\n- MISRA C++:2023 21.6.1: `KiottySpec_createContext` 와 풀 · 버퍼를 가진 클래스의 생성자가 초기화 때 `std::vector`, `std::make_unique` 로 힙을 할당한다.\n- `app/` (CLI): 명령 실행 중에 `std::string`, `std::vector`, `std::map`, 표준 입출력으로 힙을 할당한다.\n\n## 공통 수칙과 다른 이유\n- 라이브러리의 용량은 설정값(`KiottySpecConfiguration`)으로 정해야 해서 컴파일 타임 배열로 둘 수 없다.\n- CLI 는 한 번 실행하고 끝나는 짧은 process 라 런타임 힙이 쌓이지 않고, 막으면 인자 · 출력 처리 비용이 지나치게 크다.\n\n## 지키는 법\n- 라이브러리(`src/`)의 할당은 초기화 함수 안에서 한 번만 하고 그 뒤 크기를 바꾸지 않는다. 설정값은 `parseConfiguration` 이 범위를 검사하고, 곱한 용량은 `checkedMultiply` 로 넘침을 막는다. 할당 실패는 `-fno-exceptions` 로 process 를 끝낸다.\n- CLI 는 C interface 만 거쳐 라이브러리를 쓴다.\n- `tools/lint.js` 는 라이브러리의 초기화 함수 밖 할당을 센다. `app/` 은 세지 않는다.\n
+body	O	7d2db3ad	## 진술\n사용자는 자기 PC 에 있는 사양 파일을 뷰어에 끌어 놓거나 파일 고르기로 연다. 파일은 브라우저 안에서만 읽고 어디에도 올리지 않는다. 비공개 저장소의 사양 파일은 이 방법으로 본다.\n\n## 근거 시나리오\n비공개 저장소를 받은 사용자가 커밋 전 사양 파일을 뷰어로 열어 진행 상황을 확인한다.\n\n## 인수 조건\n- 전제 조건: PC 에 사양 파일이 있다 / 행동: 뷰어 화면에 끌어 놓는다 / 기대 결과: 그 파일이 열리고 화면에 파일 이름이 보인다\n- 전제 조건: PC 에 사양 파일이 있다 / 행동: 파일 고르기로 고른다 / 기대 결과: 끌어 놓기와 같게 열린다\n- 전제 조건: 사양 파일 형식이 아닌 파일 / 행동: 끌어 놓는다 / 기대 결과: 열지 않고 형식이 다르다고 알린다. 앞서 연 파일이 있으면 그대로 보인다\n- 전제 조건: 로컬 파일을 열었다 / 행동: 브라우저의 네트워크 기록을 본다 / 기대 결과: 파일 내용을 보내는 요청이 없다
 body	O	7e66c64a	## 시그니처\n```c\nKiottySpecStatusResult KiottySpec_fetchRelationPage(KiottySpecContext *context, KiottySpecCursor cursor, KiottySpecRelationPage *page);\n```\n\n## 사전조건\n열린 관계 커서\n\n## 사후조건\npage 에 관계 레코드\n\n## 에러 코드\n- INVALID_ARGUMENT: context 가 NULL\n- INVALID_ARGUMENT: page 가 NULL\n- INVALID_HANDLE: 닫혔거나 잘못된 커서\n- WRONG_CURSOR_TYPE: 다른 종류의 커서\n- 실패하면 이유를 KiottySpec_readLastError 로 읽는다\n\n## 소유권\npage 는 호출자 메모리다. 한 번에 최대 KIOTTY_SPEC_PAGE_CAPACITY 개를 채우고 length 에 개수를 둔다. length 가 0 이면 끝이다.\n
 body	O	7e68584c	## 진술\n사용자는 항목 하나의 제목이나 요약이 두 체크포인트 사이에 어떻게 바뀌었는지 같은 부분 · 지운 부분 · 더한 부분의 조각으로 본다.\n\n## 근거 시나리오\n요약 한 줄이 고쳐졌을 때 어느 단어가 바뀌었는지 바로 본다.\n\n## 인수 조건\n- 전제 조건: 요약 "저장한다" 를 "모두 저장한다" 로 고쳤다 / 행동: 요약의 글자 차이를 본다 / 기대 결과: 더한 조각 "모두 " 와 같은 조각 "저장한다"\n- 전제 조건: 같은 항목 / 행동: 본문의 글자 차이를 요청한다 / 기대 결과: 거부\n
 body	O	7ea7218f	## 대상\ntests/api/api_test.cpp 에 더할 테스트 (아직 없음)\n\n## 전제 조건\n라이브러리 전체를 링크하고 임시 폴더의 .kiotty/spec.kisp 를 C 함수로만 연다. 앞 테스트의 기록 위에 다음 테스트가 이어진다. 없는 ID 로 항목을 읽어 실패시킨다\n\n## 행동\n실패한 호출의 이유 문장과 상태 코드 이름을 읽는다\n\n## 기대 결과\n- 상태가 NOT_FOUND\n- 실패 이유에 그 ID 가 들어 있음\n- 작은 버퍼로 실패 이유를 읽으면 CAPACITY_EXCEEDED 와 필요한 바이트 수\n- NULL 컨텍스트로 부른 함수는 INVALID_ARGUMENT\n- 상태 코드 이름이 "NOT_FOUND", 모르는 값은 "UNKNOWN"\n
@@ -5214,6 +5258,7 @@ body	O	7ee22562	## 책임\nItemStore 가 소유하는 표 묶음. 세부 클래�
 body	O	7f3ed4cf	## 책임\n수칙 내보내기의 usecase 쪽. checkDone() 은 refresh 뒤 가장 최근 체크포인트가 DONE 이 아니면 PRECONDITION, exportTo(절대 경로) 는 SpecFile::exportRules 로 가장 최근 체크포인트 시점의 수칙을 쓴다. 경로 해석과 폴더 검사는 OpenedContext::exportRules 가 하고 순서는 빈 경로 INVALID_ARGUMENT → checkDone → 경로 해석 → 폴더면 INVALID_ARGUMENT → exportTo 다 (CR-018, 개발수칙 7.3 의존 방향). local 사양 파일은 바꾸지 않는다.\n\n## 모듈 인터페이스\n```cpp\n// class RuleExporter\nexplicit RuleExporter(Workspace& local);\nKiottySpecStatus checkDone();\nKiottySpecStatus exportTo(Span<const char> absolute_path);\n```\n\n## 멤버 변수\n```cpp\n// RuleExporter\nWorkspace& _local;\n```\n\n## 의존 모듈\n- DSN-032 Span\n- DSN-072 Workspace\n
 body	O	7f44dc49	## 책임\n파일을 새로 만들어 조각마다 이어 쓴다. 소멸자가 닫는다.\n\n## 모듈 인터페이스\n```cpp\n// class FileWriter\nexplicit FileWriter(OpenedFile file);\nFileWriter(const FileWriter&) = delete;\nFileWriter& operator=(const FileWriter&) = delete;\nKiottySpecStatus write(Span<const char> content);\nbool isOpen() const;\nvoid close();\n```\n\n## 멤버 변수\n```cpp\n// FileWriter\nOpenedFile _file;\n```\n\n## 의존 모듈\n- DSN-032 Span\n- DSN-090 OpenedFile\n
 body	O	7f82e1fc	## 정의\n```c\ntypedef struct KiottySpecItemHandleResult {\n    KiottySpecItemHandle value;\n    KiottySpecStatus     code;\n    uint32_t             reserved;\n} KiottySpecItemHandleResult;\n```\n\n## 의미\n상태와 항목 핸들\n
+body	O	8043b4d1	## 진술\n뷰어는 Windows 와 macOS 의 크롬 · 엣지 · 사파리 최신 두 주 버전에서 같은 기능으로 동작한다. 설치 · 플러그인 · 서버 없이 정적 호스팅(GitHub Pages)에서 열린다. 뷰어는 저장소의 태그를 푸시할 때 자동으로 배포된다.\n\n## 근거\n협업자의 PC 는 정할 수 없다. 64 비트 WebAssembly 는 사파리가 지원하지 않아 라이브러리를 32 비트로 빌드한다 (REQ-037, CR-019 D3). 비공개 저장소는 인증이 필요하므로 링크로 열지 않고 로컬 파일로 연다 (REQ-054, CR-019 D7 백로그).
 body	O	80568adc	## 정의\n```c\ntypedef struct KiottySpecStatusResult           { KiottySpecStatus code; } KiottySpecStatusResult;\n```\n\n## 의미\n상태만\n
 body	O	8068262f	## 실행 명령\n`cmake --build build --config Debug` 뒤 `build/Debug/kiotty_ks_scenario_test.exe build/Debug/ks.exe`\n\n## 실패 내용\n없음. ST-043 PASS, 마지막 줄 "0 failed" (2026-11-17, CP-0082, CR-017 회귀).\n
 body	O	80a19937	결과: PASS\r\n근거: node tools/lint.js --rule 0.1\r\n
@@ -5437,9 +5482,12 @@ body	O	c7511506	## 대상\nREQ-007 단계 산출물을 항목으로 기록한다
 body	O	c7ebd6c1	## 책임\nC 문자열 · string_view 와 Span<const char> 사이를 바꾼다. null 종료를 가정하지 않는다.\n\n## 모듈 인터페이스\n```cpp\n// 함수\nSpan<const char> boundedText(const char* text, size_t limit);\nSpan<const char> literalText(const char (&text)[Length]);\nSpan<const char> spanOf(std::string_view text);\nstd::string_view viewOf(Span<const char> text);\n```\n\n## 멤버 변수\n없음\n\n## 의존 모듈\n- DSN-032 Span\n
 body	O	c8646551	## 대상\nUI-017 페이지\n\n## 전제 조건\n빌드한 라이브러리를 C 프로그램(tests/e2e/e2e_test.c, C11)이 include/ 의 헤더만으로 링크해 구동한다. 시나리오마다 새 임시 폴더의 .kiotty/spec.kisp 를 연다. 각 경우의 전제 조건은 아래 표\n\n## 행동\n아래 표의 경우를 차례로 실행한다\n\n## 기대 결과\n| # | 전제 조건 | 행동 | 기대 결과 |\n| --- | --- | --- | --- |\n| 1 | - | KIOTTY_SPEC_PAGE_CAPACITY 를 확인한다 | 64 |\n| 2 | 항목 65 개 | ID 페이지를 끝까지 받는다 | 길이 64 · 1 · 0, ID 가 겹치지 않는다 |\n
 body	O	c889a548	## 대상\ntests/api/api_test.cpp 에 더할 테스트 (아직 없음)\n\n## 전제 조건\n라이브러리 전체를 링크하고 임시 폴더의 .kiotty/spec.kisp 를 C 함수로만 연다. 앞 테스트의 기록 위에 다음 테스트가 이어진다. 체크포인트가 없는 새 사양 파일에서 이름 없이 초기화하고, 다른 컨텍스트로 다시 연다\n\n## 행동\n프로젝트 이름과 만든 시각을 쓰고 다시 열어 읽는다\n\n## 기대 결과\n- 체크포인트 없이 초기화가 성공\n- 사양 파일에 project.name 이 루트 폴더 이름\n- project.created_at 이 0 이 아닌 시각\n- 이름을 주어 다시 초기화하면 그 이름\n
+body	O	c95cb14b	## 진술\nkiotty-spec 을 모르는 협업자가 설치 없이 웹 브라우저에서 프로젝트의 사양 기록(목적 · 단계, 진행 상황, 항목, 추적 관계, 변경 요청)을 본다. 뷰어는 서버 없는 정적 웹 페이지이고, 사양 파일 해석은 라이브러리를 그대로 써서 명령줄 도구와 같은 결과를 낸다. 보기만 하며 사양 기록을 바꾸지 않는다. 쓰기는 지금처럼 명령줄 도구로 한다.\n\n## 근거 시나리오\n1. 개발자가 공개 git 저장소의 태그를 담은 뷰어 링크를 협업자에게 보낸다.\n2. 협업자는 Windows 나 macOS 의 크롬 · 엣지 · 사파리로 링크를 연다. 설치하거나 저장소를 받지 않는다.\n3. 협업자는 진행 상황을 보고, 요구사항 표에서 항목을 골라 본문과 관련 설계 · 테스트를 따라간다.\n\n## 인수 조건\n- 전제 조건: 공개 저장소의 태그에 사양 파일이 있다 / 행동: 아무것도 설치하지 않은 PC 의 브라우저로 그 태그를 담은 뷰어 링크를 연다 / 기대 결과: 진행 상황과 항목 표가 보이고, 명령줄 도구로 같은 태그를 조회한 결과와 항목 수 · 제목 · 태그가 같다\n- 전제 조건: 뷰어로 사양 파일을 열었다 / 행동: 모든 화면을 둘러본다 / 기대 결과: 사양 파일을 고치는 방법이 화면에 없고 저장소에 아무것도 쓰지 않는다
 body	O	ca04e31c	## 정의\n```c\ntypedef struct KiottySpecPosition {\n    KiottySpecCheckpointHandle current;\n    uint64_t                   pending_writes;\n    uint64_t                   open_change_requests;\n    KiottySpecStep             step;\n    KiottySpecCheckpointState  state;\n    KiottySpecStep             next_step;\n    uint32_t                   reserved;\n} KiottySpecPosition;\n```\n\n## 의미\n현재 위치\n
 body	O	cbb5a614	## 수칙\n2. 보안\n
+body	O	cbccab4b	## 진술\n협업자는 항목 하나에서 그 항목이 가리키는 항목과 그 항목을 가리키는 항목을 관계 이름과 함께 보고, 눌러서 따라간다. 요구사항에서 설계 · 테스트 계획 · 테스트 결과 · 검사 결과까지 이어지는 영향 항목도 본다. 항목 ID 를 담은 링크는 그 항목을 바로 연다.\n\n## 근거 시나리오\nQA 담당자가 요구사항 하나를 열어 그것을 검증하는 시스템 테스트 계획과 결과를 따라간다.\n\n## 인수 조건\n- 전제 조건: 관계가 위 · 아래로 있는 항목 / 행동: 연다 / 기대 결과: 나가는 관계와 들어오는 관계가 관계 이름별로 보이고, 명령줄 도구의 관계 목록과 같다\n- 전제 조건: 관계로 이어진 항목 / 행동: 상대 항목을 누른다 / 기대 결과: 그 항목이 열리고 브라우저 뒤로 가기로 돌아온다\n- 전제 조건: 요구사항 하나 / 행동: 영향 항목을 본다 / 기대 결과: 명령줄 도구의 영향 조회와 같은 항목이 보인다\n- 전제 조건: 항목 ID 를 담은 뷰어 링크 / 행동: 연다 / 기대 결과: 그 항목이 열린다. 없는 ID 면 없다고 알린다
 body	O	cc4f8228	결과: PASS\n근거: 수동 검토 (include/ src/ app/ tests/)\n판단: 이 프로젝트에서는 전용 개발 수칙 PRULE-011 가 이 수칙을 대체한다 (CR-017, 사용자 결정 2026-11-16). 검사는 P6.1 에 기록한다.\n
+body	O	cc7c0007	## 진술\n협업자는 공개 git 저장소와 그 버전(태그 · 브랜치 · commit)을 담은 링크 하나로 그 버전의 사양 파일을 연다. 사양 파일 위치를 따로 주지 않으면 저장소의 기본 위치(.kiotty/spec.kisp)를 연다. 링크는 그대로 다른 사람에게 보내도 같은 내용을 연다. 열 수 없으면 빈 화면 대신 이유를 보인다.\n\n## 근거 시나리오\n리뷰 요청이나 릴리스 공지에 태그를 담은 링크를 붙인다. 받는 사람은 링크만 누른다.\n\n## 인수 조건\n- 전제 조건: 공개 저장소의 태그에 사양 파일이 기본 위치에 있다 / 행동: 저장소와 태그만 담은 링크를 연다 / 기대 결과: 그 태그의 사양 파일이 열리고 화면에 저장소와 버전이 보인다\n- 전제 조건: 사양 파일이 기본 위치가 아닌 곳에 있다 / 행동: 파일 위치를 더한 링크를 연다 / 기대 결과: 그 파일이 열린다\n- 전제 조건: 없는 저장소 · 없는 버전 · 없는 파일, 또는 비공개 저장소 / 행동: 링크를 연다 / 기대 결과: 무엇을 찾지 못했는지 알리고, 로컬 파일로 여는 방법을 안내한다\n- 전제 조건: 사양 파일 형식이 아닌 파일, 또는 이 뷰어가 모르는 형식 버전 / 행동: 링크로 연다 / 기대 결과: 열지 않고 형식이 다르다고 알린다\n- 전제 조건: 저장소를 담지 않은 링크 / 행동: 연다 / 기대 결과: 저장소 링크 입력과 로컬 파일 열기를 안내한다
 body	O	cd23d5c3	## 대상\ntests/api/api_test.cpp\n\n## 전제 조건\n라이브러리 전체를 링크하고 임시 폴더의 .kiotty/spec.kisp 를 C 함수로만 연다. 앞 테스트의 기록 위에 다음 테스트가 이어진다\n\n## 행동\n실행 파일을 돌린다\n\n## 기대 결과\n모든 테스트가 PASS 이고 마지막 줄이 "0 failed", 종료 코드 0\n
 body	O	cd2da8cb	## 진술\n사양 파일의 첫 줄에는 형식 버전과 모델 버전이 있다. 버전이 다르거나 사양 파일이 아닌 파일, 줄이 깨진 파일은 이유와 줄 번호를 알려 주며 열지 않는다. 단, 모델 버전이 바로 이전(모델 1)인 파일은 지금 모델에 종류 · 태그 값 · 관계를 덧붙이기만 한 차이라서 그대로 열고, 다음 쓰기에서 첫 줄을 지금 모델 버전으로 쓴다. 기존 줄은 바뀌지 않는다. 지금보다 높은 모델 버전은 열지 않는다.\n\n## 근거 시나리오\n사용자가 옛 형식의 파일이나 다른 파일을 잘못 연다. 기록이 엉뚱하게 바뀌기 전에 거부되고, 옮기기 도구를 쓰라는 안내를 받는다.\n\n## 인수 조건\n- 전제 조건: 첫 줄의 형식 버전이 다른 파일 / 행동: 연다 / 기대 결과: 형식이나 모델 버전이 다르다는 이유로 거부\n- 전제 조건: 첫 줄이 모델 1 인 파일 / 행동: 열고 항목 하나를 고친다 / 기대 결과: 열리고, 첫 줄은 지금 모델 버전이 되고 다른 기존 줄은 그대로\n- 전제 조건: 첫 줄의 모델 버전이 지금보다 높은 파일 / 행동: 연다 / 기대 결과: 모델 버전이 다르다는 이유로 거부\n- 전제 조건: 모델에 없는 태그 이름이 적힌 줄 / 행동: 연다 / 기대 결과: 그 줄 번호와 태그 이름으로 거부\n- 전제 조건: 잘못된 이스케이프가 있는 줄 / 행동: 연다 / 기대 결과: 그 줄 번호로 거부\n
 body	O	cd2e6aa6	## 대상\ntests/core/core_test.cpp 의 testResultReference\n\n## 전제 조건\ncore/ 헤더와 kiotty_text_diff.cpp 만 링크한 실행 파일. 파일 · 사양 파일을 쓰지 않는다\n\n## 행동\ntestResultReference 를 실행한다\n\n## 기대 결과\n- reference success points to target\n- reference failure is null\n
