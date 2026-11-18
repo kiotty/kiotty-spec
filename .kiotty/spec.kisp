@@ -828,6 +828,7 @@ item	O	decf7ab9	UI-173
 item	O	def6c251	UT-001
 item	O	dfaa72c4	UI-093
 item	O	e02a9a8e	CIR-034
+item	O	e0d507df	E2ER-021
 item	O	e0dcdcbc	UT-067
 item	O	e10971b0	E2ER-015
 item	O	e21c507d	STR-021
@@ -2018,6 +2019,7 @@ item_version	O	def6c251	41	unit_test_plan	-	core 단위 테스트 (kiotty_core_t
 item_version	O	dfaa72c4	41	external_interface	a415fab7	KiottySpecItemHandle	항목 풀 핸들 (generation << 32 | index)	4552c271b4dfdd5d
 item_version	O	e02a9a8e	41	code_inspection_result	-	4.2 한 함수는 한 추상 수준이다.	PASS	6597e477fe7f0a03
 item_version	O	e02a9a8e	83	code_inspection_result	-	4.2 한 함수는 한 추상 수준이다.	PASS	0035c2806140209b
+item_version	O	e0d507df	97	e2e_test_result	-	브라우저 뷰어	tests/viewer/e2e/viewer_e2e.mjs, v0.3.1 배포본 + 작업 트리, 크롬 · 엣지	be151d8226be028d
 item_version	O	e0dcdcbc	41	unit_test_plan	cd23d5c3	unmet conditions (testUnmetConditions)		4c915507e0825c1d
 item_version	O	e10971b0	41	e2e_test_result	-	핸들과 입력 값	kiotty_e2e_test, 965b26d Debug	-
 item_version	O	e10971b0	73	e2e_test_result	-	핸들과 입력 값	kiotty_e2e_test, c6d5d85 + 작업 트리 (CR-018), Windows Debug	20119dbc6d33cb78
@@ -3114,6 +3116,7 @@ tag	O	c0086c33	구현 상태	92	구현 완료
 tag	O	c0fc975e	출처	86	사용자 피드백
 tag	O	c0fc975e	상태	86	열림
 tag	O	c0fc975e	상태	87	반영 중
+tag	O	c0fc975e	상태	97	완료
 tag	O	c0fc975e	진입 단계	86	Step 2
 tag	O	c148dea9	구현 상태	90	미구현
 tag	O	c148dea9	구현 상태	92	구현 완료
@@ -3260,6 +3263,7 @@ tag	O	def6c251	구현 상태	41	구현 완료
 tag	O	dfaa72c4	인터페이스 종류	41	C 타입
 tag	O	e02a9a8e	결과	41	PASS
 tag	O	e02a9a8e	결과	83	PASS
+tag	O	e0d507df	결과	97	PASS
 tag	O	e0dcdcbc	구현 상태	41	구현 완료
 tag	O	e10971b0	결과	41	PASS
 tag	O	e10971b0	결과	73	PASS
@@ -5159,6 +5163,7 @@ relation	O	de592f6c	external_interface	관련 요구사항	b9f7ebe2	41
 relation	O	de7b0193	e2e_test_plan	검증 외부 인터페이스	3eda8983	41
 relation	O	decf7ab9	external_interface	관련 요구사항	6d8b54f7	88
 relation	O	e02a9a8e	code_inspection_result	검사 개발 수칙	81639d02	41
+relation	O	e0d507df	e2e_test_result	대상 E2E 테스트	7adc6a16	97
 relation	O	e0dcdcbc	unit_test_plan	검증 설계 사항	46908f11	41
 relation	O	e0dcdcbc	unit_test_plan	검증 설계 사항	94ce118e	41
 relation	O	e0dcdcbc	unit_test_plan	검증 설계 사항	ac9f5341	41
@@ -6172,6 +6177,7 @@ body	O	decf7ab9	## 목적\n항목을 종류별 표로 보고 태그 · 글자로
 body	O	def6c251	## 대상\ntests/core/core_test.cpp\n\n## 전제 조건\ncore/ 헤더와 kiotty_text_diff.cpp 만 링크한 실행 파일. 파일 · 사양 파일을 쓰지 않는다\n\n## 행동\n실행 파일을 돌린다\n\n## 기대 결과\n모든 테스트가 PASS 이고 마지막 줄이 "0 failed", 종료 코드 0\n
 body	O	dfaa72c4	## 정의\n```c\ntypedef uint64_t KiottySpecItemHandle;        /* generation << 32 | index    */\n```\n\n## 의미\n항목 풀 핸들 (generation << 32 | index)\n
 body	O	e02a9a8e	결과: PASS\n근거: 수동 검토 (include/ src/ app/ tests/)\n판단: 이 프로젝트에서는 전용 개발 수칙 PRULE-010 가 이 수칙을 대체한다 (CR-017, 사용자 결정 2026-11-16). 검사는 P4.2 에 기록한다.\n
+body	O	e0d507df	## 실행 명령\n`KIOTTY_E2E_TAG=v0.3.1 node tests/viewer/e2e/viewer_e2e.mjs all` (Windows, node 26.13, ks 는 PATH, viewer.wasm 은 temp/build-wasm). 배포본은 https://kiotty.github.io/kiotty-spec/ (v0.3.1 태그로 배포). 수동: `node tests/viewer/e2e/viewer_e2e.mjs chrome --manual`.\n\n## 실패 내용\n없음. 크롬 157.0.8103.79 · 엣지 145.0.3800.58 에서 확인 38 개 모두 PASS, 마지막 줄 "0 failed" (2026-11-19, CP-0097, CR-019). 390 px 화면 캡처는 temp/viewer-e2e/shots.\n- 7: headless 에서는 새로 고친 뒤 권한이 prompt 로 돌아가 "다시 열기: spec.kisp" 단추가 보였다 (DevTools 에 파일 권한을 주는 명령이 없어 권한 창은 누르지 못함). 창을 띄운 수동 실행 (크롬) 에서는 권한이 남아 있어 단추 없이 바로 다시 열렸다. 권한 창에서 "허용" 을 누르는 길은 이번에 지나지 않았다.\n- 실행 중 찾아 고친 것 (7314a62): 브라우저가 막는 위치 (크롬의 AppData 아래) 의 파일을 끌어 놓으면 영어 오류로 열지 못하던 것 → File 스냅숏으로 열고 자동 갱신 안 됨 안내. 프로젝트 사이트의 /favicon.ico 404 콘솔 오류 → favicon.svg (v0.3.1 로 다시 배포).\n
 body	O	e0dcdcbc	## 대상\ntests/api/api_test.cpp 의 testUnmetConditions\n\n## 전제 조건\n라이브러리 전체를 링크한다. 테스트가 임시 폴더에 자기 사양 파일을 따로 만들어 C 함수로만 연다\n\n## 행동\ntestUnmetConditions 를 실행한다\n\n## 기대 결과\n- open unmet project\n- no checkpoint yet\n- unmet complete\n- completion error\n- one unmet condition\n- unmet condition row\n- unmet cursor type\n- close unmet cursor\n- null unmet page\n- conditions met\n- complete after fix\n- done rejects writes\n- null draft\n
 body	O	e10971b0	## 실행 명령\n`cmake --build build --config Debug` 뒤 `build/Debug/kiotty_e2e_test.exe`\n\n## 실패 내용\n없음. E2E-015 PASS, 마지막 줄 "0 failed" (2026-11-17, CP-0085, CR-017 회귀).\n
 body	O	e21c507d	## 실행 명령\n`cmake --build build --config Debug` 뒤 `build/Debug/kiotty_system_test.exe`\n\n## 실패 내용\n없음. ST-021 PASS, 마지막 줄 "0 failed" (2026-11-17, CP-0082, CR-017 회귀).\n
