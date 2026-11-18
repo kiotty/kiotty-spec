@@ -63,7 +63,7 @@ const pointerExempt = (f) => isCore(f) || isBackend(f) || isAdapter(f) || isPubl
 // Private rules (ks item list --kind private_rule): the CLI may allocate (1.1) with standard containers (1.6)
 // whose sizes are not fixed (3.4); raw pointers are allowed where the CLI crosses the C ABI (1.10).
 const allocationExempt = (f) => isCli(f);
-const C_ABI_LINE = /\bKiottySpec(?:_\w+|[A-Z]\w*)|\b(?:std::)?(?:fwrite|fread|fputs|fflush|fopen|fclose|strtoul|strtoull|strtol)\s*\(|\b(?:_dupenv_s|_wdupenv_s|free|MultiByteToWideChar|WideCharToMultiByte|GetCommandLineW|CommandLineToArgvW|LocalFree|SetConsoleOutputCP|GetStdHandle|GetConsoleMode|SetConsoleMode)\s*\(/;
+const C_ABI_LINE = /\bKiotty(?:Spec|Viewer)(?:_\w+|[A-Z]\w*)|\b(?:std::)?(?:fwrite|fread|fputs|fflush|fopen|fclose|strtoul|strtoull|strtol)\s*\(|\b(?:_dupenv_s|_wdupenv_s|free|MultiByteToWideChar|WideCharToMultiByte|GetCommandLineW|CommandLineToArgvW|LocalFree|SetConsoleOutputCP|GetStdHandle|GetConsoleMode|SetConsoleMode)\s*\(/;
 const cAbiBoundary = (f, line) => isCli(f) && C_ABI_LINE.test(line);
 
 // ---------------------------------------------------------------- lexing
@@ -571,7 +571,7 @@ function checkFile(file) {
     const isCtor = fn.cls ? fn.bare === fn.cls.name : fn.name.split('::').length > 1 && fn.name.split('::').slice(-2)[0] === fn.bare;
     const isDtor = fn.bare.startsWith('~');
     const isOperator = fn.bare.startsWith('operator') || /\boperator\s+[\w:\s]*$/.test(fn.prefix || '');
-    const isCApi = /^KiottySpec_/.test(fn.bare) || fn.bare === 'main';
+    const isCApi = /^Kiotty(?:Spec|Viewer)_/.test(fn.bare) || fn.bare === 'main';
     // 1.8 recursion
     if (!isCtor && !isOperator && new RegExp(`(^|[^\\w.>:])${fn.bare}\\s*\\(`).test(bodyText)) report('1.8', rel, fn.headerLine, `function '${fn.name}' calls itself`);
     // 4.5 / 4.18 function names
@@ -869,6 +869,7 @@ function layerOf(rel) {
   const c = /^app\/cli\/src\/(core|di|i18n|presentation|domain|datalayer|infra)\//.exec(rel);
   if (c) return 'cli/' + c[1];
   if (rel === 'app/cli/src/main.cpp') return 'cli/main';
+  if (/^app\/viewer\/wasm\/[^/]+$/.test(rel)) return 'viewer/wasm';
   return null;
 }
 const ALLOWED = {
@@ -891,6 +892,8 @@ const ALLOWED = {
   'cli/presentation': ['cli/core', 'cli/domain', 'cli/i18n', 'cli/infra', 'cli/presentation', 'interface'],
   'cli/di': ['cli/core', 'cli/di', 'cli/domain', 'cli/datalayer', 'cli/i18n', 'cli/infra', 'cli/presentation', 'interface'],
   'cli/main': ['cli/core', 'cli/di', 'cli/domain', 'cli/datalayer', 'cli/i18n', 'cli/infra', 'cli/presentation', 'interface'],
+  // The viewer bridge is the browser viewer's C boundary over the library C interface (CR-019, DSN-117).
+  'viewer/wasm': ['viewer/wasm', 'interface'],
 };
 for (const f of files) {
   const layer = layerOf(f.rel);

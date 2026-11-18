@@ -308,6 +308,12 @@ void st003(const fs::path& root)
 // 두 브랜치가 서로 다른 항목을 더한 뒤 병합한다.
 void st004Merge(const fs::path& root)
 {
+#ifdef __EMSCRIPTEN__
+    // wasm32 (CR-019): git 은 호스트에서 돌고 MEMFS 를 보지 못한다. 네이티브 빌드가 검사한다.
+    (void)root;
+    std::printf("  SKIP: git cannot reach the wasm file system\n");
+    return;
+#endif
     const fs::path repository = root / "repository";
     {
         Spec spec(repository);

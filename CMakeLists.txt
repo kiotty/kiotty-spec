@@ -13,6 +13,11 @@ if(MSVC)
     string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
+# wasm32 (emscripten): 컨텍스트 하나가 기본 설정으로 16 MiB 를 넘으므로 메모리를 늘릴 수 있게 한다 (CR-019)
+if(EMSCRIPTEN)
+    add_link_options(-sALLOW_MEMORY_GROWTH=1)
+endif()
+
 function(kiotty_warnings target)
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /utf-8 /permissive- /Zc:__cplusplus /we4062 /w14365 /w14388 /w14018 /sdl /GS /GR-)
@@ -83,6 +88,17 @@ target_link_libraries(ks PRIVATE kiotty_cli)
 kiotty_warnings(ks)
 kiotty_no_exceptions(ks)
 kiotty_windows_definitions(ks)
+
+# ---------------------------------------------------------------------------
+# 브라우저 뷰어 다리 (CR-019): 정적 라이브러리는 언제나, viewer.js · viewer.wasm 은 emscripten 빌드에서만
+# ---------------------------------------------------------------------------
+add_subdirectory(app/viewer/wasm)
+
+add_executable(kiotty_viewer_bridge_test tests/viewer/viewer_bridge_test.cpp)
+target_link_libraries(kiotty_viewer_bridge_test PRIVATE kiotty_viewer_bridge)
+kiotty_warnings(kiotty_viewer_bridge_test)
+kiotty_no_exceptions(kiotty_viewer_bridge_test)
+kiotty_windows_definitions(kiotty_viewer_bridge_test)
 
 # ---------------------------------------------------------------------------
 # core 단위 테스트: 개발수칙 0.1 에 따라 C++17 로 빌드한다.
@@ -196,7 +212,8 @@ if(EXISTS ${KIOTTY_INSTALL_FILE})
     file(STRINGS ${KIOTTY_INSTALL_FILE} KIOTTY_INSTALL_LINE REGEX "^[ \t]*INSTALL_PATH[ \t]*=" LIMIT_COUNT 1)
     string(REGEX REPLACE "^[ \t]*INSTALL_PATH[ \t]*=[ \t]*" "" KIOTTY_INSTALL_VALUE "${KIOTTY_INSTALL_LINE}")
     string(STRIP "${KIOTTY_INSTALL_VALUE}" KIOTTY_INSTALL_VALUE)
-    if(KIOTTY_INSTALL_VALUE)
+    # 다른 운영체제의 경로 (WSL 에서 본 C:\...) 는 무시한다
+    if(KIOTTY_INSTALL_VALUE AND IS_ABSOLUTE "${KIOTTY_INSTALL_VALUE}")
         file(TO_CMAKE_PATH "${KIOTTY_INSTALL_VALUE}" KIOTTY_INSTALL_DIR)
     endif()
 endif()

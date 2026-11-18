@@ -37,3 +37,39 @@ jobs:
           echo "::group::kiotty_ks_scenario_test"
           "$bin/kiotty_ks_scenario_test$ext" "$bin/ks$ext"
           echo "::endgroup::"
+          echo "::group::kiotty_viewer_bridge_test"
+          "$bin/kiotty_viewer_bridge_test$ext"
+          echo "::endgroup::"
+
+  # wasm32 (CR-019, DSN-127): 라이브러리 · 뷰어 다리 · 테스트를 emscripten 으로 빌드하고 Node.js 로 돌린다. 경고는 오류다.
+  wasm32:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 7.0.0
+          actions-cache-folder: emsdk-cache
+
+      - name: Configure
+        run: emcmake cmake -S . -B build-wasm -DCMAKE_BUILD_TYPE=Release -DKIOTTY_WARNINGS_AS_ERRORS=ON
+
+      - name: Build
+        run: cmake --build build-wasm --parallel
+
+      - name: Test
+        run: |
+          for test in core datasource cursor_pool model cli api query rule_sync system e2e viewer_bridge; do
+            echo "::group::kiotty_${test}_test"
+            node "build-wasm/kiotty_${test}_test.js"
+            echo "::endgroup::"
+          done
+
+      - name: Keep viewer.wasm
+        uses: actions/upload-artifact@v4
+        with:
+          name: viewer-wasm
+          path: |
+            build-wasm/app/viewer/wasm/viewer.js
+            build-wasm/app/viewer/wasm/viewer.wasm
