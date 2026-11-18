@@ -10,7 +10,7 @@ const wasmSpec = createWasmSpec(async () => {
   return createKiottyViewer();
 });
 const specState = createSpecState({ wasmSpec, githubSource: createGithubSource() });
-const app = createApp({ root: document.getElementById('app'), specState, location: window.location, history: window.history });
+const app = createApp({ root: document.getElementById('app'), specState, location: window.location, history: window.history, document });
 
 specState.subscribe(() => app.render());
 window.addEventListener('hashchange', () => app.render());

@@ -84,7 +84,6 @@ export const TEXT = {
   retry: '다시 시도',
   unsupported: '이 브라우저에서는 열 수 없습니다',
   supported: 'Windows · macOS 의 크롬 · 엣지 · 사파리 최신 두 주 버전에서 열립니다.',
-  notReady: '이 화면은 아직 준비 중입니다.',
   localHint: '비공개 저장소라면 아래에서 로컬 파일로 여세요.',
 };
 

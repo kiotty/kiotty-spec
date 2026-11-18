@@ -2,17 +2,61 @@
 
 import { buildOverview } from '../viewModel/overview.js';
 import { buildProgress } from '../viewModel/progress.js';
+import { buildItems, toggleTag } from '../viewModel/items.js';
+import { buildBoard, buildItem } from '../viewModel/changes.js';
+import { parse, render as renderMarkdown } from '../../core/markdown.js';
 import { formatLink, isRepoName } from '../../datalayer/datasource/github_source.js';
 import { TEXT } from '../../i18n/ko.js';
-import { parseRoute } from './router.js';
+import { formatItemRoute, formatItemsRoute, parseRoute } from './router.js';
 import { renderShell } from './shell.js';
-import { renderNotReady, renderOpen, renderOverview, renderProgress, renderUnsupported } from './screens.js';
+import { renderOpen, renderOverview, renderProgress, renderUnsupported } from './screens.js';
+import { renderChanges, renderItem, renderItems, renderMissingItem, renderUnknownKind } from './item_screens.js';
 
-export function createApp({ root, specState, location, history }) {
-  const ui = { stepFilter: 0, lastKind: 'requirement', form: { repo: '', ref: '', path: '' } };
+export function createApp({ root, specState, location, history, document }) {
+  const ui = {
+    stepFilter: 0,
+    lastKind: 'requirement',
+    form: { repo: '', ref: '', path: '' },
+    expanded: new Set(),      // 항목 표에서 펼친 줄 (다시 읽어도 남는다)
+    moreColumns: new Set(),   // 보드에서 더 보기를 누른 열
+    bodies: new Map(),        // 이번 그리기에 채울 본문 (data-md 키 → 글)
+  };
 
   function sourceName(state) {
     return state.source?.type === 'repo' ? state.source.repo : state.source?.name;
+  }
+
+  function query(request) {
+    try {
+      return specState.query(request);
+    } catch (error) {
+      if (error.status === 'NOT_FOUND') return null;
+      throw error;
+    }
+  }
+
+  function kindsOf() {
+    return query('overview').kinds;
+  }
+
+  function renderItemsScreen(route) {
+    const answer = query(`items:${route.kind}`);
+    if (!answer) return renderUnknownKind(route.kind);
+    ui.lastKind = route.kind;
+    const view = buildItems(answer, route, kindsOf());
+    for (const { item } of view.rows) {
+      if (ui.expanded.has(item.id)) ui.bodies.set(item.id, query(`item:${item.id}`)?.body ?? '');
+    }
+    return renderItems(view, ui);
+  }
+
+  function renderItemScreen(route) {
+    const answer = query(`item:${route.id}`);
+    if (!answer) return renderMissingItem(route.id, ui.lastKind);
+    const view = buildItem(answer);
+    ui.bodies.set(view.item.id, view.body);
+    const kindName = kindsOf().find((k) => k.kind === view.item.kind)?.name ?? view.item.kind;
+    return renderItem(view, kindName);
   }
 
   function renderScreen(state, route) {
@@ -22,20 +66,44 @@ export function createApp({ root, specState, location, history }) {
       return renderOpen({ openError: state.openError, form: ui.form });
     }
     if (!isOpen) return '';
-    if (route.screen === 'overview') {
-      return renderOverview(buildOverview(specState.query('overview'), sourceName(state)));
+    switch (route.screen) {
+      case 'overview': return renderOverview(buildOverview(query('overview'), sourceName(state)));
+      case 'items': return renderItemsScreen(route);
+      case 'item': return renderItemScreen(route);
+      case 'changes': return renderChanges(buildBoard(query('changes'), { expanded: ui.moreColumns }));
+      default: return renderProgress(buildProgress(query('progress'), ui), ui);
     }
-    if (route.screen === 'progress') {
-      return renderProgress(buildProgress(specState.query('progress'), ui), ui);
+  }
+
+  function fillBodies() {
+    for (const box of root.querySelectorAll('[data-md]')) {
+      const text = ui.bodies.get(box.dataset.md) ?? '';
+      if (text) box.appendChild(renderMarkdown(parse(text), document, { itemHref: formatItemRoute }));
+      else box.innerHTML = '<p class="muted">본문 없음</p>';
     }
-    if (route.screen === 'items') ui.lastKind = route.kind;
-    return renderNotReady();
+    ui.bodies.clear();
   }
 
   function render() {
     const state = specState.get();
     const route = parseRoute(location.hash);
-    root.innerHTML = renderShell({ state, screen: route.screen, lastKind: ui.lastKind }) + renderScreen(state, route);
+    const focused = document.activeElement?.dataset?.act === 'q' ? document.activeElement.selectionStart : null;
+    ui.bodies.clear();
+    const screen = renderScreen(state, route);
+    root.innerHTML = renderShell({ state, screen: route.screen, lastKind: ui.lastKind }) + screen;
+    fillBodies();
+    if (focused !== null) {
+      const input = root.querySelector('[data-act="q"]');
+      input?.focus();
+      input?.setSelectionRange(focused, focused);
+    }
+  }
+
+  function goItems(patch) {
+    const route = parseRoute(location.hash);
+    const next = { tags: route.tags, q: route.q, ...patch };
+    history.replaceState(null, '', formatItemsRoute(route.kind, next));
+    render();
   }
 
   function submitOpen(form) {
@@ -53,16 +121,44 @@ export function createApp({ root, specState, location, history }) {
     event.preventDefault();
     submitOpen(event.target);
   });
+  root.addEventListener('input', (event) => {
+    if (event.target.dataset.act === 'q') goItems({ q: event.target.value });
+  });
   root.addEventListener('change', (event) => {
-    if (event.target.dataset.act !== 'cpstep') return;
-    ui.stepFilter = Number(event.target.value);
-    render();
+    const target = event.target;
+    if (target.dataset.act === 'cpstep') {
+      ui.stepFilter = Number(target.value);
+      render();
+    } else if (target.dataset.act === 'kind') {
+      location.hash = formatItemsRoute(target.value);
+    } else if (target.dataset.tagName !== undefined) {
+      const route = parseRoute(location.hash);
+      goItems({ tags: toggleTag(route.tags, target.dataset.tagName, target.dataset.tagValue) });
+      root.querySelector(`[data-filter="${CSS.escape(target.dataset.tagName)}"]`)?.setAttribute('open', '');
+    }
   });
   root.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-act="retry"]');
-    if (!button) return;
-    const link = specState.get().openError?.link;
-    if (link) specState.openRepo(link);
+    const retry = event.target.closest('[data-act="retry"]');
+    if (retry) {
+      const link = specState.get().openError?.link;
+      if (link) specState.openRepo(link);
+      return;
+    }
+    const more = event.target.closest('[data-more]');
+    if (more) {
+      const key = more.dataset.more;
+      if (ui.moreColumns.has(key)) ui.moreColumns.delete(key);
+      else ui.moreColumns.add(key);
+      render();
+      return;
+    }
+    const row = event.target.closest('tr[data-toggle]');
+    if (row && !event.target.closest('a')) {
+      const id = row.dataset.toggle;
+      if (ui.expanded.has(id)) ui.expanded.delete(id);
+      else ui.expanded.add(id);
+      render();
+    }
   });
 
   return {

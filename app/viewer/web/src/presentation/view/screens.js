@@ -92,6 +92,3 @@ export function renderProgress(view, { stepFilter }) {
 </main>`;
 }
 
-export function renderNotReady() {
-  return `<main class="page"><section class="card empty"><p class="muted">${TEXT.notReady}</p></section></main>`;
-}
