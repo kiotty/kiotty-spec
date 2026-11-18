@@ -1,6 +1,6 @@
 // FileWatcher (DSN-122, CR-019 D8): 열어 둔 로컬 파일이 바뀌면 알린다. 뷰어 나머지는 방식을 모른다.
 // 핸들 + FileSystemObserver → observer, 핸들만 → 1 초 poll, File 스냅숏 → manual (지켜보지 않음).
-// docs/viewer_observe_test.html 의 createFileWatcher 를 옮겼다.
+// 관찰 시험 페이지 (커밋 a992850 의 docs/viewer_observe_test.html) 의 createFileWatcher 를 옮겼다.
 
 export const POLL_MS = 1000;
 
