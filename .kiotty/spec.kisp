@@ -53,6 +53,7 @@ checkpoint	O	85	84	12	done	1794896045	CR-017 E2E 실행과 닫기
 checkpoint	O	86	85	1	done	1794903264	CR-019 GitHub Pages 정적 뷰어 (wasm32) 접수
 checkpoint	O	87	86	2	done	1794926665	CR-019 브라우저 뷰어 요구사항 (wasm32)
 checkpoint	O	88	87	3	done	1794927103	CR-019 브라우저 뷰어 화면과 링크
+checkpoint	O	89	88	4	running	1794982126	CR-019 브라우저 뷰어 설계
 TABLE	item	O/X	key	id
 item	O	00593058	CIR-020
 item	O	00ab1435	DSN-078
@@ -66,6 +67,7 @@ item	O	031f1260	UI-083
 item	O	035b54aa	RULE-042
 item	O	037113f8	UI-148
 item	O	04273797	UI-091
+item	O	04307cc4	DSN-114
 item	O	0456552c	CIR-063
 item	O	0479b5f6	UT-048
 item	O	04c783ea	RULE-073
@@ -391,6 +393,7 @@ item	O	678f93d6	E2ER-019
 item	O	67992e0e	E2ER-001
 item	O	67eccbba	MS-004
 item	O	683776c4	UI-120
+item	O	68c350a9	DSN-111
 item	O	68e15acf	DSN-036
 item	O	68e3329a	CIR-015
 item	O	6977847b	E2ER-017
@@ -487,6 +490,7 @@ item	O	8bbbc12f	E2ER-004
 item	O	8c188961	PRULE-009
 item	O	8c65cea7	UI-055
 item	O	8d1003b3	RULE-057
+item	O	8d44183d	DSN-112
 item	O	8d630cfc	RULE-062
 item	O	8e322475	CIR-086
 item	O	8e48b100	UI-062
@@ -494,6 +498,7 @@ item	O	8e60065e	CIR-043
 item	O	8e936061	UI-154
 item	O	8e986d2a	REQ-044
 item	O	8ed8a57c	STR-007
+item	O	8ee8458e	DSN-113
 item	O	8f1f3ac8	CIR-045
 item	O	8f5ae3ad	UT-046
 item	O	8fcdd7bb	E2E-002
@@ -565,6 +570,7 @@ item	O	a56b99fa	ST-028
 item	O	a5767c78	DSN-031
 item	O	a57995c2	STR-002
 item	O	a61edc40	DSN-091
+item	O	a63ed053	DSN-115
 item	O	a6563634	CIR-021
 item	O	a661a639	UT-050
 item	O	a6d9b5f8	DSN-017
@@ -861,6 +867,7 @@ item_version	O	031f1260	44	external_interface	fcda3877	KiottySpecItemKind	항목
 item_version	O	035b54aa	41	rule	969657b8	4.9 읽는 순서 = 호출 순서.	4.9 읽는 순서 = 호출 순서. 상위 흐름 함수가 위, 보조 함수가 아래.	c9c313d7e1deada5
 item_version	O	037113f8	41	external_interface	f0dc6547	KiottySpecTagDefinitionPage	태그 정의 페이지	5fab9ea10168fa16
 item_version	O	04273797	41	external_interface	fcda3877	KiottySpecTextChange	글자 조각의 종류	567cd9d5fb28f26e
+item_version	X	04307cc4	89	design	-	관찰 시험 (지울 항목)	뷰어 파일 관찰 시험용 — 수정	-
 item_version	O	0456552c	41	code_inspection_result	-	6.4 엣지 케이스는 흐름이 삼킨다.	PASS	590fa17022723afb
 item_version	O	0456552c	83	code_inspection_result	-	6.4 엣지 케이스는 흐름이 삼킨다.	PASS	0285a79182868d65
 item_version	O	0479b5f6	41	unit_test_plan	cd23d5c3	failed write rolls back (testFailedWriteRollsBack)	쓰기가 중간에 실패하면 그 쓰기 안에서 바뀐 것(ID 카운터)이 모두 되돌려진다.	7f91156671d4b4d3
@@ -1318,6 +1325,7 @@ item_version	O	67992e0e	73	e2e_test_result	-	컨텍스트와 사양 파일	kiott
 item_version	O	67992e0e	85	e2e_test_result	-	컨텍스트와 사양 파일	kiotty_e2e_test, ffcd270 + 작업 트리 (CR-017), Windows Debug	c56941672bee53c4
 item_version	O	67eccbba	47	milestone	-	R1 원격 상태 · 수칙 비교 · 내보내기	readRemote · writeRemote, 수칙 · 본문 차이 커서, exportRules	32e6f2bdaa6070e3
 item_version	O	683776c4	41	external_interface	f0dc6547	KiottySpecRelationDiffPage	관계 변화 페이지	02843b6163b32a28
+item_version	X	68c350a9	89	design	-	관찰 시험 (지울 항목)	뷰어 파일 관찰 시험용 — 수정	-
 item_version	O	68e15acf	41	design	-	text (core/kiotty_text.h)	지금 시각(epoch 초).	9d9779f0522ac8a6
 item_version	O	68e3329a	41	code_inspection_result	-	2.1 신뢰 경계 밖에서 온 값은 parse* 함수 하나를 지나야 내부로 들어온다.	PASS	df41a0e6a5129bf8
 item_version	O	68e3329a	58	code_inspection_result	-	2.1 신뢰 경계 밖에서 온 값은 parse* 함수 하나를 지나야 내부로 들어온다.	PASS	8c26092f3cfc9781
@@ -1454,6 +1462,7 @@ item_version	O	8bbbc12f	85	e2e_test_result	-	태그	kiotty_e2e_test, ffcd270 + �
 item_version	O	8c188961	75	private_rule	-	3.2 포인터로 연결된 자료구조는 쓰지 않는다 (CLI 는 std::map)	공통 수칙 3.2 의 프로젝트 판. CLI 는 std::map 을 쓴다	bc74f5da2e694d8a
 item_version	O	8c65cea7	41	external_interface	3dd02f08	KiottySpec_resumeCheckpoint	가장 최근 체크포인트를 RUNNING 으로	14fa8f85a33ac12f
 item_version	O	8d1003b3	41	rule	291c4670	5.4 스트림(파일, 소켓, USB) 읽기·쓰기만 Span 출력 인자를 허용한다.		658e1d57ca5643e3
+item_version	X	8d44183d	89	design	-	관찰 시험 (지울 항목)	뷰어 파일 관찰 시험용 — 수정	-
 item_version	O	8d630cfc	41	rule	1753b045	6.3 한 흐름은 한 맥락만 다룬다.	6.3 한 흐름은 한 맥락만 다룬다. 여러 맥락이 필요하면 상위 맥락 함수가 조합한다.	66d913fa0b2f51a6
 item_version	O	8e322475	83	code_inspection_result	-	P6.1 작업 순서는 타입으로 강제한다 (C 경계 · 파일 정리 · 확정의 일부는 런타임 검사)	PASS	77821224d020378a
 item_version	O	8e48b100	41	external_interface	f1cd20c5	KiottySpec_readDecision	현재 결정 기록을 읽는다	a6f4e95fc8885e6d
@@ -1464,6 +1473,7 @@ item_version	O	8e986d2a	48	requirement	9f976785	받아 둔 수칙을 새 체크�
 item_version	O	8ed8a57c	41	system_test_result	-	단계 산출물을 항목으로 기록한다	kiotty_system_test, 965b26d Debug	-
 item_version	O	8ed8a57c	70	system_test_result	-	단계 산출물을 항목으로 기록한다	kiotty_system_test, c6d5d85 + 작업 트리 (CR-018), Windows Debug	12ef30e9749076c0
 item_version	O	8ed8a57c	82	system_test_result	-	단계 산출물을 항목으로 기록한다	kiotty_system_test, ffcd270 + 작업 트리 (CR-017), Windows Debug	0dffe2b9be3696d5
+item_version	X	8ee8458e	89	design	-	관찰 시험 (지울 항목)	뷰어 파일 관찰 시험용 — 수정	-
 item_version	O	8f1f3ac8	41	code_inspection_result	-	4.12 삼항 연산자는 값 선택 한 단만 쓴다.	PASS	18117a2283765842
 item_version	O	8f5ae3ad	41	unit_test_plan	cd23d5c3	given id and rename (testGivenIdAndRename)	ID 는 유일한 필드일 뿐이다. 관계 · 이력은 내부 키로 따라오므로 rename 뒤에도 그대로 이어진다.	af82d7e3811c120b
 item_version	O	8fcdd7bb	41	e2e_test_plan	-	이름 표	UI-002 이름 표 묶음을 C 프로그램으로 구동해 검증	e19babdcc8bc0dd9
@@ -1569,6 +1579,7 @@ item_version	O	a57995c2	41	system_test_result	-	사양 파일을 열고 처음�
 item_version	O	a57995c2	70	system_test_result	-	사양 파일을 열고 처음이면 만든다	kiotty_system_test, c6d5d85 + 작업 트리 (CR-018), Windows Debug	bd03d51a07c56157
 item_version	O	a57995c2	82	system_test_result	-	사양 파일을 열고 처음이면 만든다	kiotty_system_test, ffcd270 + 작업 트리 (CR-017), Windows Debug	62b083240f10bee2
 item_version	O	a61edc40	41	design	-	spec_fields (data/repository/spec_file/kiotty_spec_fields.h)	.kisp 한 줄의 필드를 키 · 순번 · 숫자 · 해시 · Kind · 글로 읽는다.	c5cf7568c29e92eb
+item_version	X	a63ed053	89	design	-	관찰 시험 (지울 항목)	뷰어 파일 관찰 시험용 — 수정	-
 item_version	O	a6563634	41	code_inspection_result	-	2.7 민감 데이터(키, 토큰, 환자 식별자)는 쓰고 나서 secureZero 로 지운다.	PASS	5c459ca9a5df024e
 item_version	O	a661a639	41	unit_test_plan	cd23d5c3	결정 기록 쓰기 · 읽기 · 지난 시점	결정 기록을 다시 쓰고 지금 · 지난 시점으로 읽는다	7a692f0389b50652
 item_version	O	a6d9b5f8	41	design	-	흐름 · 목록 질의와 페이지		46adf0027be2b3e1
