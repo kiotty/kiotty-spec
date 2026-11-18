@@ -66,6 +66,13 @@ jobs:
             echo "::endgroup::"
           done
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Viewer JS tests
+        run: KIOTTY_VIEWER_JS=build-wasm/app/viewer/wasm/viewer.js node --test "tests/viewer/web/*.test.mjs"
+
       - name: Keep viewer.wasm
         uses: actions/upload-artifact@v4
         with:
