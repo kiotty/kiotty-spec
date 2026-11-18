@@ -21,6 +21,15 @@ function fromHandle(handle) {
   };
 }
 
+async function isReadable(handle) {
+  try {
+    await handle.getFile();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function fromFile(file) {
   return {
     name: file.name,
@@ -52,18 +61,21 @@ export function createLocalSource({ win = globalThis, handleStore }) {
   }
 
   return {
-    // { source, isMany } 를 돌려준다. 파일이 없으면 null.
+    // { source, isMany, isBlocked } 를 돌려준다. 파일이 없으면 null.
+    // 브라우저가 막는 위치 (크롬의 AppData 등) 의 핸들은 읽지 못하므로 File 스냅숏으로 열고 isBlocked 를 알린다.
     async fromDrop(dataTransfer) {
       const items = [...(dataTransfer.items ?? [])].filter((i) => i.kind === 'file');
       if (items.length === 0) return null;
       const isMany = items.length > 1;
       const first = items[0];
+      const file = first.getAsFile();
       if (first.getAsFileSystemHandle) {
         const handle = await first.getAsFileSystemHandle();
-        if (handle?.kind === 'file') return { source: await remember(fromHandle(handle)), isMany };
+        const isFile = handle?.kind === 'file';
+        if (isFile && await isReadable(handle)) return { source: await remember(fromHandle(handle)), isMany, isBlocked: false };
+        if (isFile && file) return { source: fromFile(file), isMany, isBlocked: true };
       }
-      const file = first.getAsFile();
-      return file ? { source: fromFile(file), isMany } : null;
+      return file ? { source: fromFile(file), isMany, isBlocked: false } : null;
     },
 
     // { source, isBlocked } 를 돌려준다. 고르지 않으면 null.

@@ -62,6 +62,10 @@ test('local source pick and drop', async () => {
   ]);
   assert.equal(two.source.name, 'one.kisp', 'two files give first');
   assert.equal(two.isMany, true, 'and many');
+  const blocked2 = await drop([{ kind: 'file', getAsFileSystemHandle: async () => handle('b.kisp', { fails: true }), getAsFile: () => file('b.kisp') }]);
+  assert.equal(blocked2.source.file.name, 'b.kisp', 'unreadable handle in a blocked place falls back to the File');
+  assert.equal(blocked2.source.handle, undefined, 'and is not watched');
+  assert.equal(blocked2.isBlocked, true, 'and tells it');
   const plain = await drop([{ kind: 'file', getAsFile: () => file('p.kisp') }]);
   assert.equal(plain.source.file.name, 'p.kisp', 'drop without handle API gives File source');
   assert.equal(await drop([{ kind: 'string' }]), null, 'no file gives null');

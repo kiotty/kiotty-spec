@@ -89,6 +89,7 @@ export const TEXT = {
   reloadFailed: '다시 읽지 못했습니다',
   manyFiles: '파일 하나만 엽니다',
   blockedPick: '이 위치는 브라우저가 막습니다. 파일을 끌어 놓으면 자동 갱신됩니다',
+  blockedDrop: '이 위치는 브라우저가 막아 자동 갱신이 안 됩니다. 바뀌면 다시 끌어 놓으세요',
   lostHandle: '앞서 연 파일을 열 수 없습니다',
   notOpened: '열지 못했습니다',
   localPrivacy: '파일은 브라우저 안에서만 읽고 어디에도 보내지 않습니다.',

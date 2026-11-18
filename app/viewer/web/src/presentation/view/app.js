@@ -150,6 +150,11 @@ export function createApp({ root, specState, localSource, location, history, doc
     render();
   }
 
+  function dropNotice(result) {
+    if (result?.isBlocked) return { text: TEXT.blockedDrop };
+    return result?.isMany ? { text: TEXT.manyFiles } : null;
+  }
+
   async function pick() {
     const result = await localSource.pick();
     await openLocal(result, result?.isBlocked ? { text: TEXT.blockedPick } : null);
@@ -198,7 +203,7 @@ export function createApp({ root, specState, localSource, location, history, doc
     render,
     async openDropped(dataTransfer) {
       const result = await localSource.fromDrop(dataTransfer);
-      await openLocal(result, result?.isMany ? { text: TEXT.manyFiles } : null);
+      await openLocal(result, dropNotice(result));
     },
     async restoreLocal() {
       const result = await localSource.restore();
