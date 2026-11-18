@@ -26,9 +26,9 @@ struct RuleOrder {
     size_t remote {0};
 };
 
-static_assert(sizeof(RuleSide) == layoutSize(16, 12), "unexpected padding");
-static_assert(sizeof(RulePair) == layoutSize(16, 8), "unexpected padding");
-static_assert(sizeof(RuleOrder) == layoutSize(16, 8), "unexpected padding");
+static_assert(sizeof(RuleSide) == selectLayoutSize(16, 12), "unexpected padding");
+static_assert(sizeof(RulePair) == selectLayoutSize(16, 8), "unexpected padding");
+static_assert(sizeof(RuleOrder) == selectLayoutSize(16, 8), "unexpected padding");
 
 int compareOrder(RuleSide local, RuleSide remote, RuleOrder order);
 RuleOrder advanceOrder(RulePair pair, RuleOrder order, int compared);

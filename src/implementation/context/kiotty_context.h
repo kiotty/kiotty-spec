@@ -55,7 +55,7 @@ struct Configuration {
     size_t cursor_pool_rows {DEFAULT_MAX_CURSORS * DEFAULT_MAX_CURSOR_ROWS};
 };
 
-static_assert(sizeof(Configuration) == layoutSize(104, 52), "unexpected padding");
+static_assert(sizeof(Configuration) == selectLayoutSize(104, 52), "unexpected padding");
 
 class Context {
 public:

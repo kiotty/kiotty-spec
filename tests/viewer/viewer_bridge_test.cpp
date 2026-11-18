@@ -221,6 +221,24 @@ bool testChangesOutCount()
     return passed;
 }
 
+// 공통 수칙 2.10 의 다섯 입력을 요청 글로: 빈 글 (nullptr 포함), 최대 길이, 최대 길이 + 1, 잘못된 UTF-8.
+// C 문자열이라 중간 NUL 은 그 앞까지로 읽힌다 (뷰어의 router 가 NUL 을 넘기지 않는다).
+bool testRequestInputs()
+{
+    const std::string at_max(KIOTTY_SPEC_MAX_ID_LENGTH, 'A');
+    const std::string over_max(KIOTTY_SPEC_MAX_ID_LENGTH + 1, 'A');
+    bool passed = expectContains(KiottyViewer_query(nullptr), "\"status\":\"INVALID_ARGUMENT\"", "null request");
+    passed = expectContains(KiottyViewer_query(""), "\"status\":\"INVALID_ARGUMENT\"", "empty request") && passed;
+    passed = expectContains(KiottyViewer_query("item:"), "\"ok\":false", "empty id") && passed;
+    passed = expectContains(KiottyViewer_query(("item:" + at_max).c_str()), "\"ok\":false", "id at max length") && passed;
+    passed = expectContains(KiottyViewer_query(("item:" + over_max).c_str()), "\"ok\":false", "id over max length") && passed;
+    passed = expectContains(KiottyViewer_query(("items:" + over_max).c_str()), "\"status\":\"NOT_FOUND\"", "kind over max length") && passed;
+    passed = expectContains(KiottyViewer_query("item:ÿþ"), "\"ok\":false", "bad UTF-8 id") && passed;
+    passed = expectContains(KiottyViewer_open(nullptr), "\"status\":\"NOT_FOUND\"", "null path") && passed;
+    passed = expectContains(KiottyViewer_query("overview"), "\"ok\":true", "open file is kept") && passed;
+    return passed;
+}
+
 } // namespace
 
 int main()
@@ -244,6 +262,7 @@ int main()
         {"items by kind", testItemsByKind},
         {"item detail with relations", testItemDetail},
         {"changes with out count", testChangesOutCount},
+        {"request inputs", testRequestInputs},
     };
     int failed = 0;
     for (const auto& test : tests) {

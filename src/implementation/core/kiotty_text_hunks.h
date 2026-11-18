@@ -44,11 +44,11 @@ struct HunkCursor {
     size_t count {};
 };
 
-static_assert(sizeof(Points) == layoutSize(520, 516), "unexpected padding");
-static_assert(sizeof(SplitText) == layoutSize(536, 524), "unexpected padding");
-static_assert(sizeof(DiffTexts) == layoutSize(16, 8), "unexpected padding");
+static_assert(sizeof(Points) == selectLayoutSize(520, 516), "unexpected padding");
+static_assert(sizeof(SplitText) == selectLayoutSize(536, 524), "unexpected padding");
+static_assert(sizeof(DiffTexts) == selectLayoutSize(16, 8), "unexpected padding");
 static_assert(sizeof(Hunk) == 10, "unexpected padding");
-static_assert(sizeof(HunkCursor) == layoutSize(16, 8), "unexpected padding");
+static_assert(sizeof(HunkCursor) == selectLayoutSize(16, 8), "unexpected padding");
 
 inline size_t appendHunk(Span<Hunk> hunks, size_t count, Hunk hunk);
 inline size_t mergeShortEqualities(Span<Hunk> hunks, size_t count);

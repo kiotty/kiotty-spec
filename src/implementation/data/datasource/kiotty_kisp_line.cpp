@@ -23,7 +23,7 @@ struct FieldCursor {
     KiottySpecStatus status {KIOTTY_SPEC_STATUS_SUCCESS};
 };
 
-static_assert(sizeof(FieldCursor) == layoutSize(24, 12), "unexpected padding");
+static_assert(sizeof(FieldCursor) == selectLayoutSize(24, 12), "unexpected padding");
 
 constexpr EscapePair ESCAPE_PAIRS[] = {{'\t', 't'}, {'\n', 'n'}, {'\r', 'r'}, {'\\', '\\'}};
 

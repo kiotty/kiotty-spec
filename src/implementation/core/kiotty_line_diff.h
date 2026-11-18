@@ -24,7 +24,7 @@ struct LineWork {
     Span<uint16_t> starts {};
 };
 
-static_assert(sizeof(LineWork) == layoutSize(48, 24), "unexpected padding");
+static_assert(sizeof(LineWork) == selectLayoutSize(48, 24), "unexpected padding");
 
 Result<size_t, KiottySpecStatus> diffLines(Span<const char> before, Span<const char> after,
                                            const LineWork& work, Span<TextSegment> out);

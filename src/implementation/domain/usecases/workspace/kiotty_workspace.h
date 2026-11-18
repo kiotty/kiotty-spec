@@ -53,6 +53,6 @@ struct Workspace {
     }
 };
 
-static_assert(sizeof(Workspace) == layoutSize(64, 32), "unexpected padding");
+static_assert(sizeof(Workspace) == selectLayoutSize(64, 32), "unexpected padding");
 
 }

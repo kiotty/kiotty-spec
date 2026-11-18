@@ -47,7 +47,7 @@ struct CursorSlot {
     CursorKind kind {CursorKind::NONE};
 };
 
-static_assert(sizeof(CursorSlot) == layoutSize(24, 12), "unexpected padding");
+static_assert(sizeof(CursorSlot) == selectLayoutSize(24, 12), "unexpected padding");
 
 using CursorId = entity::CursorId;
 

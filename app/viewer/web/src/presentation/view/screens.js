@@ -1,8 +1,10 @@
 // 열기 · 개요 · 진행 화면 (UI-170, UI-171, UI-172). 모든 사양 글은 esc 를 거친다.
 
 import { esc, formatTime } from '../../core/html.js';
-import { describeOpenError, STEPS, TEXT } from '../../i18n/ko.js';
-import { DEFAULT_PATH } from '../../datalayer/datasource/github_source.js';
+import { format } from '../../core/format.js';
+import { COLUMNS, STEPS, TEXT } from '../../i18n/ko.js';
+import { describeOpenError } from '../viewModel/open_error.js';
+import { DEFAULT_PATH } from '../../domain/entity/link.js';
 import { formatItemRoute } from './router.js';
 
 function itemLink(id) {
@@ -48,7 +50,7 @@ export function renderOverview(view) {
   return `<main class="page">
   <section class="hero">
     <h1>${esc(view.title)}</h1>
-    <p class="muted">${TEXT.createdAt} ${formatTime(view.createdAt)} · ${TEXT.itemCount} ${view.itemCount} 개</p>
+    <p class="muted">${TEXT.createdAt} ${formatTime(view.createdAt)} · ${TEXT.itemCount} ${format(TEXT.countUnit, view.itemCount)}</p>
   </section>
   <div class="grid2">
     <section class="card"><h2>${TEXT.purpose}</h2><div class="pre">${esc(view.purpose)}</div></section>
@@ -58,8 +60,8 @@ export function renderOverview(view) {
     </section>
   </div>
   <section class="card"><h2>${TEXT.steps}</h2>
-    <table class="rt"><thead><tr><th>단계</th><th>이름</th><th>하는 일</th><th>항목</th></tr></thead><tbody>
-    ${view.steps.map((s) => `<tr><td data-l="단계">${s.step}</td><td data-l="이름"><b>${esc(s.name)}</b></td><td data-l="하는 일">${esc(s.does)}</td><td data-l="항목">${esc(s.kinds)}</td></tr>`).join('')}
+    <table class="rt"><thead><tr><th>${COLUMNS.step}</th><th>${COLUMNS.name}</th><th>${COLUMNS.does}</th><th>${COLUMNS.kinds}</th></tr></thead><tbody>
+    ${view.steps.map((s) => `<tr><td data-l="${COLUMNS.step}">${s.step}</td><td data-l="${COLUMNS.name}"><b>${esc(s.name)}</b></td><td data-l="${COLUMNS.does}">${esc(s.does)}</td><td data-l="${COLUMNS.kinds}">${esc(s.kinds)}</td></tr>`).join('')}
     </tbody></table>
   </section>
 </main>`;
@@ -73,14 +75,14 @@ export function renderProgress(view, { stepFilter }) {
   const chips = `<ol class="steps">${cur.chips.map((c) => `<li class="${c.mark}"><span>${c.step}</span>${esc(c.name)}</li>`).join('')}</ol>`;
   const unmet = view.unmet.length
     ? `<section class="card"><h2>${TEXT.unmetTitle} <span class="count-badge">${view.unmet.length}</span></h2>
-    <table class="rt"><thead><tr><th>ID</th><th>종류</th><th>제목</th><th>이유</th></tr></thead><tbody>
-    ${view.unmet.map((u) => `<tr><td data-l="ID">${itemLink(u.id)}</td><td data-l="종류">${esc(u.kind)}</td><td data-l="제목">${esc(u.title)}</td><td data-l="이유"><span class="warn">${esc(u.reason)}</span></td></tr>`).join('')}
+    <table class="rt"><thead><tr><th>${COLUMNS.id}</th><th>${COLUMNS.kind}</th><th>${COLUMNS.title}</th><th>${COLUMNS.reason}</th></tr></thead><tbody>
+    ${view.unmet.map((u) => `<tr><td data-l="${COLUMNS.id}">${itemLink(u.id)}</td><td data-l="${COLUMNS.kind}">${esc(u.kind)}</td><td data-l="${COLUMNS.title}">${esc(u.title)}</td><td data-l="${COLUMNS.reason}"><span class="warn">${esc(u.reason)}</span></td></tr>`).join('')}
     </tbody></table></section>`
     : '';
   const options = STEPS.map((s) => `<option value="${s.step}" ${stepFilter === s.step ? 'selected' : ''}>${s.step} ${esc(s.name)}</option>`).join('');
-  const rows = view.checkpoints.map((c) => `<tr><td data-l="CP"><b>${esc(c.checkpoint)}</b></td><td data-l="단계">${c.step} ${esc(c.stepName)}</td><td data-l="상태"><span class="pill state-${esc(c.state)}">${esc(c.stateName)}</span></td><td data-l="설명">${esc(c.description)}</td><td data-l="시각" class="nowrap">${formatTime(c.created_at)}</td></tr>`).join('');
+  const rows = view.checkpoints.map((c) => `<tr><td data-l="${COLUMNS.cp}"><b>${esc(c.checkpoint)}</b></td><td data-l="${COLUMNS.step}">${c.step} ${esc(c.stepName)}</td><td data-l="${COLUMNS.state}"><span class="pill state-${esc(c.state)}">${esc(c.stateName)}</span></td><td data-l="${COLUMNS.description}">${esc(c.description)}</td><td data-l="${COLUMNS.time}" class="nowrap">${formatTime(c.created_at)}</td></tr>`).join('');
   return `<main class="page">
-  <p class="hint">${esc(TEXT.firstHint).replace('개요', '<a href="#/overview">개요</a>')}</p>
+  <p class="hint">${esc(TEXT.firstHint).replace(TEXT.tabs.overview, `<a href="#/overview">${TEXT.tabs.overview}</a>`)}</p>
   <section class="card current">
     <div class="cprow"><h2>${esc(cur.checkpoint)}</h2><span class="pill">${cur.step} ${esc(cur.stepName)}</span><span class="pill state-${esc(cur.state)}">${esc(cur.stateName)}</span></div>
     <p>${esc(cur.description)}</p>
@@ -89,8 +91,8 @@ export function renderProgress(view, { stepFilter }) {
   </section>
   ${unmet}
   <section class="card"><div class="cprow"><h2>${TEXT.checkpointsTitle}</h2><span class="grow"></span>
-    <select data-act="cpstep" aria-label="단계 거르기"><option value="0">${TEXT.everyStep}</option>${options}</select></div>
-    <table class="rt"><thead><tr><th>CP</th><th>단계</th><th>상태</th><th>설명</th><th>시각</th></tr></thead><tbody>
+    <select data-act="cpstep" aria-label="${TEXT.stepFilter}"><option value="0">${TEXT.everyStep}</option>${options}</select></div>
+    <table class="rt"><thead><tr><th>${COLUMNS.cp}</th><th>${COLUMNS.step}</th><th>${COLUMNS.state}</th><th>${COLUMNS.description}</th><th>${COLUMNS.time}</th></tr></thead><tbody>
     ${rows || `<tr><td colspan="5" class="muted">${TEXT.noCheckpointInStep}</td></tr>`}
     </tbody></table></section>
 </main>`;

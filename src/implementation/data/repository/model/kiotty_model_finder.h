@@ -17,7 +17,7 @@ struct ModelTables {
     Span<const entity::TagName> bit_names {};
 };
 
-static_assert(sizeof(ModelTables) == layoutSize(64, 32), "unexpected padding");
+static_assert(sizeof(ModelTables) == selectLayoutSize(64, 32), "unexpected padding");
 
 const entity::Model& pickModel(Span<const entity::Model> models, entity::ItemKind kind);
 

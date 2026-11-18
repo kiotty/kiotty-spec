@@ -24,7 +24,7 @@ struct IdParts {
     uint32_t number {0};
 };
 
-static_assert(sizeof(IdParts) == layoutSize(24, 12), "unexpected padding");
+static_assert(sizeof(IdParts) == selectLayoutSize(24, 12), "unexpected padding");
 
 IdParts splitId(Span<const char> id);
 size_t collectKeys(Span<uint32_t> order, Span<const ItemVersion> versions);

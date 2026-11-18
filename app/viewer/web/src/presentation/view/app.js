@@ -5,7 +5,7 @@ import { buildProgress } from '../viewModel/progress.js';
 import { buildItems, toggleTag } from '../viewModel/items.js';
 import { buildBoard, buildItem } from '../viewModel/changes.js';
 import { parse, render as renderMarkdown } from '../../core/markdown.js';
-import { formatLink, isRepoName } from '../../datalayer/datasource/github_source.js';
+import { formatLink, isRepoName } from '../../domain/entity/link.js';
 import { TEXT } from '../../i18n/ko.js';
 import { formatItemRoute, formatItemsRoute, parseRoute } from './router.js';
 import { renderShell } from './shell.js';
@@ -80,7 +80,7 @@ export function createApp({ root, specState, localSource, location, history, doc
     for (const box of root.querySelectorAll('[data-md]')) {
       const text = ui.bodies.get(box.dataset.md) ?? '';
       if (text) box.appendChild(renderMarkdown(parse(text), document, { itemHref: formatItemRoute }));
-      else box.innerHTML = '<p class="muted">본문 없음</p>';
+      else box.innerHTML = `<p class="muted">${TEXT.noBody}</p>`;
     }
     ui.bodies.clear();
   }

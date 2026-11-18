@@ -66,9 +66,9 @@ struct RelationSource
     Cardinality cardinality {};
 };
 
-static_assert(sizeof(ModelSource) == layoutSize(40, 24), "unexpected padding");
-static_assert(sizeof(TagSource) == layoutSize(792, 400), "unexpected padding");
-static_assert(sizeof(RelationSource) == layoutSize(32, 20), "unexpected padding");
+static_assert(sizeof(ModelSource) == selectLayoutSize(40, 24), "unexpected padding");
+static_assert(sizeof(TagSource) == selectLayoutSize(792, 400), "unexpected padding");
+static_assert(sizeof(RelationSource) == selectLayoutSize(32, 20), "unexpected padding");
 
 const ModelSource MODEL_SOURCES[] = {
     {"변경 요청", "CR", ItemKind::CHANGE_REQUEST, Step::CHANGE_REQUEST_REPORTED},

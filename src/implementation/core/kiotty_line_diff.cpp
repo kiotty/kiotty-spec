@@ -30,9 +30,9 @@ struct LinePosition {
     size_t after {0};
 };
 
-static_assert(sizeof(Lines) == layoutSize(40, 20), "unexpected padding");
-static_assert(sizeof(LinePair) == layoutSize(16, 8), "unexpected padding");
-static_assert(sizeof(LinePosition) == layoutSize(16, 8), "unexpected padding");
+static_assert(sizeof(Lines) == selectLayoutSize(40, 20), "unexpected padding");
+static_assert(sizeof(LinePair) == selectLayoutSize(16, 8), "unexpected padding");
+static_assert(sizeof(LinePosition) == selectLayoutSize(16, 8), "unexpected padding");
 
 using LinesResult = Result<Lines, KiottySpecStatus>;
 

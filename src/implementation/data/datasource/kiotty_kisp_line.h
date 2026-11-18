@@ -18,7 +18,7 @@ struct KispFields
     size_t count {0};
 };
 
-static_assert(sizeof(KispFields) == layoutSize(168, 84), "unexpected padding");
+static_assert(sizeof(KispFields) == selectLayoutSize(168, 84), "unexpected padding");
 
 class KispLineDecoder
 {

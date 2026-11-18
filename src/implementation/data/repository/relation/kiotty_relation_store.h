@@ -34,7 +34,7 @@ struct RelationDependencies {
     ItemStore& items;
 };
 
-static_assert(sizeof(RelationDependencies) == layoutSize(16, 8), "unexpected padding");
+static_assert(sizeof(RelationDependencies) == selectLayoutSize(16, 8), "unexpected padding");
 
 class RelationWriter
 {

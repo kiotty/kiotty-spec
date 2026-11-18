@@ -1,9 +1,9 @@
-// github_source (DSN-120): 링크의 repo · ref · path 로 공개 저장소의 사양 파일을 받는다.
+// github_source (DSN-120): 링크의 repo · ref · path 로 공개 저장소의 사양 파일을 받는다. 링크 읽기 · 쓰기는 domain/entity/link.js.
 
-export const DEFAULT_PATH = '.kiotty/spec.kisp';
+import { isRepoName } from '../../domain/entity/link.js';
+
 const RAW = 'https://raw.githubusercontent.com';
 const API = 'https://api.github.com';
-const REPO_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 
 export class SourceError extends Error {
   constructor(code, link) {
@@ -12,29 +12,6 @@ export class SourceError extends Error {
     this.code = code;
     this.link = link;
   }
-}
-
-export function isRepoName(text) {
-  return REPO_PATTERN.test(text ?? '');
-}
-
-// search: location.search 꼴 ("?repo=a/b&ref=v1"). repo 가 없으면 null.
-export function parseLink(search) {
-  const params = new URLSearchParams(search ?? '');
-  const repo = (params.get('repo') ?? '').trim();
-  if (!repo) return null;
-  const ref = (params.get('ref') ?? '').trim();
-  const path = (params.get('path') ?? '').trim().replace(/^\/+/, '');
-  return { repo, ref: ref || undefined, path: path || DEFAULT_PATH };
-}
-
-// UI-170 의 열기: 입력값으로 링크의 search 부분을 만든다.
-export function formatLink({ repo, ref, path }) {
-  const params = new URLSearchParams();
-  params.set('repo', repo.trim());
-  if (ref && ref.trim()) params.set('ref', ref.trim());
-  if (path && path.trim() && path.trim() !== DEFAULT_PATH) params.set('path', path.trim());
-  return `?${params.toString()}`;
 }
 
 function encodePath(text) {
@@ -72,6 +49,7 @@ export function createGithubSource(fetchFn = globalThis.fetch.bind(globalThis)) 
 
   return {
     async fetchSpec(link) {
+      if (!isRepoName(link.repo)) throw new SourceError('REPO_NOT_FOUND', link);
       const ref = link.ref ?? await findDefaultBranch(link);
       const response = await get(`${RAW}/${link.repo}/${encodePath(ref)}/${encodePath(link.path)}`);
       if (!response) throw new SourceError('NETWORK', link);

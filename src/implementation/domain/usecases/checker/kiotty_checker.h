@@ -39,7 +39,7 @@ struct PairRule {
     TargetFilter filter {TargetFilter::ALL_TARGETS};
 };
 
-static_assert(sizeof(PairRule) == layoutSize(32, 24), "unexpected padding");
+static_assert(sizeof(PairRule) == selectLayoutSize(32, 24), "unexpected padding");
 
 class Checker
 {

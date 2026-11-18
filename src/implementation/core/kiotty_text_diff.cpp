@@ -21,7 +21,7 @@ struct CommonTable {
     size_t width {};
 };
 
-static_assert(sizeof(CommonTable) == layoutSize(24, 12), "unexpected padding");
+static_assert(sizeof(CommonTable) == selectLayoutSize(24, 12), "unexpected padding");
 
 enum class TraceStep : uint8_t { BOTH, BEFORE, AFTER };
 

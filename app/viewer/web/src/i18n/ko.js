@@ -96,23 +96,72 @@ export const TEXT = {
   unsupported: '이 브라우저에서는 열 수 없습니다',
   supported: 'Windows · macOS 의 크롬 · 엣지 · 사파리 최신 두 주 버전에서 열립니다.',
   localHint: '비공개 저장소라면 아래에서 로컬 파일로 여세요.',
+  defaultBranch: '기본 브랜치',
+  localFile: '로컬 파일',
+  kind: '종류',
+  search: '찾기',
+  searchPlaceholder: '제목 · 요약에서 찾기',
+  emptyKind: '이 종류의 항목이 없습니다',
+  noMatch: '맞는 항목이 없습니다',
+  clearFilter: '거르기 지우기',
+  detailLink: '상세 보기 →',
+  unknownKind: '없는 종류: {0}',
+  toRequirements: '요구사항 표로',
+  missingItem: '없는 항목: {0}',
+  toItems: '항목 표로',
+  none: '(없음)',
+  noBody: '본문 없음',
+  parent: '상위',
+  outOfChange: '영향 항목 (이 변경 요청이 가리키는 것)',
+  outOfItem: '이 항목이 가리키는 것',
+  intoItem: '이 항목을 가리키는 것',
+  impact: '영향 항목',
+  children: '하위 항목',
+  noChanges: '변경 요청이 없습니다',
+  moreCards: '{0} 개 더 보기',
+  fold: '접기',
+  countUnit: '{0} 개',
+  stepFilter: '단계 거르기',
 };
 
-// 열기 실패 문구 (UI-169 오류 표시). error 는 {code, repo, ref, path} 또는 SpecError.
-export function describeOpenError(error, link) {
-  const repo = link?.repo ?? '';
-  const ref = link?.ref ?? '기본 브랜치';
-  const path = link?.path ?? '';
-  switch (error.code) {
-    case 'REPO_NOT_FOUND': return { text: `저장소 ${repo} 을 찾지 못했습니다 (없거나 비공개)`, local: true };
-    case 'REF_NOT_FOUND': return { text: `버전 ${ref} 를 찾지 못했습니다`, local: true };
-    case 'PATH_NOT_FOUND': return { text: `${ref} 에 ${path} 가 없습니다`, local: true };
-    case 'NOT_FOUND': return { text: `${repo} @ ${ref} 의 ${path} 를 찾지 못했습니다`, local: true };
-    case 'NETWORK': return { text: '파일을 받지 못했습니다', retry: true };
-    case 'TOO_LARGE': return { text: '기록이 뷰어 용량보다 큽니다' };
-    case 'MODEL': return { text: '이 뷰어가 모르는 모델 버전입니다' };
-    case 'FORMAT': return { text: error.line ? `사양 파일 형식이 아닙니다 (${error.line} 번째 줄)` : '사양 파일 형식이 아닙니다' };
-    case 'UNSUPPORTED': return { text: TEXT.unsupported };
-    default: return { text: `열 수 없습니다: ${error.message ?? error.code}` };
-  }
-}
+// 표 머리글과 좁은 화면의 칸 이름.
+export const COLUMNS = {
+  id: 'ID',
+  title: '제목',
+  summary: '요약',
+  checkpoint: '체크포인트',
+  kind: '종류',
+  reason: '이유',
+  step: '단계',
+  name: '이름',
+  does: '하는 일',
+  kinds: '항목',
+  cp: 'CP',
+  state: '상태',
+  description: '설명',
+  time: '시각',
+};
+
+// 변경 요청 보드의 열 이름.
+export const BOARD_COLUMNS = {
+  backlog: '백로그',
+  active: '열림 · 반영 중',
+  done: '완료',
+  rejected: '거부',
+  none: '상태 없음',
+};
+
+// 열기 실패 문구 (UI-169 오류 표시). {0} 저장소, {1} 버전, {2} 파일 위치, {3} 줄 · 까닭.
+export const OPEN_ERRORS = {
+  REPO_NOT_FOUND: '저장소 {0} 을 찾지 못했습니다 (없거나 비공개)',
+  REF_NOT_FOUND: '버전 {1} 를 찾지 못했습니다',
+  PATH_NOT_FOUND: '{1} 에 {2} 가 없습니다',
+  NOT_FOUND: '{0} @ {1} 의 {2} 를 찾지 못했습니다',
+  NETWORK: '파일을 받지 못했습니다',
+  TOO_LARGE: '기록이 뷰어 용량보다 큽니다',
+  MODEL: '이 뷰어가 모르는 모델 버전입니다',
+  FORMAT: '사양 파일 형식이 아닙니다',
+  FORMAT_LINE: '사양 파일 형식이 아닙니다 ({3} 번째 줄)',
+  UNSUPPORTED: '이 브라우저에서는 열 수 없습니다',
+  OTHER: '열 수 없습니다: {3}',
+};

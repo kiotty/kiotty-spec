@@ -18,3 +18,13 @@ test('route parsing', () => {
   const back = parseRoute(formatItemsRoute('design', { tags: [{ name: '구현 상태', value: '미구현' }], q: 'x y' }));
   assert.deepEqual(back, { screen: 'items', kind: 'design', tags: [{ name: '구현 상태', value: '미구현' }], q: 'x y' }, 'format and parse round trip');
 });
+
+// 공통 수칙 2.10 의 다섯 입력: 빈 입력, 아주 긴 입력 (JS 문자열에는 최대 길이가 없다), NUL, 잘못된 % 인코딩 (UTF-8).
+test('route parsing takes the five inputs', () => {
+  assert.deepEqual(parseRoute(''), { screen: 'progress' }, 'empty');
+  const long = 'A'.repeat(100000);
+  assert.deepEqual(parseRoute(`#/item/${long}`), { screen: 'item', id: long }, 'long');
+  assert.deepEqual(parseRoute('#/item/REQ-001%00x'), { screen: 'item', id: 'REQ-001%00x' }, 'NUL is not decoded');
+  assert.deepEqual(parseRoute('#/item/%FF'), { screen: 'item', id: '%FF' }, 'bad percent encoding is kept as is');
+  assert.deepEqual(parseRoute('#/items/%E0%A4'), { screen: 'items', kind: '%E0%A4', tags: [], q: '' }, 'cut UTF-8 is kept as is');
+});

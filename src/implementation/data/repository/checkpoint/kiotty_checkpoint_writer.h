@@ -19,7 +19,7 @@ struct CheckpointColumns {
     std::vector<uint8_t>& exists;
 };
 
-static_assert(sizeof(CheckpointColumns) == layoutSize(24, 12), "unexpected padding");
+static_assert(sizeof(CheckpointColumns) == selectLayoutSize(24, 12), "unexpected padding");
 
 class CheckpointWriter
 {

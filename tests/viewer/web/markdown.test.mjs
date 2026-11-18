@@ -78,3 +78,14 @@ test('markdown renders text only', async () => {
   assert.deepEqual(anchors.map((a) => a.href), ['#/item/REQ-053', 'https://example.com/a', 'https://kiotty.dev/x'], 'only safe links become anchors');
   assert.ok(['h4', 'ul', 'ol', 'table', 'pre', 'blockquote'].every((t) => tags.has(t)));
 });
+
+// 공통 수칙 2.10 의 다섯 입력: 빈 입력, 아주 긴 입력, NUL, 잘못된 UTF-8 (짝 없는 대리 문자).
+test('markdown parsing takes the five inputs', () => {
+  assert.deepEqual(parse(''), [], 'empty');
+  const long = parse(`${'가'.repeat(100000)}\n`);
+  assert.equal(long.length, 1, 'long line is one paragraph');
+  assert.equal(long[0].children[0].text.length, 100000);
+  assert.equal(parse('a\0b')[0].children[0].text, 'a\0b', 'NUL stays text');
+  assert.equal(parse('x \uD800 y')[0].children[0].text, 'x \uD800 y', 'lone surrogate stays text');
+  assert.deepEqual(parseInline(''), []);
+});

@@ -49,7 +49,7 @@ struct ReadParts {
     CursorPool& cursors;
 };
 
-static_assert(sizeof(ReadParts) == layoutSize(24, 12), "unexpected padding");
+static_assert(sizeof(ReadParts) == selectLayoutSize(24, 12), "unexpected padding");
 
 class ContextReadSide
 {
@@ -102,7 +102,7 @@ struct ContextSides {
     RuleSyncSide rule_sync;
 };
 
-static_assert(sizeof(ContextSides) == layoutSize(104, 52), "unexpected padding");
+static_assert(sizeof(ContextSides) == selectLayoutSize(104, 52), "unexpected padding");
 
 struct ContextPaths {
     const SystemPath& root;
@@ -110,7 +110,7 @@ struct ContextPaths {
     const FileSystem& files;
 };
 
-static_assert(sizeof(ContextPaths) == layoutSize(24, 12), "unexpected padding");
+static_assert(sizeof(ContextPaths) == selectLayoutSize(24, 12), "unexpected padding");
 
 class OpenedContext
 {

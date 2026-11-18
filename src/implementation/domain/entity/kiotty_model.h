@@ -49,6 +49,6 @@ struct Model
     Step created_in {};
 };
 
-static_assert(sizeof(Model) == layoutSize(88, 72), "unexpected padding");
+static_assert(sizeof(Model) == selectLayoutSize(88, 72), "unexpected padding");
 
 }

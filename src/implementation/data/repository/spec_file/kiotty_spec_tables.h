@@ -41,6 +41,6 @@ struct SpecTables {
     DecisionStore& decisions;
 };
 
-static_assert(sizeof(SpecTables) == layoutSize(56, 28), "unexpected padding");
+static_assert(sizeof(SpecTables) == selectLayoutSize(56, 28), "unexpected padding");
 
 }

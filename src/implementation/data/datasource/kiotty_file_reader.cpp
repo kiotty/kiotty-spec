@@ -19,7 +19,7 @@ struct LineWindow {
     bool is_finished {false};
 };
 
-static_assert(sizeof(LineWindow) == layoutSize(48, 28), "unexpected padding");
+static_assert(sizeof(LineWindow) == selectLayoutSize(48, 28), "unexpected padding");
 
 LineWindow readLine(int descriptor, Span<char> buffer, const LineWindow& initial);
 LineWindow readMore(int descriptor, Span<char> buffer, const LineWindow& window);

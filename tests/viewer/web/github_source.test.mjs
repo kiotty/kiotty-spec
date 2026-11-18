@@ -1,7 +1,8 @@
 // UT-112 link parsing, UT-113 fetch and 404 cause
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGithubSource, formatLink, isRepoName, parseLink } from '../../../app/viewer/web/src/datalayer/datasource/github_source.js';
+import { createGithubSource } from '../../../app/viewer/web/src/datalayer/datasource/github_source.js';
+import { formatLink, isRepoName, parseLink } from '../../../app/viewer/web/src/domain/entity/link.js';
 
 test('link parsing (parseLink)', () => {
   assert.deepEqual(parseLink('?repo=a/b'), { repo: 'a/b', ref: undefined, path: '.kiotty/spec.kisp' }, 'path defaults to .kiotty/spec.kisp and ref is undefined when missing');
@@ -54,4 +55,18 @@ test('fetch and 404 cause (fetchSpec)', async () => {
   assert.equal(await code(createGithubSource(fakeFetch([raw404, ['commits', { status: 200 }], ['api.github.com/repos/o/n', { status: 200 }]]).fetchFn).fetchSpec(link)), 'PATH_NOT_FOUND');
   assert.equal(await code(createGithubSource(fakeFetch([raw404, ['commits', { status: 200 }], ['api.github.com/repos/o/n', { status: 403 }]]).fetchFn).fetchSpec(link)), 'NOT_FOUND', 'API 403 gives NOT_FOUND');
   assert.equal(await code(createGithubSource(fakeFetch([['raw.githubusercontent.com', 'reject']]).fetchFn).fetchSpec(link)), 'NETWORK', 'rejected fetch gives NETWORK');
+});
+
+// 공통 수칙 2.10 의 다섯 입력: 빈 입력, 아주 긴 입력, NUL, 잘못된 % 인코딩 (UTF-8). 저장소 이름이 꼴에 맞지 않으면 받지 않는다.
+test('link parsing takes the five inputs', async () => {
+  assert.equal(parseLink(''), null, 'empty');
+  const long = 'a'.repeat(100000);
+  assert.equal(parseLink(`?repo=${long}/b`).repo, `${long}/b`, 'long');
+  assert.equal(parseLink('?repo=a%00/b').repo, 'a\0/b', 'NUL stays in the value');
+  assert.equal(parseLink('?repo=a/b%FF').repo, 'a/b�', 'bad percent encoding becomes U+FFFD');
+  const { fetchFn, calls } = fakeFetch([]);
+  for (const repo of ['', 'a\0/b', 'a/b�', '../x']) {
+    assert.equal(await code(createGithubSource(fetchFn).fetchSpec({ repo, ref: 'v1', path: '.kiotty/spec.kisp' })), 'REPO_NOT_FOUND', JSON.stringify(repo));
+  }
+  assert.deepEqual(calls, [], 'a bad repo name is not fetched');
 });

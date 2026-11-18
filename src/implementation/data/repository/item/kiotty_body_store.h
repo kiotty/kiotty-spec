@@ -17,7 +17,7 @@ struct BodySlice {
     size_t length {};
 };
 
-static_assert(sizeof(BodySlice) == layoutSize(16, 8), "unexpected padding");
+static_assert(sizeof(BodySlice) == selectLayoutSize(16, 8), "unexpected padding");
 
 class BodyStore
 {

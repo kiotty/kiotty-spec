@@ -18,7 +18,7 @@ struct WorkAreas {
     Span<char> line {};
 };
 
-static_assert(sizeof(WorkAreas) == layoutSize(32, 16), "unexpected padding");
+static_assert(sizeof(WorkAreas) == selectLayoutSize(32, 16), "unexpected padding");
 
 class SpecFile
 {

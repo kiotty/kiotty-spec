@@ -1,17 +1,18 @@
 // 머리 줄 · 탭 · 불러오는 중 (UI-168).
 
 import { esc } from '../../core/html.js';
-import { describeOpenError, TEXT } from '../../i18n/ko.js';
+import { TEXT } from '../../i18n/ko.js';
+import { describeOpenError } from '../viewModel/open_error.js';
 
 const TABS = ['overview', 'progress', 'items', 'changes'];
 
 function sourceBadge(source) {
   if (!source) return '';
   if (source.type === 'repo') {
-    const ref = source.ref ?? '기본 브랜치';
+    const ref = source.ref ?? TEXT.defaultBranch;
     return `<span class="src" title="${esc(source.path)}">${esc(source.repo)} <b>@</b> ${esc(ref)}</span>`;
   }
-  return `<span class="src" title="로컬 파일">📄 ${esc(source.name)}</span>`;
+  return `<span class="src" title="${TEXT.localFile}">📄 ${esc(source.name)}</span>`;
 }
 
 function tabHref(tab, lastKind) {

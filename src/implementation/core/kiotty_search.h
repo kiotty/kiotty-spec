@@ -15,7 +15,7 @@ struct IndexRange {
     size_t length {0};
 };
 
-static_assert(sizeof(IndexRange) == layoutSize(16, 8), "unexpected padding");
+static_assert(sizeof(IndexRange) == selectLayoutSize(16, 8), "unexpected padding");
 
 template <typename Element, typename Match>
 Result<IndexRange, KiottySpecStatus> contiguousRange(Span<const Element> elements, Match match)

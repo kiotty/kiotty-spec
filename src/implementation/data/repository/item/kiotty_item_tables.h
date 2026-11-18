@@ -25,7 +25,7 @@ struct ItemCapacity {
     size_t body_bytes {};
 };
 
-static_assert(sizeof(ItemCapacity) == layoutSize(40, 20), "unexpected padding");
+static_assert(sizeof(ItemCapacity) == selectLayoutSize(40, 20), "unexpected padding");
 
 struct ItemTables {
     explicit ItemTables(const ItemCapacity& capacity)

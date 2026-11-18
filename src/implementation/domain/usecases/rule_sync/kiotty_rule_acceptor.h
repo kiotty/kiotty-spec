@@ -37,7 +37,7 @@ struct RuleChange {
     uint32_t fields {0};
 };
 
-static_assert(sizeof(AcceptDraft) == layoutSize(88, 44), "unexpected padding");
+static_assert(sizeof(AcceptDraft) == selectLayoutSize(88, 44), "unexpected padding");
 static_assert(sizeof(AcceptOutcome) == 20, "unexpected padding");
 static_assert(sizeof(RuleChange) == 24, "unexpected padding");
 

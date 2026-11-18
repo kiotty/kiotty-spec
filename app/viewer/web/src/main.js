@@ -1,7 +1,8 @@
 // 조립 (DSN-116 의 di 역할): 브라우저 전역을 모듈에 넣고 처음 화면을 연다 (DSN-125, DSN-126).
 
 import { createWasmSpec } from './infra/wasm_spec.js';
-import { createGithubSource, parseLink } from './datalayer/datasource/github_source.js';
+import { createGithubSource } from './datalayer/datasource/github_source.js';
+import { parseLink } from './domain/entity/link.js';
 import { createHandleStore } from './datalayer/datasource/handle_store.js';
 import { createLocalSource } from './datalayer/datasource/local_source.js';
 import { createFileWatcher } from './datalayer/datasource/file_watcher.js';
