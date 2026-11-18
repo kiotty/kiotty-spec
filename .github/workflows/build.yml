@@ -70,8 +70,17 @@ jobs:
         with:
           node-version: 22
 
+      # 뷰어 시스템 테스트 (ST-045 .. ST-051) 는 시험 프로젝트를 ks 로 만든다: 이 기계용 ks 를 빌드한다.
+      - name: Build ks
+        run: |
+          cmake -S . -B build-native -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-native --target ks --parallel
+
       - name: Viewer JS tests
-        run: KIOTTY_VIEWER_JS=build-wasm/app/viewer/wasm/viewer.js node --test "tests/viewer/web/*.test.mjs"
+        env:
+          KIOTTY_VIEWER_JS: build-wasm/app/viewer/wasm/viewer.js
+          KIOTTY_KS: build-native/ks
+        run: node --test "tests/viewer/web/*.test.mjs" "tests/viewer/system/*.test.mjs"
 
       - name: Keep viewer.wasm
         uses: actions/upload-artifact@v4
@@ -82,7 +91,7 @@ jobs:
             build-wasm/app/viewer/wasm/viewer.wasm
 
   # GitHub Pages (CR-019, DSN-127, REQ-059): 태그를 푸시하면 wasm32 잡이 통과한 뒤 뷰어를 배포한다.
-  # 저장소 설정 Pages 의 Source 를 "GitHub Actions" 로 두어야 한다.
+  # 저장소 설정 Pages 의 Source 를 "GitHub Actions" 로 두고, Environments 의 github-pages 에 v* 태그를 허용해야 한다.
   pages:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [build, wasm32]
