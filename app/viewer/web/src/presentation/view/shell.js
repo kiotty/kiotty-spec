@@ -1,7 +1,7 @@
 // 머리 줄 · 탭 · 불러오는 중 (UI-168).
 
 import { esc } from '../../core/html.js';
-import { TEXT } from '../../i18n/ko.js';
+import { describeOpenError, TEXT } from '../../i18n/ko.js';
 
 const TABS = ['overview', 'progress', 'items', 'changes'];
 
@@ -18,6 +18,32 @@ function tabHref(tab, lastKind) {
   return tab === 'items' ? `#/items/${encodeURIComponent(lastKind || 'requirement')}` : `#/${tab}`;
 }
 
+function clock(ms) {
+  const date = new Date(ms);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+// 로컬 파일 지켜보기 배지와 다시 읽음 · 다시 읽지 못함 (UI-168, REQ-054).
+function watchBadge(watch) {
+  if (!watch) return '';
+  const isAuto = watch.mode === 'observer' || watch.mode === 'poll';
+  const badge = `<span class="pill ${isAuto ? 'state-done' : ''}" title="${esc(watch.mode)}">${isAuto ? TEXT.watchAuto : TEXT.watchManual}</span>`;
+  if (watch.error) return `${badge} <span class="pill state-running" role="status">${TEXT.reloadFailed}: ${esc(describeError(watch.error))}</span>`;
+  if (watch.reloadedAt) return `${badge} <span class="pill" role="status">${TEXT.reloadedAt} ${clock(watch.reloadedAt)}</span>`;
+  return badge;
+}
+
+function describeError(error) {
+  return describeOpenError(error, null).text;
+}
+
+function noticeBar(notice) {
+  if (!notice) return '';
+  if (notice.error) return `<div class="notice alert" role="alert">${esc(notice.name)}: ${TEXT.notOpened} — ${esc(describeError(notice.error))}</div>`;
+  return `<div class="notice alert" role="status">${esc(notice.text)}</div>`;
+}
+
 export function renderShell({ state, screen, lastKind }) {
   const isReady = state.phase === 'ready' || (state.phase !== 'idle' && state.project);
   const active = screen === 'item' ? 'items' : screen;
@@ -29,10 +55,12 @@ export function renderShell({ state, screen, lastKind }) {
   <div class="topbar">
     <a class="brand" href="#/progress">${TEXT.brand} <span>${TEXT.brandSub}</span></a>
     ${sourceBadge(state.source)}
+    ${watchBadge(state.watch)}
     <span class="grow"></span>
     <a class="btn ghost" href="#/open">${TEXT.openOther}</a>
   </div>
   ${tabs}
   ${loading}
-</header>`;
+</header>
+${noticeBar(state.notice)}`;
 }

@@ -12,7 +12,7 @@ import { renderShell } from './shell.js';
 import { renderOpen, renderOverview, renderProgress, renderUnsupported } from './screens.js';
 import { renderChanges, renderItem, renderItems, renderMissingItem, renderUnknownKind } from './item_screens.js';
 
-export function createApp({ root, specState, location, history, document }) {
+export function createApp({ root, specState, localSource, location, history, document }) {
   const ui = {
     stepFilter: 0,
     lastKind: 'requirement',
@@ -20,6 +20,7 @@ export function createApp({ root, specState, location, history, document }) {
     expanded: new Set(),      // 항목 표에서 펼친 줄 (다시 읽어도 남는다)
     moreColumns: new Set(),   // 보드에서 더 보기를 누른 열
     bodies: new Map(),        // 이번 그리기에 채울 본문 (data-md 키 → 글)
+    restore: null,            // 권한을 다시 물어야 하는 보관 핸들 {needsPermission, name}
   };
 
   function sourceName(state) {
@@ -63,7 +64,7 @@ export function createApp({ root, specState, location, history, document }) {
     if (state.openError?.error?.code === 'UNSUPPORTED') return renderUnsupported();
     const isOpen = Boolean(state.project);
     if (route.screen === 'open' || (!isOpen && state.phase !== 'loading')) {
-      return renderOpen({ openError: state.openError, form: ui.form });
+      return renderOpen({ openError: state.openError, form: ui.form, restore: ui.restore });
     }
     if (!isOpen) return '';
     switch (route.screen) {
@@ -137,7 +138,39 @@ export function createApp({ root, specState, location, history, document }) {
       root.querySelector(`[data-filter="${CSS.escape(target.dataset.tagName)}"]`)?.setAttribute('open', '');
     }
   });
+  // 로컬 파일을 열면 주소에서 repo 를 지우고 진행 화면으로 간다 (UI-170). 이미 보던 화면이면 그대로 둔다.
+  async function openLocal(result, notice) {
+    if (!result) return;
+    ui.restore = null;
+    const route = parseRoute(location.hash);
+    await specState.openLocal(result.source, notice);
+    if (specState.get().source?.type !== 'local') return;
+    const hash = route.screen === 'open' || !location.hash ? '#/progress' : location.hash;
+    history.replaceState(null, '', `${location.pathname}${hash}`);
+    render();
+  }
+
+  async function pick() {
+    const result = await localSource.pick();
+    await openLocal(result, result?.isBlocked ? { text: TEXT.blockedPick } : null);
+  }
+
+  async function reopen() {
+    try {
+      await openLocal({ source: await localSource.reopen() }, null);
+    } catch {
+      ui.restore = null;
+      specState.notify({ text: TEXT.lostHandle });
+    }
+  }
+
+  root.addEventListener('keydown', (event) => {
+    const isPick = event.target.dataset?.act === 'pick' && (event.key === 'Enter' || event.key === ' ');
+    if (isPick) { event.preventDefault(); pick(); }
+  });
   root.addEventListener('click', (event) => {
+    if (event.target.closest('[data-act="pick"]')) { pick(); return; }
+    if (event.target.closest('[data-act="reopen"]')) { reopen(); return; }
     const retry = event.target.closest('[data-act="retry"]');
     if (retry) {
       const link = specState.get().openError?.link;
@@ -163,6 +196,15 @@ export function createApp({ root, specState, location, history, document }) {
 
   return {
     render,
+    async openDropped(dataTransfer) {
+      const result = await localSource.fromDrop(dataTransfer);
+      await openLocal(result, result?.isMany ? { text: TEXT.manyFiles } : null);
+    },
+    async restoreLocal() {
+      const result = await localSource.restore();
+      if (result?.source) await openLocal(result, null);
+      else if (result?.needsPermission) { ui.restore = result; render(); }
+    },
     fillForm(link) {
       if (link) ui.form = { repo: link.repo, ref: link.ref ?? '', path: link.path };
     },

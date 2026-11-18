@@ -9,14 +9,18 @@ function itemLink(id) {
   return `<a class="iid" href="${formatItemRoute(id)}">${esc(id)}</a>`;
 }
 
-export function renderOpen({ openError, form }) {
+export function renderOpen({ openError, form, restore }) {
   const described = openError ? describeOpenError(openError.error, openError.link) : null;
   const alert = described
     ? `<div class="alert" role="alert">${esc(described.text)}${described.local ? ` ${esc(TEXT.localHint)}` : ''}
        ${described.retry ? ` <button class="btn small" data-act="retry">${TEXT.retry}</button>` : ''}</div>`
     : '';
+  const reopen = restore?.needsPermission
+    ? `<section class="card"><button class="btn" data-act="reopen">${TEXT.reopen}: ${esc(restore.name)}</button></section>`
+    : '';
   return `<main class="page narrow">
   ${alert}
+  ${reopen}
   <section class="card">
     <h2>${TEXT.openRepoTitle}</h2>
     <form data-form="open" class="form" novalidate>
@@ -30,7 +34,7 @@ export function renderOpen({ openError, form }) {
   </section>
   <section class="card">
     <h2>${TEXT.openLocalTitle}</h2>
-    <p class="muted">${TEXT.localSoon}</p>
+    <div class="drop" data-act="pick" role="button" tabindex="0"><span>${TEXT.dropHere}</span><span class="btn">${TEXT.pickFile}</span></div>
     <p class="muted">${TEXT.localPrivacy}</p>
   </section>
 </main>`;

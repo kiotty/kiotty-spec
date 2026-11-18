@@ -80,3 +80,37 @@ jobs:
           path: |
             build-wasm/app/viewer/wasm/viewer.js
             build-wasm/app/viewer/wasm/viewer.wasm
+
+  # GitHub Pages (CR-019, DSN-127, REQ-059): 태그를 푸시하면 wasm32 잡이 통과한 뒤 뷰어를 배포한다.
+  # 저장소 설정 Pages 의 Source 를 "GitHub Actions" 로 두어야 한다.
+  pages:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, wasm32]
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: viewer-wasm
+          path: viewer-wasm
+
+      - name: Assemble site
+        run: |
+          mkdir -p site
+          cp -r app/viewer/web/. site/
+          cp viewer-wasm/viewer.js viewer-wasm/viewer.wasm site/
+          touch site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

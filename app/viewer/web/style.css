@@ -194,3 +194,5 @@ body.dragging::after { content: "놓으면 이 파일을 엽니다"; position: f
 td.indent-1 { padding-left: 26px; } td.indent-2 { padding-left: 44px; } td.indent-3 { padding-left: 62px; } td.indent-4 { padding-left: 80px; }
 .md li.depth-1 { margin-left: 18px; } .md li.depth-2 { margin-left: 36px; } .md li.depth-3 { margin-left: 54px; }
 .md blockquote { margin: 8px 0; padding: 4px 12px; border-left: 3px solid var(--line); color: var(--muted); }
+.notice { max-width: 1240px; margin: 12px auto 0; }
+.notice[role=status] { border-left-color: var(--accent); background: var(--accent-bg); color: var(--fg); }
